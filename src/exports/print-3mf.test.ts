@@ -5,7 +5,7 @@ import {unzipSync,strFromU8} from 'fflate';
 import {XMLParser,XMLValidator} from 'fast-xml-parser';
 import {createAssembly,resolveAssembly} from '../../rack-generator/assembly.ts';
 import {definitions} from '../../rack-generator/catalog.ts';
-import {HARDWARE_FINISHES} from '../../rack-generator/appearance.ts';
+import {HARDWARE_FINISHES, FRAME_FINISHES, type Appearance} from '../../rack-generator/appearance.ts';
 import type {PartDefinition} from '../../rack-generator/types.ts';
 import {exportPrint3MF} from './print-3mf.ts';
 const api = await Module(); api.setup();
@@ -117,4 +117,20 @@ test('vendor export credits retain every attribution field without replacing gen
   for(const value of Object.values(attribution)) assert.ok(credit.includes(value));
   assert.equal(metadata.find(m=>m.name==='Designer')!['#text'],'BOS STRENGTH print exporter');
   assert.deepEqual(JSON.parse(strFromU8(files['Metadata/print-report.json'])).vendorCredits,[{part:'upright',attribution}]);
+});
+
+
+test('3MF exports dominant steel finish colors while retaining legacy paint and fastener scope', () => {
+  const cases: {appearance: Appearance; color: string}[] = [
+    {appearance: {frameFinish: 'stainless'}, color: FRAME_FINISHES.stainless.color},
+    {appearance: {frameFinish: 'stainless', finishOverrides: {'front-left': 'clear-grind'}}, color: FRAME_FINISHES['clear-grind'].color},
+    {appearance: {frameFinish: 'clear-grind', overrides: {'front-left': '#ffff00'}}, color: '#ffff00'},
+  ];
+  for (const {appearance, color} of cases) {
+    const doc = single(); doc.appearance = {...appearance, hardwareFinish: 'gold'};
+    const result = exportPrint3MF(api, doc, [cubeDef], {layout: 'laid-out'});
+    const archive = inspect(result.bytes);
+    assert.deepEqual(archive.materials.map(m => m.displaycolor), [color.toUpperCase() + 'FF', HARDWARE_FINISHES.gold.color.toUpperCase() + 'FF']);
+    assert.match(result.report.textureLimitation, /Dominant solid colors only/);
+  }
 });
