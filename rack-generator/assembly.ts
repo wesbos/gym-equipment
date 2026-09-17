@@ -356,8 +356,8 @@ export function unpairAccessory(input: RackDoc, id: string): RackDoc {
   if (!a.paired) return doc;
   const other = targetsFor(a)[1]; let secondId: string;
   do { secondId = `accessory-${doc.nextId++}`; } while (doc.accessories.some(x => x.id === secondId) || Object.hasOwn(doc.uprights, secondId) || doc.connections.some(e => e.id === secondId));
-  const overrides = doc.appearance?.overrides;
-  if (overrides) {
+  for (const overrides of [doc.appearance?.overrides, doc.appearance?.finishOverrides]) {
+    if (!overrides) continue;
     const targets = [a.target, other];
     const suffix = (index: number) => pairSuffix(targets, index);
     const first = overrides[`${a.id}:${suffix(0)}`];
