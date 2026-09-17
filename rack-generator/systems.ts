@@ -136,6 +136,7 @@ export function validateSystems(
     ...Object.keys(doc.uprights),
     ...doc.connections.map((e) => e.id),
     ...doc.accessories.map((a) => a.id),
+    ...(doc.floorItems ?? []).map((f) => f.id),
   ]);
   const systems = (input as RackSystem[]).map((s) => {
     require(s &&
@@ -428,6 +429,7 @@ export function withSystem(
         ...next.connections.map((e) => e.id),
         ...next.accessories.map((a) => a.id),
         ...(next.systems ?? []).map((s) => s.id),
+        ...(next.floorItems ?? []).map((f) => f.id),
       ].includes(key)
     );
     (next.systems ??= []).push({

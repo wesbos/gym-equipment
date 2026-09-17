@@ -5,7 +5,13 @@ Open **Custom logo** in the builder, type text or upload SVG/PNG/JPEG, then
 Only **Apply logo to rack** changes the working document (undoable). Named
 configurations still require **Save**. **Reset stock BOS lettering** removes the
 optional logo; the original BOS STRENGTH stencil and bridges are used unchanged.
-Vendor branding is not part of this system.
+Vendor branding is not part of this system. Each source, text, font, upload,
+threshold, contrast and island-bridge control uses the shared ResetButton.
+These field resets change only the transient preview inputs. Stock-lettering
+reset always clears source, preview, bridges and pending work to centralized
+defaults. With no applied logo it does not write history or discard redo; with
+an applied logo its document change is undoable. A generation token invalidates
+file-read completions, worker replies/errors and timeouts after reset or edits.
 
 ## Geometry and integration
 
@@ -91,7 +97,11 @@ are disposed. A failed preview leaves the existing rack untouched.
 `rack-generator/logos.test.ts` covers fonts/counters, fill rules, transformed
 filled and stroked paths, hostile SVG, threshold tracing, malformed/overbudget
 metadata, small cuts and gaps, island rejection, persistence/site isolation,
-and actual manifold builds for all three sites. `logos/fixtures` contains small
+and actual manifold builds for all three sites. The 3MF regression also exports
+all three sites through the shared catalog/print adapter, reconstructs the
+actual XML meshes, checks connected watertight topology, and compares volume
+with custom CAD after the documented flange-overlap removal. Volume tolerance
+is max(0.1 mm³, one part per million), accounting for Float32 print transforms. `logos/fixtures` contains small
 SVG/PNG/JPEG uploads and a deliberately rejected script fixture for browser QA.
 
 Repeat the browser test against a production build served at `127.0.0.1:5305`:
@@ -102,7 +112,7 @@ threshold/contrast, rejection, explicit save/JSON round-trip, reset/undo, and
 matches the exported GLB nameplate triangle count and 3MF nameplate volume to its custom Manifold solid.
 
 For native slicer verification, run `npx tsx scripts/generate-logo-print-fixture.ts`,
-import/re-export `.verification/logo.3mf` using the installed Bambu Studio and
+import/re-export `.verification/logo-1-10.3mf` and `logo-1-20.3mf` using the installed Bambu Studio and
 OrcaSlicer CLIs with `--info --arrange 0 --orient 0 --export-3mf`, then run
 `scripts/verify-print-export.py` on the source and both output archives.
 `docs/evidence/issue-11/slicer-audit.txt` records the passing independent audit.
@@ -114,3 +124,7 @@ with the unscaled custom CAD volume divided by the denominator cubed (1000 and
 contours remain in full-size rack units. Continue forwarding `instance.logo` to
 `buildPrintInstance` before scaling the resulting solid. The current tests verify
 unscaled geometry; #46's scaled exporter is a separate integration check.
+
+Focused PR49 reset/race check: `GYM_LOGO_CDP_URL=<isolated endpoint> npx playwright test e2e/logo-reset.spec.ts --workers=1`. It deliberately releases captured SVG/raster reads and worker callbacks after reset, verifies preview-only reset, and checks applied reset/undo and draft-reset redo preservation.
+
+After integrating #50, the targeted 3MF regression covers all three branding sites at both 1:10 and 1:20 scales. The previously pending scale integration is verified at the XML/Manifold level. The long browser flow uses the new default 1:10 volume expectation. Native scaled slicer checks are owned by the exporter stream.

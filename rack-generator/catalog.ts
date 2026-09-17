@@ -4,6 +4,7 @@ import type { CADCatalog } from './catalog-contract.ts';
 import { definitions as structure } from './parts/structure.ts';
 import { definitions as attachments } from './parts/attachments.ts';
 import { definitions as bars } from './parts/bars-safeties.ts';
+import { definitions as floor } from './parts/nighthawk.ts';
 import { definitions as voltra } from './parts/voltra.ts';
 import { definitions as darko } from './parts/darko.ts';
 import { definitions as cables } from './parts/cable-systems.ts';
@@ -12,7 +13,7 @@ import { vendorAttribution } from './vendor-metadata.ts';
 import { systemAttribution } from './system-attribution.ts';
 // Retain PartDefinition's builder signature, including the optional logo argument
 // when that stream integrates; vendor marks remain internal to their builders.
-export const definitions: PartDefinition[] = [...structure, ...bars, ...attachments, ...voltra, ...darko, ...cables, ...smith];
+export const definitions: PartDefinition[] = [...structure, ...bars, ...attachments, ...voltra, ...darko, ...cables, ...smith, ...floor];
 export const catalog: CADCatalog = {
   definitions,
   attribution: part => systemAttribution(part) ?? vendorAttribution(part),

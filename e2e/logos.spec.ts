@@ -12,14 +12,31 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   test.setTimeout(120000);
   if (!process.env.GYM_LOGO_CDP_URL) throw Error('Start isolated gym-wave2-logos Chrome and set GYM_LOGO_CDP_URL to its CDP endpoint. Serve the production build on port 5305.');
   const browser = await chromium.connectOverCDP(process.env.GYM_LOGO_CDP_URL, { timeout: 15000 });
-  const page = browser.contexts()[0].pages().find(p => p.url().includes(':5305/builder'))!;
+  const baseURL = process.env.GYM_LOGO_BASE_URL ?? 'http://127.0.0.1:5305';
+  const page = browser.contexts()[0].pages().find(p => p.url().startsWith(baseURL + '/builder'))!;
   page.setDefaultTimeout(15000);
+  const chooseExport = async (format: 'GLB' | '3MF') => {
+    if (await page.locator('#export').getAttribute('aria-expanded') !== 'true') await page.locator('#export').click();
+    await page.getByRole('menuitemradio', { name: new RegExp(format) }).click();
+    await expect(page.getByRole('button', { name: `Download ${format}`, exact: true })).toBeEnabled({ timeout: 20000 });
+  };
+  const glbReady = async () => { await chooseExport('GLB'); await page.keyboard.press('Escape'); };
   console.log('Connected to isolated logo browser');
-  await page.goto('http://127.0.0.1:5305/builder');
-  await expect(page.getByRole('button', { name: 'Export GLB ↗' })).toBeEnabled({ timeout: 20000 });
+  await page.goto(baseURL + '/builder');
+  await glbReady();
   await page.locator('.logo-controls summary').click();
   const controls = page.locator('.logo-controls');
-  await controls.getByLabel('Logo text').fill('BOS');
+  await controls.getByLabel('Logo text', { exact: true }).fill('TEMP');
+  await controls.getByRole('button', { name: 'Reset logo text', exact: true }).click();
+  await expect(controls.getByLabel('Logo text', { exact: true })).toHaveValue('MY GYM');
+  await expect(controls.getByRole('button', { name: 'Reset logo text', exact: true })).toBeDisabled();
+  await controls.getByLabel('Logo font', { exact: true }).selectOption('helvetikerRegular');
+  await controls.getByRole('button', { name: 'Reset logo font', exact: true }).click();
+  await expect(controls.getByLabel('Logo font', { exact: true })).toHaveValue('helvetiker');
+  await controls.getByRole('checkbox', { name: 'Automatic island bridges' }).uncheck();
+  await controls.getByRole('button', { name: 'Reset automatic island bridges', exact: true }).click();
+  await expect(controls.getByRole('checkbox', { name: 'Automatic island bridges' })).toBeChecked();
+  await controls.getByLabel('Logo text', { exact: true }).fill('BOS');
   await controls.getByRole('button', { name: 'Validate & preview logo' }).click();
   await expect(controls.getByRole('button', { name: 'Apply logo to rack' })).toBeVisible({ timeout: 15000 });
   await expect(controls).toContainText('bridge');
@@ -28,16 +45,25 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   await page.getByRole('button', { name: 'Nameplate panel +', exact: true }).click();
   await page.getByRole('button', { name: 'Replace rear crossmember' }).click();
   await page.getByRole('button', { name: 'Place', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Export GLB ↗' })).toBeEnabled({ timeout: 20000 });
+  await glbReady();
   console.log('Text applied; nameplate mounted');
   for (const filename of ['logo.svg', 'logo.png', 'logo.jpg']) {
     console.log('Upload', filename);
-    await controls.getByLabel('Logo source').selectOption('svg');
+    await controls.getByLabel('Logo source', { exact: true }).selectOption('svg');
     await controls.getByLabel('Upload logo', { exact: true }).setInputFiles(path.resolve('rack-generator/logos/fixtures', filename));
-    await expect(controls.getByLabel('Logo source')).toHaveValue(filename.endsWith('svg') ? 'svg' : 'raster');
+    await controls.getByRole('button', { name: 'Reset logo upload', exact: true }).click();
+    await expect(controls.getByRole('button', { name: 'Reset logo upload', exact: true })).toBeDisabled();
+    await controls.getByLabel('Upload logo', { exact: true }).setInputFiles(path.resolve('rack-generator/logos/fixtures', filename));
+    await expect(controls.getByLabel('Logo source', { exact: true })).toHaveValue(filename.endsWith('svg') ? 'svg' : 'raster');
     if (!filename.endsWith('svg')) {
-      await controls.getByLabel('Logo threshold').fill('140');
-      await controls.getByLabel('Logo contrast').fill('1.2');
+      await controls.getByLabel('Logo threshold', { exact: true }).fill('160');
+      await controls.getByRole('button', { name: 'Reset logo threshold', exact: true }).click();
+      await expect(controls.getByLabel('Logo threshold', { exact: true })).toHaveValue('128');
+      await controls.getByLabel('Logo threshold', { exact: true }).fill('140');
+      await controls.getByLabel('Logo contrast', { exact: true }).fill('2');
+      await controls.getByRole('button', { name: 'Reset logo contrast', exact: true }).click();
+      await expect(controls.getByLabel('Logo contrast', { exact: true })).toHaveValue('1');
+      await controls.getByLabel('Logo contrast', { exact: true }).fill('1.2');
     }
     await controls.getByRole('button', { name: 'Validate & preview logo' }).click();
     await expect(controls.getByRole('button', { name: 'Apply logo to rack' })).toBeVisible({ timeout: 15000 });
@@ -62,11 +88,12 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   await expect(controls.getByRole('button', { name: 'Reset stock BOS lettering' })).toBeDisabled();
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(controls.getByRole('button', { name: 'Reset stock BOS lettering' })).toBeEnabled();
-  await expect(controls.getByLabel('Logo source')).toHaveValue('raster');
+  await expect(controls.getByLabel('Logo source', { exact: true })).toHaveValue('raster');
   await page.getByRole('button', { name: 'Load saved version' }).click();
-  await expect(page.getByRole('button', { name: 'Export GLB ↗' })).toBeEnabled({ timeout: 20000 });
+  await glbReady();
+  await chooseExport('GLB');
   const glbDownload = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export GLB ↗' }).click();
+  await page.getByRole('button', { name: 'Download GLB', exact: true }).click();
   const glb = await glbDownload; const bytes = await fs.readFile((await glb.path())!);
   expect(bytes.subarray(0, 4).toString()).toBe('glTF'); expect(bytes.length).toBeGreaterThan(10000);
   console.log('GLB downloaded; checking custom triangle count');
@@ -80,17 +107,18 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   const expectedVolume = parts[0].solid.volume();
   try { expect(triangles).toBe(parts[0].solid.getMesh().triVerts.length / 3); } finally { parts.forEach(p=>p.solid.delete()); }
   console.log('Custom 3MF browser export');
-  await page.getByRole('button', { name: 'Export 3MF', exact: true }).click();
+  await chooseExport('3MF');
   const printDownload = page.waitForEvent('download', { timeout: 60000 });
   await page.getByRole('button', { name: 'Download 3MF', exact: true }).click();
   const print = await printDownload;
   const printBytes = await fs.readFile((await print.path())!);
+  const printReport = JSON.parse(strFromU8(unzipSync(printBytes)['Metadata/print-report.json']));
   const model = new XMLParser({ignoreAttributes:false,attributeNamePrefix:'',parseAttributeValue:true}).parse(strFromU8(unzipSync(printBytes)['3D/3dmodel.model'])).model;
   const panel = model.resources.object.find((o:{name:string})=>o.name.includes('stencil'));
   const vertices = panel.mesh.vertices.vertex.flatMap((v:{x:number;y:number;z:number})=>[v.x,v.y,v.z]);
   const indices = panel.mesh.triangles.triangle.flatMap((t:{v1:number;v2:number;v3:number})=>[t.v1,t.v2,t.v3]);
   const printSolid = new api.Manifold(new api.Mesh({numProp:3,vertProperties:new Float32Array(vertices),triVerts:new Uint32Array(indices)}));
-  try { expect(printSolid.status()).toBe('NoError'); expect(Math.abs(printSolid.volume()-expectedVolume)).toBeLessThan(.1); } finally { printSolid.delete(); }
+  try { expect(printSolid.status()).toBe('NoError'); expect(Math.abs(printSolid.volume()-expectedVolume / printReport.scale ** 3)).toBeLessThan(.1 / printReport.scale ** 3); } finally { printSolid.delete(); }
   await page.locator('.config-manager summary').click();
   await page.getByRole('button', { name: 'Front', exact: true }).click();
   await controls.getByRole('button', { name: 'Validate & preview logo' }).click();

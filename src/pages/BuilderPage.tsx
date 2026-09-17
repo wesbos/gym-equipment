@@ -1,13 +1,14 @@
 import { CableSmithControls } from '../components/CableSmithControls.tsx';
 import { isSystemPart } from '../../rack-generator/system-types.ts';
+import { FloorInspector } from '../components/FloorInspector.tsx';
+import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { LogoControls } from '../components/LogoControls.tsx';
 import { addsStructure } from '../../rack-generator/structure-candidates.ts';
 import { VendorControls, VendorCredit } from '../components/VendorControls.tsx';
 import { VOLTRA_IDS, DARKO_IDS } from '../../rack-generator/vendor-metadata.ts';
 import { editableFields } from '../state/selection.ts';
 import { BulkInspector } from '../components/BulkInspector.tsx';
-
-import { PrintExport } from '../components/PrintExport.tsx';
+import { ExportMenu } from '../components/ExportMenu.tsx';
 import { dimensionOptions } from '../../rack-generator/standards.ts';
 import { swapCandidates, swapCandidate } from '../../rack-generator/swap.ts';
 import { ResetButton } from '../components/ResetButton.tsx';
@@ -52,6 +53,7 @@ import type {
 } from "../../rack-generator/types.ts";
 import "../../rack-generator/builder.css";
 const groups: [string, PartId[]][] = [
+  ["Floor items", ["rep-nighthawk"]],
   ["Digital resistance", VOLTRA_IDS],
   ["Darko Lifting", DARKO_IDS],
   [
@@ -197,6 +199,7 @@ function Inspector({ store }: { store: BuilderStore }) {
         </form>
       </>
     );
+  if (physical.kind === 'floor-item') return <FloorInspector store={store} id={physical.id} />;
   const fields = editableFields(part, doc);
   const variants = allParts.filter((id) =>
     entry
@@ -436,7 +439,7 @@ export default function BuilderPage() {
       controller.current = null;
     };
   }, [store]);
-  const warnings = detectCollisions(state.resolved);
+  const warnings = [...detectCollisions(state.resolved), ...floorWarnings(state.doc)];
   const fit = (mode = view) => {
     setView(mode);
     controller.current?.fit(mode);
@@ -453,7 +456,6 @@ export default function BuilderPage() {
           </div>
           <div className="toolbar-actions">
             <ConfigManager store={store} />
-            <PrintExport store={store} />
             <div className="history-actions">
               <button
                 id="undo"
@@ -488,30 +490,11 @@ export default function BuilderPage() {
             >
               Save JSON
             </button>
-            <button
-              id="export"
-              className="primary"
-              disabled={state.loading || !state.resolved.length}
-              onClick={async () => {
-                try {
-                  const data = await controller.current?.exportGLB();
-                  if (data) {
-                    download(
-                      new Blob([data], { type: "model/gltf-binary" }),
-                      "bos-strength-rack.glb",
-                    );
-                    store.status("Rack exported as GLB.");
-                  }
-                } catch (error) {
-                  store.status(
-                    `Export failed: ${error instanceof Error ? error.message : String(error)}`,
-                    true,
-                  );
-                }
-              }}
-            >
-              Export GLB ↗
-            </button>
+            <ExportMenu store={store} loading={state.loading} empty={!state.resolved.length}
+              exportGLB={() => {
+                if (!controller.current) return Promise.reject(new Error('Rack scene is not ready.'));
+                return controller.current.exportGLB();
+              }} />
             <input
               hidden
               ref={importFile}
