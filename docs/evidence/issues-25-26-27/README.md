@@ -17,8 +17,8 @@ borrowed brush resources and floor resources, stable texture allocations across 
 and exclusion of scenery from the rack export. Renderer fallback textures are released
 by explicit context loss; the check verifies every retained context is lost.
 
-Chrome's installed regular build stalled during teardown/re-entry. The installed
-Chrome for Testing completed the repeated lifecycle checks. This is not a portable
+Hidden/background-tab runs could stall while awaiting animation frames. A foreground
+Chrome for Testing run completed the repeated lifecycle checks. This is not a portable
 GPU performance benchmark; 60 idle frames took approximately one second on this host.
 The floor adds one draw call; shadow maps update on rebuild, not while orbiting.
 
