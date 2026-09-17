@@ -21,6 +21,9 @@ import {
   removeInstance,
 } from "../../rack-generator/assembly.ts";
 import type { NumericParams } from "../../rack-generator/types.ts";
+// Height limits are independent of the 5 mm keyboard increment. Native step
+// lattices would round valid values such as 650 when the safety minimum is 246.
+const advanceHeight = (value: number, direction: -1 | 1) => value + direction * 5;
 function Options({
   part,
   p,
@@ -125,6 +128,7 @@ function Options({
               min={heights.barMin}
               max={heights.barMax}
               step={5}
+              advance={advanceHeight}
               onValue={(v) => onChange({ barHeight: v })}
             />
           </label>
@@ -139,6 +143,7 @@ function Options({
               min={heights.safetyMin}
               max={heights.safetyMax}
               step={5}
+              advance={advanceHeight}
               onValue={(v) => onChange({ safetyHeight: v })}
             />
           </label>
