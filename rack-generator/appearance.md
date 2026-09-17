@@ -90,7 +90,8 @@ multi-select stream's `PhysicalInstanceId[]` when integrating its controls; do n
 collapse it to an owner ID. Bulk finish changes should write `finishOverrides[id]`
 for every selected physical frame piece. Bulk paint changes should also set that
 piece's finish to `paint`. Duplication must remap both `overrides` and
-`finishOverrides`; removing/resetting an override removes both. The multi-select
+`finishOverrides`; group appearance reset removes both, while per-field reset
+preserves the other field. The multi-select
 follow-up owns that implementation and its mixed-selection UX/tests.
 
 ## Independent reset fields
