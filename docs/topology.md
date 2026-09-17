@@ -119,3 +119,30 @@ parameters retain scrubbing. Custom assembly dimensions still use grid validatio
 Standalone upright radius, wall, hole diameter and end offsets are assumptions.
 Source comparison views reconstruct component profiles and dimensions; they do
 not certify physical fit. Source/vendor links and part branding remain intact.
+
+## Cable / Smith family adapters
+
+The optional v2 `systems` registry is validated by `systems.ts` and resolved after
+ordinary accessories. System IDs share the document ID namespace. Supported
+families: `cable-kraken`, `cable-ares2`, `cable-athena`, `cable-ares1`, `smith-rep`.
+These whole-rack assemblies use graph coordinates/edges and named profile IDs;
+there is no assumption that a post ID encodes its location. Their param schemas
+are closed and numeric; defaults live in `system-types.ts`. Persistence preserves
+optional appearance and detached unknown metadata. Explicit Save behavior stays
+in the store. Unsupported edits fail before geometry generation.
+
+Kraken adds `bos-hydra` and `bos-manticore` grid profiles with `tube: 76.2`.
+Other profiles retain the 75 mm default; generic remains 25/50 mm bore/pitch.
+Fixed source sleeves are rejected on the wider profiles. Manufacturer mount
+shafts are estimated at bore minus 0.8 mm. Smith side-crossmember mounts share
+`smithLayout` between CAD, collision boxes and resolved bolt metadata. Mounts
+with `connectorId` refer to that beam's bore row instead of an upright station;
+collision slot comparison therefore uses connector ID when supplied.
+
+Catalog workers register all families, with unchanged bounded thumbnail and
+scene request queues. Resolved system IDs remain appearance keys/owner IDs;
+mesh material roles preserve bare rods/bars/sleeves independently of fastener
+finish. Current static collision boxes cover occupied stack/trolley/bar bodies.
+Exports should consume resolved instances and the worker catalog, not a fixed
+list of original part IDs. See `rack-generator/research/cable-systems.md` for
+manuals, dimension confidence and deliberately unsupported configurations.

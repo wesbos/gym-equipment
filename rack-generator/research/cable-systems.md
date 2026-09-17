@@ -1,6 +1,6 @@
 # Cable system research
 
-Research gathered September 17, 2026. These products need separate system-level assemblies, rack compatibility profiles, and cable routing. They are not yet implemented by the existing-parts expansion.
+Research gathered September 17, 2026. These products need separate system-level assemblies, rack compatibility profiles, and cable routing. The original research follows; current implementation coverage and remaining work are recorded at the end of this document.
 
 ## REP Ares 1.0
 
