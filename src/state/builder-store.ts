@@ -1,4 +1,6 @@
 import { addFloorItem, resolveFloorItems, floorWarnings } from '../../rack-generator/floor-items.ts';
+import { resetAppearanceField } from '../../rack-generator/appearance-reset.ts';
+import type { FrameFinish } from '../../rack-generator/appearance.ts';
 import { addsStructure } from '../../rack-generator/structure-candidates.ts';
 import { resetPart } from '../../rack-generator/reset.ts';
 import { removeSelection, selectionOwners, sharedFields, type PhysicalInstanceId, type SelectionGesture } from './selection.ts';
@@ -376,10 +378,37 @@ export class BuilderStore {
     this.patch({ selection: [...new Set([...(additive ? this.state.selection : []), ...valid])] });
   };
   escape = () => { this.cancelGesture(); this.patch({ proposal: null, placing: null, structureChoice: null, selection: [], selectionAnchor: null, selectionTool: false }); };
+  /** Paint/reset target physical IDs; resetting color leaves explicit steel finishes intact. */
   paintSelection = (color?: string) => {
-    const overrides = { ...this.state.doc.appearance?.overrides };
-    for (const id of this.state.selection) { if (color) overrides[id] = color; else delete overrides[id]; }
-    this.commit({ ...this.state.doc, appearance: { ...this.state.doc.appearance, overrides } });
+    if (!this.state.selection.length) return;
+    if (!color) {
+      const appearance = this.state.selection.reduce((current, id) => resetAppearanceField(current, 'color', id), this.state.doc.appearance ?? {});
+      this.commit({ ...this.state.doc, appearance });
+      return;
+    }
+    const appearance = this.state.doc.appearance;
+    const overrides = { ...appearance?.overrides }, finishOverrides = { ...appearance?.finishOverrides };
+    for (const id of this.state.selection) {
+      overrides[id] = color; finishOverrides[id] = 'paint';
+    }
+    this.commit({ ...this.state.doc, appearance: { ...appearance, overrides, finishOverrides } });
+  };
+  finishSelection = (finish?: FrameFinish) => {
+    if (!this.state.selection.length) return;
+    if (!finish) {
+      const appearance = this.state.selection.reduce((current, id) => resetAppearanceField(current, 'finish', id), this.state.doc.appearance ?? {});
+      this.commit({ ...this.state.doc, appearance });
+      return;
+    }
+    const finishOverrides = { ...this.state.doc.appearance?.finishOverrides };
+    for (const id of this.state.selection) finishOverrides[id] = finish;
+    this.commit({ ...this.state.doc, appearance: { ...this.state.doc.appearance, finishOverrides } });
+  };
+  resetSelectionAppearance = () => {
+    if (!this.state.selection.length) return;
+    const overrides = { ...this.state.doc.appearance?.overrides }, finishOverrides = { ...this.state.doc.appearance?.finishOverrides };
+    for (const id of this.state.selection) { delete overrides[id]; delete finishOverrides[id]; }
+    this.commit({ ...this.state.doc, appearance: { ...this.state.doc.appearance, overrides, finishOverrides } });
   };
   removeSelected = () => {
     this.commit(removeSelection(this.state.doc, this.state.resolved, this.state.selection));
@@ -416,6 +445,8 @@ export class BuilderStore {
       for (const physical of instances.filter(r => r.ownerId === owner)) {
         const color = doc.appearance?.overrides?.[physical.id];
         if (color) { next.appearance ??= {}; next.appearance.overrides ??= {}; next.appearance.overrides[id + physical.id.slice(owner.length)] = color; }
+        const finish = doc.appearance?.finishOverrides?.[physical.id];
+        if (finish) { next.appearance ??= {}; next.appearance.finishOverrides ??= {}; next.appearance.finishOverrides[id + physical.id.slice(owner.length)] = finish; }
       }
     }
     this.commit(next);
