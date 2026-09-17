@@ -7,8 +7,11 @@ configurations still require **Save**. **Reset stock BOS lettering** removes the
 optional logo; the original BOS STRENGTH stencil and bridges are used unchanged.
 Vendor branding is not part of this system. Each source, text, font, upload,
 threshold, contrast and island-bridge control uses the shared ResetButton.
-These field resets change only the transient preview inputs; stock-lettering
-reset changes the rack document and is undoable.
+These field resets change only the transient preview inputs. Stock-lettering
+reset always clears source, preview, bridges and pending work to centralized
+defaults. With no applied logo it does not write history or discard redo; with
+an applied logo its document change is undoable. A generation token invalidates
+file-read completions, worker replies/errors and timeouts after reset or edits.
 
 ## Geometry and integration
 
@@ -121,3 +124,5 @@ with the unscaled custom CAD volume divided by the denominator cubed (1000 and
 contours remain in full-size rack units. Continue forwarding `instance.logo` to
 `buildPrintInstance` before scaling the resulting solid. The current tests verify
 unscaled geometry; #46's scaled exporter is a separate integration check.
+
+Focused PR49 reset/race check: `GYM_LOGO_CDP_URL=<isolated endpoint> npx playwright test e2e/logo-reset.spec.ts --workers=1`. It deliberately releases captured SVG/raster reads and worker callbacks after reset, verifies preview-only reset, and checks applied reset/undo and draft-reset redo preservation.
