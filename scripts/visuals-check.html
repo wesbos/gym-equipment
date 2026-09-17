@@ -1,0 +1,10 @@
+<!doctype html><meta charset="utf-8"><title>Appearance and floor browser checks</title>
+<style>body{margin:0;font:14px system-ui}#viewport{width:1000px;height:800px}pre{white-space:pre-wrap}</style>
+<div id="viewport"></div><pre id="results">Running…</pre>
+<script type="module">
+import { runVisualChecks } from '/src/scenes/visuals-browser-check.ts';
+window.visualChecks = runVisualChecks(document.querySelector('#viewport'), stage => { document.querySelector('#results').textContent = stage; }).then(result => {
+  document.querySelector('#results').textContent = JSON.stringify(result, null, 2);
+  return result;
+}).catch(error => { document.querySelector('#results').textContent = error.stack; throw error; });
+</script>

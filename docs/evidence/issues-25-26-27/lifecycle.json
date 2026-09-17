@@ -1,0 +1,17 @@
+{
+  "revisionNote": "Recorded successful run before main's subsequent copy/standard-control/export integration; not rerun indefinitely in hidden tabs.",
+  "passed": true,
+  "cycles": 3,
+  "finishEdits": 36,
+  "idleFramesPerCycle": 60,
+  "idleTextureUploads": 0,
+  "idle60FramesMs": [1000, 1000, 1001],
+  "brushResourcesDisposed": 2,
+  "floorResourcesDisposed": 3,
+  "gpuTexturesCreated": 36,
+  "gpuTexturesDeletedExplicitly": 21,
+  "gpuTexturesReleasedByContextLoss": 15,
+  "glbBytesPerCycle": 12198888,
+  "embeddedImagesPerGLB": 29,
+  "dimensions": "1286 W × 1087 D × 2032 H mm"
+}
