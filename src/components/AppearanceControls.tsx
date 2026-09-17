@@ -29,10 +29,11 @@ export function AppearanceControls({ store }: { store: BuilderStore }) {
     <h3>Appearance</h3>
     <PaintPicker label="Rack" color={color} finish={appearance.frameFinish ?? 'paint'} onColor={frameColor => update({ frameColor, frameFinish: 'paint' })} onFinish={frameFinish => update({ frameFinish })} />
     <ResetButton label="rack appearance" changed={color !== DEFAULT_FRAME_COLOR || !!appearance.frameFinish && appearance.frameFinish !== 'paint'} onReset={() => update({ frameColor: DEFAULT_FRAME_COLOR, frameFinish: 'paint' })} />
-    <label className="field"><span>Hardware finish</span><select aria-label="Hardware finish" value={appearance.hardwareFinish ?? 'chrome'} onChange={e => update({ hardwareFinish: e.target.value as HardwareFinish })}>
+    <label className="field"><span>Fastener finish</span><select aria-label="Fastener finish" value={appearance.hardwareFinish ?? 'chrome'} onChange={e => update({ hardwareFinish: e.target.value as HardwareFinish })}>
       <option value="chrome">Chrome</option><option value="gold">Gold</option><option value="oxide">Oxide (black)</option>
     </select><ResetButton label="hardware finish" changed={!!appearance.hardwareFinish && appearance.hardwareFinish !== 'chrome'} onReset={() => update({ hardwareFinish: undefined })} /></label>
     {physical && <>
+      <p className="note">{physical.id.replaceAll('-', ' ')}</p>
       <PaintPicker label="This piece" color={appearance.overrides?.[physical.id] ?? color}
         finish={appearance.finishOverrides?.[physical.id] ?? (appearance.overrides?.[physical.id] ? 'paint' : appearance.frameFinish ?? 'paint')}
         onColor={value => update({ overrides: { ...appearance.overrides, [physical.id]: value }, finishOverrides: { ...appearance.finishOverrides, [physical.id]: 'paint' } })}
