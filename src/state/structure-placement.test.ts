@@ -46,3 +46,16 @@ test('add/swap changes and cancellation invalidate a shared structural proposal'
   store.acceptProposal();
   assert.equal(Object.keys(store.getSnapshot().doc.uprights).length, 5);
 });
+
+test('catalog add mode exits marquee tool and ignores physical-selection gestures until placement ends', async () => {
+  const store = new BuilderStore({ getItem: () => null, setItem: () => {} });
+  await store.ready;
+  store.patch({ selectionTool: true });
+  store.startPlacement('upright');
+  assert.equal(store.getSnapshot().selectionTool, false);
+  store.select('front-left', { ctrlKey: true });
+  assert.deepEqual(store.getSnapshot().selection, []);
+  assert.equal(store.getSnapshot().structureChoice, 'upright');
+  store.escape();
+  assert.equal(store.getSnapshot().structureChoice, null);
+});

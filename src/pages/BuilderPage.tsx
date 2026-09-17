@@ -1,4 +1,6 @@
 import { addsStructure } from '../../rack-generator/structure-candidates.ts';
+import { editableFields } from '../state/selection.ts';
+import { BulkInspector } from '../components/BulkInspector.tsx';
 import { PrintExport } from '../components/PrintExport.tsx';
 import { dimensionOptions } from '../../rack-generator/standards.ts';
 import { swapCandidates, swapCandidate } from '../../rack-generator/swap.ts';
@@ -151,6 +153,7 @@ function Inspector({ store }: { store: BuilderStore }) {
       </>
     );
   }
+  if (state.selection.length > 1) return <BulkInspector store={store} />;
   if (!part || !physical)
     return (
       <>
@@ -185,64 +188,7 @@ function Inspector({ store }: { store: BuilderStore }) {
         </form>
       </>
     );
-  const fields: PlacementField[] = entry?.part.startsWith("pullup")
-    ? [
-        {
-          key: "diameter",
-          label: "Grip diameter",
-          min: 15,
-          max: 60,
-          step: 0.5,
-        },
-        ...(entry.part === "pullup-sphere"
-          ? [
-              {
-                key: "sphereDiameter",
-                label: "Sphere diameter",
-                min: 40,
-                max: 200,
-                step: 0.5,
-              },
-            ]
-          : []),
-      ]
-    : entry?.part === "safety-pin-pipe"
-      ? [
-          {
-            key: "pipeDiameter",
-            label: "Pipe diameter",
-            min: 32,
-            max: 75,
-            step: 0.5,
-          },
-          { key: "wall", label: "Pipe wall", min: 1, max: 10, step: 0.5 },
-          {
-            key: "pinDiameter",
-            label: "Pin diameter",
-            min: 12,
-            max: 24,
-            step: 0.5,
-          },
-        ]
-      : entry?.part === "safety-webbing"
-        ? [
-            { key: "sag", label: "Strap sag", min: 1, max: 200, step: 0.5 },
-            {
-              key: "strapWidth",
-              label: "Strap width",
-              min: 20,
-              max: 75,
-              step: 0.5,
-            },
-            {
-              key: "strapThickness",
-              label: "Strap thickness",
-              min: 1,
-              max: 8,
-              step: 0.5,
-            },
-          ]
-        : info?.fields || [];
+  const fields = editableFields(part, doc);
   const variants = allParts.filter((id) =>
     entry
       ? getPartPlacementInfo(id, doc)?.family === info?.family &&
@@ -454,7 +400,7 @@ export default function BuilderPage() {
     const scene = createBuilderScene(viewport.current!, store);
     controller.current = scene;
     const keyboard = (e: KeyboardEvent) => {
-      if (e.key === "Escape") store.cancelPlacement();
+      if (e.key === "Escape") store.escape();
       if (
         e.target instanceof HTMLElement &&
         /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)
@@ -468,8 +414,7 @@ export default function BuilderPage() {
       if ((e.key === "Delete" || e.key === "Backspace") && selected) {
         e.preventDefault();
         store.act(() => {
-          store.commit(removeInstance(store.getSnapshot().doc, store.ownerOf(selected)!));
-          store.select(null);
+          store.removeSelected();
         });
       }
     };
@@ -480,23 +425,7 @@ export default function BuilderPage() {
       controller.current = null;
     };
   }, [store]);
-  const warnings = detectCollisions(state.resolved),
-    bom = new Map<
-      string,
-      { part: PartId; id: string; count: number; length?: number }
-    >();
-  for (const r of state.resolved) {
-    const key = r.part + JSON.stringify(r.params),
-      row = bom.get(key);
-    if (row) row.count++;
-    else
-      bom.set(key, {
-        part: r.part,
-        id: r.ownerId || r.id,
-        count: 1,
-        length: r.params.length,
-      });
-  }
+  const warnings = detectCollisions(state.resolved);
   const fit = (mode = view) => {
     setView(mode);
     controller.current?.fit(mode);
@@ -677,6 +606,7 @@ export default function BuilderPage() {
         <main className="stage">
           <div id="viewport" ref={viewport} />
           <div className="view-controls">
+            <button aria-pressed={state.selectionTool} onClick={() => store.patch({ selectionTool: !state.selectionTool })}>Select</button>
             {(["iso", "front", "side", "top"] as const).map((mode) => (
               <button
                 key={mode}
@@ -723,14 +653,11 @@ export default function BuilderPage() {
                 <button onClick={() => setDrawer(false)}>Close ×</button>
               </div>
               <div id="parts-list">
-                {[...bom].map(([key, row]) => (
-                  <button
-                    key={key}
-                    className="bom-row"
-                    onClick={() => store.select(row.id)}
-                  >
-                    {row.count} × {nameOf(row.part)}
-                    {row.length ? ` · ${Math.round(row.length)} mm` : ""}
+                {state.resolved.map(row => (
+                  <button key={row.id} className="bom-row" data-instance-id={row.id}
+                    aria-pressed={state.selection.includes(row.id)}
+                    onClick={e => store.select(row.id, e, state.resolved.map(r => r.id))}>
+                    {nameOf(row.part)} · {row.id.replaceAll('-', ' ')}
                   </button>
                 ))}
               </div>
@@ -749,6 +676,7 @@ export default function BuilderPage() {
           >
             ← Rack settings
           </button>
+          {state.selection.length > 1 && <h2 id="selection-title">{state.selection.length} parts</h2>}
           <AppearanceControls store={store} />
           {state.placing && !state.placing.movingId && <details><summary>Swap an existing accessory</summary>
             {state.doc.accessories.map(a => {
