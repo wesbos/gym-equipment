@@ -112,7 +112,7 @@ threshold/contrast, rejection, explicit save/JSON round-trip, reset/undo, and
 matches the exported GLB nameplate triangle count and 3MF nameplate volume to its custom Manifold solid.
 
 For native slicer verification, run `npx tsx scripts/generate-logo-print-fixture.ts`,
-import/re-export `.verification/logo.3mf` using the installed Bambu Studio and
+import/re-export `.verification/logo-1-10.3mf` and `logo-1-20.3mf` using the installed Bambu Studio and
 OrcaSlicer CLIs with `--info --arrange 0 --orient 0 --export-3mf`, then run
 `scripts/verify-print-export.py` on the source and both output archives.
 `docs/evidence/issue-11/slicer-audit.txt` records the passing independent audit.
