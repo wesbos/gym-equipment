@@ -1,6 +1,6 @@
 # Printable miniature 3MF export
 
-The Export menu (#44) offers **1:10** by default and **1:20** miniature scale.
+The **Export → 3MF** menu offers **1:10** by default and **1:20** miniature scale.
 Open the downloaded 3MF as a **project** in Bambu Studio or OrcaSlicer. It contains
 two named 256 × 256 × 256 mm plates: **Parts** and **Hardware**. Select your real
 printer, nozzle and filament profiles before slicing; the archive supplies only a
