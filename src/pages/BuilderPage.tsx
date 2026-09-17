@@ -1,6 +1,7 @@
+import { RackPresets } from '../components/RackPresets.tsx';
 import { TopologyEditor } from '../components/TopologyEditor.tsx';
 import { structureSlots } from '../../rack-generator/topology.ts';
-import { snapDimensions } from '../../rack-generator/grid.ts';
+import { snapDimensions, stepDimension } from '../../rack-generator/grid.ts';
 import { partIcon } from "../components/part-icon.ts";
 import {
   useEffect,
@@ -160,29 +161,44 @@ function Inspector({ store }: { store: BuilderStore }) {
     return (
       <>
         <h2 id="selection-title">Rack settings</h2>
+        <RackPresets store={store} />
         <TopologyEditor key={JSON.stringify(doc)} doc={doc} store={store} selected={selected} />
         <p className="settings-intro">
           Build your frame, then add parts at highlighted connections.
         </p>
         <form
           id="frame-form"
+          onKeyDown={event => {
+            if (!['ArrowUp', 'ArrowDown'].includes(event.key) || !(event.target instanceof HTMLInputElement)) return;
+            const input = event.target, name = input.name;
+            if (!['width', 'depth', 'heightIn'].includes(name)) return;
+            event.preventDefault();
+            const key = name === 'heightIn' ? 'height' : name as 'width' | 'depth';
+            const factor = key === 'height' ? 25.4 : 1;
+            const value = stepDimension(doc.rack, key, Number(input.value) * factor, event.key === 'ArrowUp' ? 1 : -1, doc.profileId);
+            input.value = String(value / factor);
+            setSnapHint(`Snapped ${key} target: ${value} mm`);
+          }}
           onChange={(event) => {
             const data = new FormData(event.currentTarget);
-            const snapped = snapDimensions(doc.rack, { height: Number(data.get("heightIn")) * 25.4, width: Number(data.get("width")), depth: Number(data.get("depth")) });
+            const snapped = snapDimensions(doc.rack, { height: Number(data.get("heightIn")) * 25.4, width: Number(data.get("width")), depth: Number(data.get("depth")) }, doc.profileId);
             setSnapHint(`Snapped target: ${snapped.height} mm high × ${snapped.width} mm wide × ${snapped.depth} mm deep`);
           }}
           key={JSON.stringify(doc.rack)}
-          onSubmit={(e) =>
-            submit(e, (data) =>
-              store.commit(
-                resizeAssembly(doc, {
+          onSubmit={(e) => {
+            submit(e, (data) => {
+              const next = resizeAssembly(doc, {
                   height: Number(data.get("heightIn")) * 25.4,
                   width: Number(data.get("width")),
                   depth: Number(data.get("depth")),
-                }),
-              ),
-            )
-          }
+                });
+              store.commit(next);
+              const form = e.currentTarget;
+              (form.elements.namedItem('heightIn') as HTMLInputElement).value = String(Number((next.rack.height / 25.4).toFixed(4)));
+              (form.elements.namedItem('width') as HTMLInputElement).value = String(next.rack.width);
+              (form.elements.namedItem('depth') as HTMLInputElement).value = String(next.rack.depth);
+            });
+          }}
         >
           <Field label="Upright height">
             <div className="input-wrap">
@@ -192,7 +208,7 @@ function Inspector({ store }: { store: BuilderStore }) {
                 defaultValue={Number((doc.rack.height / 25.4).toFixed(2))}
                 min="40"
                 max="157"
-                step="0.5"
+                step="any"
                 required
               />
               <span>in</span>
@@ -336,6 +352,7 @@ function Inspector({ store }: { store: BuilderStore }) {
                     ? entry.target.hole
                     : Number(data.get("hole")) - 1,
                 };
+                if (item.spanTo && data.get("spanTo")) item.spanTo = String(data.get("spanTo"));
                 item.paired =
                   !!getPartPlacementInfo(variant, doc)?.paired &&
                   data.get("paired") === "on";
@@ -376,6 +393,7 @@ function Inspector({ store }: { store: BuilderStore }) {
                     ))}
                 </select>
               </Field>
+              {entry.spanTo && <Field label="Span end upright"><select name="spanTo" defaultValue={entry.spanTo}>{Object.keys(doc.uprights).filter(id => !doc.removed.includes(id)).map(id => <option key={id}>{id}</option>)}</select></Field>}
               <Field label="Mounting face">
                 <select
                   name="face"

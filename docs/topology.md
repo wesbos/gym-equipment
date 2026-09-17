@@ -26,3 +26,47 @@ removals, and use the existing commit/history API. Coordinates are millimetres;
 new generic extension spans come from the catalog. Move increments use the
 current post's lattice phase and rack pitch; an invalid diagonal beam is rejected.
 Preview is a labelled top view, not a replacement for the Manifold 3D model.
+
+## Vendor verification and outstanding #8 coverage
+
+Primary sources checked 2026-09-17:
+- https://repfitness.com/products/pr-5000-power-rack-pre-selected — 50.8-inch
+  outside width; 80/93-inch heights; 16/30/41-inch bays and rear 16-inch bay;
+  1-inch holes, 2-inch pitch. Exact conversion is 50.8 mm pitch, 25.4 mm holes,
+  406.4/762/1041.4 mm bay lengths, 2032/2362.2 mm heights.
+- https://repfitness.com/products/pr-4000-rack-builder — 5/8-inch holes,
+  1-inch bench-zone spacing, 2-inch elsewhere; adds a 24-inch bay.
+- https://uk.repfitness.com/products/smith-machine-front-extension-bracket —
+  documents REP's nominal 3-inch tubing as 75 mm. Profile clear-width mapping
+  subtracts two 75 mm tubes from published outside width (1290.32 - 150).
+- https://repfitness.com/products/apollo-rack-builder — **2-inch** spacing,
+  52.4-inch width, 48-inch length and a 16-inch crossmember, flat foot base.
+  The issue's 1-inch spacing / two-post interpretation is not used.
+- https://repfitness.com/products/pr-1100-power-rack — 2×2-inch 14-gauge tubing,
+  3-inch spacing, 1-inch holes, 44×24×79-inch working area. This is a different
+  geometry/adaptor class from the BOS source.
+- PR-1000 and PR-1050 product URLs currently redirect to collections.
+
+The catalog records verified published profile values but **does not enable
+manufacturer presets**: first-hole datum, physical crossmember mounting span,
+PR-4000 bench-zone bounds and manufacturer-specific flange/hardware adapters
+remain unverified/unimplemented. PR-1100/1000/1050 and Apollo/Omni geometry is
+not supplied. #8 is partial, not closable by this PR. Generic 4/6/2-post half-rack
+starting points are implemented and freely extendable. They are labelled BOS,
+not REP. No load capacity or vendor compatibility is inferred from a layout.
+
+Integration conflicts are concentrated in assembly/types and small BuilderPage
+imports/settings/inspector edits. New TopologyEditor and RackPresets components
+avoid restructuring shared UI. Numeric-control integration should call
+snapDimensions/resizeAssembly and retain the visible target feedback. Materials
+can attach optional appearance JSON without a schema bump. Thumbnail code needs
+no changes. No deployment or named save UI is included.
+
+Special adapters retain their measured restrictions: multi-grip/sphere bars need
+original rectangular upper rails; offset/nameplate adapters need horizontal
+left-to-right edges. Straight bars and all three safety types use arbitrary
+explicit axis-aligned endpoints. No diagonal flange compatibility is assumed.
+Top-view controls also expose stable-ID connection moves and cascade previews.
+Keyboard arrows use `stepDimension` to move between valid catalog values; the
+editor stream can reuse that adapter in its numeric controls. Move ties choose
+the smaller coordinate, matching dimension-catalog ties.

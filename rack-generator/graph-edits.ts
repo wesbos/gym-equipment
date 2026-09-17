@@ -22,8 +22,10 @@ export function moveUpright(input: RackDoc, id: string, x: number, y: number): R
   if (!node) throw new Error('Unknown upright.');
   if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error('Coordinates must be finite.');
   // Snap relative to this post's current lattice phase. Imported offsets never move implicitly.
-  node.x += Math.round((x-node.x)/doc.rack.pitch)*doc.rack.pitch;
-  node.y += Math.round((y-node.y)/doc.rack.pitch)*doc.rack.pitch;
+  for (const [key, value] of [['x', x], ['y', y]] as const) {
+    const steps = (value-node[key])/doc.rack.pitch;
+    node[key] += nearest(steps, [Math.floor(steps), Math.ceil(steps)])*doc.rack.pitch;
+  }
   return validateAssembly(doc);
 }
 export function connectUprights(input: RackDoc, from: string, to: string, level: 'upper' | 'lower'): RackDoc {
@@ -35,5 +37,11 @@ export function connectUprights(input: RackDoc, from: string, to: string, level:
 export function spanAccessory(input: RackDoc, from: string, to: string, part: PartId, hole: number): RackDoc {
   const doc = validateAssembly(input);
   doc.accessories.push({ id: nextId(doc, 'accessory'), part, target: { uprightId: from, face: 'right', hole }, paired: false, spanTo: to, params: {} });
+  return validateAssembly(doc);
+}
+export function moveConnection(input: RackDoc, id: string, from: string, to: string, level: 'upper' | 'lower'): RackDoc {
+  const doc = validateAssembly(input), edge = doc.connections.find(e => e.id === id);
+  if (!edge) throw new Error('Unknown connection.');
+  Object.assign(edge, { from, to, level });
   return validateAssembly(doc);
 }

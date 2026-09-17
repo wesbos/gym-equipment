@@ -7,7 +7,7 @@ import { detectCollisions } from './assembly-collisions.ts';
 test('v1 migration preserves exact world transforms, IDs and optional appearance at every level', () => {
   const current = createAssembly();
   const { uprights, connections, ...rest } = current;
-  const legacy = { ...rest, version: 1, appearance: { finish: 'red' }, accessories: current.accessories.map(a => ({ ...a, appearance: { metalness: 0.3 } })) };
+  const legacy = { ...rest, version: 1, appearance: { finish: 'red' }, accessories: current.accessories.map(({spanTo, pairTo, pairedSpanTo, ...a}) => ({ ...a, appearance: { metalness: 0.3 } })) };
   const migrated = validateAssembly(legacy);
   assert.equal(migrated.version, 2);
   assert.deepEqual(resolveAssembly(migrated), resolveAssembly(current));
@@ -62,4 +62,26 @@ test('dynamic attachment collisions retain real adapters and unpair keeps both s
   const base = createAssembly(), before = resolveAssembly(base).filter(r => r.part === 'safety-box');
   const after = resolveAssembly(unpairAccessory(base,'safeties')).filter(r => r.part === 'safety-box');
   assert.deepEqual(after.map(r => r.position),before.map(r => r.position));
+});
+
+test('data-driven generic four/six/half presets resolve, extend and round-trip through JSON', async () => {
+  const { RACK_PRESETS, applyPreset } = await import('./presets.ts');
+  for (const [i,preset] of RACK_PRESETS.entries()) {
+    const doc = applyPreset(preset.id);
+    assert.equal(Object.keys(doc.uprights).length,[4,6,2][i]);
+    assert.ok(resolveAssembly(doc).length > 0);
+    assert.deepEqual(validateAssembly(JSON.parse(JSON.stringify(doc))),doc);
+    const extended = extendUpright(doc,'front-left','left');
+    assert.equal(Object.keys(extended.uprights).length,[5,7,3][i]);
+  }
+});
+
+test('moving a connection preserves its ID and resolves the new upright pair', async () => {
+  const { moveConnection } = await import('./graph-edits.ts');
+  const doc = createAssembly({emptyAccessories:true});
+  const moved = moveConnection(doc,'rear-crossmember','front-left','front-right','lower');
+  const beam = resolveAssembly(moved).find(r => r.id === 'rear-crossmember')!;
+  assert.deepEqual(beam.connectedTo,['front-left','front-right']);
+  assert.equal(beam.position[1],-400); assert.equal(beam.position[2],40);
+  assert.equal(doc.connections.at(-1)!.from,'rear-left');
 });

@@ -1,5 +1,6 @@
+import './TopologyEditor.css';
 import { useState } from 'react';
-import { connectUprights, extendUpright, moveUpright, spanAccessory, type Direction } from '../../rack-generator/graph-edits.ts';
+import { connectUprights, extendUpright, moveConnection, moveUpright, spanAccessory, type Direction } from '../../rack-generator/graph-edits.ts';
 import { removeInstance } from '../../rack-generator/assembly.ts';
 import type { RackDoc, PartId } from '../../rack-generator/types.ts';
 import type { BuilderStore } from '../state/builder-store.ts';
@@ -11,14 +12,15 @@ export function TopologyEditor({ doc, store, selected }: { doc: RackDoc; store: 
   function propose(action: () => RackDoc) {
     try { setPreview(action()); setError(''); } catch (e) { setPreview(null); setError((e as Error).message); }
   }
+  const edge = doc.connections.find(e => e.id === selected);
   const shown = preview ?? doc, entries = Object.entries(shown.uprights).filter(([id]) => !shown.removed.includes(id));
   const minX = Math.min(...entries.map(([,p]) => p.x))-200, minY = Math.min(...entries.map(([,p]) => p.y))-200;
   const width = Math.max(...entries.map(([,p]) => p.x))-minX+200, height = Math.max(...entries.map(([,p]) => p.y))-minY+200;
   return <details className="topology-editor" open><summary>Uprights & connections</summary>
     <svg role="img" aria-label="Top view placement preview" viewBox={`${minX} ${minY} ${width} ${height}`} style={{width:'100%',height:150,background:'#202020'}}>
-      {shown.connections.filter(e => !shown.removed.includes(e.id)).map(e => <line key={e.id} x1={shown.uprights[e.from].x} y1={shown.uprights[e.from].y} x2={shown.uprights[e.to].x} y2={shown.uprights[e.to].y} stroke={preview ? '#f0ac59':'#888'} strokeWidth={20} />)}
+      {shown.connections.filter(e => !shown.removed.includes(e.id)).map(e => <line key={e.id} x1={shown.uprights[e.from].x} y1={shown.uprights[e.from].y} x2={shown.uprights[e.to].x} y2={shown.uprights[e.to].y} stroke={preview && !doc.connections.some(old => old.id === e.id) ? '#f0ac59':'#888'} strokeWidth={20} />)}
       {shown.accessories.filter(a => a.spanTo).map(a => <line key={a.id} x1={shown.uprights[a.target.uprightId].x} y1={shown.uprights[a.target.uprightId].y} x2={shown.uprights[a.spanTo!].x} y2={shown.uprights[a.spanTo!].y} stroke="#82bdd8" strokeWidth={12} />)}
-      {entries.map(([id,p]) => <g key={id} onClick={() => { store.select(id); setPreview(null); }} style={{cursor:'pointer'}}><title>{id}</title><rect x={p.x-38} y={p.y-38} width={76} height={76} fill={id === selected ? '#fff' : '#f0ac59'} /><text x={p.x} y={p.y+105} textAnchor="middle" fill="white" fontSize={55}>{id}</text></g>)}
+      {entries.map(([id,p]) => <g key={id} role="button" tabIndex={0} aria-label={`Select ${id}`} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); store.select(id); setPreview(null); } }} onClick={() => { store.select(id); setPreview(null); }} style={{cursor:'pointer'}}><title>{id}</title><rect x={p.x-38} y={p.y-38} width={76} height={76} fill={id === selected ? '#fff' : preview && !doc.uprights[id] ? '#f0ac59' : '#aaa'} /><text x={p.x} y={p.y+105} textAnchor="middle" fill="white" fontSize={55}>{id}</text></g>)}
     </svg>
     <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget); propose(() => extendUpright(doc, String(f.get('from')), f.get('direction') as Direction, Number(f.get('span')))); }}>
       <label>From upright<select name="from" defaultValue={selected && ids.includes(selected) ? selected : ids[0]}>{ids.map(id => <option key={id}>{id}</option>)}</select></label>
@@ -38,6 +40,14 @@ export function TopologyEditor({ doc, store, selected }: { doc: RackDoc; store: 
       <label>X (mm)<input name="x" type="number" step="any" defaultValue={doc.uprights[selected].x}/></label>
       <label>Depth (mm)<input name="y" type="number" step="any" defaultValue={doc.uprights[selected].y}/></label>
       <button>Preview move</button><button type="button" onClick={() => propose(() => removeInstance(doc, selected))}>Preview remove upright</button>
+    </form>}
+    {edge && <form key={JSON.stringify(edge)} onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget); propose(() => moveConnection(doc, edge.id, String(f.get('from')), String(f.get('to')), f.get('level') as 'upper' | 'lower')); }}>
+      <p>Move connection {edge.id}</p>
+      <label>From<select name="from" defaultValue={edge.from}>{ids.map(id => <option key={id}>{id}</option>)}</select></label>
+      <label>To<select name="to" defaultValue={edge.to}>{ids.map(id => <option key={id}>{id}</option>)}</select></label>
+      <label>Level<select name="level" defaultValue={edge.level}><option>upper</option><option>lower</option></select></label>
+      <button>Preview move connection</button>
+      <button type="button" onClick={() => propose(() => removeInstance(doc,edge.id))}>Preview remove connection</button>
     </form>}
     <p role="status">{error || (preview ? 'Gold preview: review placement, then apply. Undo restores the previous graph.' : 'Select an upright in the top view or 3D scene.')}</p>
     {preview && <><button type="button" onClick={() => { store.act(() => store.commit(preview)); setPreview(null); }}>Apply topology</button><button type="button" onClick={() => setPreview(null)}>Cancel preview</button></>}

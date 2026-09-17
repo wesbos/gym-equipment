@@ -22,10 +22,14 @@ export function validateGraph(input: Record<string, unknown>): { uprights: Recor
   }
   const ids = new Set(entries.map(([id]) => id));
   if (input.connections.length > 128) throw new Error('Too many connections.');
+  const pairs = new Set<string>();
   const connections = input.connections.map(value => {
     const edge = value as ConnectionEdge;
     if (!edge || typeof edge.id !== 'string' || !validId(edge.id) || ids.has(edge.id) || !Object.hasOwn(uprights, edge.from) || !Object.hasOwn(uprights, edge.to) || edge.from === edge.to || !['upper', 'lower'].includes(edge.level)) throw new Error('Invalid connection edge.');
     ids.add(edge.id);
+    const pair = [...[edge.from,edge.to].sort(),edge.level].join(':');
+    if (pairs.has(pair)) throw new Error('Duplicate connection endpoints and level.');
+    pairs.add(pair);
     const a = uprights[edge.from], b = uprights[edge.to];
     if ((a.x !== b.x && a.y !== b.y) || Math.hypot(b.x - a.x, b.y - a.y) < 375) throw new Error('Connections must be axis-aligned with at least 300 mm clear span.');
     return structuredClone(edge);
