@@ -1,3 +1,4 @@
+import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { createGymFloor, fitRackShadow } from './gym-floor.ts';
 import { FrameFinishResources, addSteelUVs } from './frame-finishes.ts';
 import { structureCandidates, type StructureCandidate } from '../../rack-generator/structure-candidates.ts';
@@ -195,7 +196,7 @@ export function createBuilderScene(
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.name = m.name;
-        mesh.userData.materialSource = { role: m.role, color: m.color, metalness: m.metalness, roughness: m.roughness };
+        mesh.userData.materialSource = { authoredFastenerFinish: m.authoredFastenerFinish, role: m.role, color: m.color, metalness: m.metalness, roughness: m.roughness };
         model.add(mesh);
       }
       request.resolve(model);
@@ -275,7 +276,7 @@ export function createBuilderScene(
       refreshSelection();
       refreshPlacement();
       trimCache();
-      const warnings = detectCollisions(entries);
+      const warnings = [...detectCollisions(entries), ...floorWarnings(snapshot.doc)];
       store.patch({
         loading: false,
         dimensions: dimensions(true),
@@ -396,7 +397,7 @@ export function createBuilderScene(
     previewSerial++;
     clearGhost();
     clearMounts();
-    controls.enabled = !snapshot.selectionTool;
+    controls.enabled = !floorDrag && !snapshot.selectionTool;
     renderer.domElement.style.cursor = "";
   }
   function showMounts() {
@@ -430,12 +431,12 @@ export function createBuilderScene(
       store.patch({ proposal: null, placementText: structuralCandidates.length ? 'Hover a post or gap · ESC cancels' : 'No valid adjacent positions · ESC cancels' });
       return;
     }
-    if (part) {
+    if (part && part !== 'rep-nighthawk') {
       swapRegions = createSwapRegions(swapCandidates(snapshot.doc, part), instances, snapshot.doc);
       scene.add(swapRegions.root);
     }
     if (!placing && !snapshot.structureChoice) return;
-    if (placing) showMounts();
+    if (placing && placing.part !== 'rep-nighthawk') showMounts();
     renderer.domElement.style.cursor = "crosshair";
     if (snapshot.proposal) void renderProposal(snapshot.proposal);
   }
@@ -525,6 +526,7 @@ export function createBuilderScene(
   }
   function updatePreview(event: { clientX: number; clientY: number }) {
     if (!snapshot.placing && !snapshot.structureChoice) return;
+    if(snapshot.placing?.part === 'rep-nighthawk') { const point=floorPoint(event); if(point) store.previewFloor(point); return; }
     if (addingStructure()) { updateStructure(event); return; }
     const candidate = candidateAt(event);
     if (candidate) {
@@ -548,29 +550,65 @@ export function createBuilderScene(
     } catch(error) { store.patch({ proposal: null, placementText: message(error) }); }
   }
   function dropPlacement(event: { clientX: number; clientY: number }) {
+    if(snapshot.placing?.part === 'rep-nighthawk') { updatePreview(event); store.acceptProposal(); return; }
     if (addingStructure()) { commitStructure(); return; }
     if (!candidateAt(event) && !nearestMount(event)) return;
     updatePreview(event);
     store.acceptProposal();
   }
+  const floorPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+  let floorDrag: {id:string;start:[number,number];position:[number,number];moved:boolean} | null=null;
+  function floorPoint(event:{clientX:number;clientY:number;altKey?:boolean}, snap=true):[number,number]|null {
+    const rect=renderer.domElement.getBoundingClientRect();
+    pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);
+    raycaster.setFromCamera(pointer,camera);
+    const point=raycaster.ray.intersectPlane(floorPlane,new THREE.Vector3());
+    if(!point) return null;
+    const grid=(v:number)=>snap && !event.altKey ? Math.round(v/25)*25 : v;
+    return [grid(point.x),grid(point.z)];
+  }
+  const floorKey=(event:KeyboardEvent)=>{
+    if(event.key==='Escape') { floorDrag=null; store.cancelGesture(); controls.enabled=true; pointerDown=null; return; }
+    if(event.key.toLowerCase()!=='r' || event.ctrlKey || event.metaKey || (event.target instanceof HTMLElement && /INPUT|SELECT|TEXTAREA/.test(event.target.tagName))) return;
+    const delta=(event.shiftKey?-1:1)*Math.PI/12;
+    if(snapshot.placing?.part==='rep-nighthawk') {event.preventDefault();store.previewFloor(undefined,delta);return;}
+    const id=floorDrag?.id ?? (snapshot.selection.length===1?snapshot.selected:null);
+    const item=snapshot.doc.floorItems?.find(i=>i.id===id);
+    if(item) {event.preventDefault();if(floorDrag)floorDrag.moved=true;store.updateFloor(item.id,{rotation:item.rotation+delta});}
+  };
+  document.addEventListener('keydown',floorKey);
   const marquee = document.createElement('div');
   marquee.style.cssText = 'position:fixed;pointer-events:none;border:1px solid #c77c36;background:#c77c3622;z-index:100;display:none';
   viewport.append(marquee);
   let selecting = false;
   const onDown = (event: PointerEvent) => {
     pointerDown = [event.clientX, event.clientY];
+    if(event.button===0 && !snapshot.placing && !snapshot.structureChoice && !snapshot.selectionTool && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+      const hit=pickOwner(event),item=snapshot.doc.floorItems?.find(i=>i.id===hit?.id),point=floorPoint(event,false);
+      if(item && point && (snapshot.selection.length<=1 || !snapshot.selection.includes(item.id))) {
+        store.select(item.id);store.beginGesture();floorDrag={id:item.id,start:point,position:[...item.position],moved:false};
+        controls.enabled=false;renderer.domElement.setPointerCapture(event.pointerId);event.stopImmediatePropagation();return;
+      }
+    }
     selecting = snapshot.selectionTool && !snapshot.placing && !snapshot.structureChoice && event.button === 0;
     if ((!addingStructure() && (snapshot.placing || snapshot.structureChoice) || selecting) && event.button === 0) controls.enabled = false;
     if (selecting) renderer.domElement.setPointerCapture(event.pointerId);
   };
   const onMove = (event: PointerEvent) => {
+    if(floorDrag && pointerDown) {
+      if(Math.hypot(event.clientX-pointerDown[0],event.clientY-pointerDown[1])>4)floorDrag.moved=true;
+      const point=floorPoint(event,false);
+      if(point && floorDrag.moved) {const grid=(v:number)=>event.altKey?v:Math.round(v/25)*25;store.updateFloor(floorDrag.id,{position:[grid(floorDrag.position[0]+point[0]-floorDrag.start[0]),grid(floorDrag.position[1]+point[1]-floorDrag.start[1])]});}
+      return;
+    }
     if (selecting && pointerDown) {
       Object.assign(marquee.style, { display: 'block', left: `${Math.min(pointerDown[0], event.clientX)}px`, top: `${Math.min(pointerDown[1], event.clientY)}px`, width: `${Math.abs(event.clientX - pointerDown[0])}px`, height: `${Math.abs(event.clientY - pointerDown[1])}px` });
     }
     if (!pointerDown) void updatePreview(event);
   };
   const onUp = (event: PointerEvent) => {
-    controls.enabled = !snapshot.selectionTool;
+    if(floorDrag) {floorDrag=null;pointerDown=null;store.endGesture();controls.enabled=true;return;}
+    controls.enabled = !floorDrag && !snapshot.selectionTool;
     marquee.style.display = 'none';
     if (selecting && pointerDown && Math.hypot(event.clientX - pointerDown[0], event.clientY - pointerDown[1]) > 6) {
       const rect = renderer.domElement.getBoundingClientRect();
@@ -622,9 +660,10 @@ export function createBuilderScene(
     }
   };
   const onCancel = () => {
+    if(floorDrag) {floorDrag=null;store.cancelGesture();}
     pointerDown = null;
     selecting = false; marquee.style.display = 'none';
-    controls.enabled = !snapshot.selectionTool;
+    controls.enabled = !floorDrag && !snapshot.selectionTool;
   };
   const onDrag = (event: DragEvent) => {
     event.preventDefault();
@@ -714,7 +753,7 @@ export function createBuilderScene(
     if (disposed) return;
     if (snapshot.doc !== previous.doc) requestRebuild();
     if (snapshot.selection !== previous.selection) refreshSelection();
-    controls.enabled = !snapshot.selectionTool && !selecting && !(pointerDown && !addingStructure() && (snapshot.placing || snapshot.structureChoice));
+    controls.enabled = !floorDrag && !snapshot.selectionTool && !selecting && !(pointerDown && !addingStructure() && (snapshot.placing || snapshot.structureChoice));
     if (previous.selectionTool && !snapshot.selectionTool) onCancel();
     if (
       snapshot.placing !== previous.placing ||
@@ -761,6 +800,7 @@ export function createBuilderScene(
       window.removeEventListener("keydown", onStructureKey);
       structureHandles.remove();
       marquee.remove();
+      document.removeEventListener("keydown",floorKey);
       renderer.domElement.removeEventListener("pointerdown", onDown, true);
       renderer.domElement.removeEventListener("pointermove", onMove);
       renderer.domElement.removeEventListener("pointerup", onUp);
