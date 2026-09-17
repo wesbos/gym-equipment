@@ -13,7 +13,7 @@ test('front/rear Darko pair exports unique physical objects, wordmarks and regis
  // Isolate vendor export semantics; the catalog-wide test exercises full frame CAD.
  const builders=catalog.definitions.map(def=>def.id.startsWith('darko-')?def:{...def,build:()=>[{name:'Frame fixture',solid:api.Manifold.cube([1,1,1]),role:'frame' as const}]});
  const result=exportPrint3MF(api,paired,builders,{layout:'assembled'},undefined,catalog.attribution);
- const parts=result.report.parts.filter(p=>p.part==='darko-anchor');
+ const parts=result.report.parts.filter(p=>p.part==='darko-anchor' && p.plate==='Parts');
  assert.equal(parts.length,2);assert.equal(new Set(parts.map(p=>p.id)).size,2);
  const files=unzipSync(result.bytes),xml=strFromU8(files['3D/3dmodel.model']);
  assert.equal((xml.match(/name="Darko Lifting official wordmark"/g)??[]).length,2);

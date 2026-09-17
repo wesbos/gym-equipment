@@ -77,6 +77,17 @@ def audit(path):
             result.extend(apply(p, matrix) for p in points(child_path, child.attrib['objectid'], (*ancestors, key)))
         return result
 
+    plate_members = {}
+    plates = []
+    for plate in config.findall('plate'):
+        meta = metadata(plate)
+        name = meta.get('plater_name', '')
+        plates.append(name)
+        for instance in plate.findall('model_instance'):
+            member = metadata(instance)
+            assert member['object_id'] not in plate_members, 'object on multiple plates'
+            plate_members[member['object_id']] = name
+    assert plates == ['Parts', 'Hardware'], ('expected two named plates', plates)
     records = {}
     for item in models[model_path].find(f'{C}build'):
         object_id = item.attrib['objectid']
@@ -88,6 +99,11 @@ def audit(path):
         matrix = list(map(float, item.attrib.get('transform', ' '.join(map(str, IDENTITY))).split()))
         verts = [apply(p, matrix) for p in verts]
         size = [max(p[i] for p in verts) - min(p[i] for p in verts) for i in range(3)]
+        minimum = [min(p[i] for p in verts) for i in range(3)]
+        plate = plate_members[object_id]
+        origin = [307.2, 0, 0] if plate == 'Hardware' else [0, 0, 0]
+        local_min = [minimum[i]-origin[i] for i in range(3)]
+        assert all(v >= -0.01 and v+size[i] <= 256.01 for i,v in enumerate(local_min)), (info['name'], 'outside build plate', local_min, size)
         volumes = []
         for part in setting.findall('part'):
             data = metadata(part)
@@ -98,8 +114,8 @@ def audit(path):
                 for k in ('edges_fixed', 'degenerate_facets', 'facets_removed', 'facets_reversed', 'backwards_edges'):
                     assert int(stat.attrib.get(k, 0)) == 0, (info['name'], data['name'], k)
             volumes.append((data['name'], palette[slot].upper()))
-        records[info['name']] = {'size': size, 'volumes': volumes}
-    summary = {'file': path, 'objects': len(records), 'volumes': sum(len(r['volumes']) for r in records.values()), 'triangles': triangles, 'palette': palette, 'unit': 'millimeter'}
+        records[info['name']] = {'size': size, 'volumes': volumes, 'plate':plate, 'position':local_min}
+    summary = {'file': path, 'objects': len(records), 'volumes': sum(len(r['volumes']) for r in records.values()), 'triangles': triangles, 'palette': palette, 'unit': 'millimeter', 'plates':{name:sum(r['plate']==name for r in records.values()) for name in plates}}
     print(json.dumps(summary))
     return summary, records
 
@@ -110,6 +126,8 @@ for path in sys.argv[2:]:
     assert actual.keys() == baseline.keys(), 'physical object identity/count changed'
     assert summary['triangles'] == baseline_summary['triangles'], 'triangle count changed'
     for name in baseline:
+        assert actual[name]['plate'] == baseline[name]['plate'], (name, 'plate changed')
+        assert all(abs(a-b)<0.01 for a,b in zip(actual[name]['position'],baseline[name]['position'])), (name,'position changed')
         assert collections.Counter(actual[name]['volumes']) == collections.Counter(baseline[name]['volumes']), (name, 'volume names/colors changed')
         assert all(abs(a-b) < 0.01 for a,b in zip(actual[name]['size'], baseline[name]['size'])), (name, 'dimensions/orientation changed')
-    print('PASS: identities, colors, volumes, triangles and mm dimensions match source; no reported mesh repairs')
+    print('PASS: plate names/membership, on-plate positions, identities, colors, volumes, triangles and mm dimensions match source; no reported mesh repairs')
