@@ -72,3 +72,18 @@ preset. A component-render test uses first value 32 with shared 32/40 options an
 asserts no checked radio, expanded Custom, blank Mixed input, no error, and no
 hidden representative value. Browser BulkInspector fixture confirmed the same,
 then selected 40 for both parts and undid back to blank Mixed.
+
+## Steel finish follow-up
+
+`finishSelection(finish?)` writes or independently resets `finishOverrides` for
+selected physical IDs in one commit. `paintSelection(color)` sets both color and
+explicit paint finish, so steel cannot hide a chosen color. `paintSelection()`
+resets only color. `resetSelectionAppearance()` clears both maps in one commit.
+Bulk appearance shares PaintPicker with single-piece controls: mixed colors have
+no active swatch, mixed steel finishes use a disabled Mixed option. Each field has
+its own ResetButton. Global appearance and unselected pieces are preserved.
+
+Complete accessory duplication remaps both maps using each resolved physical ID's
+suffix, including same-side/reversed/arbitrary upright pairs; it does not assume
+owner IDs are paint targets or require a color override to copy a finish override.
+Export tests use the existing shared resolver through the actual 3MF writer.
