@@ -26,7 +26,17 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   await glbReady();
   await page.locator('.logo-controls summary').click();
   const controls = page.locator('.logo-controls');
-  await controls.getByLabel('Logo text').fill('BOS');
+  await controls.getByLabel('Logo text', { exact: true }).fill('TEMP');
+  await controls.getByRole('button', { name: 'Reset logo text', exact: true }).click();
+  await expect(controls.getByLabel('Logo text', { exact: true })).toHaveValue('MY GYM');
+  await expect(controls.getByRole('button', { name: 'Reset logo text', exact: true })).toBeDisabled();
+  await controls.getByLabel('Logo font', { exact: true }).selectOption('helvetikerRegular');
+  await controls.getByRole('button', { name: 'Reset logo font', exact: true }).click();
+  await expect(controls.getByLabel('Logo font', { exact: true })).toHaveValue('helvetiker');
+  await controls.getByRole('checkbox', { name: 'Automatic island bridges' }).uncheck();
+  await controls.getByRole('button', { name: 'Reset automatic island bridges', exact: true }).click();
+  await expect(controls.getByRole('checkbox', { name: 'Automatic island bridges' })).toBeChecked();
+  await controls.getByLabel('Logo text', { exact: true }).fill('BOS');
   await controls.getByRole('button', { name: 'Validate & preview logo' }).click();
   await expect(controls.getByRole('button', { name: 'Apply logo to rack' })).toBeVisible({ timeout: 15000 });
   await expect(controls).toContainText('bridge');
@@ -39,12 +49,21 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   console.log('Text applied; nameplate mounted');
   for (const filename of ['logo.svg', 'logo.png', 'logo.jpg']) {
     console.log('Upload', filename);
-    await controls.getByLabel('Logo source').selectOption('svg');
+    await controls.getByLabel('Logo source', { exact: true }).selectOption('svg');
     await controls.getByLabel('Upload logo', { exact: true }).setInputFiles(path.resolve('rack-generator/logos/fixtures', filename));
-    await expect(controls.getByLabel('Logo source')).toHaveValue(filename.endsWith('svg') ? 'svg' : 'raster');
+    await controls.getByRole('button', { name: 'Reset logo upload', exact: true }).click();
+    await expect(controls.getByRole('button', { name: 'Reset logo upload', exact: true })).toBeDisabled();
+    await controls.getByLabel('Upload logo', { exact: true }).setInputFiles(path.resolve('rack-generator/logos/fixtures', filename));
+    await expect(controls.getByLabel('Logo source', { exact: true })).toHaveValue(filename.endsWith('svg') ? 'svg' : 'raster');
     if (!filename.endsWith('svg')) {
-      await controls.getByLabel('Logo threshold').fill('140');
-      await controls.getByLabel('Logo contrast').fill('1.2');
+      await controls.getByLabel('Logo threshold', { exact: true }).fill('160');
+      await controls.getByRole('button', { name: 'Reset logo threshold', exact: true }).click();
+      await expect(controls.getByLabel('Logo threshold', { exact: true })).toHaveValue('128');
+      await controls.getByLabel('Logo threshold', { exact: true }).fill('140');
+      await controls.getByLabel('Logo contrast', { exact: true }).fill('2');
+      await controls.getByRole('button', { name: 'Reset logo contrast', exact: true }).click();
+      await expect(controls.getByLabel('Logo contrast', { exact: true })).toHaveValue('1');
+      await controls.getByLabel('Logo contrast', { exact: true }).fill('1.2');
     }
     await controls.getByRole('button', { name: 'Validate & preview logo' }).click();
     await expect(controls.getByRole('button', { name: 'Apply logo to rack' })).toBeVisible({ timeout: 15000 });
@@ -69,7 +88,7 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   await expect(controls.getByRole('button', { name: 'Reset stock BOS lettering' })).toBeDisabled();
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(controls.getByRole('button', { name: 'Reset stock BOS lettering' })).toBeEnabled();
-  await expect(controls.getByLabel('Logo source')).toHaveValue('raster');
+  await expect(controls.getByLabel('Logo source', { exact: true })).toHaveValue('raster');
   await page.getByRole('button', { name: 'Load saved version' }).click();
   await glbReady();
   await chooseExport('GLB');
@@ -99,7 +118,7 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   const vertices = panel.mesh.vertices.vertex.flatMap((v:{x:number;y:number;z:number})=>[v.x,v.y,v.z]);
   const indices = panel.mesh.triangles.triangle.flatMap((t:{v1:number;v2:number;v3:number})=>[t.v1,t.v2,t.v3]);
   const printSolid = new api.Manifold(new api.Mesh({numProp:3,vertProperties:new Float32Array(vertices),triVerts:new Uint32Array(indices)}));
-  try { expect(printSolid.status()).toBe('NoError'); expect(Math.abs(printSolid.volume()-expectedVolume / printReport.scale ** 3)).toBeLessThan(.1); } finally { printSolid.delete(); }
+  try { expect(printSolid.status()).toBe('NoError'); expect(Math.abs(printSolid.volume()-expectedVolume / printReport.scale ** 3)).toBeLessThan(.1 / printReport.scale ** 3); } finally { printSolid.delete(); }
   await page.locator('.config-manager summary').click();
   await page.getByRole('button', { name: 'Front', exact: true }).click();
   await controls.getByRole('button', { name: 'Validate & preview logo' }).click();
