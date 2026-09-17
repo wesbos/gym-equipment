@@ -1,0 +1,5 @@
+{"file": ".verification/logo.3mf", "objects": 4, "volumes": 12, "triangles": 117894, "palette": ["#283E32", "#E8EBEE"], "unit": "millimeter"}
+{"file": ".verification/logo-bambu.3mf", "objects": 4, "volumes": 12, "triangles": 117894, "palette": ["#283E32", "#E8EBEE"], "unit": "millimeter"}
+PASS: identities, colors, volumes, triangles and mm dimensions match source; no reported mesh repairs
+{"file": ".verification/logo-orca.3mf", "objects": 4, "volumes": 12, "triangles": 117894, "palette": ["#283E32", "#E8EBEE"], "unit": "millimeter"}
+PASS: identities, colors, volumes, triangles and mm dimensions match source; no reported mesh repairs

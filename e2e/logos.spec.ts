@@ -1,3 +1,5 @@
+import { unzipSync, strFromU8 } from 'fflate';
+import { XMLParser } from 'fast-xml-parser';
 import { NodeIO } from '@gltf-transform/core';
 import Module from 'manifold-3d';
 import { definitions } from '../rack-generator/parts/structure.ts';
@@ -73,8 +75,20 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   const api = await Module(); api.setup();
   console.log('Manifold initialized for export comparison');
   const parts = definitions.find(d => d.id === 'nameplate')!.build(api, instance.params, instance.logo);
+  const expectedVolume = parts[0].solid.volume();
   try { expect(triangles).toBe(parts[0].solid.getMesh().triVerts.length / 3); } finally { parts.forEach(p=>p.solid.delete()); }
-  console.log('Save / export phase');
+  console.log('Custom 3MF browser export');
+  await page.getByRole('button', { name: 'Export 3MF', exact: true }).click();
+  const printDownload = page.waitForEvent('download', { timeout: 60000 });
+  await page.getByRole('button', { name: 'Download 3MF', exact: true }).click();
+  const print = await printDownload;
+  const printBytes = await fs.readFile((await print.path())!);
+  const model = new XMLParser({ignoreAttributes:false,attributeNamePrefix:'',parseAttributeValue:true}).parse(strFromU8(unzipSync(printBytes)['3D/3dmodel.model'])).model;
+  const panel = model.resources.object.find((o:{name:string})=>o.name.includes('stencil'));
+  const vertices = panel.mesh.vertices.vertex.flatMap((v:{x:number;y:number;z:number})=>[v.x,v.y,v.z]);
+  const indices = panel.mesh.triangles.triangle.flatMap((t:{v1:number;v2:number;v3:number})=>[t.v1,t.v2,t.v3]);
+  const printSolid = new api.Manifold(new api.Mesh({numProp:3,vertProperties:new Float32Array(vertices),triVerts:new Uint32Array(indices)}));
+  try { expect(printSolid.status()).toBe('NoError'); expect(Math.abs(printSolid.volume()-expectedVolume)).toBeLessThan(.1); } finally { printSolid.delete(); }
   await page.locator('.config-manager summary').click();
   await page.getByRole('button', { name: 'Front', exact: true }).click();
   await controls.getByRole('button', { name: 'Validate & preview logo' }).click();

@@ -23,9 +23,9 @@ existing bounded scene cache/rebuild policy and disposal remain in effect.
 
 The stock `brandCutter` is replaced *before* the panel/beam boolean difference,
 so this produces real Manifold solids. There are no textures, extra meshes or
-paint/material overrides. Existing GLB exports consume those scene meshes. Any
-3MF exporter rebuilding solids must pass `instance.logo` as the third build
-argument; exporters consuming worker meshes already receive the cuts. No vendor
+paint/material overrides. Existing GLB exports consume those scene meshes. The 3MF exporter now uses `buildPrintInstance`, forwarding `instance.logo` as
+the third CAD build argument. Actual 3MF XML volume/topology and two slicer
+round trips are verified, as well as browser-worker downloads. No vendor
 part should forward user branding into its own marks.
 
 ## Source processing and scope
@@ -99,4 +99,10 @@ start the named `gym-wave2-logos` browser session and run
 `GYM_LOGO_CDP_URL=http://127.0.0.1:<that-session-CDP-port> npm run test:logos:browser`.
 The test uses only that isolated browser. It checks uploaded SVG/PNG/JPEG,
 threshold/contrast, rejection, explicit save/JSON round-trip, reset/undo, and
-matches the exported GLB nameplate triangle count to its custom Manifold solid.
+matches the exported GLB nameplate triangle count and 3MF nameplate volume to its custom Manifold solid.
+
+For native slicer verification, run `npx tsx scripts/generate-logo-print-fixture.ts`,
+import/re-export `.verification/logo.3mf` using the installed Bambu Studio and
+OrcaSlicer CLIs with `--info --arrange 0 --orient 0 --export-3mf`, then run
+`scripts/verify-print-export.py` on the source and both output archives.
+`docs/evidence/issue-11/slicer-audit.txt` records the passing independent audit.
