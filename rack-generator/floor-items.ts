@@ -8,7 +8,7 @@ export function validateFloorItems(input: unknown, reserved: string[] = []): Flo
   if (!Array.isArray(input) || input.length > 100) throw Error('At most 100 floor items are allowed.');
   const ids = new Set(reserved);
   return input.map(item => {
-    if (!item || typeof item !== 'object' || !/^floor-[a-z0-9-]{1,100}$/.test(item.id) || ids.has(item.id)) throw Error('Invalid or duplicate floor item ID.');
+    if (!item || typeof item !== 'object' || typeof item.id !== 'string' || !/^floor-[a-z0-9-]{1,100}$/.test(item.id) || ids.has(item.id)) throw Error('Invalid or duplicate floor item ID.');
     ids.add(item.id);
     if (item.part !== 'rep-nighthawk') throw Error('Unknown floor item.');
     if (!Array.isArray(item.position) || item.position.length !== 2 || !item.position.every((v: unknown) => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= 100000)) throw Error('Invalid floor position.');
@@ -42,7 +42,7 @@ export function floorWarnings(doc: RackDoc) {
 }
 export function addFloorItem(doc: RackDoc, position?: Vec2): RackDoc {
   const next=structuredClone(doc); next.floorItems ??= [];
-  let id:string; do {id=`floor-${next.nextId++}`;} while(next.floorItems.some(i=>i.id===id));
+  let id:string; do {id=`floor-${next.nextId++}`;} while(next.floorItems.some(i=>i.id===id) || Object.hasOwn(next.uprights,id) || next.connections.some(i=>i.id===id) || next.accessories.some(i=>i.id===id));
   const x=Math.max(0,...Object.values(doc.uprights).map(p=>p.x))+doc.rack.tube/2+550;
   const item:FloorItem={id,part:'rep-nighthawk',position:position ?? [x,0],rotation:0,params:{...NIGHTHAWK_DEFAULTS}};
   if(!position) { while(next.floorItems.some(other=> {const a=floorBounds(item),b=floorBounds(other);return a.min.every((v,i)=>v<b.max[i]+100 && a.max[i]+100>b.min[i]);})) item.position[1]+=1400; }
