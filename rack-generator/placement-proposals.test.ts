@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { ACCESSORY_PARTS, createAssembly, getMounts, validateAssembly, resolveAssembly } from './assembly.ts';
 import { getAttachmentAnchor } from './attachment-mounts.ts';
 import { applyPreset } from './presets.ts';
-import { proposalAt, proposalCollision, suggestPlacement, PROPOSAL_LIMIT } from './placement-proposals.ts';
+import { placementTarget, proposalAt, proposalCollision, suggestPlacement, PROPOSAL_LIMIT } from './placement-proposals.ts';
 import type { PartId } from './types.ts';
 
 test('default catalog sweep: collision-free proposal or actual explicit no-fit, bounded', () => {
@@ -60,4 +60,40 @@ test('pair rejects removed peer; single placement remains possible', () => {
   doc.removed.push('front-right','rear-right');
   assert.equal(suggestPlacement(doc,'landmine',true).proposal,null);
   assert.ok(suggestPlacement(doc,'landmine',false).proposal);
+});
+
+test('REP-4000 and REP-5000 proposals use profile-valid angled rise and safety pins', () => {
+  for (const profile of ['rep-pr-4000', 'rep-pr-5000']) {
+    const doc = applyPreset(`${profile}-four-2032-406.4`);
+    for (const part of ['angled-crossmember','safety-pin-pipe','j-hook-standard'] as const) {
+      const result = suggestPlacement(doc, part);
+      assert.ok(result.proposal,`${profile}/${part}: ${result.reason}`);
+      const proposal = result.proposal;
+      assert.deepEqual(validateAssembly(proposal.doc),proposal.doc);
+      assert.equal(proposalCollision(resolveAssembly(doc),proposal),undefined);
+      if (part === 'angled-crossmember') assert.equal(proposal.entries[0].params.rise,203.2);
+      if (part === 'safety-pin-pipe') {
+        assert.equal(proposal.entries.length,2);
+        assert.equal(proposal.entries[0].params.pinDiameter,Math.min(16,doc.rack.holeDiameter-0.8));
+        assert.ok(proposal.doc.accessories.at(-1)?.pairedSpanTo);
+      }
+    }
+    for (const part of ACCESSORY_PARTS as readonly PartId[]) {
+      const result = suggestPlacement(doc,part);
+      if (result.proposal) {
+        assert.equal(proposalCollision(resolveAssembly(doc),result.proposal),undefined,`${profile}/${part}`);
+        validateAssembly(result.proposal.doc);
+      } else assert.ok(result.reason.length > 10,`${profile}/${part}`);
+    }
+  }
+});
+
+test('preview metadata stripping preserves complete domain target extensions', () => {
+  const base = getMounts(createAssembly(),'landmine')[0];
+  const extended = { ...base, kind: 'crossmember-top', connectionId: 'left-upper-crossmember', station: 4, side: -1, custom: { future: true } };
+  assert.deepEqual(placementTarget(extended), {
+    uprightId: base.uprightId, face: base.face, hole: base.hole,
+    kind: 'crossmember-top', connectionId: 'left-upper-crossmember', station: 4, side: -1, custom: { future: true },
+  });
+  assert.notEqual(placementTarget(extended).custom,extended.custom);
 });

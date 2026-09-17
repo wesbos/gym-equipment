@@ -1,6 +1,8 @@
-import { getMounts, getPartPlacementInfo, resolveAssembly, validateAssembly, replaceStructurePart, restoreInstance } from './assembly.ts';
+import { swapCandidate } from './swap.ts';
+import { partDefaults } from './reset.ts';
+import { getMounts, getPartPlacementInfo, resolveAssembly, validateAssembly, addAccessory, moveAccessory } from './assembly.ts';
 import { detectCollisions } from './assembly-collisions.ts';
-import type { RackDoc, PartId, Mount, ResolvedInstance, Accessory } from './types.ts';
+import type { RackDoc, PartId, Mount, ResolvedInstance, NumericParams } from './types.ts';
 
 export interface PlacementProposal { doc: RackDoc; entries: ResolvedInstance[]; ownerId: string; target?: Mount; label: string }
 export interface ProposalResult { proposal: PlacementProposal | null; reason: string; evaluated: number; mounts: Mount[] }
@@ -26,33 +28,58 @@ function locationLabel(doc: RackDoc, id: string): string {
   const side = p.x === Math.min(...xs) ? 'left' : p.x === Math.max(...xs) ? 'right' : 'center';
   return `${row} ${side}`;
 }
+function proposalParams(doc: RackDoc, part: PartId, movingId: string | null): NumericParams {
+  const previous = doc.accessories.find(a => a.id === movingId);
+  if (previous) return previous.params;
+  return part === 'safety-pin-pipe' ? { pinDiameter: partDefaults(doc, part).pinDiameter } : {};
+}
+/** Mount enumeration must validate the same profile defaults as the eventual preview. */
+export function placementMounts(doc: RackDoc, part: PartId, movingId: string | null = null): Mount[] {
+  return getMounts(doc, part, proposalParams(doc, part, movingId));
+}
+/** Strip renderer metadata, retaining all domain target fields (including future target kinds). */
+export function placementTarget<T extends Mount>(target: T) {
+  const { position, center, localAnchor, pinAxis, label, connectorId, ...domainTarget } = target;
+  return structuredClone(domainTarget);
+}
 /** Pure preview document adapter, also usable by swap/hover callers. */
 export function proposalAt(doc: RackDoc, part: PartId, target: Mount, paired: boolean, movingId: string | null = null): PlacementProposal {
-  const next = structuredClone(doc), info = getPartPlacementInfo(part, doc)!;
-  const previous = next.accessories.find(a => a.id === movingId);
-  let ownerId = movingId;
-  if (!ownerId) { do { ownerId = `accessory-${next.nextId++}`; } while (next.accessories.some(a => a.id === ownerId) || next.uprights[ownerId]); }
-  const p = doc.uprights[target.uprightId];
-  const peer = Object.entries(doc.uprights).filter(([id,q]) => id !== target.uprightId && !doc.removed.includes(id) && q.y === p.y).sort((a,b) => Math.abs(a[1].x-p.x)-Math.abs(b[1].x-p.x))[0]?.[0];
-  const a: Accessory = { ...previous, id: ownerId, part, target: { uprightId: target.uprightId, face: target.face, hole: target.hole }, paired: !!info.paired && paired, params: previous?.params ?? {} };
-  if (a.paired) a.pairTo = peer;
-  next.accessories = [...next.accessories.filter(a => a.id !== movingId), a];
-  const valid = validateAssembly(next), entries = resolveAssembly(valid).filter(r => (r.ownerId || r.id) === ownerId);
-  return { doc: valid, entries, ownerId, target, label: `${locationLabel(doc, target.uprightId)} · ${target.face} · hole ${target.hole + 1}` };
+  const info = getPartPlacementInfo(part, doc)!, domainTarget = placementTarget(target);
+  const next = movingId ? moveAccessory(doc, movingId, domainTarget, paired)
+    : addAccessory(doc, part, domainTarget, false, proposalParams(doc, part, null));
+  const accessory = movingId ? next.accessories.find(a => a.id === movingId)! : next.accessories.at(-1)!;
+  accessory.target = { ...domainTarget, ...accessory.target };
+  accessory.paired = !!info.paired && paired;
+  // Upright symmetry is local to this adapter. Other target kinds use their
+  // domain validator's pair rules (e.g. matching parallel crossmember targets).
+  if (accessory.paired && !accessory.pairTo && (!('kind' in domainTarget) || domainTarget.kind === 'upright')) {
+    const p = doc.uprights[accessory.target.uprightId];
+    accessory.pairTo = Object.entries(doc.uprights).filter(([id,q]) => id !== accessory.target.uprightId && !doc.removed.includes(id) && q.y === p.y)
+      .sort((a,b) => Math.abs(a[1].x-p.x)-Math.abs(b[1].x-p.x))[0]?.[0];
+  }
+  if (accessory.paired && accessory.spanTo && accessory.pairTo && !accessory.pairedSpanTo) {
+    const start = doc.uprights[accessory.target.uprightId], end = doc.uprights[accessory.spanTo], peer = doc.uprights[accessory.pairTo];
+    accessory.pairedSpanTo = Object.keys(doc.uprights).find(id => !doc.removed.includes(id)
+      && doc.uprights[id].x === peer.x + end.x - start.x && doc.uprights[id].y === peer.y + end.y - start.y);
+  }
+  const ownerId = accessory.id, valid = validateAssembly(next);
+  const entries = resolveAssembly(valid).filter(r => (r.ownerId || r.id) === ownerId);
+  return { doc: valid, entries, ownerId, target, label: target.label ?? `${locationLabel(doc, target.uprightId)} · ${target.face} · hole ${target.hole + 1}` };
 }
 export function proposalCollision(base: ResolvedInstance[], proposal: PlacementProposal): string | undefined {
   const ids = new Set(proposal.entries.map(r => r.id));
   return detectCollisions([...base.filter(r => (r.ownerId || r.id) !== proposal.ownerId), ...proposal.entries]).find(w => w.ids.some(id => ids.has(id)))?.message;
 }
 export function structureProposalAt(doc: RackDoc, part: PartId, slot: string): PlacementProposal {
-  const next = part === 'upright' ? restoreInstance(doc, slot) : replaceStructurePart(doc, slot, part);
-  return { doc: next, ownerId: slot, entries: resolveAssembly(next).filter(r => (r.ownerId || r.id) === slot), label: slot.replaceAll('-', ' ') };
+  const candidate = swapCandidate(doc, slot, part);
+  if (!candidate.valid) throw new Error(candidate.reason);
+  return { ...candidate, label: slot.replaceAll('-', ' ') };
 }
 export function suggestPlacement(doc: RackDoc, part: PartId, paired = true, movingId: string | null = null): ProposalResult {
   const info = getPartPlacementInfo(part, doc), base = resolveAssembly(doc);
   let reason = 'No compatible mounting connection remains.', evaluated = 0;
   const structural = part === 'upright' || !!info?.slots?.length;
-  const mounts = structural ? [] : getMounts(doc, part).sort((a,b) => scoreMount(doc,part,a)-scoreMount(doc,part,b));
+  const mounts = structural ? [] : placementMounts(doc, part, movingId).sort((a,b) => scoreMount(doc,part,a)-scoreMount(doc,part,b));
   const candidates = structural ? (info?.slots ?? []).filter(id => part !== 'upright' || doc.removed.includes(id)) : mounts;
   if (part === 'upright' && !candidates.length) reason = 'All uprights are present; extend the rack in Uprights & connections.';
   // No WASM or mesh builds: bounded transform/envelope checks after ranking.

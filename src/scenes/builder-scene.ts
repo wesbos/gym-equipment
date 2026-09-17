@@ -1,4 +1,4 @@
-import { proposalAt, proposalCollision, type PlacementProposal } from '../../rack-generator/placement-proposals.ts';
+import { placementMounts, proposalAt, proposalCollision, type PlacementProposal } from '../../rack-generator/placement-proposals.ts';
 import { swapCandidate, swapCandidates, type SwapCandidate } from '../../rack-generator/swap.ts';
 import { createSwapRegions } from './swap-regions.ts';
 import { cloneInstanceMaterials } from './instance-materials.ts';
@@ -7,7 +7,6 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import { toCreasedNormals } from "three/addons/utils/BufferGeometryUtils.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-import { getMounts } from "../../rack-generator/assembly.ts";
 import { detectCollisions } from "../../rack-generator/assembly-collisions.ts";
 import type {
   Mount,
@@ -337,7 +336,7 @@ export function createBuilderScene(
   }
   function showMounts() {
     clearMounts();
-    mountPoints = getMounts(snapshot.doc, snapshot.placing?.part);
+    mountPoints = snapshot.placing ? placementMounts(snapshot.doc, snapshot.placing.part, snapshot.placing.movingId) : [];
     const geometry = new THREE.SphereGeometry(6, 8, 6),
       material = new THREE.MeshBasicMaterial({
         color: "#d28a40",
