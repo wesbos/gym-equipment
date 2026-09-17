@@ -32,13 +32,13 @@ test('snapshots remain stable between updates and subscriptions can unsubscribe'
 
 test('invalid edits and imports preserve document, selection, persistence and history', () => {
   const storage = new MemoryStorage(), store = new BuilderStore(storage);
-  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1200 }));
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 725 }));
   store.history('undo');
   store.select('jhooks-front:left');
   const before = store.getSnapshot(), writes = storage.writes.length;
   assert.throws(() => store.commit({ ...before.doc, rack: { ...before.doc.rack, height: NaN } }), /Height/);
   assert.throws(() => store.importJSON('{broken'), SyntaxError);
-  assert.throws(() => store.importJSON(JSON.stringify({ ...before.doc, version: 2 })), /Unsupported/);
+  assert.throws(() => store.importJSON(JSON.stringify({ ...before.doc, version: 99 })), /Unsupported/);
   assert.equal(store.getSnapshot(), before);
   assert.equal(storage.writes.length, writes);
   store.act(() => store.importJSON('{}'));
@@ -48,19 +48,19 @@ test('invalid edits and imports preserve document, selection, persistence and hi
   assert.equal(store.getSnapshot().canUndo, false);
   assert.equal(store.getSnapshot().canRedo, true);
   store.history('redo');
-  assert.equal(store.getSnapshot().doc.rack.width, 1200);
+  assert.equal(store.getSnapshot().doc.rack.width, 725);
 });
 
 test('commits detach inputs, persist documents and replace the redo branch after an edit', () => {
   const storage = new MemoryStorage(), store = new BuilderStore(storage);
-  const changed = resizeAssembly(store.getSnapshot().doc, { width: 1200 });
+  const changed = resizeAssembly(store.getSnapshot().doc, { width: 725 });
   store.commit(changed); changed.rack.width = 1500;
-  assert.equal(store.getSnapshot().doc.rack.width, 1200);
-  store.commit(resizeAssembly(store.getSnapshot().doc, { depth: 900 }));
+  assert.equal(store.getSnapshot().doc.rack.width, 725);
+  store.commit(resizeAssembly(store.getSnapshot().doc, { depth: 425 }));
   store.history('undo');
-  assert.deepEqual([store.getSnapshot().doc.rack.width, store.getSnapshot().doc.rack.depth], [1200, 725]);
+  assert.deepEqual([store.getSnapshot().doc.rack.width, store.getSnapshot().doc.rack.depth], [725, 725]);
   store.history('redo');
-  assert.equal(store.getSnapshot().doc.rack.depth, 900);
+  assert.equal(store.getSnapshot().doc.rack.depth, 425);
   store.history('undo');
   store.commit(resizeAssembly(store.getSnapshot().doc, { height: 2300 }));
   assert.equal(store.getSnapshot().canRedo, false);
@@ -69,7 +69,7 @@ test('commits detach inputs, persist documents and replace the redo branch after
   assert.deepEqual(saved.doc, store.getSnapshot().doc);
   assert.equal(saved.canUndo, false);
   assert.equal(saved.canRedo, false);
-  assert.equal(saved.doc.rack.height, 2300);
+  assert.equal(saved.doc.rack.height, 2282);
 });
 
 test('JSON import is undoable and clears selection and transient placement', () => {
@@ -145,8 +145,8 @@ test('unavailable or corrupt storage has a recoverable error without losing comm
   assert.deepEqual(recovered.getSnapshot().doc, createAssembly());
   const unavailable: StorageLike = { getItem() { throw new Error('denied'); }, setItem() { throw new Error('quota'); } };
   const store = new BuilderStore(unavailable);
-  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1300 }));
-  assert.equal(store.getSnapshot().doc.rack.width, 1300);
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 425 }));
+  assert.equal(store.getSnapshot().doc.rack.width, 425);
   assert.equal(store.getSnapshot().canUndo, true);
   assert.match(store.getSnapshot().status, /Save your design as JSON/);
   store.history('undo');
@@ -155,13 +155,13 @@ test('unavailable or corrupt storage has a recoverable error without losing comm
 
 test('history retains the newest one hundred edits without an unbounded document stack', () => {
   const store = new BuilderStore();
-  for (let i = 1; i <= 102; i++) store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1075 + i }));
+  for (let i = 1; i <= 102; i++) store.commit({ ...store.getSnapshot().doc, nextId: i + 1 });
   for (let i = 0; i < 100; i++) store.history('undo');
-  assert.equal(store.getSnapshot().doc.rack.width, 1077);
+  assert.equal(store.getSnapshot().doc.nextId, 3);
   assert.equal(store.getSnapshot().canUndo, false);
   const exhausted = store.getSnapshot(); store.history('undo');
   assert.equal(store.getSnapshot(), exhausted);
   for (let i = 0; i < 100; i++) store.history('redo');
-  assert.equal(store.getSnapshot().doc.rack.width, 1177);
+  assert.equal(store.getSnapshot().doc.nextId, 103);
   assert.equal(store.getSnapshot().canRedo, false);
 });

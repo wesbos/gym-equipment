@@ -1,3 +1,5 @@
+import { TopologyEditor } from '../components/TopologyEditor.tsx';
+import { structureSlots } from '../../rack-generator/topology.ts';
 import { snapDimensions } from '../../rack-generator/grid.ts';
 import { partIcon } from "../components/part-icon.ts";
 import {
@@ -112,7 +114,7 @@ function Inspector({ store }: { store: BuilderStore }) {
     const slots =
       structureChoice === "upright"
         ? available.filter((r) => r.part === "upright")
-        : STRUCTURE_SLOTS.filter(
+        : structureSlots(doc).filter(
             (s) =>
               placement?.slots?.includes(s.id) &&
               (resolved.some((r) => r.ownerId === s.id) ||
@@ -146,7 +148,7 @@ function Inspector({ store }: { store: BuilderStore }) {
           {!slots.length && (
             <p>
               {structureChoice === "upright"
-                ? "All four upright positions are filled."
+                ? "Use Uprights & connections to extend the rack."
                 : "Restore the supporting uprights to use this member."}
             </p>
           )}
@@ -158,6 +160,7 @@ function Inspector({ store }: { store: BuilderStore }) {
     return (
       <>
         <h2 id="selection-title">Rack settings</h2>
+        <TopologyEditor key={JSON.stringify(doc)} doc={doc} store={store} selected={selected} />
         <p className="settings-intro">
           Build your frame, then add parts at highlighted connections.
         </p>
@@ -301,6 +304,7 @@ function Inspector({ store }: { store: BuilderStore }) {
   return (
     <>
       <h2 id="selection-title">{nameOf(part)}</h2>
+      <TopologyEditor key={JSON.stringify(doc)} doc={doc} store={store} selected={selected} />
       <div id="inspector" className="inspector-fields">
         <form
           className="selection-form"
@@ -363,14 +367,7 @@ function Inspector({ store }: { store: BuilderStore }) {
             <>
               <Field label="Mounting upright">
                 <select name="upright" defaultValue={entry.target.uprightId}>
-                  {(
-                    [
-                      "front-left",
-                      "front-right",
-                      "rear-left",
-                      "rear-right",
-                    ] as UprightId[]
-                  )
+                  {Object.keys(doc.uprights)
                     .filter((id) => resolved.some((r) => r.id === id))
                     .map((id) => (
                       <option key={id} value={id}>

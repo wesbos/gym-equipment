@@ -14,12 +14,14 @@ export interface UprightMesh { positions: Float32Array; indices: Uint32Array; st
 export interface LibraryWorkerRequest { id: number | string; part: string; params: NumericParams }
 export interface UprightWorkerRequest { id: number | string; params: Partial<UprightParams> }
 export type Face = 'front' | 'back' | 'left' | 'right';
-export type UprightId = 'front-left' | 'front-right' | 'rear-left' | 'rear-right';
+export type UprightId = string;
+export interface UprightNode { x: number; y: number }
+export interface ConnectionEdge { id: string; from: string; to: string; level: "upper" | "lower" }
 export interface RackDimensions { height: number; width: number; depth: number; tube: number; holeDiameter: number; pitch: number; firstHole: number }
 export interface Target { uprightId: UprightId; face: Face; hole: number }
-export interface Accessory { id: string; part: PartId; target: Target; paired: boolean; params: NumericParams }
+export interface Accessory { id: string; part: PartId; target: Target; paired: boolean; params: NumericParams; spanTo?: string; pairTo?: string; pairedSpanTo?: string }
 export interface StructureVariant { part: PartId; params: NumericParams }
-export interface RackDoc { version: 1; rack: RackDimensions; removed: string[]; structure: Record<string, StructureVariant>; accessories: Accessory[]; nextId: number }
+export interface RackDoc { version: 2; uprights: Record<string, UprightNode>; connections: ConnectionEdge[]; profileId?: string; rack: RackDimensions; removed: string[]; structure: Record<string, StructureVariant>; accessories: Accessory[]; nextId: number }
 export interface StructureSlot { id: string; part: PartId; connectedTo: UprightId[] }
 export interface LocalBox { min: Vec3; max: Vec3 }
 export interface Mount extends Target { position: Vec3; center: Vec3; localAnchor?: Vec3; pinAxis?: Vec3; label?: string; connectorId?: string }
