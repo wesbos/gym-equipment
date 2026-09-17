@@ -1,4 +1,5 @@
-import { darkoTopMounts, darkoTopMount, matchingDarkoTarget, darkoTopPairSuffix } from './darko-mounts.ts';
+import { pairSuffix } from './physical-identity.ts';
+import { darkoTopMounts, darkoTopMount, matchingDarkoTarget } from './darko-mounts.ts';
 import { isVendorPart, vendorDefaults, vendorPlacement, vendorLimits, validateVendorParams, validateVendorMount, resolveVendor } from './vendor-mounts.ts';
 import { VOLTRA_IDS, DARKO_IDS, isDarkoTop } from './vendor-metadata.ts';
 import { validateMountShaft } from './mount-shafts.ts';
@@ -77,7 +78,6 @@ const supportsPair = (part: string) => !isPullup(part) && (!isMountedAttachment(
 const isWidePullup = (part: string) => isPullup(part) && part !== 'pullup-straight';
 const rowOf = (id: string) => id.startsWith('rear-') ? 'rear' : 'front';
 const sideOf = (id: string) => id.endsWith('-right') ? 'right' : 'left';
-const pairSuffix = (id: string, index: number) => UPRIGHT_IDS.includes(id) ? sideOf(id) : index ? 'right' : 'left';
 const otherSide = (id: string): UprightId => `${rowOf(id)}-${sideOf(id) === 'left' ? 'right' : 'left'}`;
 const maxHole = (rack: RackDimensions) => Math.floor((rack.height - rack.holeDiameter / 2 - rack.firstHole) / rack.pitch);
 const holeZ = (rack: RackDimensions, hole: number) => rack.firstHole + hole * rack.pitch;
@@ -355,7 +355,7 @@ export function unpairAccessory(input: RackDoc, id: string): RackDoc {
   const overrides = doc.appearance?.overrides;
   if (overrides) {
     const targets = [a.target, other];
-    const suffix = (index: number) => a.target.kind === 'crossmember-top' ? darkoTopPairSuffix(targets, index) : pairSuffix(targets[index].uprightId, index);
+    const suffix = (index: number) => pairSuffix(targets, index);
     const first = overrides[`${a.id}:${suffix(0)}`];
     const second = overrides[`${a.id}:${suffix(1)}`];
     if (first) overrides[a.id] = first;
@@ -488,7 +488,7 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
       const faces: [Face, Face] = Math.abs(end[0]-start[0]) > 0 ? (end[0] > start[0] ? ['right','left'] : ['left','right']) : (end[1] > start[1] ? ['back','front'] : ['front','back']);
       const anchorSpan = a.part === 'pullup-straight' ? clear : clear + r.tube;
       const mounts = [t.uprightId, endpoint].map((id, i) => mount(r, id, t.hole, faces[i], [(i ? 1 : -1) * anchorSpan / 2, 0, z]));
-      append(a.paired ? `${a.id}:${pairSuffix(t.uprightId, index)}` : a.id, a.part, { ...params, mountSpacing: r.pitch === 50.8 ? 4*r.pitch : 200, boltDiameter: r.pitch === 50.8 ? r.holeDiameter-0.8 : 16, holeDiameter: r.holeDiameter, length: clear - (isSafety(a.part) && a.part !== 'safety-pin-pipe' ? 6 : 0), upright: r.tube }, [(start[0]+end[0])/2, (start[1]+end[1])/2, holeZ(r,a.target.hole)-z], angle, mounts, 'accessory', a.id, a.paired, [t.uprightId,endpoint]);
+      append(a.paired ? `${a.id}:${pairSuffix(targetsFor(a), index)}` : a.id, a.part, { ...params, mountSpacing: r.pitch === 50.8 ? 4*r.pitch : 200, boltDiameter: r.pitch === 50.8 ? r.holeDiameter-0.8 : 16, holeDiameter: r.holeDiameter, length: clear - (isSafety(a.part) && a.part !== 'safety-pin-pipe' ? 6 : 0), upright: r.tube }, [(start[0]+end[0])/2, (start[1]+end[1])/2, holeZ(r,a.target.hole)-z], angle, mounts, 'accessory', a.id, a.paired, [t.uprightId,endpoint]);
       }
     } else if (isMountedAttachment(a.part)) {
       const anchor = getAttachmentAnchor(a.part, params);
@@ -496,7 +496,7 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
         const normal = NORMALS[t.face], angle = Math.atan2(normal[1], normal[0]) - Math.atan2(anchor.outward[1], anchor.outward[0]);
         const m = mount(r, t.uprightId, t.hole, t.face, anchor.point), local = rotateZ(anchor.point, angle);
         const mounts = anchor.boltStations.map(station => ({ ...mount(r, t.uprightId, t.hole + Math.round(station.zOffset / r.pitch), t.face, station.point), pinAxis: rotateZ(station.axis, angle) }));
-        append(a.paired ? `${a.id}:${pairSuffix(t.uprightId, index)}` : a.id, a.part, { ...params, holeDiameter: r.holeDiameter }, m.center.map((v, i) => v - local[i]) as Vec3, angle, mounts, 'accessory', a.id, a.paired, [t.uprightId]);
+        append(a.paired ? `${a.id}:${pairSuffix(targetsFor(a), index)}` : a.id, a.part, { ...params, holeDiameter: r.holeDiameter }, m.center.map((v, i) => v - local[i]) as Vec3, angle, mounts, 'accessory', a.id, a.paired, [t.uprightId]);
         result[result.length - 1].collisionBoxes = getAttachmentCollisionBoxes(a.part, params);
         result[result.length - 1].localOutward = anchor.outward;
       }
@@ -504,12 +504,12 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
       const anchor: Vec3 = [0, a.part === 'foot-800' ? -314.5 : -139.5, 65];
       for (const [index, t] of targetsFor(a).entries()) {
         const angle = ROTATIONS[t.face], m = mount(r, t.uprightId, 0, t.face, anchor), local = rotateZ(anchor, angle);
-        append(a.paired ? `${a.id}:${pairSuffix(t.uprightId, index)}` : a.id, a.part, { ...params, holeDiameter: r.holeDiameter }, m.position.map((v, i) => v - local[i]) as Vec3, angle, [m], 'accessory', a.id, a.paired, [t.uprightId]);
+        append(a.paired ? `${a.id}:${pairSuffix(targetsFor(a), index)}` : a.id, a.part, { ...params, holeDiameter: r.holeDiameter }, m.position.map((v, i) => v - local[i]) as Vec3, angle, [m], 'accessory', a.id, a.paired, [t.uprightId]);
       }
     } else if (isHook(a.part)) {
       for (const [index, t] of targetsFor(a).entries()) {
         const angle = ROTATIONS[t.face], anchor = HOOK_ANCHORS[a.part], m = mount(r, t.uprightId, t.hole, t.face, anchor), local = rotateZ(anchor, angle);
-        append(a.paired ? `${a.id}:${pairSuffix(t.uprightId, index)}` : a.id, a.part, { ...params, holeDiameter: r.holeDiameter }, m.center.map((v, i) => v - local[i]) as Vec3, angle, [m], 'accessory', a.id, a.paired, [t.uprightId]);
+        append(a.paired ? `${a.id}:${pairSuffix(targetsFor(a), index)}` : a.id, a.part, { ...params, holeDiameter: r.holeDiameter }, m.center.map((v, i) => v - local[i]) as Vec3, angle, [m], 'accessory', a.id, a.paired, [t.uprightId]);
       }
     } else if (isSafety(a.part)) {
       for (const [index, t] of targetsFor(a).entries()) {

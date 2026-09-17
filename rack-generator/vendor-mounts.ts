@@ -1,5 +1,6 @@
+import { pairSuffix } from './physical-identity.ts';
 import { darkoDefaults, validateDarko } from './parts/darko.ts';
-import { darkoTopMount, resolveDarkoTop, vendorSide } from './darko-mounts.ts';
+import { darkoTopMount, resolveDarkoTop } from './darko-mounts.ts';
 import type { Accessory, Mount, NumericParams, PlacementInfo, RackDoc, ResolvedInstance, Target, Vec3 } from './types.ts';
 import { isVoltra, isDarko, isDarkoTop, vendorAttribution } from './vendor-metadata.ts';
 import { validateVoltra, voltraDefaults } from './parts/voltra.ts';
@@ -43,6 +44,6 @@ export function resolveVendor(doc: RackDoc, accessory: Accessory, targets: Targe
   const offsets = accessory.part === 'voltra-fixed' ? [-1,1] : isDarko(accessory.part) ? [0,-2] : [0];
   const mounts: Mount[] = offsets.map(offset => ({...t,hole:t.hole+offset,center:[post.x,post.y,z+offset*r.pitch],position:[post.x+normal[0]*r.tube/2,post.y+normal[1]*r.tube/2,z+offset*r.pitch],localAnchor:[0,0,offset*r.pitch],pinAxis:accessory.part==='voltra-sliding'?[Math.cos(angle),Math.sin(angle),0]:normal}));
   const extent = isDarko(accessory.part)?190:(accessory.params.orientation ?? 1)%2===0 ? 162 : 70;
-  return {id:accessory.paired?`${accessory.id}:${vendorSide(t.uprightId,i)}`:accessory.id,part:accessory.part,params:{...vendorDefaults(accessory.part),...accessory.params,upright:r.tube,mountSpacing:r.pitch},position:center,rotation:[0,0,angle],mount:mounts[0],mounts,ownerId:accessory.id,kind:'accessory',paired:accessory.paired,connectedTo:[t.uprightId],localOutward:[0,1,0],collisionBoxes:[{min:[-((accessory.params.orientation??1)%2===0?70:162),r.tube/2+45,-extent],max:[(accessory.params.orientation??1)%2===0?70:162,r.tube/2+205,extent]}]};
+  return {id:accessory.paired?`${accessory.id}:${pairSuffix(targets,i)}`:accessory.id,part:accessory.part,params:{...vendorDefaults(accessory.part),...accessory.params,upright:r.tube,mountSpacing:r.pitch},position:center,rotation:[0,0,angle],mount:mounts[0],mounts,ownerId:accessory.id,kind:'accessory',paired:accessory.paired,connectedTo:[t.uprightId],localOutward:[0,1,0],collisionBoxes:[{min:[-((accessory.params.orientation??1)%2===0?70:162),r.tube/2+45,-extent],max:[(accessory.params.orientation??1)%2===0?70:162,r.tube/2+205,extent]}]};
  });
 }

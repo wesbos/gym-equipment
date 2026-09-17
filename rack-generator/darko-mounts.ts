@@ -1,3 +1,4 @@
+import { pairSuffix } from './physical-identity.ts';
 import type { Accessory, CrossmemberTopTarget, Mount, RackDoc, ResolvedInstance, Target, Vec3 } from './types.ts';
 import { isDarkoTop } from './vendor-metadata.ts';
 import { darkoDefaults } from './parts/darko.ts';
@@ -36,21 +37,12 @@ export function matchingDarkoTarget(doc:MountDoc,target:CrossmemberTopTarget):Cr
   try{const m=darkoTopMount(doc,t),n=darkoTopMount(doc,target);const v=[m.center[0]-n.center[0],m.center[1]-n.center[1]];if(Math.abs(v[0]*(b.x-a.x)+v[1]*(b.y-a.y))<.01 && Math.hypot(...v)>doc.rack.tube)return t;}catch{}
  }
 }
-export function vendorSide(id:string,index:number) { return ['front-left','front-right','rear-left','rear-right'].includes(id) ? (id.endsWith('right')?'right':'left') : index?'right':'left'; }
-/** Keep all previously distinct suffixes (including right-first standard pairs).
- * Front/rear rails can share a legacy post side; only those collisions fall back
- * to pair order. Rendering and unpairing must use the same physical identities.
- */
-export function darkoTopPairSuffix(targets: readonly Target[], index: number): 'left' | 'right' {
- const preferred = targets.map((target, i) => vendorSide(target.uprightId, i));
- return new Set(preferred).size === preferred.length ? preferred[index] : index ? 'right' : 'left';
-}
 export function resolveDarkoTop(doc:RackDoc,a:Accessory,targets:Target[]):ResolvedInstance[]{
  return targets.map((t,i)=>{
   if(t.kind!=='crossmember-top')throw Error('Darko Anchor requires a crossmember-top target.');
   const m=darkoTopMount(doc,t),edge=doc.connections.find(e=>e.id===t.connectionId)!,start=doc.uprights[edge.from],end=doc.uprights[edge.to];
   const angle=Math.atan2(end.y-start.y,end.x-start.x)+(t.side===-1?Math.PI:0);
-  return {id:a.paired?`${a.id}:${darkoTopPairSuffix(targets,i)}`:a.id,part:a.part,params:{...darkoDefaults,...a.params,upright:doc.rack.tube,mountSpacing:doc.rack.pitch},position:m.center,rotation:[0,0,angle],mount:m,mounts:[m],ownerId:a.id,kind:'accessory',paired:a.paired,connectedTo:[edge.id,edge.from,edge.to],localOutward:[0,1,0],collisionBoxes:[{min:[-106,doc.rack.tube/2+1,isDarkoTop(a.part)&&a.part==='darko-double-decker'?-325:-211],max:[106,doc.rack.tube/2+16,-45]}]};
+  return {id:a.paired?`${a.id}:${pairSuffix(targets,i)}`:a.id,part:a.part,params:{...darkoDefaults,...a.params,upright:doc.rack.tube,mountSpacing:doc.rack.pitch},position:m.center,rotation:[0,0,angle],mount:m,mounts:[m],ownerId:a.id,kind:'accessory',paired:a.paired,connectedTo:[edge.id,edge.from,edge.to],localOutward:[0,1,0],collisionBoxes:[{min:[-106,doc.rack.tube/2+1,isDarkoTop(a.part)&&a.part==='darko-double-decker'?-325:-211],max:[106,doc.rack.tube/2+16,-45]}]};
  });
 }
 export function darkoGuidance(doc:RackDoc):string|undefined {

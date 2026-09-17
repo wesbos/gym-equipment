@@ -58,19 +58,23 @@ test('arbitrary post IDs preserve paired anchors, physical paint IDs and moving 
  assert.equal(unpaired.appearance!.overrides![unpaired.accessories[1].id],'#334455');
  const bad=structuredClone(doc);bad.accessories[0].pairTarget!.station+=1;assert.throws(()=>validateAssembly(bad),/align/);
 });
-for(const layout of ['front-rear','reversed','opposed','custom'] as const)test(`Darko ${layout} width-rail pair has unique physical IDs and independent paint`,()=>{
+for(const layout of ['front-rear','reversed','opposed','custom','mixed'] as const)test(`Darko ${layout} width-rail pair has unique physical IDs and independent paint`,()=>{
  const doc=createAssembly({emptyAccessories:true});
  doc.connections.push({id:'front-width',from:'front-left',to:'front-right',level:'upper'});
  const front=doc.connections.find(e=>e.id==='front-width')!,rear=doc.connections.find(e=>e.id==='rear-crossmember')!;
- if(layout==='reversed'||layout==='opposed')[front.from,front.to]=[front.to,front.from];
+ if(layout==='reversed'||layout==='opposed'||layout==='mixed')[front.from,front.to]=[front.to,front.from];
  if(layout==='reversed')[rear.from,rear.to]=[rear.to,rear.from];
  if(layout==='custom'){
   const names:Record<string,string>={'front-left':'alpha','front-right':'beta','rear-left':'gamma','rear-right':'delta'};
   doc.uprights=Object.fromEntries(Object.entries(doc.uprights).map(([id,p])=>[names[id],p]));
   for(const edge of doc.connections){edge.from=names[edge.from];edge.to=names[edge.to];}
  }
+ if(layout==='mixed'){
+  doc.uprights.gamma=doc.uprights['rear-left'];delete doc.uprights['rear-left'];
+  for(const edge of doc.connections){if(edge.from==='rear-left')edge.from='gamma';if(edge.to==='rear-left')edge.to='gamma';}
+ }
  const first:CrossmemberTopTarget={kind:'crossmember-top',connectionId:front.id,station:4,side:1,uprightId:front.from,face:'front',hole:0};
- const second:CrossmemberTopTarget={...first,connectionId:rear.id,station:layout==='opposed'?15:4,uprightId:rear.from};
+ const second:CrossmemberTopTarget={...first,connectionId:rear.id,station:layout==='opposed'||layout==='mixed'?15:4,uprightId:rear.from};
  doc.accessories.push({id:'width-anchors',part:'darko-anchor',target:first,pairTarget:second,paired:true,params:{}});
  const paired=validateAssembly(doc),instances=resolveAssembly(paired).filter(p=>p.ownerId==='width-anchors');
  assert.equal(instances.length,2);
