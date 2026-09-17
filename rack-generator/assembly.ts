@@ -1,3 +1,4 @@
+import { validateLogo, logoSite } from './logos/types.ts';
 import { validateMountShaft } from './mount-shafts.ts';
 import { gridProfile } from './profiles.ts';
 import { legacyGraph, validateGraph, structureSlots } from './topology.ts';
@@ -257,7 +258,8 @@ export function validateAssembly(input: unknown): RackDoc {
   });
   if (typeof input.nextId !== 'number' || !Number.isSafeInteger(input.nextId) || input.nextId < 1 || input.nextId > 1000000) fail('Invalid next accessory ID.');
   const appearance = validateAppearance(input.appearance);
-  return { ...copy(input), ...(appearance ? { appearance } : {}), ...graph, version: ASSEMBLY_VERSION, rack, removed: [...removed], structure, accessories, nextId: input.nextId };
+  const logo = validateLogo(input.logo);
+  return { ...copy(input), ...(appearance ? { appearance } : {}), ...(logo ? { logo } : {}), ...graph, version: ASSEMBLY_VERSION, rack, removed: [...removed], structure, accessories, nextId: input.nextId };
 }
 export function getPartPlacementInfo(part: string, input?: RackDoc): PlacementInfo | null {
   if (isMountedAttachment(part)) {
@@ -397,7 +399,7 @@ export function getMounts(input: RackDoc, part?: string): Mount[] {
 export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
   const doc = validateAssembly(input), r = { ...doc.rack, uprights: doc.uprights }, result: ResolvedInstance[] = [];
   const append = (id: string, part: PartId, params: NumericParams, position: Vec3, angle: number, mounts: Mount[], kind: ResolvedInstance['kind'], ownerId = id, paired = false, connectedTo: string[] = []) => {
-    result.push({ id, part, params, position, rotation: [0, 0, angle], mount: mounts[0] ?? null, mounts, ownerId, kind, paired, connectedTo });
+    result.push({ ...(doc.logo && logoSite(part) ? { logo: doc.logo } : {}), id, part, params, position, rotation: [0, 0, angle], mount: mounts[0] ?? null, mounts, ownerId, kind, paired, connectedTo });
   };
   for (const id of Object.keys(doc.uprights)) if (!doc.removed.includes(id)) {
     const angle = sideOf(id) === 'right' ? Math.PI : 0, center = postCenter(r, id), offset = rotateZ([15, 0, 0], angle);

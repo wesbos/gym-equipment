@@ -8,7 +8,8 @@
     "build": "npm run typecheck && vite build",
     "preview": "wrangler dev",
     "deploy": "npm run build && wrangler deploy",
-    "test": "tsx --test rack-generator/*.test.ts src/**/*.test.ts"
+    "test": "tsx --test rack-generator/*.test.ts src/**/*.test.ts",
+    "test:logos:browser": "playwright test e2e/logos.spec.ts --workers=1"
   },
   "keywords": [],
   "author": "Wes Bos (https://wesbos.com/)",
@@ -16,6 +17,7 @@
   "type": "module",
   "dependencies": {
     "@tanstack/react-router": "^1.170.38",
+    "@xmldom/xmldom": "^0.9.12",
     "manifold-3d": "^3.5.3",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
@@ -25,6 +27,7 @@
   "devDependencies": {
     "@gltf-transform/core": "^4.5.0",
     "@gltf-transform/extensions": "^4.5.0",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

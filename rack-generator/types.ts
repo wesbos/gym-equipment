@@ -1,3 +1,4 @@
+import type { ValidatedLogo } from './logos/types.ts';
 import type { Appearance, MaterialSource } from './appearance.ts';
 import type { Manifold, ManifoldToplevel } from 'manifold-3d';
 
@@ -9,10 +10,10 @@ export type NumericParams = Record<string, number>;
 export type PartParams = NumericParams;
 export type PartId = 'upright' | 'crossmember-425' | 'crossmember-725' | 'crossmember-1075' | 'angled-crossmember' | 'offset-crossmember' | 'nameplate' | 'branded-crossmember' | 'branded-crossmember-lite' | 'foot-400' | 'foot-800' | 'pullup-straight' | 'pullup-multigrip' | 'pullup-sphere' | 'safety-box' | 'safety-pin-pipe' | 'safety-webbing' | 'j-hook-standard' | 'j-hook-roller' | 'j-hook-sandwich' | 'spotter-arm' | 'dip-horn' | 'dip-bar-adjustable' | 'landmine' | 'monolift' | 'single-bar-holder' | 'storage-pin-short' | 'storage-pin-long';
 export interface SolidPart extends MaterialSource { name: string; solid: Manifold; color?: string; metalness?: number; roughness?: number }
-export interface PartDefinition { id: string; name: string; category: string; defaults: NumericParams; build: (api: ManifoldAPI, params: NumericParams) => SolidPart[]; reference?: { file: string; node: string }; description?: string }
+export interface PartDefinition { id: string; name: string; category: string; defaults: NumericParams; build: (api: ManifoldAPI, params: NumericParams, logo?: ValidatedLogo) => SolidPart[]; reference?: { file: string; node: string }; description?: string }
 export interface UprightParams { height: number; width: number; wall: number; radius: number; diameter: number; spacing: number; offset: number }
 export interface UprightMesh { positions: Float32Array; indices: Uint32Array; stride: number; height: number; centers: number[]; volume: number; params: UprightParams }
-export interface LibraryWorkerRequest { id: number | string; part: string; params: NumericParams }
+export interface LibraryWorkerRequest { logo?: ValidatedLogo; id: number | string; part: string; params: NumericParams }
 export interface UprightWorkerRequest { id: number | string; params: Partial<UprightParams> }
 export type Face = 'front' | 'back' | 'left' | 'right';
 export type UprightId = string;
@@ -22,11 +23,11 @@ export interface RackDimensions { height: number; width: number; depth: number; 
 export interface Target { uprightId: UprightId; face: Face; hole: number }
 export interface Accessory { id: string; part: PartId; target: Target; paired: boolean; params: NumericParams; spanTo?: string; pairTo?: string; pairedSpanTo?: string }
 export interface StructureVariant { part: PartId; params: NumericParams }
-export interface RackDoc { appearance?: Appearance; version: 2; uprights: Record<string, UprightNode>; connections: ConnectionEdge[]; profileId?: string; rack: RackDimensions; removed: string[]; structure: Record<string, StructureVariant>; accessories: Accessory[]; nextId: number }
+export interface RackDoc { logo?: ValidatedLogo; appearance?: Appearance; version: 2; uprights: Record<string, UprightNode>; connections: ConnectionEdge[]; profileId?: string; rack: RackDimensions; removed: string[]; structure: Record<string, StructureVariant>; accessories: Accessory[]; nextId: number }
 export interface StructureSlot { id: string; part: PartId; connectedTo: UprightId[] }
 export interface LocalBox { min: Vec3; max: Vec3 }
 export interface Mount extends Target { position: Vec3; center: Vec3; localAnchor?: Vec3; pinAxis?: Vec3; label?: string; connectorId?: string }
-export interface ResolvedInstance { id: string; part: PartId; params: NumericParams; position: Vec3; rotation: Vec3; mount: Mount | null; mounts: Mount[]; ownerId: string; kind: 'structure' | 'accessory'; paired: boolean; connectedTo: string[]; collisionEnabled?: boolean; collisionBoxes?: LocalBox[]; localOutward?: Vec3; name?: string }
+export interface ResolvedInstance { logo?: ValidatedLogo; id: string; part: PartId; params: NumericParams; position: Vec3; rotation: Vec3; mount: Mount | null; mounts: Mount[]; ownerId: string; kind: 'structure' | 'accessory'; paired: boolean; connectedTo: string[]; collisionEnabled?: boolean; collisionBoxes?: LocalBox[]; localOutward?: Vec3; name?: string }
 export interface PlacementField { key: string; label: string; min: number; max: number; step: number }
 export interface PlacementInfo { family: string; label: string; paired: boolean; slots?: string[]; fields: PlacementField[]; faces?: Face[]; fixedHole?: number; requiredPitch?: number; handed?: boolean; mountType?: string; description?: string }
 export interface CollisionWarning { ids: [string, string]; message: string }
