@@ -119,3 +119,60 @@ parameters retain scrubbing. Custom assembly dimensions still use grid validatio
 Standalone upright radius, wall, hole diameter and end offsets are assumptions.
 Source comparison views reconstruct component profiles and dimensions; they do
 not certify physical fit. Source/vendor links and part branding remain intact.
+
+## Cable / Smith family adapters
+
+The optional v2 `systems` registry is validated by `systems.ts` and resolved after
+ordinary accessories. System IDs share the document ID namespace. Supported
+families: `cable-kraken`, `cable-ares2`, `cable-athena`, `cable-ares1`, `smith-rep`.
+These whole-rack assemblies use graph coordinates/edges and named profile IDs;
+there is no assumption that a post ID encodes its location. Their param schemas
+are closed and numeric; defaults live in `system-types.ts`. Persistence preserves
+optional appearance and detached unknown metadata. Explicit Save behavior stays
+in the store. Unsupported edits fail before geometry generation.
+
+Kraken adds `bos-hydra` and `bos-manticore` grid profiles with `tube: 76.2`.
+Other profiles retain the 75 mm default; generic remains 25/50 mm bore/pitch.
+Fixed source sleeves are rejected on the wider profiles. Manufacturer mount
+shafts are estimated at bore minus 0.8 mm. Smith side-crossmember mounts share
+`smithLayout` between CAD, collision boxes and resolved bolt metadata. Mounts
+with `connectorId` refer to that beam's bore row instead of an upright station;
+collision slot comparison therefore uses connector ID when supplied.
+
+Catalog workers register all families, with unchanged bounded thumbnail and
+scene request queues. Resolved system IDs remain appearance keys/owner IDs;
+mesh material roles preserve bare rods/bars/sleeves independently of fastener
+finish. Current static collision boxes cover occupied stack/trolley/bar bodies.
+Exports should consume resolved instances and the worker catalog, not a fixed
+list of original part IDs. See `rack-generator/research/cable-systems.md` for
+manuals, dimension confidence and deliberately unsupported configurations.
+
+Smith `outside: 1` selects the vertical PR-5000 front adapter with its full FFE
+2.0 pair. Its eight rack mounts are front-facing upright stations with Y pin
+axes. Internal extension-to-Smith bolts belong to the system geometry, not rack
+connections. Front tubes contribute collision bodies. Other front variants are
+explicitly rejected; inside configurations and existing profiles are unchanged.
+The shared `catalog.ts` now registers these builders for scene, thumbnail and
+3MF workers. Its `systemAttribution` resolver supplies manufacturer/reconstruction
+credits. Additional vendor resolvers should compose with this resolver rather
+than replace it. No material finish or source nameplate is changed by attribution.
+
+Wave 2 integration audit: system and vendor attribution are composed in the
+shared registry. Its explicitly typed `PartDefinition[]` keeps the logo stream's
+future third build argument; `buildPrintInstance` already forwards resolved logos
+and has a forwarding regression test. System multi-selection uses BulkInspector
+and shared removal helpers; system-only fields stay in CableSmithControls with
+ResetButton/gesture defaults. Standard size controls are retained. Reconstruction
+notes live in research/profile data rather than repetitive editor prose; product
+credits and actual incompatibility errors remain visible.
+
+
+Cable route plans are family adapters in `parts/cable-routes.ts`; the pure
+`cable-routing.ts` tangent solver supplies shared cable samples and sheave frames.
+Structural fairlead windows use these actual samples. `cable-stations.ts` supplies
+profile-specific trolley stations and the108-inch Kraken lower-crossmember hook;
+only resolved lower side beams move, without mutating the saved rack graph.
+Smith carriage, shaft, sleeves and collision boxes share `smithLayout` transforms,
+including the local bar offset for either5-degree installation sign. Numeric
+Smith reset defaults respect the other installed height rather than creating an
+invalid safety/bar combination.

@@ -7,6 +7,7 @@ const send = (message: LibraryWorkerResponse, transfer: Transferable[] = []): vo
 import Module from "manifold-3d";
 import wasmUrl from "manifold-3d/manifold.wasm?url";
 import { definitions } from './catalog.ts';
+import { isSystemPart } from './system-types.ts';
 const ready = Module({ locateFile: () => wasmUrl }).then((api) => {
   api.setup();
   return api;
@@ -24,10 +25,10 @@ self.onmessage = async ({ data }: MessageEvent<LibraryWorkerRequest>) => {
     for (const [key, value] of Object.entries(params))
       if (
         !Number.isFinite(value) ||
-        (value < 0 && !(data.part === "rep-nighthawk" && key === "seatAngle" && value === -15)) ||
+        (value < 0 && !((isSystemPart(data.part) && key === "angle" && value === -5) || (data.part === "rep-nighthawk" && key === "seatAngle" && value === -15))) ||
         value > 4000 ||
         (value === 0 &&
-          !["backrestAngle", "seatAngle", "cornerRadius", "benchStart", "rise", "offset", "sag"].includes(
+          !isSystemPart(data.part) && !["backrestAngle", "seatAngle", "cornerRadius", "benchStart", "rise", "offset", "sag"].includes(
             key
           ))
       )

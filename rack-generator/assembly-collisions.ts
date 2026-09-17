@@ -227,7 +227,7 @@ function intersects(a: OrientedBox, b: OrientedBox) {
 function sharedSlot(a: CollisionInstance, b: CollisionInstance): Partial<Mount> | null {
   const mounts = (instance: CollisionInstance) => Array.isArray(instance.mounts) ? instance.mounts : instance.mount ? [instance.mount] : [];
   for (const x of mounts(a)) for (const y of mounts(b)) {
-    if (x?.uprightId && x.uprightId === y?.uprightId && Number.isFinite(x.hole) && x.hole === y.hole) return x;
+    if (x?.uprightId && (x.connectorId ?? x.uprightId) === (y?.connectorId ?? y?.uprightId) && Number.isFinite(x.hole) && x.hole === y.hole) return x;
   }
   return null;
 }

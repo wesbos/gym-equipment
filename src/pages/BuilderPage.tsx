@@ -1,3 +1,5 @@
+import { CableSmithControls } from '../components/CableSmithControls.tsx';
+import { isSystemPart } from '../../rack-generator/system-types.ts';
 import { FloorInspector } from '../components/FloorInspector.tsx';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { LogoControls } from '../components/LogoControls.tsx';
@@ -162,6 +164,7 @@ function Inspector({ store }: { store: BuilderStore }) {
     );
   }
   if (state.selection.length > 1) return <BulkInspector store={store} />;
+  if (part && isSystemPart(part)) return <h2 id="selection-title">{nameOf(part)}</h2>;
   if (!part || !physical)
     return (
       <>
@@ -670,6 +673,7 @@ export default function BuilderPage() {
           </button>
           {state.selection.length > 1 && <h2 id="selection-title">{state.selection.length} parts</h2>}
           <AppearanceControls store={store} />
+          <CableSmithControls store={store} />
           <LogoControls store={store} />
           {state.placing && !state.placing.movingId && <details><summary>Swap an existing accessory</summary>
             {state.doc.accessories.map(a => {
