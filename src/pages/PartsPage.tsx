@@ -110,7 +110,7 @@ export default function PartsPage() {
       const size = controller.setMeshes(data.meshes);
       currentParams.current = data.params;
       setDescription(
-        size.map(Math.round).join(" × ") + " mm · Manifold reconstruction"
+        size.map(Math.round).join(" × ") + " mm"
       );
       setStatus(
         `${data.meshes.length} solids · ${data.meshes
@@ -348,7 +348,7 @@ export default function PartsPage() {
               <label key={key}>
                 {labelOf(key)}
                 <div className="input-wrap">
-                  <NumericControl standardOptions={selected?.standardOptions?.[key]} key={`${selected?.id}:${key}`} name={key} label={labelOf(key)} value={value} step="any"
+                  <NumericControl defaultValue={selected?.defaults[key]} standardOptions={selected?.standardOptions?.[key]} key={`${selected?.id}:${key}`} name={key} label={labelOf(key)} value={value} step="any"
                     onInvalid={() => { ++sequence.current; setValid(false); setStatus("Enter a valid parameter."); }}
                     onValue={next => changeParam(key, next)} />
                   <span>

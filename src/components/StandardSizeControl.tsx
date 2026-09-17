@@ -2,9 +2,9 @@ import { useState, type ReactNode } from 'react';
 import type { StandardOption } from '../../rack-generator/types.ts';
 import './standard-size-control.css';
 
-export function StandardSizeControl({ label, name, value, options, disabled, onValue, children }: {
+export function StandardSizeControl({ label, name, value, options, disabled, onValue, children, reset }: {
   label: string; name?: string; value: number; options: readonly StandardOption[];
-  disabled?: boolean; onValue: (value: number) => void; children: ReactNode;
+  reset?: ReactNode; disabled?: boolean; onValue: (value: number) => void; children: ReactNode;
 }) {
   const [custom, setCustom] = useState(false);
   const match = options.findIndex(option => Math.abs(option.value - value) < 1e-6);
@@ -26,6 +26,7 @@ export function StandardSizeControl({ label, name, value, options, disabled, onV
     </span>
     <button type="button" className="custom-size" aria-label={`Custom ${label.toLowerCase()}`} aria-expanded={expanded}
       disabled={disabled} onClick={() => setCustom(!expanded)}>Custom {expanded ? '⌃' : '⌄'}</button>
+    {reset}
     {expanded ? children : <input type="hidden" name={name} value={value} />}
   </span>;
 }

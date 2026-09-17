@@ -1,11 +1,13 @@
 import { StandardSizeControl } from './StandardSizeControl.tsx';
 import type { StandardOption } from '../../rack-generator/types.ts';
+import { ResetButton } from './ResetButton.tsx';
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import "./numeric-control.css";
 export interface NumericControlProps {
   label: string;
   standardOptions?: readonly StandardOption[];
   showSlider?: boolean;
+  defaultValue?: number;
   name?: string;
   value: number;
   min?: number;
@@ -22,16 +24,22 @@ export interface NumericControlProps {
 }
 export function NumericControl(props: NumericControlProps) {
   if (!props.standardOptions?.length) return <FreeformNumericControl {...props} />;
-  return <StandardSizeControl {...props} options={props.standardOptions} onValue={value => {
+  function select(value: number) {
     props.onGestureEnd?.();
     props.onGestureStart?.();
     props.onValue(props.normalize ? props.normalize(value) : value);
     props.onGestureEnd?.();
-  }}><FreeformNumericControl {...props} showSlider={false} /></StandardSizeControl>;
+  }
+  return <StandardSizeControl {...props} options={props.standardOptions} onValue={select}
+    reset={props.defaultValue !== undefined && <ResetButton label={props.label} value={props.defaultValue}
+      changed={props.value !== props.defaultValue} disabled={props.disabled} onReset={() => select(props.defaultValue!)} />}>
+    <FreeformNumericControl {...props} showSlider={false} />
+  </StandardSizeControl>;
 }
 function FreeformNumericControl({
   label,
   showSlider = true,
+  defaultValue,
   name,
   value,
   min,
@@ -210,6 +218,9 @@ function FreeformNumericControl({
           scrub(e.target.valueAsNumber);
         }}
       />}
+      {defaultValue !== undefined && <ResetButton label={label} value={defaultValue} changed={invalid || value !== defaultValue} disabled={disabled} onReset={() => {
+        end(); begin(); setText(String(defaultValue)); emit(defaultValue); end();
+      }} />}
       {invalid && (
         <small role="status">
           Enter a number{min !== undefined ? ` ≥ ${min}` : ""}
