@@ -1,4 +1,4 @@
-import { darkoTopMounts, darkoTopMount, matchingDarkoTarget } from './darko-mounts.ts';
+import { darkoTopMounts, darkoTopMount, matchingDarkoTarget, darkoTopPairSuffix } from './darko-mounts.ts';
 import { isVendorPart, vendorDefaults, vendorPlacement, vendorLimits, validateVendorParams, validateVendorMount, resolveVendor } from './vendor-mounts.ts';
 import { VOLTRA_IDS, DARKO_IDS, isDarkoTop } from './vendor-metadata.ts';
 import { validateMountShaft } from './mount-shafts.ts';
@@ -354,8 +354,10 @@ export function unpairAccessory(input: RackDoc, id: string): RackDoc {
   do { secondId = `accessory-${doc.nextId++}`; } while (doc.accessories.some(x => x.id === secondId) || Object.hasOwn(doc.uprights, secondId) || doc.connections.some(e => e.id === secondId));
   const overrides = doc.appearance?.overrides;
   if (overrides) {
-    const first = overrides[`${a.id}:${pairSuffix(a.target.uprightId, 0)}`];
-    const second = overrides[`${a.id}:${pairSuffix(other.uprightId, 1)}`];
+    const targets = [a.target, other];
+    const suffix = (index: number) => a.target.kind === 'crossmember-top' ? darkoTopPairSuffix(targets, index) : pairSuffix(targets[index].uprightId, index);
+    const first = overrides[`${a.id}:${suffix(0)}`];
+    const second = overrides[`${a.id}:${suffix(1)}`];
     if (first) overrides[a.id] = first;
     if (second) overrides[secondId] = second;
     delete overrides[`${a.id}:left`]; delete overrides[`${a.id}:right`];

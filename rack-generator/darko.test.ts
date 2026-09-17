@@ -58,3 +58,39 @@ test('arbitrary post IDs preserve paired anchors, physical paint IDs and moving 
  assert.equal(unpaired.appearance!.overrides![unpaired.accessories[1].id],'#334455');
  const bad=structuredClone(doc);bad.accessories[0].pairTarget!.station+=1;assert.throws(()=>validateAssembly(bad),/align/);
 });
+for(const layout of ['front-rear','reversed','opposed','custom'] as const)test(`Darko ${layout} width-rail pair has unique physical IDs and independent paint`,()=>{
+ const doc=createAssembly({emptyAccessories:true});
+ doc.connections.push({id:'front-width',from:'front-left',to:'front-right',level:'upper'});
+ const front=doc.connections.find(e=>e.id==='front-width')!,rear=doc.connections.find(e=>e.id==='rear-crossmember')!;
+ if(layout==='reversed'||layout==='opposed')[front.from,front.to]=[front.to,front.from];
+ if(layout==='reversed')[rear.from,rear.to]=[rear.to,rear.from];
+ if(layout==='custom'){
+  const names:Record<string,string>={'front-left':'alpha','front-right':'beta','rear-left':'gamma','rear-right':'delta'};
+  doc.uprights=Object.fromEntries(Object.entries(doc.uprights).map(([id,p])=>[names[id],p]));
+  for(const edge of doc.connections){edge.from=names[edge.from];edge.to=names[edge.to];}
+ }
+ const first:CrossmemberTopTarget={kind:'crossmember-top',connectionId:front.id,station:4,side:1,uprightId:front.from,face:'front',hole:0};
+ const second:CrossmemberTopTarget={...first,connectionId:rear.id,station:layout==='opposed'?15:4,uprightId:rear.from};
+ doc.accessories.push({id:'width-anchors',part:'darko-anchor',target:first,pairTarget:second,paired:true,params:{}});
+ const paired=validateAssembly(doc),instances=resolveAssembly(paired).filter(p=>p.ownerId==='width-anchors');
+ assert.equal(instances.length,2);
+ assert.equal(new Set(instances.map(p=>p.id)).size,2,'both rail cradles must survive scene/export ID maps');
+ const suffixes=layout==='opposed'?['right','left']:['left','right'];
+ assert.deepEqual(instances.map(p=>p.id),suffixes.map(s=>`width-anchors:${s}`));
+ paired.appearance={overrides:{[instances[0].id]:'#123456',[instances[1].id]:'#abcdef'}};
+ const roundTrip=validateAssembly(JSON.parse(JSON.stringify(paired)));
+ assert.deepEqual(resolveAssembly(roundTrip).filter(p=>p.ownerId==='width-anchors').map(p=>p.id),instances.map(p=>p.id));
+ const unpaired=unpairAccessory(roundTrip,'width-anchors');
+ assert.equal(unpaired.appearance!.overrides![unpaired.accessories[0].id],'#123456');
+ assert.equal(unpaired.appearance!.overrides![unpaired.accessories[1].id],'#abcdef');
+ assert.equal(unpaired.appearance!.overrides![instances[0].id],undefined);
+ assert.equal(unpaired.appearance!.overrides![instances[1].id],undefined);
+});
+test('standard Darko side-rail physical IDs remain stable in either pair order',()=>{
+ for(const rightFirst of [false,true]){
+  const first={...target,...(rightFirst?{connectionId:'right-upper-crossmember',uprightId:'front-right'}:{})};
+  const doc=addAccessory(createAssembly({emptyAccessories:true}),'darko-anchor',first,true);
+  const id=doc.accessories[0].id;
+  assert.deepEqual(resolveAssembly(doc).filter(p=>p.ownerId===id).map(p=>p.id),(rightFirst?['right','left']:['left','right']).map(s=>`${id}:${s}`));
+ }
+});

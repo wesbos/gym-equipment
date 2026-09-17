@@ -50,3 +50,17 @@ plates only, liner colors affect liners, and hardware finishes affect fasteners.
 Exports: `vendorAttribution(partId)` provides vendor, URL, credit, trademark and
 reconstruction disclosure. GLB groups carry that object in userData/extras.
 3MF integration should copy it into metadata while retaining every wordmark mesh.
+
+Paired top-mount physical identities preserve existing distinct `:left` / `:right`
+suffixes, including right-first standard side-rail pairs. When both target start
+uprights produce the same suffix (front/rear width rails), pair order assigns
+`:left` then `:right`. Resolution and unpairing share this rule, preserving each
+physical cradle's paint. The old duplicate-ID cases cannot encode two independent
+colors; their single existing override stays associated with its named suffix.
+Regression coverage includes front/rear, both reversed, opposed-direction, and
+custom endpoint pairs, JSON round trips, unpair paint transfer, and 3MF objects.
+
+The merged print exporter now consumes `catalog.attribution = vendorAttribution`.
+Its buildPrintInstance forwards the optional third user-logo argument; vendor
+marks remain independent. Registered vendor CAD participates in the print
+partition/XML round-trip suite as well as scene exports.
