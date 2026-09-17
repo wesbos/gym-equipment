@@ -1,5 +1,6 @@
 import type { ValidatedLogo } from '../logos/types.ts';
 import { checkCut } from '../logos/contours.ts';
+import { GENERIC_SPAN_OPTIONS, UPRIGHT_HEIGHT_OPTIONS } from '../standards.ts';
 import type { Manifold, CrossSection, Vec2, Vec3 } from 'manifold-3d';
 import type { ManifoldAPI, NumericParams, PartDefinition, SolidPart } from '../types.ts';
 type Owned = Manifold | CrossSection;
@@ -204,8 +205,8 @@ function foot(api: ManifoldAPI,p: NumericParams) {return construct(api,p,(g,p)=>
 });}
 const beamDefaults = { length: 1075, width: 75, wall: 3, holeDiameter: 25, spacing: 50, plateThickness: 6, plateHeight: 150 };
 export const definitions: PartDefinition[] = [
-  { id: 'upright', name: 'BOS STRENGTH 75 upright', category: 'Structure', defaults: { height: 2032, width: 75, wall: 3, cornerRadius: 3, holeDiameter: 25, spacing: 50, firstHole: 65, benchStart: 440, benchEnd: 4000, benchSpacing: 50, baseWidth: 105, baseDepth: 135, baseThickness: 8 }, build: upright },
-  ...[425, 725, 1075].map(length => ({ id: `crossmember-${length}`, name: `${length} mm crossmember`, category: 'Structure', defaults: { ...beamDefaults, length }, build: crossmember })),
+  { id: 'upright', standardOptions: { height: UPRIGHT_HEIGHT_OPTIONS }, name: 'BOS STRENGTH 75 upright', category: 'Structure', defaults: { height: 2032, width: 75, wall: 3, cornerRadius: 3, holeDiameter: 25, spacing: 50, firstHole: 65, benchStart: 440, benchEnd: 4000, benchSpacing: 50, baseWidth: 105, baseDepth: 135, baseThickness: 8 }, build: upright },
+  ...[425, 725, 1075].map(length => ({ id: `crossmember-${length}`, standardOptions: { length: GENERIC_SPAN_OPTIONS }, name: `${length} mm crossmember`, category: 'Structure', defaults: { ...beamDefaults, length }, build: crossmember })),
   { id: 'angled-crossmember', name: 'Angled crossmember', category: 'Structure', defaults: { ...beamDefaults, length: 425, rise: 199 }, build: (api, p) => shapedCrossmember(api, p, true) },
   { id: 'offset-crossmember', name: 'Offset crossmember', category: 'Structure', defaults: { ...beamDefaults, length: 1225, offset: 193.5 }, build: (api, p) => shapedCrossmember(api, p, false) },
   { id: 'nameplate', name: 'Nameplate panel', category: 'Structure', defaults: { length: 1075, height: 175, thickness: 5.0524, holeDiameter: 25 }, build: nameplate },

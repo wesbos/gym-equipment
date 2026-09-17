@@ -71,8 +71,8 @@ patterns remain unavailable rather than falsely align 50 mm to 50.8 mm. BOS
 floor feet are not offered on REP profiles. Six-post bay resizing preserves the
 rear storage span instead of scaling it with the main bay.
 
-The UI names these as reconstructions and shows estimates before applying and
-in active rack settings. Physical REP fit is unverified. PR-1100/1000/1050 and
+Reconstruction limitations live in this document; product controls show dimensions
+and profile names. Physical REP fit is unverified. PR-1100/1000/1050 and
 Apollo/Omni-specific geometry remain outside this implementation; #8 still has
 that residual coverage gap. Generic two-post half rack is not labelled Apollo.
 
@@ -102,3 +102,20 @@ The three source J-hook shafts are 15.766–15.7674 mm and pass the 15.875 mm bo
 check. Other source shaft envelopes are conservatively rounded up to 0.1 mm in
 mount-shafts.ts. Passing this geometric check does not certify physical fit.
 Generic 25 mm bores and default source geometry remain unchanged.
+
+## Standard size controls
+
+Rack standards come from the active profile catalogs and are filtered through
+`snapDimensions`. Generic BOS retains 425/725/1075 mm spans and its 2032 + n×50 mm
+height lattice: of the common imperial cuts, only 80 inches is grid-valid here.
+72/93/108-inch buttons are not advertised as generic compatible. Standalone upright
+geometry can use exact 1828.8/2362.2/2743.2 mm cuts without implying assembly fit.
+Imperial labels on metric source spans are display approximations; values stay exact.
+Parts declare serializable `standardOptions` by parameter name. NumericControl
+automatically renders standards plus Custom with no range slider, preserving
+normalization, live worker coalescing and gesture history callbacks. Freeform
+parameters retain scrubbing. Custom assembly dimensions still use grid validation.
+
+Standalone upright radius, wall, hole diameter and end offsets are assumptions.
+Source comparison views reconstruct component profiles and dimensions; they do
+not certify physical fit. Source/vendor links and part branding remain intact.

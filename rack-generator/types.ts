@@ -10,7 +10,8 @@ export type NumericParams = Record<string, number>;
 export type PartParams = NumericParams;
 export type PartId = 'upright' | 'crossmember-425' | 'crossmember-725' | 'crossmember-1075' | 'angled-crossmember' | 'offset-crossmember' | 'nameplate' | 'branded-crossmember' | 'branded-crossmember-lite' | 'foot-400' | 'foot-800' | 'pullup-straight' | 'pullup-multigrip' | 'pullup-sphere' | 'safety-box' | 'safety-pin-pipe' | 'safety-webbing' | 'j-hook-standard' | 'j-hook-roller' | 'j-hook-sandwich' | 'spotter-arm' | 'dip-horn' | 'dip-bar-adjustable' | 'landmine' | 'monolift' | 'single-bar-holder' | 'storage-pin-short' | 'storage-pin-long';
 export interface SolidPart extends MaterialSource { name: string; solid: Manifold; color?: string; metalness?: number; roughness?: number }
-export interface PartDefinition { id: string; name: string; category: string; defaults: NumericParams; build: (api: ManifoldAPI, params: NumericParams, logo?: ValidatedLogo) => SolidPart[]; reference?: { file: string; node: string }; description?: string }
+export interface StandardOption { value: number; label: string }
+export interface PartDefinition { standardOptions?: Record<string, readonly StandardOption[]>; id: string; name: string; category: string; defaults: NumericParams; build: (api: ManifoldAPI, params: NumericParams, logo?: ValidatedLogo) => SolidPart[]; reference?: { file: string; node: string }; description?: string }
 export interface UprightParams { height: number; width: number; wall: number; radius: number; diameter: number; spacing: number; offset: number }
 export interface UprightMesh { positions: Float32Array; indices: Uint32Array; stride: number; height: number; centers: number[]; volume: number; params: UprightParams }
 export interface LibraryWorkerRequest { logo?: ValidatedLogo; id: number | string; part: string; params: NumericParams }
