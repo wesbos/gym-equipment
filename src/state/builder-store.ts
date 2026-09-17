@@ -1,3 +1,4 @@
+import { removeSelection, selectionOwners, sharedFields, type PhysicalInstanceId, type SelectionGesture } from './selection.ts';
 import {
   LocalConfigStorage,
   type ConfigStorage,
@@ -32,6 +33,10 @@ export interface BuilderSnapshot {
   storageError: string | null;
   doc: RackDoc;
   resolved: ResolvedInstance[];
+  selection: readonly PhysicalInstanceId[];
+  selectionAnchor: PhysicalInstanceId | null;
+  selectionTool: boolean;
+  /** Last physical ID, for single-inspector compatibility. */
   selected: string | null;
   definitions: CatalogPart[];
   placing: { part: PartId; movingId: string | null } | null;
@@ -79,6 +84,9 @@ export class BuilderStore {
       storageError: null,
       doc,
       resolved: resolveAssembly(doc),
+      selection: [],
+      selectionAnchor: null,
+      selectionTool: false,
       selected: null,
       definitions: [],
       placing: null,
@@ -127,6 +135,9 @@ export class BuilderStore {
   };
   getSnapshot = () => this.state;
   patch = (patch: Partial<BuilderSnapshot>) => {
+    if (patch.selected !== undefined && patch.selection === undefined) patch.selection = patch.selected ? [patch.selected] : [];
+    if (patch.resolved && !patch.selection) patch.selection = this.state.selection.filter(id => patch.resolved!.some(r => r.id === id));
+    if (patch.selection) patch.selected = patch.selection.at(-1) ?? null;
     this.state = { ...this.state, ...patch };
     this.listeners.forEach((fn) => fn());
   };
@@ -259,6 +270,9 @@ export class BuilderStore {
       inputRevision: this.state.inputRevision + 1,
       doc: validateAssembly(doc),
       resolved: resolveAssembly(doc),
+      selection: [],
+      selectionAnchor: null,
+      selectionTool: false,
       selected: null,
       placing: null,
       structureChoice: null,
@@ -314,12 +328,65 @@ export class BuilderStore {
   /** Editing targets the owning group; selection remains a physical piece for paint. */
   ownerOf = (id: string | null) =>
     this.state.resolved.find(instance => instance.id === id)?.ownerId || id;
-  select = (id: string | null) =>
-    this.patch({
-      selected: id,
-      placing: null,
-      structureChoice: null,
-    });
+  select = (id: string | null, gesture?: SelectionGesture, order?: readonly string[]) => {
+    if (gesture && (this.state.placing || this.state.structureChoice)) return;
+    gesture ??= {};
+    const physicalId = this.state.resolved.find(r => r.id === id)?.id ?? this.state.resolved.find(r => r.ownerId === id)?.id ?? id;
+    const toggle = gesture.metaKey || gesture.ctrlKey;
+    let selection = physicalId ? [physicalId] : [];
+    if (physicalId && gesture.shiftKey && order && this.state.selectionAnchor && order.includes(this.state.selectionAnchor)) {
+      const a = order.indexOf(this.state.selectionAnchor), b = order.indexOf(physicalId);
+      if (b >= 0) selection = order.slice(Math.min(a, b), Math.max(a, b) + 1);
+      if (toggle) selection = [...new Set([...this.state.selection, ...selection])];
+    } else if (physicalId && toggle) selection = this.state.selection.includes(physicalId)
+      ? this.state.selection.filter(item => item !== physicalId) : [...this.state.selection, physicalId];
+    this.patch({ placing: null, structureChoice: null, selection, selectionAnchor: gesture.shiftKey ? this.state.selectionAnchor : physicalId });
+  };
+  selectMany = (ids: readonly PhysicalInstanceId[], additive = false) => {
+    if (this.state.placing || this.state.structureChoice) return;
+    const valid = ids.filter(id => this.state.resolved.some(r => r.id === id));
+    this.patch({ selection: [...new Set([...(additive ? this.state.selection : []), ...valid])] });
+  };
+  escape = () => this.patch({ placing: null, structureChoice: null, selection: [], selectionAnchor: null, selectionTool: false });
+  paintSelection = (color?: string) => {
+    const overrides = { ...this.state.doc.appearance?.overrides };
+    for (const id of this.state.selection) { if (color) overrides[id] = color; else delete overrides[id]; }
+    this.commit({ ...this.state.doc, appearance: { ...this.state.doc.appearance, overrides } });
+  };
+  removeSelected = () => {
+    this.commit(removeSelection(this.state.doc, this.state.resolved, this.state.selection));
+    this.select(null);
+  };
+  editSelectionParam = (key: string, value: number) => {
+    const instances = this.state.resolved.filter(r => this.state.selection.includes(r.id));
+    const field = sharedFields(this.state.doc, instances).find(f => f.key === key);
+    if (!field || !Number.isFinite(value) || value < field.min || value > field.max) throw Error('Unsupported shared parameter.');
+    const owners = selectionOwners(this.state.resolved, this.state.selection), doc = structuredClone(this.state.doc);
+    for (const item of doc.accessories) if (owners.includes(item.id)) item.params[key] = value;
+    this.commit(doc);
+  };
+  /** Copies complete accessory owners at existing mounts; the user can then move them. */
+  duplicateSelected = () => {
+    const { doc, resolved, selection } = this.state;
+    const instances = resolved.filter(r => selection.includes(r.id));
+    if (!instances.length || instances.some(r => r.kind !== 'accessory')) return;
+    const owners = selectionOwners(resolved, selection);
+    if (resolved.some(r => owners.includes(r.ownerId) && !selection.includes(r.id))) return;
+    const next = structuredClone(doc), newOwners: string[] = [];
+    for (const owner of owners) {
+      const item = doc.accessories.find(a => a.id === owner)!;
+      let id: string;
+      do { id = `accessory-${next.nextId++}`; } while (next.accessories.some(a => a.id === id) || next.uprights[id] || next.connections.some(c => c.id === id));
+      next.accessories.push({ ...structuredClone(item), id }); newOwners.push(id);
+      for (const physical of instances.filter(r => r.ownerId === owner)) {
+        const color = doc.appearance?.overrides?.[physical.id];
+        if (color) { next.appearance ??= {}; next.appearance.overrides ??= {}; next.appearance.overrides[id + physical.id.slice(owner.length)] = color; }
+      }
+    }
+    this.commit(next);
+    this.selectMany(this.state.resolved.filter(r => newOwners.includes(r.ownerId)).map(r => r.id));
+    this.status('Copies added at original mounts. Select a copy to move it.');
+  };
   cancelPlacement = () => this.patch({ placing: null, structureChoice: null });
   startPlacement = (part: PartId, movingId: string | null = null) => {
     const info = getPartPlacementInfo(part, this.state.doc);

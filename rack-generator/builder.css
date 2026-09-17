@@ -30,3 +30,5 @@
 .appearance-controls .field > span { font-size: 11px; color: #60735c; }
 .appearance-controls select { width: 100%; padding: 9px; border: 1px solid #cbd4c7; border-radius: 6px; background: #fff; font: inherit; font-size: 13px; }
 .appearance-controls .note { font-size: 12px; line-height: 1.5; color: #60735c; }
+
+.bom-row[aria-pressed="true"] { border-color: #c77c36; background: #c77c3622; }
