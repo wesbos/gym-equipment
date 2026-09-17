@@ -6,7 +6,6 @@ import { NumericControl } from "./NumericControl.tsx";
 import {
   SYSTEM_DEFAULTS,
   SYSTEM_NAMES,
-  SYSTEM_NOTE,
   SYSTEM_PARTS,
   type RackSystem,
   type SystemPartId,
@@ -109,10 +108,7 @@ function Options({
               onValue={(v) => onChange({ safetyHeight: v })}
             />
           </label>
-          <p className="note">
-            Front includes reconstructed extension brackets and full FFE 2.0 feet; vertical PR-5000 only. Rods, bar and
-            sleeves stay polished independently of bolt finish.
-          </p>
+
         </>
       ) : (
         <>
@@ -237,7 +233,6 @@ export function CableSmithControls({ store }: { store: BuilderStore }) {
   return (
     <details className="system-controls">
       <summary>Cable systems & Smith</summary>
-      <p className="note">{SYSTEM_NOTE}</p>
       {(doc.systems ?? []).map((s) => (
         <Installed key={s.id} system={s} store={store} />
       ))}
@@ -299,8 +294,7 @@ export function CableSmithControls({ store }: { store: BuilderStore }) {
         >
           Bells of Steel
         </a>
-        . Historical ARES 1.0 dimensions are estimated. Kraken 108″
-        raised-crossmember installation is not yet supported.
+        .
       </p>
     </details>
   );

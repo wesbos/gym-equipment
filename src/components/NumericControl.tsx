@@ -10,6 +10,8 @@ export interface NumericControlProps {
   defaultValue?: number;
   name?: string;
   value: number;
+  /** Keep heterogeneous selections blank until the user chooses a value. */
+  mixed?: boolean;
   min?: number;
   max?: number;
   step?: number | "any";
@@ -30,9 +32,9 @@ export function NumericControl(props: NumericControlProps) {
     props.onValue(props.normalize ? props.normalize(value) : value);
     props.onGestureEnd?.();
   }
-  return <StandardSizeControl {...props} options={props.standardOptions} onValue={select}
+  return <StandardSizeControl {...props} mixed={props.mixed} options={props.standardOptions} onValue={select}
     reset={props.defaultValue !== undefined && <ResetButton label={props.label} value={props.defaultValue}
-      changed={props.value !== props.defaultValue} disabled={props.disabled} onReset={() => select(props.defaultValue!)} />}>
+      changed={!!props.mixed || props.value !== props.defaultValue} disabled={props.disabled} onReset={() => select(props.defaultValue!)} />}>
     <FreeformNumericControl {...props} showSlider={false} />
   </StandardSizeControl>;
 }
@@ -42,6 +44,7 @@ function FreeformNumericControl({
   defaultValue,
   name,
   value,
+  mixed = false,
   min,
   max,
   step = 1,
@@ -53,9 +56,11 @@ function FreeformNumericControl({
   onGestureEnd,
   onInvalid,
 }: NumericControlProps) {
-  const [text, setText] = useState(String(value));
+  const [text, setText] = useState(mixed ? "" : String(value));
   const [dragging, setDragging] = useState(false);
   const last = useRef(value);
+  const lastMixed = useRef(mixed);
+  useEffect(() => () => onGestureEnd?.(), [onGestureEnd]);
   const range = useRef({
     min: Math.min(0, value),
     max: Math.max(100, value * 2),
@@ -68,11 +73,12 @@ function FreeformNumericControl({
     moved: boolean;
   } | null>(null);
   useEffect(() => {
-    if (value !== last.current) {
-      setText(String(value));
+    if (value !== last.current || mixed !== lastMixed.current) {
+      setText(mixed ? "" : String(value));
       last.current = value;
+      lastMixed.current = mixed;
     }
-  }, [value]);
+  }, [value, mixed]);
   const parsed = text.trim() === "" ? NaN : Number(text);
   const invalid =
     !Number.isFinite(parsed) ||
@@ -128,14 +134,15 @@ function FreeformNumericControl({
         name={name}
         type="number"
         aria-label={label}
-        aria-invalid={invalid}
+        aria-invalid={invalid && !(mixed && text === "")}
+        placeholder={mixed ? "Mixed" : undefined}
         title="Scrub value (Shift: fine)"
         value={text}
         min={min}
         max={max}
         step={advance ? "any" : step}
         disabled={disabled}
-        required
+        required={!mixed}
         className={dragging ? "scrubbing" : ""}
         onKeyDown={e => {
           if (advance && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
@@ -193,7 +200,7 @@ function FreeformNumericControl({
         }}
         onDoubleClick={(e) => e.currentTarget.select()}
       />
-      {showSlider && <input
+      {showSlider && !mixed && <input
         type="range"
         aria-label={`${label} slider`}
         min={min ?? Math.min(range.current.min, value)}
@@ -221,7 +228,7 @@ function FreeformNumericControl({
       {defaultValue !== undefined && <ResetButton label={label} value={defaultValue} changed={invalid || value !== defaultValue} disabled={disabled} onReset={() => {
         end(); begin(); setText(String(defaultValue)); emit(defaultValue); end();
       }} />}
-      {invalid && (
+      {invalid && !(mixed && text === "") && (
         <small role="status">
           Enter a number{min !== undefined ? ` ≥ ${min}` : ""}
           {max !== undefined ? ` ≤ ${max}` : ""}.

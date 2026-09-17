@@ -1,5 +1,10 @@
 import { CableSmithControls } from '../components/CableSmithControls.tsx';
 import { isSystemPart } from '../../rack-generator/system-types.ts';
+import { VendorControls, VendorCredit } from '../components/VendorControls.tsx';
+import { VOLTRA_IDS, DARKO_IDS } from '../../rack-generator/vendor-metadata.ts';
+import { editableFields } from '../state/selection.ts';
+import { BulkInspector } from '../components/BulkInspector.tsx';
+
 import { PrintExport } from '../components/PrintExport.tsx';
 import { dimensionOptions } from '../../rack-generator/standards.ts';
 import { swapCandidates, swapCandidate } from '../../rack-generator/swap.ts';
@@ -45,6 +50,8 @@ import type {
 } from "../../rack-generator/types.ts";
 import "../../rack-generator/builder.css";
 const groups: [string, PartId[]][] = [
+  ["Digital resistance", VOLTRA_IDS],
+  ["Darko Lifting", DARKO_IDS],
   [
     "Frame",
     [
@@ -121,7 +128,6 @@ function Inspector({ store }: { store: BuilderStore }) {
     const data = new FormData(event.currentTarget);
     store.act(() => action(data));
   };
-  if (part && isSystemPart(part)) return <><h2>{nameOf(part)}</h2><p>Edit or remove this assembly in Cable systems &amp; Smith.</p></>;
   if (structureChoice) {
     const slots = swapCandidates(doc, structureChoice).filter(candidate => candidate.valid);
     return (
@@ -148,6 +154,8 @@ function Inspector({ store }: { store: BuilderStore }) {
       </>
     );
   }
+  if (state.selection.length > 1) return <BulkInspector store={store} />;
+  if (part && isSystemPart(part)) return <h2 id="selection-title">{nameOf(part)}</h2>;
   if (!part || !physical)
     return (
       <>
@@ -182,64 +190,7 @@ function Inspector({ store }: { store: BuilderStore }) {
         </form>
       </>
     );
-  const fields: PlacementField[] = entry?.part.startsWith("pullup")
-    ? [
-        {
-          key: "diameter",
-          label: "Grip diameter",
-          min: 15,
-          max: 60,
-          step: 0.5,
-        },
-        ...(entry.part === "pullup-sphere"
-          ? [
-              {
-                key: "sphereDiameter",
-                label: "Sphere diameter",
-                min: 40,
-                max: 200,
-                step: 0.5,
-              },
-            ]
-          : []),
-      ]
-    : entry?.part === "safety-pin-pipe"
-      ? [
-          {
-            key: "pipeDiameter",
-            label: "Pipe diameter",
-            min: 32,
-            max: 75,
-            step: 0.5,
-          },
-          { key: "wall", label: "Pipe wall", min: 1, max: 10, step: 0.5 },
-          {
-            key: "pinDiameter",
-            label: "Pin diameter",
-            min: 12,
-            max: 24,
-            step: 0.5,
-          },
-        ]
-      : entry?.part === "safety-webbing"
-        ? [
-            { key: "sag", label: "Strap sag", min: 1, max: 200, step: 0.5 },
-            {
-              key: "strapWidth",
-              label: "Strap width",
-              min: 20,
-              max: 75,
-              step: 0.5,
-            },
-            {
-              key: "strapThickness",
-              label: "Strap thickness",
-              min: 1,
-              max: 8,
-              step: 0.5,
-            },
-          ]
-        : info?.fields || [];
+  const fields = editableFields(part, doc);
   const variants = allParts.filter((id) =>
     entry
       ? getPartPlacementInfo(id, doc)?.family === info?.family &&
@@ -280,7 +231,7 @@ function Inspector({ store }: { store: BuilderStore }) {
                   variant === part ? { ...item.params, ...params } : {};
                 item.part = variant;
                 const uprightId = data.get("upright") as UprightId;
-                item.target = {
+                if (entry.target.kind !== "crossmember-top") item.target = {
                   uprightId,
                   face: spanning
                     ? uprightId.endsWith("left")
@@ -292,7 +243,7 @@ function Inspector({ store }: { store: BuilderStore }) {
                     : Number(data.get("hole")) - 1,
                 };
                 if (item.spanTo && data.get("spanTo")) item.spanTo = String(data.get("spanTo"));
-                item.paired =
+                if (entry.target.kind !== "crossmember-top") item.paired =
                   !!getPartPlacementInfo(variant, doc)?.paired &&
                   data.get("paired") === "on";
                 store.commit(next);
@@ -320,7 +271,7 @@ function Inspector({ store }: { store: BuilderStore }) {
               <ResetButton label="variant" changed={part !== resetVariant} onReset={() => store.act(() => { const next = structuredClone(doc); if (entry) { const a = next.accessories.find(a => a.id === entry.id)!; a.part = resetVariant; a.params = {}; store.commit(next); } else store.commit(replaceStructurePart(doc, ownerId!, resetVariant)); })} />
             </Field>
           )}
-          {entry && (
+          {entry && entry.target.kind !== "crossmember-top" && (
             <>
               <Field label="Mounting upright">
                 <select name="upright" value={entry.target.uprightId} onChange={e => e.currentTarget.form?.requestSubmit()}>
@@ -380,6 +331,8 @@ function Inspector({ store }: { store: BuilderStore }) {
               </p>
             </>
           )}
+          {entry && <VendorControls store={store} entry={entry} />}
+          <VendorCredit part={part} />
           {fields.map((field) => (
             <Field key={field.key} label={`${field.label} (mm)`}>
               <NumericControl defaultValue={partDefaults(doc, part)[field.key]} standardOptions={definitions.find(d => d.id === part)?.standardOptions?.[field.key]} name={field.key} label={field.label}
@@ -451,7 +404,7 @@ export default function BuilderPage() {
     const scene = createBuilderScene(viewport.current!, store);
     controller.current = scene;
     const keyboard = (e: KeyboardEvent) => {
-      if (e.key === "Escape") store.cancelPlacement();
+      if (e.key === "Escape") store.escape();
       if (
         e.target instanceof HTMLElement &&
         /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)
@@ -465,8 +418,7 @@ export default function BuilderPage() {
       if ((e.key === "Delete" || e.key === "Backspace") && selected) {
         e.preventDefault();
         store.act(() => {
-          store.commit(removeInstance(store.getSnapshot().doc, store.ownerOf(selected)!));
-          store.select(null);
+          store.removeSelected();
         });
       }
     };
@@ -477,23 +429,7 @@ export default function BuilderPage() {
       controller.current = null;
     };
   }, [store]);
-  const warnings = detectCollisions(state.resolved),
-    bom = new Map<
-      string,
-      { part: PartId; id: string; count: number; length?: number }
-    >();
-  for (const r of state.resolved) {
-    const key = r.part + JSON.stringify(r.params),
-      row = bom.get(key);
-    if (row) row.count++;
-    else
-      bom.set(key, {
-        part: r.part,
-        id: r.ownerId || r.id,
-        count: 1,
-        length: r.params.length,
-      });
-  }
+  const warnings = detectCollisions(state.resolved);
   const fit = (mode = view) => {
     setView(mode);
     controller.current?.fit(mode);
@@ -658,7 +594,7 @@ export default function BuilderPage() {
                         params={state.definitions.find((d) => d.id === id)?.defaults}
                         className="thumb"
                       />
-                      <span>{nameOf(id)}</span>
+                      <span>{nameOf(id)}<VendorCredit part={id} compact /></span>
                       <span className="part-plus">+</span>
                     </button>
                   ))}
@@ -674,6 +610,7 @@ export default function BuilderPage() {
         <main className="stage">
           <div id="viewport" ref={viewport} />
           <div className="view-controls">
+            <button aria-pressed={state.selectionTool} onClick={() => store.patch({ selectionTool: !state.selectionTool })}>Select</button>
             {(["iso", "front", "side", "top"] as const).map((mode) => (
               <button
                 key={mode}
@@ -720,14 +657,12 @@ export default function BuilderPage() {
                 <button onClick={() => setDrawer(false)}>Close ×</button>
               </div>
               <div id="parts-list">
-                {[...bom].map(([key, row]) => (
-                  <button
-                    key={key}
-                    className="bom-row"
-                    onClick={() => store.select(row.id)}
-                  >
-                    {row.count} × {nameOf(row.part)}
-                    {row.length ? ` · ${Math.round(row.length)} mm` : ""}
+                {state.resolved.map(row => (
+                  <button key={row.id} className="bom-row" data-instance-id={row.id}
+                    aria-pressed={state.selection.includes(row.id)}
+                    onClick={e => store.select(row.id, e, state.resolved.map(r => r.id))}>
+                    {nameOf(row.part)} · {row.id.replaceAll('-', ' ')}
+                    <VendorCredit part={row.part} compact />
                   </button>
                 ))}
               </div>
@@ -746,6 +681,7 @@ export default function BuilderPage() {
           >
             ← Rack settings
           </button>
+          {state.selection.length > 1 && <h2 id="selection-title">{state.selection.length} parts</h2>}
           <AppearanceControls store={store} />
           <CableSmithControls store={store} />
           {state.placing && !state.placing.movingId && <details><summary>Swap an existing accessory</summary>

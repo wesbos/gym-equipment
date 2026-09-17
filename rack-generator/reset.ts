@@ -30,6 +30,7 @@ export function defaultVariant(doc: RackDoc, id: string): PartId {
 }
 /** Placement defaults keep explicit graph endpoints; no arbitrary relocation of dynamic posts. */
 export function placementDefaults(doc: RackDoc, accessory: Accessory): Accessory {
+  if (accessory.target.kind === 'crossmember-top') return { ...accessory, params: {}, target: { ...accessory.target } };
   const stock = createAssembly().accessories.find(a => a.id === accessory.id);
   const stockPost = stock && doc.uprights[stock.target.uprightId] && !doc.removed.includes(stock.target.uprightId) ? stock.target.uprightId : accessory.target.uprightId;
   const target = defaultAccessoryTarget(doc, accessory.part, accessory.spanTo ? accessory.target.uprightId : stockPost);

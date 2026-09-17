@@ -1,12 +1,19 @@
-import { systemAttribution } from './system-attribution.ts';
-import { definitions as cables } from './parts/cable-systems.ts';
-import { definitions as smith } from './parts/smith.ts';
-/** Shared CAD registry: rendering, thumbnails and printing use the same builders. */
+/** Shared builders and composable attribution for rendering, thumbnails and exports. */
+import type { PartDefinition } from './types.ts';
+import type { CADCatalog } from './catalog-contract.ts';
 import { definitions as structure } from './parts/structure.ts';
 import { definitions as attachments } from './parts/attachments.ts';
 import { definitions as bars } from './parts/bars-safeties.ts';
-export const definitions = [...structure, ...bars, ...attachments, ...cables, ...smith];
-
-import type { CADCatalog } from './catalog-contract.ts';
-/** Vendor/system streams extend this shared registry, not individual workers. */
-export const catalog: CADCatalog = { definitions, attribution: systemAttribution };
+import { definitions as voltra } from './parts/voltra.ts';
+import { definitions as darko } from './parts/darko.ts';
+import { definitions as cables } from './parts/cable-systems.ts';
+import { definitions as smith } from './parts/smith.ts';
+import { vendorAttribution } from './vendor-metadata.ts';
+import { systemAttribution } from './system-attribution.ts';
+// Retain PartDefinition's builder signature, including the optional logo argument
+// when that stream integrates; vendor marks remain internal to their builders.
+export const definitions: PartDefinition[] = [...structure, ...bars, ...attachments, ...voltra, ...darko, ...cables, ...smith];
+export const catalog: CADCatalog = {
+  definitions,
+  attribution: part => systemAttribution(part) ?? vendorAttribution(part),
+};
