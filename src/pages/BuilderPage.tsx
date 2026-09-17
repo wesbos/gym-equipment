@@ -1,6 +1,9 @@
 import { addsStructure } from '../../rack-generator/structure-candidates.ts';
+import { VendorControls, VendorCredit } from '../components/VendorControls.tsx';
+import { VOLTRA_IDS, DARKO_IDS } from '../../rack-generator/vendor-metadata.ts';
 import { editableFields } from '../state/selection.ts';
 import { BulkInspector } from '../components/BulkInspector.tsx';
+
 import { PrintExport } from '../components/PrintExport.tsx';
 import { dimensionOptions } from '../../rack-generator/standards.ts';
 import { swapCandidates, swapCandidate } from '../../rack-generator/swap.ts';
@@ -46,6 +49,8 @@ import type {
 } from "../../rack-generator/types.ts";
 import "../../rack-generator/builder.css";
 const groups: [string, PartId[]][] = [
+  ["Digital resistance", VOLTRA_IDS],
+  ["Darko Lifting", DARKO_IDS],
   [
     "Frame",
     [
@@ -229,7 +234,7 @@ function Inspector({ store }: { store: BuilderStore }) {
                   variant === part ? { ...item.params, ...params } : {};
                 item.part = variant;
                 const uprightId = data.get("upright") as UprightId;
-                item.target = {
+                if (entry.target.kind !== "crossmember-top") item.target = {
                   uprightId,
                   face: spanning
                     ? uprightId.endsWith("left")
@@ -241,7 +246,7 @@ function Inspector({ store }: { store: BuilderStore }) {
                     : Number(data.get("hole")) - 1,
                 };
                 if (item.spanTo && data.get("spanTo")) item.spanTo = String(data.get("spanTo"));
-                item.paired =
+                if (entry.target.kind !== "crossmember-top") item.paired =
                   !!getPartPlacementInfo(variant, doc)?.paired &&
                   data.get("paired") === "on";
                 store.commit(next);
@@ -269,7 +274,7 @@ function Inspector({ store }: { store: BuilderStore }) {
               <ResetButton label="variant" changed={part !== resetVariant} onReset={() => store.act(() => { const next = structuredClone(doc); if (entry) { const a = next.accessories.find(a => a.id === entry.id)!; a.part = resetVariant; a.params = {}; store.commit(next); } else store.commit(replaceStructurePart(doc, ownerId!, resetVariant)); })} />
             </Field>
           )}
-          {entry && (
+          {entry && entry.target.kind !== "crossmember-top" && (
             <>
               <Field label="Mounting upright">
                 <select name="upright" value={entry.target.uprightId} onChange={e => e.currentTarget.form?.requestSubmit()}>
@@ -329,6 +334,8 @@ function Inspector({ store }: { store: BuilderStore }) {
               </p>
             </>
           )}
+          {entry && <VendorControls store={store} entry={entry} />}
+          <VendorCredit part={part} />
           {fields.map((field) => (
             <Field key={field.key} label={`${field.label} (mm)`}>
               <NumericControl defaultValue={partDefaults(doc, part)[field.key]} standardOptions={definitions.find(d => d.id === part)?.standardOptions?.[field.key]} name={field.key} label={field.label}
@@ -590,7 +597,7 @@ export default function BuilderPage() {
                         params={state.definitions.find((d) => d.id === id)?.defaults}
                         className="thumb"
                       />
-                      <span>{nameOf(id)}</span>
+                      <span>{nameOf(id)}<VendorCredit part={id} compact /></span>
                       <span className="part-plus">+</span>
                     </button>
                   ))}
@@ -658,6 +665,7 @@ export default function BuilderPage() {
                     aria-pressed={state.selection.includes(row.id)}
                     onClick={e => store.select(row.id, e, state.resolved.map(r => r.id))}>
                     {nameOf(row.part)} · {row.id.replaceAll('-', ' ')}
+                    <VendorCredit part={row.part} compact />
                   </button>
                 ))}
               </div>
