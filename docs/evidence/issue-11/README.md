@@ -4,8 +4,8 @@ Verified 2026-09-17 in isolated `gym-wave2-logos` Chrome, production preview on
 127.0.0.1:5305. Screenshot shows the persisted JPEG threshold/contrast settings,
 bridged contour preview and the real through-cut on the mounted nameplate.
 
-- Final main integration: 8e8ef7e (multiselect, placement proposals, 3MF and prior integrations retained).
-- `npm test`: 201 passed, 0 failed/skipped (66.52 s).
+- Final main integration: b772ccd (vendor attachments, multiselect, proposals, 3MF and prior integrations retained).
+- `npm test`: 247 passed, 0 failed/skipped (73.11 s).
 - `npm run build`: strict TypeScript and production Vite build passed. Existing
   large-chunk and Manifold node:module browser-externalization advisories remain.
 - `GYM_LOGO_CDP_URL=<isolated Chrome endpoint> npm run test:logos:browser -- --reporter=line`:
@@ -29,3 +29,6 @@ of the real custom nameplate fixture passed. See slicer-audit.txt: four objects,
 all meshes pass directed-edge topology checks and report zero repairs. Orca's
 headless thumbnail shader warning does not prevent archive export. GUI preview,
 G-code slicing and physical fabrication are not claimed.
+
+The final domain suite also resolves an actual paired Darko Anchor with a custom
+BOS nameplate and proves vendor instances receive no user logo payload.

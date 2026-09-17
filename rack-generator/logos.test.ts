@@ -4,7 +4,7 @@ import Module from 'manifold-3d';
 import { finalizeLogo, checkCut } from './logos/contours.ts';
 import { textContours, svgContours, safeSvg, traceBitmap } from './logos/sources.ts';
 import { validateLogo, type LogoSource } from './logos/types.ts';
-import { createAssembly, replaceStructurePart, resolveAssembly, validateAssembly } from './assembly.ts';
+import { addAccessory, createAssembly, replaceStructurePart, resolveAssembly, validateAssembly } from './assembly.ts';
 import { definitions } from './parts/structure.ts';
 const api = await Module(); api.setup();
 const source: LogoSource = { kind: 'text', font: 'helvetiker', text: 'BOS' };
@@ -75,4 +75,11 @@ test('SVG nonuniformly transformed line strokes retain their true outline', () =
 test('automatic bridges reject rather than silently erase tiny artwork', () => {
   const data = '<svg><rect width="100" height="24"/><path fill-rule="evenodd" d="M105 0h.5v.5h-.5Z M105.1 .1h.3v.3h-.3Z"/></svg>';
   assert.throws(() => finalizeLogo(api, { kind: 'svg', data }, svgContours(api, data), true), /erase a small detail/);
+});
+
+test('user logos stay on BOS sites while real Darko vendor marks remain isolated', () => {
+  const doc = addAccessory(replaceStructurePart(createAssembly({emptyAccessories:true}), 'rear-crossmember', 'nameplate'), 'darko-anchor', {kind:'crossmember-top',connectionId:'left-upper-crossmember',station:3,side:1,uprightId:'front-left',face:'front',hole:0},true);
+  doc.logo=make();const instances=resolveAssembly(doc);
+  assert.ok(instances.find(r=>r.part==='nameplate')?.logo);
+  const vendor=instances.filter(r=>r.part==='darko-anchor');assert.equal(vendor.length,2);assert.ok(vendor.every(r=>r.logo===undefined));
 });
