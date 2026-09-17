@@ -98,7 +98,7 @@ export function createBuilderScene(
     >(),
     cache = new Map<string, Promise<THREE.Group>>();
   const geometryKey = (entry: ResolvedInstance) =>
-    entry.part +
+    entry.part + JSON.stringify(entry.logo?.loops ?? null) +
     ":" +
     JSON.stringify(
       Object.fromEntries(
@@ -120,6 +120,7 @@ export function createBuilderScene(
           id,
           part: entry.part,
           params: entry.params,
+          logo: entry.logo,
         };
         worker.postMessage(request);
       }).catch((error) => {

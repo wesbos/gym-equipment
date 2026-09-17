@@ -1,5 +1,6 @@
 import { CableSmithControls } from '../components/CableSmithControls.tsx';
 import { isSystemPart } from '../../rack-generator/system-types.ts';
+import { LogoControls } from '../components/LogoControls.tsx';
 import { addsStructure } from '../../rack-generator/structure-candidates.ts';
 import { VendorControls, VendorCredit } from '../components/VendorControls.tsx';
 import { VOLTRA_IDS, DARKO_IDS } from '../../rack-generator/vendor-metadata.ts';
@@ -690,6 +691,7 @@ export default function BuilderPage() {
           {state.selection.length > 1 && <h2 id="selection-title">{state.selection.length} parts</h2>}
           <AppearanceControls store={store} />
           <CableSmithControls store={store} />
+          <LogoControls store={store} />
           {state.placing && !state.placing.movingId && <details><summary>Swap an existing accessory</summary>
             {state.doc.accessories.map(a => {
               const candidate = swapCandidate(state.doc, a.id, state.placing!.part);
