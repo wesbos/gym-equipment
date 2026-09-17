@@ -27,7 +27,7 @@ export function AppearanceControls({ store }: { store: BuilderStore }) {
   const physical = resolved.find(r => r.id === selected) ?? resolved.find(r => r.ownerId === selected);
   const appearance = doc.appearance ?? {};
   const update = (patch: Partial<Appearance>) => store.act(() => store.commit({ ...doc, appearance: { ...appearance, ...patch } }));
-  const colors = selection.map(id => appearance.overrides?.[id] ?? appearance.frameColor ?? DEFAULT_FRAME_COLOR);
+  const colors = selection.map(id => appearance.overrides?.[id] ?? appearance.frameColor ?? (id.startsWith('floor-') ? '#353739' : DEFAULT_FRAME_COLOR));
   const mixed = colors.some(value => value !== colors[0]);
   const finishes = selection.map(id => physicalFinish(appearance, id));
   const mixedFinish = finishes.some(value => value !== finishes[0]);
@@ -39,9 +39,9 @@ export function AppearanceControls({ store }: { store: BuilderStore }) {
       colorChanged={color !== DEFAULT_FRAME_COLOR} onResetColor={() => update({ frameColor: DEFAULT_FRAME_COLOR })}
       finishChanged={!!appearance.frameFinish && appearance.frameFinish !== 'paint'} onResetFinish={() => update({ frameFinish: 'paint' })} />
     <ResetButton label="rack appearance" changed={color !== DEFAULT_FRAME_COLOR || !!appearance.frameFinish && appearance.frameFinish !== 'paint'} onReset={() => update({ frameColor: DEFAULT_FRAME_COLOR, frameFinish: 'paint' })} />
-    <label className="field"><span>Fastener finish</span><select aria-label="Fastener finish" value={appearance.hardwareFinish ?? 'chrome'} onChange={e => update({ hardwareFinish: e.target.value as HardwareFinish })}>
-      <option value="chrome">Chrome</option><option value="gold">Gold</option><option value="oxide">Oxide (black)</option>
-    </select><ResetButton label="hardware finish" changed={!!appearance.hardwareFinish && appearance.hardwareFinish !== 'chrome'} onReset={() => update({ hardwareFinish: undefined })} /></label>
+    <label className="field"><span>Fastener finish</span><select aria-label="Fastener finish" value={appearance.hardwareFinish ?? ''} onChange={e => update({ hardwareFinish: e.target.value ? e.target.value as HardwareFinish : undefined })}>
+      <option value="">Original finishes</option><option value="chrome">Chrome</option><option value="gold">Gold</option><option value="oxide">Oxide (black)</option>
+    </select><ResetButton label="hardware finish" changed={!!appearance.hardwareFinish} onReset={() => update({ hardwareFinish: undefined })} /></label>
     </>}
     {physical && <>
       {selection.length > 1 ? <>
@@ -57,7 +57,7 @@ export function AppearanceControls({ store }: { store: BuilderStore }) {
           onClick={() => store.act(store.resetSelectionAppearance)}>Use rack appearance</button>
       </> : <>
       <p className="note">{physical.id.replaceAll('-', ' ')}</p>
-      <PaintPicker label="This piece" color={appearance.overrides?.[physical.id] ?? color}
+      <PaintPicker label="This piece" color={appearance.overrides?.[physical.id] ?? appearance.frameColor ?? (physical.kind === 'floor-item' ? '#353739' : DEFAULT_FRAME_COLOR)}
         finish={appearance.finishOverrides?.[physical.id] ?? (appearance.overrides?.[physical.id] ? 'paint' : appearance.frameFinish ?? 'paint')}
         onColor={value => update({ overrides: { ...appearance.overrides, [physical.id]: value }, finishOverrides: { ...appearance.finishOverrides, [physical.id]: 'paint' } })}
         onFinish={value => update({ finishOverrides: { ...appearance.finishOverrides, [physical.id]: value } })}

@@ -24,10 +24,10 @@ self.onmessage = async ({ data }: MessageEvent<LibraryWorkerRequest>) => {
     for (const [key, value] of Object.entries(params))
       if (
         !Number.isFinite(value) ||
-        value < 0 ||
+        (value < 0 && !(data.part === "rep-nighthawk" && key === "seatAngle" && value === -15)) ||
         value > 4000 ||
         (value === 0 &&
-          !["cornerRadius", "benchStart", "rise", "offset", "sag"].includes(
+          !["backrestAngle", "seatAngle", "cornerRadius", "benchStart", "rise", "offset", "sag"].includes(
             key
           ))
       )
@@ -43,13 +43,14 @@ self.onmessage = async ({ data }: MessageEvent<LibraryWorkerRequest>) => {
     )
       throw new Error("Too many bench holes: increase spacing.");
     parts = def.build(await ready, params, validateLogo(data.logo));
-    const meshes = parts.map(({ name, solid, role, color, metalness, roughness }) => {
+    const meshes = parts.map(({ name, solid, role, color, metalness, roughness, authoredFastenerFinish }) => {
       if (solid.status() !== "NoError" || solid.isEmpty())
         throw new Error(`Invalid solid: ${name}`);
       const mesh = solid.getMesh();
       return {
         name,
         role,
+        authoredFastenerFinish,
         color,
         metalness,
         roughness,
