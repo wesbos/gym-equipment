@@ -49,3 +49,11 @@ final checks. The export arrangement uses the shared ResetButton and a named
 confirmed reset enabled, reset to laid-out and confirmed reset disabled. The
 control is also disabled during export. No new numeric controls are introduced;
 main's NumericControl defaultValue and viewport swap pipeline are untouched.
+
+
+Post-merge reset PR: PR35 was squash-merged at 5bfdcaa as main 43ea341 before
+0c1cad4's reset landed. The small follow-up branch `wave2/print_export-reset`
+contains only the reset delta and merges main 11d8c57 (placement suggestions).
+Final checks: npm test **182 passed, 0 failed/skipped**, 80.6 seconds;
+production build/typecheck passed (Vite 1.82s), bundle-size advisory only.
+Reset options remain present after the updated viewport pipeline reload.
