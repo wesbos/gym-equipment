@@ -9,8 +9,10 @@ import fs from 'node:fs/promises';
 test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', async () => {
   test.setTimeout(120000);
   if (!process.env.GYM_LOGO_CDP_URL) throw Error('Start isolated gym-wave2-logos Chrome and set GYM_LOGO_CDP_URL to its CDP endpoint. Serve the production build on port 5305.');
-  const browser = await chromium.connectOverCDP(process.env.GYM_LOGO_CDP_URL);
+  const browser = await chromium.connectOverCDP(process.env.GYM_LOGO_CDP_URL, { timeout: 15000 });
   const page = browser.contexts()[0].pages().find(p => p.url().includes(':5305/builder'))!;
+  page.setDefaultTimeout(15000);
+  console.log('Connected to isolated logo browser');
   await page.goto('http://127.0.0.1:5305/builder');
   await expect(page.getByRole('button', { name: 'Export GLB ↗' })).toBeEnabled({ timeout: 20000 });
   await page.locator('.logo-controls summary').click();
@@ -24,7 +26,9 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   await page.getByRole('button', { name: 'Nameplate panel +', exact: true }).click();
   await page.getByRole('button', { name: 'Replace rear crossmember' }).click();
   await expect(page.getByRole('button', { name: 'Export GLB ↗' })).toBeEnabled({ timeout: 20000 });
+  console.log('Text applied; nameplate mounted');
   for (const filename of ['logo.svg', 'logo.png', 'logo.jpg']) {
+    console.log('Upload', filename);
     await controls.getByLabel('Logo source').selectOption('svg');
     await controls.getByLabel('Upload logo', { exact: true }).setInputFiles(path.resolve('rack-generator/logos/fixtures', filename));
     await expect(controls.getByLabel('Logo source')).toHaveValue(filename.endsWith('svg') ? 'svg' : 'raster');
@@ -37,6 +41,7 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
     await expect(controls.getByRole('img', { name: 'Validated cut contour preview' })).toBeVisible();
     await controls.getByRole('button', { name: 'Apply logo to rack' }).click();
   }
+  console.log('Save / export phase');
   await page.locator('.config-manager summary').click();
   await page.getByLabel('Configuration name').fill('Logo browser fixture');
   await page.getByRole('button', { name: 'Save as new / duplicate' }).click();
@@ -60,13 +65,16 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   await page.getByRole('button', { name: 'Export GLB ↗' }).click();
   const glb = await glbDownload; const bytes = await fs.readFile((await glb.path())!);
   expect(bytes.subarray(0, 4).toString()).toBe('glTF'); expect(bytes.length).toBeGreaterThan(10000);
+  console.log('GLB downloaded; checking custom triangle count');
   const exported = await new NodeIO().readBinary(bytes);
   const mesh = exported.getRoot().listNodes().find(n => n.getName().includes('stencil'))!.getMesh()!;
   const triangles = mesh.listPrimitives().reduce((n,p) => n + (p.getIndices()?.getCount() ?? p.getAttribute('POSITION')!.getCount()) / 3, 0);
   const instance = resolveAssembly(validateAssembly(doc)).find(r => r.part === 'nameplate')!;
   const api = await Module(); api.setup();
+  console.log('Manifold initialized for export comparison');
   const parts = definitions.find(d => d.id === 'nameplate')!.build(api, instance.params, instance.logo);
   try { expect(triangles).toBe(parts[0].solid.getMesh().triVerts.length / 3); } finally { parts.forEach(p=>p.solid.delete()); }
+  console.log('Save / export phase');
   await page.locator('.config-manager summary').click();
   await page.getByRole('button', { name: 'Front', exact: true }).click();
   await controls.getByRole('button', { name: 'Validate & preview logo' }).click();
