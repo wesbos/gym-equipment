@@ -1,3 +1,4 @@
+/** Loading/error fallback only. Successful icons come from the Manifold geometry. */
 export function partIcon(id: string) {
   const path = id.startsWith("foot-")
     ? '<path d="M12 8v35h35M8 47h42M12 30l17 13"/>'

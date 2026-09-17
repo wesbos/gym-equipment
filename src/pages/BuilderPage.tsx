@@ -1,4 +1,4 @@
-import { partIcon } from "../components/part-icon.ts";
+import { PartThumbnail } from "../components/PartThumbnail.tsx";
 import {
   useEffect,
   useRef,
@@ -700,10 +700,11 @@ export default function BuilderPage() {
                         store.startPlacement(id);
                       }}
                     >
-                      <span
+                      <PartThumbnail
+                        enabled={state.definitions.length > 0}
+                        part={id}
+                        params={state.definitions.find((d) => d.id === id)?.defaults}
                         className="thumb"
-                        aria-hidden="true"
-                        dangerouslySetInnerHTML={{ __html: partIcon(id) }}
                       />
                       <span>{nameOf(id)}</span>
                       <span className="part-plus">+</span>
