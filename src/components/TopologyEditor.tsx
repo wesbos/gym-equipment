@@ -17,7 +17,7 @@ export function TopologyEditor({ doc, store, selected }: { doc: RackDoc; store: 
   const shown = preview ?? doc, entries = Object.entries(shown.uprights).filter(([id]) => !shown.removed.includes(id));
   const minX = Math.min(...entries.map(([,p]) => p.x))-200, minY = Math.min(...entries.map(([,p]) => p.y))-200;
   const width = Math.max(...entries.map(([,p]) => p.x))-minX+200, height = Math.max(...entries.map(([,p]) => p.y))-minY+200;
-  return <details className="topology-editor" open><summary>Uprights & connections</summary>
+  return <details className="topology-editor"><summary>Uprights & connections</summary>
     <svg role="img" aria-label="Top view placement preview" viewBox={`${minX} ${minY} ${width} ${height}`} style={{width:'100%',height:150,background:'#202020'}}>
       {shown.connections.filter(e => !shown.removed.includes(e.id)).map(e => <line key={e.id} x1={shown.uprights[e.from].x} y1={shown.uprights[e.from].y} x2={shown.uprights[e.to].x} y2={shown.uprights[e.to].y} stroke={preview && !doc.connections.some(old => old.id === e.id) ? '#f0ac59':'#888'} strokeWidth={20} />)}
       {shown.accessories.filter(a => a.spanTo).map(a => <line key={a.id} x1={shown.uprights[a.target.uprightId].x} y1={shown.uprights[a.target.uprightId].y} x2={shown.uprights[a.spanTo!].x} y2={shown.uprights[a.spanTo!].y} stroke="#82bdd8" strokeWidth={12} />)}

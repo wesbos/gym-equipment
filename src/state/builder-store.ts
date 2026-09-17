@@ -1,3 +1,4 @@
+import { addsStructure } from '../../rack-generator/structure-candidates.ts';
 import {
   LocalConfigStorage,
   type ConfigStorage,
@@ -36,6 +37,7 @@ export interface BuilderSnapshot {
   definitions: CatalogPart[];
   placing: { part: PartId; movingId: string | null } | null;
   structureChoice: PartId | null;
+  structureMode: "add" | "swap";
   paired: boolean;
   status: string;
   error: boolean;
@@ -83,6 +85,7 @@ export class BuilderStore {
       definitions: [],
       placing: null,
       structureChoice: null,
+      structureMode: "add",
       paired: true,
       status,
       error,
@@ -324,7 +327,7 @@ export class BuilderStore {
   startPlacement = (part: PartId, movingId: string | null = null) => {
     const info = getPartPlacementInfo(part, this.state.doc);
     if (part === "upright" || info?.slots?.length) {
-      this.patch({ selected: null, placing: null, structureChoice: part });
+      this.patch({ selected: null, placing: null, structureChoice: part, structureMode: addsStructure(part) ? "add" : "swap" });
       return;
     }
     this.patch({

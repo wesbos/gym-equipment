@@ -1,3 +1,4 @@
+import { addsStructure } from '../../rack-generator/structure-candidates.ts';
 import { dimensionOptions } from '../../rack-generator/standards.ts';
 import { swapCandidates, swapCandidate } from '../../rack-generator/swap.ts';
 import { ResetButton } from '../components/ResetButton.tsx';
@@ -124,7 +125,12 @@ function Inspector({ store }: { store: BuilderStore }) {
       <>
         <h2 id="selection-title">{nameOf(structureChoice)}</h2>
         <div id="inspector" className="inspector-fields">
-          {slots.map((slot) => (
+          {addsStructure(structureChoice) && <div role="group" aria-label="Structure mode">
+            <button aria-pressed={state.structureMode === 'add'} onClick={() => store.patch({ structureMode: 'add' })}>Add structure</button>
+            <button aria-pressed={state.structureMode === 'swap'} onClick={() => store.patch({ structureMode: 'swap' })}>Swap</button>
+          </div>}
+          {state.structureMode === 'add' && <TopologyEditor doc={doc} store={store} selected={null} />}
+          {state.structureMode === 'swap' && slots.map((slot) => (
             <button
               key={slot.ownerId}
               onClick={() =>
@@ -140,7 +146,7 @@ function Inspector({ store }: { store: BuilderStore }) {
               {slot.ownerId.replaceAll("-", " ")}
             </button>
           ))}
-          {!slots.length && (
+          {state.structureMode === 'swap' && !slots.length && (
             <p>
               {structureChoice === "upright"
                 ? "No upright slots"

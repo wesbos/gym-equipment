@@ -1,3 +1,4 @@
+import { structureCandidates, type StructureCandidate } from '../../rack-generator/structure-candidates.ts';
 import { swapCandidate, swapCandidates, type SwapCandidate } from '../../rack-generator/swap.ts';
 import { createSwapRegions } from './swap-regions.ts';
 import { cloneInstanceMaterials } from './instance-materials.ts';
@@ -325,7 +326,89 @@ export function createBuilderScene(
   let previewBusy = false;
   let queuedPreview: { entries: ResolvedInstance[]; serial: number } | null = null;
   const swapPart = () => snapshot.structureChoice ?? (!snapshot.placing?.movingId ? snapshot.placing?.part : null);
+  const structureHandles = document.createElement('div');
+  structureHandles.className = 'structure-handles';
+  structureHandles.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:hidden';
+  viewport.append(structureHandles);
+  let structuralCandidates: StructureCandidate[] = [], visibleCandidates: StructureCandidate[] = [];
+  let structuralPreview: StructureCandidate | null = null;
+  const addingStructure = () => !!snapshot.structureChoice && snapshot.structureMode === 'add';
+  function screenPoint(position: Vec3) {
+    const p = assemblyRoot.localToWorld(new THREE.Vector3(...position)).project(camera);
+    const rect = renderer.domElement.getBoundingClientRect();
+    return { x: (p.x+1)*rect.width/2, y: (1-p.y)*rect.height/2, visible: p.z >= -1 && p.z <= 1 };
+  }
+  function positionHandles() {
+    const placed: { x: number; y: number }[] = [];
+    for (const [i, button] of [...structureHandles.children].entries()) {
+      const point = screenPoint(visibleCandidates[i].position), el = button as HTMLButtonElement;
+      while (placed.some(p => Math.abs(p.x-point.x)<110 && Math.abs(p.y-point.y)<30)) point.y += 30;
+      placed.push(point);
+      el.style.left = `${point.x}px`; el.style.top = `${point.y}px`;
+      el.style.visibility = point.visible ? 'visible' : 'hidden';
+      el.setAttribute('aria-pressed', String(visibleCandidates[i].key === structuralPreview?.key));
+    }
+  }
+  function previewStructure(candidate: StructureCandidate | null) {
+    if (candidate?.key === structuralPreview?.key) return;
+    structuralPreview = candidate; queuedPreview = null;
+    const serial = ++previewSerial; clearGhost();
+    store.patch({ placementText: candidate ? `${candidate.label} · Click · ← → · ESC` : 'Hover a post or gap · ESC cancels' });
+    renderer.domElement.style.cursor = candidate ? 'copy' : 'crosshair';
+    if (candidate) void renderPreview(candidate.entries, serial);
+    positionHandles();
+  }
+  function commitStructure() {
+    const candidate = structuralPreview;
+    if (!candidate || snapshot.loading) return;
+    store.act(() => { store.commit(candidate.doc); store.select(candidate.ownerId); });
+  }
+  function showStructureHandles(candidates: StructureCandidate[]) {
+    if (visibleCandidates.map(c => c.key).join() === candidates.map(c => c.key).join()) return;
+    visibleCandidates = candidates; structureHandles.replaceChildren();
+    for (const candidate of candidates) {
+      const button = document.createElement('button');
+      button.textContent = candidate.label; button.title = candidate.label;
+      button.style.cssText = 'position:absolute;transform:translate(-50%,-50%);pointer-events:auto;padding:5px 8px;border-radius:15px;border:1px solid #b9782a;background:#fff5dd;color:#492d09;font-size:11px;white-space:nowrap';
+      button.addEventListener('pointerenter', () => previewStructure(candidate));
+      button.addEventListener('focus', () => previewStructure(candidate));
+      button.addEventListener('click', () => { previewStructure(candidate); commitStructure(); });
+      structureHandles.append(button);
+    }
+    positionHandles();
+  }
+  function updateStructure(event: { clientX: number; clientY: number }) {
+    if (snapshot.loading) return;
+    const hit = pickOwner(event), edge = snapshot.doc.connections.find(e => e.id === hit?.ownerId);
+    const anchorIds = edge ? [edge.from, edge.to] : [hit?.ownerId];
+    let candidates = structuralCandidates.filter(c => anchorIds.includes(c.anchorId) || c.doc.connections.some(e => e.id === c.ownerId && anchorIds.includes(e.to)));
+    const rect = renderer.domElement.getBoundingClientRect();
+    const distance = (c: StructureCandidate) => { const p = screenPoint(c.position); return p.visible ? Math.hypot(p.x+rect.left-event.clientX,p.y+rect.top-event.clientY) : Infinity; };
+    if (!candidates.length) {
+      const nearby = structuralCandidates.filter(c => distance(c) < 65);
+      if (nearby.length) candidates = nearby;
+    }
+    if (!candidates.length && structuralPreview) {
+      // Keep the proposal reachable across the short path from its anchor to its ghost.
+      const ghost = structuralPreview.entries.find(e => e.part === 'upright');
+      if (ghost) { const p = screenPoint([ghost.position[0],ghost.position[1],snapshot.doc.rack.height*0.55]);
+        if (Math.hypot(p.x+rect.left-event.clientX,p.y+rect.top-event.clientY)<65) return;
+      }
+    }
+    showStructureHandles(candidates);
+    if (!candidates.some(c => c.key === structuralPreview?.key)) previewStructure([...candidates].sort((a,b) => distance(a)-distance(b))[0] ?? null);
+  }
+  const onStructureKey = (event: KeyboardEvent) => {
+    if (!addingStructure() || !visibleCandidates.length || (event.target instanceof HTMLElement && event.target.matches('input,select,textarea'))) return;
+    if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Alt'].includes(event.key)) return;
+    event.preventDefault();
+    const direction = event.key === 'ArrowLeft' || event.key === 'ArrowUp' || event.shiftKey ? -1 : 1;
+    const index = visibleCandidates.findIndex(c => c.key === structuralPreview?.key);
+    previewStructure(visibleCandidates[(index+direction+visibleCandidates.length)%visibleCandidates.length]);
+  };
+  window.addEventListener('keydown', onStructureKey);
   function resetPlacement() {
+    structuralCandidates = []; structuralPreview = null; showStructureHandles([]);
     swapRegions?.dispose(); swapRegions = null; hoveredSwap = null; queuedPreview = null;
     previewTarget = null;
     previewSerial++;
@@ -368,6 +451,12 @@ export function createBuilderScene(
   function refreshPlacement() {
     resetPlacement();
     const placing = snapshot.placing, part = swapPart();
+    if (addingStructure()) {
+      structuralCandidates = structureCandidates(snapshot.doc, snapshot.structureChoice!);
+      renderer.domElement.style.cursor = 'crosshair';
+      store.patch({ placementText: structuralCandidates.length ? 'Hover a post or gap · ESC cancels' : 'No valid adjacent positions · ESC cancels' });
+      return;
+    }
     if (part) {
       swapRegions = createSwapRegions(swapCandidates(snapshot.doc, part), instances, snapshot.doc);
       scene.add(swapRegions.root);
@@ -466,6 +555,7 @@ export function createBuilderScene(
   }
   function updatePreview(event: { clientX: number; clientY: number }) {
     if (!snapshot.placing && !snapshot.structureChoice) return;
+    if (addingStructure()) { updateStructure(event); return; }
     const candidate = candidateAt(event);
     if (candidate) {
       if (hoveredSwap?.ownerId === candidate.ownerId) return;
@@ -491,6 +581,7 @@ export function createBuilderScene(
     } catch (error) { previewTarget = null; store.patch({ placementText: message(error) }); }
   }
   function dropPlacement(event: { clientX: number; clientY: number }) {
+    if (addingStructure()) { commitStructure(); return; }
     const candidate = candidateAt(event);
     if (candidate) {
       if (!candidate.valid) { store.status("Won’t fit: " + candidate.reason, true); return; }
@@ -507,19 +598,20 @@ export function createBuilderScene(
   }
   const onDown = (event: PointerEvent) => {
     pointerDown = [event.clientX, event.clientY];
-    if ((snapshot.placing || snapshot.structureChoice) && event.button === 0) controls.enabled = false;
+    if (!addingStructure() && (snapshot.placing || snapshot.structureChoice) && event.button === 0) controls.enabled = false;
   };
   const onMove = (event: PointerEvent) => {
-    void updatePreview(event);
+    if (!pointerDown) void updatePreview(event);
   };
   const onUp = (event: PointerEvent) => {
     controls.enabled = true;
+    const down = pointerDown; pointerDown = null;
     if (
       event.button !== 0 ||
-      !pointerDown ||
+      !down ||
       Math.hypot(
-        event.clientX - pointerDown[0],
-        event.clientY - pointerDown[1],
+        event.clientX - down[0],
+        event.clientY - down[1],
       ) > 6
     )
       return;
@@ -543,6 +635,11 @@ export function createBuilderScene(
         : null,
     );
   };
+  const onLeave = (event: PointerEvent) => {
+    if (addingStructure() && !(event.relatedTarget instanceof Node && structureHandles.contains(event.relatedTarget))) {
+      showStructureHandles([]); previewStructure(null);
+    }
+  };
   const onCancel = () => {
     pointerDown = null;
     controls.enabled = true;
@@ -559,6 +656,7 @@ export function createBuilderScene(
   renderer.domElement.addEventListener("pointermove", onMove);
   renderer.domElement.addEventListener("pointerup", onUp);
   renderer.domElement.addEventListener("pointercancel", onCancel);
+  renderer.domElement.addEventListener("pointerleave", onLeave);
   viewport.addEventListener("dragover", onDrag);
   viewport.addEventListener("drop", onDrop);
   function fit(mode: BuilderView = view) {
@@ -624,6 +722,7 @@ export function createBuilderScene(
       camera.position.distanceTo(controls.target) / 200,
     );
     camera.updateProjectionMatrix();
+    positionHandles();
     renderer.render(scene, camera);
   }
   animate();
@@ -636,6 +735,7 @@ export function createBuilderScene(
     if (
       snapshot.placing !== previous.placing ||
       snapshot.structureChoice !== previous.structureChoice ||
+      snapshot.structureMode !== previous.structureMode ||
       snapshot.paired !== previous.paired ||
       snapshot.doc !== previous.doc
     )
@@ -670,10 +770,13 @@ export function createBuilderScene(
       cancelAnimationFrame(frame);
       observer.disconnect();
       controls.dispose();
+      window.removeEventListener("keydown", onStructureKey);
+      structureHandles.remove();
       renderer.domElement.removeEventListener("pointerdown", onDown);
       renderer.domElement.removeEventListener("pointermove", onMove);
       renderer.domElement.removeEventListener("pointerup", onUp);
       renderer.domElement.removeEventListener("pointercancel", onCancel);
+      renderer.domElement.removeEventListener("pointerleave", onLeave);
       viewport.removeEventListener("dragover", onDrag);
       viewport.removeEventListener("drop", onDrop);
       worker.onmessage = null;
