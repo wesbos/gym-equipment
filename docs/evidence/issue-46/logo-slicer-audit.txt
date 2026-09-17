@@ -1,0 +1,3 @@
+{"file": ".verification/logo-1-20.3mf", "objects": 5, "volumes": 12, "triangles": 117894, "palette": ["#283E32", "#E8EBEE"], "unit": "millimeter", "plates": {"Parts": 4, "Hardware": 1}}
+{"file": ".verification/bambu-logo-20.3mf", "objects": 5, "volumes": 12, "triangles": 117894, "palette": ["#283E32", "#E8EBEE"], "unit": "millimeter", "plates": {"Parts": 4, "Hardware": 1}}
+PASS: plate names/membership, on-plate positions, identities, colors, volumes, triangles and mm dimensions match source; no reported mesh repairs
