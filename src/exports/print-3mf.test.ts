@@ -5,7 +5,7 @@ import {unzipSync,strFromU8} from 'fflate';
 import {XMLParser,XMLValidator} from 'fast-xml-parser';
 import {createAssembly,resolveAssembly} from '../../rack-generator/assembly.ts';
 import {definitions} from '../../rack-generator/catalog.ts';
-import {HARDWARE_FINISHES} from '../../rack-generator/appearance.ts';
+import {HARDWARE_FINISHES, FRAME_FINISHES, type Appearance} from '../../rack-generator/appearance.ts';
 import type {PartDefinition} from '../../rack-generator/types.ts';
 import {exportPrint3MF,isPrintInstance} from './print-3mf.ts';
 const api = await Module(); api.setup();
@@ -150,4 +150,19 @@ test('explicit roles separate true hardware only, including hardware-only parts;
   const rods={...cubeDef,build:()=>[{name:'rod',role:'rod' as const,solid:api.Manifold.cube([5,5,5])},{name:'handle',role:'handle' as const,solid:api.Manifold.cube([5,5,5]).translate([10,0,0])}]};
   const r=exportPrint3MF(api,single(),[rods],{layout:'laid-out'});
   assert.equal(r.report.plates[1].objectIds.length,0);assert.deepEqual(r.report.parts[0].roles,['rod','handle']);
+});
+
+test('3MF exports dominant steel finish colors while retaining legacy paint and fastener scope', () => {
+  const cases: {appearance: Appearance; color: string}[] = [
+    {appearance: {frameFinish: 'stainless'}, color: FRAME_FINISHES.stainless.color},
+    {appearance: {frameFinish: 'stainless', finishOverrides: {'front-left': 'clear-grind'}}, color: FRAME_FINISHES['clear-grind'].color},
+    {appearance: {frameFinish: 'clear-grind', overrides: {'front-left': '#ffff00'}}, color: '#ffff00'},
+  ];
+  for (const {appearance, color} of cases) {
+    const doc = single(); doc.appearance = {...appearance, hardwareFinish: 'gold'};
+    const result = exportPrint3MF(api, doc, [cubeDef], {layout: 'laid-out'});
+    const archive = inspect(result.bytes);
+    assert.deepEqual(archive.materials.map(m => m.displaycolor), [color.toUpperCase() + 'FF', HARDWARE_FINISHES.gold.color.toUpperCase() + 'FF']);
+    assert.match(result.report.textureLimitation, /Dominant solid colors only/);
+  }
 });
