@@ -8,3 +8,7 @@ import { definitions as darko } from './parts/darko.ts';
 // Keep the declared builder contract, including its optional logo argument when
 // the independent logo stream integrates. Vendor wordmarks are built internally.
 export const definitions: PartDefinition[] = [...structure, ...bars, ...attachments, ...voltra, ...darko];
+
+import type { CADCatalog } from './catalog-contract.ts';
+import { vendorAttribution } from './vendor-metadata.ts';
+export const catalog: CADCatalog = { definitions, attribution: vendorAttribution };
