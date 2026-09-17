@@ -43,6 +43,8 @@ export const definitions: PartDefinition[] = VOLTRA_IDS.map(id => ({
     add('Fixed raised dock bridge',box([65,16,64],[0,face+13,0]),'source','#989da1',.9,.23);
    }
    const dockY = id === 'voltra-sliding' ? 94 : face+32;
+   add('Dock mounting pedestal',cylinder(26,id==='voltra-adaptive'?38:24,[0,id==='voltra-sliding'?82:face+(id==='voltra-adaptive'?20:24),0],[90,0,0]),'source','#90979c',.75,.3);
+   add('Device docking receiver',cylinder(36,10,[0,dockY+10,0],[90,0,0]),'source','#7c858a',.7,.3);
    add('Magnetic dock locking rim',k(cylinder(39,16,[0,dockY,0],[90,0,0]).subtract(cylinder(32,18,[0,dockY,0],[90,0,0]))),'source','#bbc0c3',.8,.25);
    add('Magnetic dock insert',cylinder(32,12,[0,dockY,0],[90,0,0]),'source','#181a1c');
    for(const z of [-25,25]) add('Dock latch lug',box([13,7,5],[0,dockY+7,z]),'source','#c3c6c9');

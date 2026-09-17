@@ -21,7 +21,8 @@ function scope({ Manifold: M, CrossSection: C }: ManifoldAPI) {
   const shaft = keep(M.cylinder(length,diameter/2,diameter/2,32,true));
   const head = keep(keep(M.cylinder(6,diameter*.85,diameter*.85,6,true)).translate([0,0,length/2+3]));
   const nut = keep(keep(M.cylinder(7,diameter*.85,diameter*.85,6,true)).translate([0,0,-length/2-3.5]));
-  add(name,keep(keep(keep(M.union([shaft,head,nut])).rotate(rotation)).translate(at)),'fastener','#c4c6c8',.85,.25);
+  const washers=[-1,1].map(side=>keep(keep(M.cylinder(2,diameter,diameter,48,true)).translate([0,0,side*length/2])));
+  add(name,keep(keep(keep(M.union([shaft,head,nut,...washers])).rotate(rotation)).translate(at)),'fastener','#c4c6c8',.85,.25);
  };
  return { M,C,owned,parts,keep,box,round,cylinder,plate,add,bolt };
 }

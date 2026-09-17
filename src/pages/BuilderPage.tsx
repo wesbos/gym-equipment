@@ -749,6 +749,7 @@ export default function BuilderPage() {
                     onClick={() => store.select(row.id)}
                   >
                     {row.count} × {nameOf(row.part)}
+                    <VendorCredit part={row.part} compact />
                     {row.length ? ` · ${Math.round(row.length)} mm` : ""}
                   </button>
                 ))}
