@@ -1,0 +1,5 @@
+{"file": ".verification/rack-laid-out-1-20.3mf", "objects": 24, "volumes": 83, "triangles": 311988, "palette": ["#C83240", "#285A32", "#D6AD52", "#232323", "#222222", "#151719"], "unit": "millimeter", "plates": {"Parts": 14, "Hardware": 10}}
+{"file": ".verification/bambu-final-20.3mf", "objects": 24, "volumes": 83, "triangles": 311988, "palette": ["#C83240", "#285A32", "#D6AD52", "#232323", "#222222", "#151719"], "unit": "millimeter", "plates": {"Parts": 14, "Hardware": 10}}
+PASS: plate names/membership, on-plate positions, identities, colors, volumes, triangles and mm dimensions match source; no reported mesh repairs
+{"file": ".verification/orca-gui-20.3mf", "objects": 24, "volumes": 83, "triangles": 311988, "palette": ["#C83240", "#285A32", "#D6AD52", "#232323", "#222222", "#151719"], "unit": "millimeter", "plates": {"Parts": 14, "Hardware": 10}}
+PASS: plate names/membership, on-plate positions, identities, colors, volumes, triangles and mm dimensions match source; no reported mesh repairs
