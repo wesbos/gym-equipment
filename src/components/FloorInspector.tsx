@@ -1,3 +1,4 @@
+import { resetAppearanceField } from '../../rack-generator/appearance-reset.ts';
 import { ResetButton } from './ResetButton.tsx';
 import { useSyncExternalStore } from 'react';
 import type { BuilderStore } from '../state/builder-store.ts';
@@ -10,10 +11,10 @@ export function FloorInspector({store,id}:{store:BuilderStore;id:string}) {
     <label className="field"><span>Bench frame color</span><select aria-label="Bench frame color" value={state.doc.appearance?.overrides?.[id] ?? ''} onChange={e=>{
       const doc=structuredClone(state.doc);doc.appearance ??= {};doc.appearance.overrides ??= {};doc.appearance.finishOverrides ??= {};
       if(e.target.value) {doc.appearance.overrides[id]=e.target.value;doc.appearance.finishOverrides[id]='paint';}
-      else {delete doc.appearance.overrides[id];}
+      else {doc.appearance=resetAppearanceField(doc.appearance,'color',id);}
       store.commit(doc);
     }}><option value="">Default / global</option>{NIGHTHAWK_COLORS.map(([name,color])=><option key={color} value={color}>{name}</option>)}</select><ResetButton label="bench frame color" changed={!!state.doc.appearance?.overrides?.[id]} onReset={()=>{
-      const doc=structuredClone(state.doc);if(doc.appearance?.overrides)delete doc.appearance.overrides[id];store.commit(doc);
+      store.commit({...state.doc,appearance:resetAppearanceField(state.doc.appearance ?? {},'color',id)});
     }} /></label>
     <label className="field"><span>Rotation (degrees)</span><NumericControl label="Bench rotation" value={item.rotation*180/Math.PI} min={-180} max={180} step={15} defaultValue={0} onGestureStart={store.beginGesture} onGestureEnd={store.endGesture} onValue={v=>store.updateFloor(id,{rotation:v*Math.PI/180})}/></label>
     <button onClick={()=>{const doc=structuredClone(state.doc),bench=doc.floorItems!.find(i=>i.id===id)!;
