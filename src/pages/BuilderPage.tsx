@@ -1,7 +1,11 @@
 import { FloorInspector } from '../components/FloorInspector.tsx';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
+import { addsStructure } from '../../rack-generator/structure-candidates.ts';
+import { VendorControls, VendorCredit } from '../components/VendorControls.tsx';
+import { VOLTRA_IDS, DARKO_IDS } from '../../rack-generator/vendor-metadata.ts';
 import { editableFields } from '../state/selection.ts';
 import { BulkInspector } from '../components/BulkInspector.tsx';
+
 import { PrintExport } from '../components/PrintExport.tsx';
 import { dimensionOptions } from '../../rack-generator/standards.ts';
 import { swapCandidates, swapCandidate } from '../../rack-generator/swap.ts';
@@ -48,6 +52,8 @@ import type {
 import "../../rack-generator/builder.css";
 const groups: [string, PartId[]][] = [
   ["Floor items", ["rep-nighthawk"]],
+  ["Digital resistance", VOLTRA_IDS],
+  ["Darko Lifting", DARKO_IDS],
   [
     "Frame",
     [
@@ -130,7 +136,12 @@ function Inspector({ store }: { store: BuilderStore }) {
       <>
         <h2 id="selection-title">{nameOf(structureChoice)}</h2>
         <div id="inspector" className="inspector-fields">
-          {slots.map((slot) => (
+          {addsStructure(structureChoice) && <div role="group" aria-label="Structure mode">
+            <button aria-pressed={state.structureMode === 'add'} onClick={() => store.patch({ structureMode: 'add' })}>Add structure</button>
+            <button aria-pressed={state.structureMode === 'swap'} onClick={() => store.patch({ structureMode: 'swap' })}>Swap</button>
+          </div>}
+          {state.structureMode === 'add' && <TopologyEditor doc={doc} store={store} selected={null} />}
+          {state.structureMode === 'swap' && slots.map((slot) => (
             <button
               key={slot.ownerId}
               onClick={() => store.previewStructure(slot.ownerId)}
@@ -139,7 +150,7 @@ function Inspector({ store }: { store: BuilderStore }) {
               {slot.ownerId.replaceAll("-", " ")}
             </button>
           ))}
-          {!slots.length && (
+          {state.structureMode === 'swap' && !slots.length && (
             <p>
               {structureChoice === "upright"
                 ? "No upright slots"
@@ -227,7 +238,7 @@ function Inspector({ store }: { store: BuilderStore }) {
                   variant === part ? { ...item.params, ...params } : {};
                 item.part = variant;
                 const uprightId = data.get("upright") as UprightId;
-                item.target = {
+                if (entry.target.kind !== "crossmember-top") item.target = {
                   uprightId,
                   face: spanning
                     ? uprightId.endsWith("left")
@@ -239,7 +250,7 @@ function Inspector({ store }: { store: BuilderStore }) {
                     : Number(data.get("hole")) - 1,
                 };
                 if (item.spanTo && data.get("spanTo")) item.spanTo = String(data.get("spanTo"));
-                item.paired =
+                if (entry.target.kind !== "crossmember-top") item.paired =
                   !!getPartPlacementInfo(variant, doc)?.paired &&
                   data.get("paired") === "on";
                 store.commit(next);
@@ -267,7 +278,7 @@ function Inspector({ store }: { store: BuilderStore }) {
               <ResetButton label="variant" changed={part !== resetVariant} onReset={() => store.act(() => { const next = structuredClone(doc); if (entry) { const a = next.accessories.find(a => a.id === entry.id)!; a.part = resetVariant; a.params = {}; store.commit(next); } else store.commit(replaceStructurePart(doc, ownerId!, resetVariant)); })} />
             </Field>
           )}
-          {entry && (
+          {entry && entry.target.kind !== "crossmember-top" && (
             <>
               <Field label="Mounting upright">
                 <select name="upright" value={entry.target.uprightId} onChange={e => e.currentTarget.form?.requestSubmit()}>
@@ -327,6 +338,8 @@ function Inspector({ store }: { store: BuilderStore }) {
               </p>
             </>
           )}
+          {entry && <VendorControls store={store} entry={entry} />}
+          <VendorCredit part={part} />
           {fields.map((field) => (
             <Field key={field.key} label={`${field.label} (mm)`}>
               <NumericControl defaultValue={partDefaults(doc, part)[field.key]} standardOptions={definitions.find(d => d.id === part)?.standardOptions?.[field.key]} name={field.key} label={field.label}
@@ -588,7 +601,7 @@ export default function BuilderPage() {
                         params={state.definitions.find((d) => d.id === id)?.defaults}
                         className="thumb"
                       />
-                      <span>{nameOf(id)}</span>
+                      <span>{nameOf(id)}<VendorCredit part={id} compact /></span>
                       <span className="part-plus">+</span>
                     </button>
                   ))}
@@ -638,7 +651,7 @@ export default function BuilderPage() {
                 {state.placementText ||
                   `Place ${nameOf(state.placing?.part ?? state.structureChoice!)} · choose a highlighted connection`}
               </span>
-              <button id="accept-placement" disabled={!state.proposal} onClick={store.acceptProposal}>Place</button>
+              {!(state.structureChoice && state.structureMode === "add") && <button id="accept-placement" disabled={!state.proposal} onClick={store.acceptProposal}>Place</button>}
               <button id="cancel-placement" onClick={store.cancelPlacement}>
                 Cancel <kbd>ESC</kbd>
               </button>
@@ -656,6 +669,7 @@ export default function BuilderPage() {
                     aria-pressed={state.selection.includes(row.id)}
                     onClick={e => store.select(row.id, e, state.resolved.map(r => r.id))}>
                     {nameOf(row.part)} · {row.id.replaceAll('-', ' ')}
+                    <VendorCredit part={row.part} compact />
                   </button>
                 ))}
               </div>

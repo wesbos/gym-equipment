@@ -1,4 +1,5 @@
 import { addFloorItem, resolveFloorItems, floorWarnings } from '../../rack-generator/floor-items.ts';
+import { addsStructure } from '../../rack-generator/structure-candidates.ts';
 import { resetPart } from '../../rack-generator/reset.ts';
 import { removeSelection, selectionOwners, sharedFields, type PhysicalInstanceId, type SelectionGesture } from './selection.ts';
 import { structureProposalAt, proposalCollision, suggestPlacement, type PlacementProposal } from '../../rack-generator/placement-proposals.ts';
@@ -44,6 +45,7 @@ export interface BuilderSnapshot {
   definitions: CatalogPart[];
   placing: { part: PartId; movingId: string | null } | null;
   structureChoice: PartId | null;
+  structureMode: "add" | "swap";
   paired: boolean;
   status: string;
   error: boolean;
@@ -97,6 +99,7 @@ export class BuilderStore {
       definitions: [],
       placing: null,
       structureChoice: null,
+      structureMode: "add",
       paired: true,
       status,
       error,
@@ -150,6 +153,7 @@ export class BuilderStore {
       const result = suggestPlacement(this.state.doc, part, patch.paired, movingId);
       patch = { ...patch, proposal: result.proposal, placementText: result.proposal ? `Suggested: ${result.proposal.label} — Place or pick another spot` : `Doesn't fit: ${result.reason}` };
     }
+    if (patch.doc || patch.structureMode !== undefined && !("proposal" in patch) || patch.placing === null && patch.structureChoice === null) patch.proposal = null;
     this.state = { ...this.state, ...patch };
     this.listeners.forEach((fn) => fn());
   };
@@ -420,6 +424,10 @@ export class BuilderStore {
   };
   cancelPlacement = () => this.patch({ placing: null, structureChoice: null });
   startPlacement = (part: PartId, movingId: string | null = null) => {
+    if (addsStructure(part)) {
+      this.patch({ selected: null, placing: null, structureChoice: part, structureMode: 'add', proposal: null, selectionTool: false });
+      return;
+    }
     if (!movingId && (this.state.placing?.part === part || this.state.structureChoice === part) && this.state.proposal) {
       this.acceptProposal();
       return;
@@ -435,7 +443,7 @@ export class BuilderStore {
     const info = getPartPlacementInfo(part, this.state.doc);
     const structural = part === 'upright' || !!info?.slots?.length;
     this.patch({ selected: null, placing: structural ? null : { part, movingId }, structureChoice: structural ? part : null,
-      paired, proposal: result.proposal,
+      paired, structureMode: "swap", proposal: result.proposal,
       placementText: result.proposal ? `Suggested: ${result.proposal.label} — Place or pick another spot` : `Doesn't fit: ${result.reason}` });
   };
   previewFloor = (position?: [number,number], rotationDelta = 0) => {

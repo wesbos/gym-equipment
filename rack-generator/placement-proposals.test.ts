@@ -90,10 +90,10 @@ test('REP-4000 and REP-5000 proposals use profile-valid angled rise and safety p
 
 test('preview metadata stripping preserves complete domain target extensions', () => {
   const base = getMounts(createAssembly(),'landmine')[0];
-  const extended = { ...base, kind: 'crossmember-top', connectionId: 'left-upper-crossmember', station: 4, side: -1, custom: { future: true } };
+  const extended = { ...base, kind: 'crossmember-top' as const, connectionId: 'left-upper-crossmember', station: 4, side: -1 as const, custom: { future: true } };
   assert.deepEqual(placementTarget(extended), {
     uprightId: base.uprightId, face: base.face, hole: base.hole,
-    kind: 'crossmember-top', connectionId: 'left-upper-crossmember', station: 4, side: -1, custom: { future: true },
+    kind: 'crossmember-top' as const, connectionId: 'left-upper-crossmember', station: 4, side: -1 as const, custom: { future: true },
   });
   assert.notEqual(placementTarget(extended).custom,extended.custom);
 });
