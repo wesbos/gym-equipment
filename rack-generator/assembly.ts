@@ -49,6 +49,10 @@ const FRAME_PARTS: Record<string, { slots: string[]; label: string; defaults: Nu
   'branded-crossmember-lite': { slots: ['rear-crossmember'], label: 'BOS STRENGTH nameplate crossmember lite', defaults: {} },
   nameplate: { slots: ['rear-crossmember'], label: 'Nameplate panel and supporting rail', defaults: {} },
 };
+/** Detached defaults for editors; keep geometry and UI on one source of truth. */
+export function getPartDefaults(part: string): NumericParams {
+  return { ...(FRAME_PARTS[part]?.defaults ?? SOURCE_DEFAULTS[part] ?? {}) };
+}
 // Midpoints of the actual retaining-pin cylinders in the generated part coordinates.
 const HOOK_ANCHORS: Record<string, Vec3> = {
   'j-hook-standard': [8.753024654290442, -85.08286, 150.00177048395147],
@@ -299,13 +303,17 @@ export function createAssembly(overrides: Partial<RackDimensions> & { rack?: Par
   ];
   return validateAssembly(result);
 }
+export function defaultAccessoryTarget(doc: RackDoc, part: string, uprightId = 'front-left'): Target {
+  const defaultHole = isFoot(part) ? 0 : isPullup(part) ? pullupHole(doc.rack) : isSafety(part) ? 12 : 24;
+  return { uprightId, face: isPullup(part) || isSafety(part) ? (sideOf(uprightId) === 'left' ? 'right' : 'left') : 'front', hole: Math.min(defaultHole, maxHole(doc.rack) - 2) };
+}
 export function addAccessory(input: RackDoc, part: string, target: Partial<Target> = {}, paired = true, params: NumericParams = {}): RackDoc {
   const doc = validateAssembly(input);
   if (!ACCESSORY_PARTS.includes(part)) fail(`No rack connection adapter for ${part}.`);
   const uprightId = target.uprightId ?? 'front-left';
-  const defaultHole = isFoot(part) ? 0 : isPullup(part) ? pullupHole(doc.rack) : isSafety(part) ? 12 : 24;
+  const defaultTarget = defaultAccessoryTarget(doc, part, uprightId);
   let id: string; do { id = `accessory-${doc.nextId++}`; } while (doc.accessories.some(a => a.id === id) || Object.hasOwn(doc.uprights, id) || doc.connections.some(e => e.id === id));
-  doc.accessories.push({ id, part: part as PartId, target: { uprightId, face: target.face ?? (isPullup(part) || isSafety(part) ? (sideOf(uprightId) === 'left' ? 'right' : 'left') : 'front'), hole: target.hole ?? Math.min(defaultHole, maxHole(doc.rack) - 2) }, paired: supportsPair(part) ? paired : false, params: copy(params) });
+  doc.accessories.push({ id, part: part as PartId, target: { uprightId, face: target.face ?? defaultTarget.face, hole: target.hole ?? defaultTarget.hole }, paired: supportsPair(part) ? paired : false, params: copy(params) });
   return validateAssembly(doc);
 }
 export function moveAccessory(input: RackDoc, id: string, target: Partial<Target>, paired?: boolean): RackDoc {
