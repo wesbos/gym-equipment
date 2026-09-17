@@ -1,0 +1,127 @@
+.library-gallery {
+  min-height: 100dvh;
+  background: #e9eeea;
+  color: #22322e;
+  font-family: "DM Sans", sans-serif;
+  padding: 40px clamp(20px, 5vw, 80px);
+}
+.library-gallery * {
+  box-sizing: border-box;
+}
+.library-gallery header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+.library-gallery h1 {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(28px, 4vw, 44px);
+  letter-spacing: -1.5px;
+  margin: 12px 0;
+}
+.library-gallery .eyebrow,
+.library-gallery .gallery-category {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #688171;
+}
+.library-gallery header p:not(.eyebrow) {
+  max-width: 640px;
+  line-height: 1.6;
+  color: #647267;
+}
+.library-gallery header a {
+  white-space: nowrap;
+  background: #274d3b;
+  color: white;
+  border-radius: 5px;
+  padding: 13px 18px;
+  text-decoration: none;
+}
+.library-gallery .gallery-filters {
+  display: flex;
+  align-items: end;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 26px;
+}
+.library-gallery label {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+  color: #647267;
+}
+.library-gallery input,
+.library-gallery select {
+  font: inherit;
+  padding: 12px;
+  border: 1px solid #cbd6ca;
+  border-radius: 5px;
+  background: #f8f9f5;
+  color: #22322e;
+}
+.library-gallery input {
+  width: min(340px, 75vw);
+}
+.library-gallery [role="status"] {
+  font-size: 12px;
+  padding-bottom: 12px;
+  color: #647267;
+}
+.library-gallery .gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+.library-gallery .gallery-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 225px;
+  padding: 24px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid #cdd6ce;
+  border-radius: 8px;
+  background: #f8f9f5;
+  transition: background 0.15s;
+}
+.library-gallery .gallery-card:hover {
+  background: #dfe9de;
+}
+.library-gallery .gallery-card:focus-visible {
+  outline: 2px solid #368663;
+  outline-offset: 3px;
+}
+.library-gallery h2 {
+  font-size: 21px;
+  letter-spacing: -0.5px;
+  margin: 14px 0 4px;
+}
+.library-gallery .gallery-card p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #647267;
+}
+.library-gallery .gallery-specs {
+  font-size: 10px;
+  color: #819087;
+  margin-top: auto;
+}
+.library-gallery strong {
+  font-size: 12px;
+  font-weight: 500;
+  color: #274d3b;
+  margin-top: 20px;
+}
+@media (max-width: 650px) {
+  .library-gallery header {
+    display: block;
+  }
+  .library-gallery header a {
+    display: inline-block;
+    margin-top: 12px;
+  }
+}

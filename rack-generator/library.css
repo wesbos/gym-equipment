@@ -1,18 +1,18 @@
-body {
+.parts-page {
   grid-template-columns: 240px minmax(300px, 1fr) 280px;
 }
-aside {
+.parts-page aside {
   padding: 24px 18px;
 }
-h1 {
+.parts-page h1 {
   margin-top: 25px;
 }
-.intro a,
-.source-link {
+.parts-page .intro a,
+.parts-page .source-link {
   color: #517961;
   font-size: 11px;
 }
-#search {
+.parts-page #search {
   border: 1px solid #cbd6ca;
   border-radius: 5px;
   background: white;
@@ -21,14 +21,14 @@ h1 {
   font-size: 12px;
   margin-bottom: 16px;
 }
-#catalog h3 {
+.parts-page #catalog h3 {
   font-size: 9px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: #8b988b;
   margin: 22px 8px 8px;
 }
-#catalog button {
+.parts-page #catalog button {
   display: block;
   width: 100%;
   text-align: left;
@@ -37,40 +37,40 @@ h1 {
   padding: 10px 9px;
   margin: 2px 0;
 }
-#catalog button.active {
+.parts-page #catalog button.active {
   background: #dfe9de;
   color: #254a32;
   font-weight: 600;
 }
-#editor {
+.parts-page #editor {
   background: #f8f9f5;
   padding: 20px;
   overflow: auto;
   border-left: 1px solid #cdd6ce;
 }
-#editor .section-title {
+.parts-page #editor .section-title {
   margin-top: 4px;
 }
-#editor .fields {
+.parts-page #editor .fields {
   display: block;
 }
-#editor label {
+.parts-page #editor label {
   margin-top: 13px;
 }
-#editor .input-wrap input {
+.parts-page #editor .input-wrap input {
   padding: 9px;
   font-size: 15px;
 }
-#reset {
+.parts-page #reset {
   font-size: 11px;
   margin-top: 14px;
   width: 100%;
 }
-#part-note {
+.parts-page #part-note {
   margin-bottom: 20px;
   color: #5e7564;
 }
-.model-caption {
+.parts-page .model-caption {
   bottom: 80px;
   max-width: 80%;
   background: #e9eeeadd;
@@ -78,13 +78,13 @@ h1 {
   border-radius: 6px;
   left: 15px;
 }
-h2 {
+.parts-page h2 {
   font-size: 22px;
 }
-.model-caption p {
+.parts-page .model-caption p {
   margin-bottom: 0;
 }
-#compare-label {
+.parts-page #compare-label {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -94,60 +94,60 @@ h2 {
   color: #688171;
   letter-spacing: 1px;
 }
-header {
+.parts-page header {
   padding: 17px 16px;
 }
-header button {
+.parts-page header button {
   font-size: 10px;
   padding: 8px;
 }
-.muted {
+.parts-page .muted {
   display: none;
 }
-footer {
+.parts-page footer {
   padding: 12px 15px;
 }
-footer span:last-child {
+.parts-page footer span:last-child {
   display: none;
 }
 @media (max-width: 1050px) {
-  body {
+  .parts-page {
     grid-template-columns: 190px minmax(270px, 1fr) 240px;
   }
-  .eyebrow span {
+  .parts-page .eyebrow span {
     display: none;
   }
 }
 @media (max-width: 750px) {
-  body {
+  .parts-page {
     display: grid;
     grid-template-columns: 1fr 1fr;
     height: auto;
   }
-  main {
+  .parts-page main {
     grid-column: 1/-1;
     grid-row: 1;
     height: 65dvh;
     min-height: 440px;
   }
-  aside {
+  .parts-page aside {
     grid-column: 1;
     grid-row: 2;
   }
-  #editor {
+  .parts-page #editor {
     grid-column: 2;
     grid-row: 2;
   }
-  .view-tools {
+  .parts-page .view-tools {
     right: auto;
   }
-  header button {
+  .parts-page header button {
     padding: 7px;
   }
-  .model-caption {
+  .parts-page .model-caption {
     bottom: 83px;
   }
-  h1 {
+  .parts-page h1 {
     font-size: 26px;
   }
 }
