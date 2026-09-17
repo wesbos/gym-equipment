@@ -26,3 +26,11 @@
 .export-print-facts dt { font-weight: 600; margin-top: 8px; }
 .export-print-facts dd { margin: 0; }
 .export-menu-actions { display: flex; gap: 8px; margin-top: 16px; }
+/* Keep the consolidated trigger visible beside JSON and configurations on phones. */
+@media (max-width: 480px) {
+  .builder-page .toolbar:has(.export-menu) .brand {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+}
