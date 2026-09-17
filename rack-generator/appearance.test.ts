@@ -44,3 +44,20 @@ test('mixed CAD groups and metallic accessories are explicitly classified', () =
   assert.equal(attachmentMaterialRole('dip-bar-adjustable', 'Arm.003', 12), 'handle');
   assert.equal(attachmentMaterialRole('new-part', 'metallic-bolts', 0), 'source');
 });
+
+test('steel finishes retain legacy paint, physical side overrides and flat export colors', () => {
+  const doc = createAssembly();
+  doc.appearance = { frameFinish: 'stainless', frameColor: '#ff0000', overrides: { 'jhooks-front:left': '#0000ff' }, finishOverrides: { 'jhooks-front:right': 'clear-grind' } };
+  const appearance = validateAssembly(doc).appearance!;
+  assert.notEqual(appearance.finishOverrides, doc.appearance.finishOverrides);
+  assert.equal(resolveMaterial({ role: 'frame' }, appearance, 'front-left').color, '#c5c9cc');
+  assert.equal(resolveMaterial({ role: 'frame' }, appearance, 'jhooks-front:left').color, '#0000ff');
+  assert.equal(resolveMaterial({ role: 'frame' }, appearance, 'jhooks-front:right').finish, 'clear-grind');
+  const next = unpairAccessory(doc, 'jhooks-front');
+  const hooks = resolveAssembly(next).filter(r => r.part === 'j-hook-standard');
+  assert.deepEqual(hooks.map(r => resolveMaterial({ role: 'frame' }, next.appearance, r.id).color).sort(), ['#0000ff', '#aaa59a']);
+  assert.equal(resolveMaterial({ role: 'rod', color: '#123456' }, appearance).color, '#123456');
+  for (const invalid of [{ frameFinish: '__proto__' }, { finishOverrides: { x: 'chrome' } }, { finishOverrides: JSON.parse('{"__proto__":"paint"}') }, { finishOverrides: Array(3) }]) {
+    assert.throws(() => validateAssembly({ ...doc, appearance: invalid }));
+  }
+});

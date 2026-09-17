@@ -21,3 +21,27 @@ Every `SolidPart` and transferred `LibraryMesh` requires a semantic material rol
 `resolveMaterial(source, appearance, instanceId)` returns detached color/metalness/roughness data. Frame roles use the instance override, then global color, then the default green. Fasteners use Chrome (default), Gold or Oxide. Handles, rods, sleeves, liners and source materials retain their original color and PBR values. Controls intentionally color painted surfaces, not liners or grips. Future Smith rods should use their own role, not `fastener`.
 
 The builder creates independent materials per physical instance while sharing cached geometry. GLB exports use the same resolved scene materials. A future 3MF exporter can call `resolveMaterial` and use its color directly; there is no 3MF writer in this branch.
+
+## Steel finishes (#25)
+
+Optional `frameFinish: 'paint' | 'stainless' | 'clear-grind'` defaults to paint.
+`finishOverrides` maps physical IDs to those same values, alongside the original
+string-valued `overrides`. A legacy color override implies paint unless an explicit
+finish override exists. Choosing a metal preserves the underlying paint color;
+choosing a swatch/custom color explicitly selects paint. Reset removes both overrides.
+Unpairing transfers both maps. Existing migrations, named saves, opt-in draft recovery
+and undo/redo preserve these additive fields without a document version change.
+
+`resolveMaterial(...).color` is the flat **dominant export color**, including metals.
+The optional `finish` discriminator tells the renderer to apply brush maps and clear
+coat. 3MF integrations should use `.color`; 3MF flat colors cannot reproduce brushed
+texture, metal reflections or clear coat. GLB retains UVs, the shared roughness/normal maps,
+metalness/roughness and KHR_materials_clearcoat. The viewer needs environment lighting
+for comparable reflections. Swatches are approximate colors, not calibrated vendor
+paint samples; Matte/Metallic Black names do not imply certified paint matching.
+
+`FrameFinishResources` owns at most two lazy 256² brush textures per builder, shared
+by independently disposable instance materials. Cached geometry owns static planar
+UVs, so live appearance edits never re-run CAD or create extra texture copies.
+Scene teardown disposes the textures after instance materials. Ghosts retain their
+existing translucent material and do not cast shadows. Part-study scenes stay neutral.

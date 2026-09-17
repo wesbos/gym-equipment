@@ -1,3 +1,4 @@
+import { FrameFinishResources, addSteelUVs } from './frame-finishes.ts';
 import { cloneInstanceMaterials } from './instance-materials.ts';
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -69,6 +70,8 @@ export function createBuilderScene(
   });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  const finishes = new FrameFinishResources(renderer.capabilities.getMaxAnisotropy());
   viewport.append(renderer.domElement);
   renderer.domElement.setAttribute(
     "aria-label",
@@ -156,7 +159,7 @@ export function createBuilderScene(
     }
   }
   function transformed(model: THREE.Group, entry: ResolvedInstance) {
-    const g = cloneInstanceMaterials(model, snapshot.doc.appearance, entry.id);
+    const g = cloneInstanceMaterials(model, snapshot.doc.appearance, entry.id, finishes);
     g.position.set(...entry.position);
     g.rotation.set(...entry.rotation);
     g.userData = { id: entry.id, ownerId: entry.ownerId || entry.id };
@@ -190,6 +193,7 @@ export function createBuilderScene(
         indexed.setIndex(new THREE.BufferAttribute(m.indices, 1));
         const geometry = toCreasedNormals(indexed, Math.PI / 5);
         indexed.dispose();
+        addSteelUVs(geometry);
         const material = new THREE.MeshStandardMaterial({
           color: m.color || "#283e32",
           metalness: m.metalness ?? 0.55,
@@ -653,6 +657,7 @@ export function createBuilderScene(
       cache.clear();
       grid.geometry.dispose();
       disposeMaterial(grid.material);
+      finishes.dispose();
       environment.dispose();
       scene.environment = null;
       renderer.dispose();

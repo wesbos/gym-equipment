@@ -21,7 +21,7 @@ test('appearance survives explicit save/reload, JSON import, undo and redo with 
   const saved = new Map<string, string>();
   const storage: StorageLike = { getItem: key => saved.get(key) ?? null, setItem: (key, value) => { saved.set(key, value); } };
   const store = new BuilderStore(storage), doc = store.getSnapshot().doc;
-  const appearance = { frameColor: '#ff0000', hardwareFinish: 'gold' as const, overrides: { 'jhooks-front:right': '#00ff00' } };
+  const appearance = { frameColor: '#ff0000', hardwareFinish: 'gold' as const, frameFinish: 'stainless' as const, finishOverrides: { 'front-left': 'clear-grind' as const }, overrides: { 'jhooks-front:right': '#00ff00' } };
   await store.ready;
   store.commit({ ...doc, appearance }); store.select('jhooks-front:right');
   assert.equal(store.getSnapshot().selected, 'jhooks-front:right');
