@@ -1,3 +1,5 @@
+import { GeometryCache, geometryKey } from '../geometry/geometry-cache.ts';
+import { PointerGesture } from './pointer-gesture.ts';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { createGymFloor, fitRackShadow } from './gym-floor.ts';
 import { FrameFinishResources, addSteelUVs } from './frame-finishes.ts';
@@ -57,8 +59,7 @@ export function createBuilderScene(
     hasFit = false,
     view: BuilderView = "iso";
   let previewTarget: Mount | null = null,
-    selectionBoxes: THREE.Box3Helper[] = [],
-    pointerDown: [number, number] | null = null;
+    selectionBoxes: THREE.Box3Helper[] = [];
   let mountPoints: Mount[] = [];
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#e9ede7");
@@ -98,58 +99,26 @@ export function createBuilderScene(
       string | number,
       { resolve: (model: THREE.Group) => void; reject: (error: Error) => void }
     >(),
-    cache = new Map<string, Promise<THREE.Group>>();
-  const geometryKey = (entry: ResolvedInstance) =>
-    entry.part + JSON.stringify(entry.logo?.loops ?? null) +
-    ":" +
-    JSON.stringify(
-      Object.fromEntries(
-        Object.entries(entry.params).sort(([a], [b]) => a.localeCompare(b)),
-      ),
-    );
+    cache = new GeometryCache<THREE.Group>(model => disposeMeshes(model));
+  let releaseAssembly = () => {}, releaseGhost = () => {};
   const nameOf = (part: string) =>
     snapshot.definitions
       .find((d) => d.id === part)
       ?.name.replace(/^BOS STRENGTH\s*/, "") || part;
   function geometryFor(entry: ResolvedInstance): Promise<THREE.Group> {
     const key = geometryKey(entry);
-    let promise = cache.get(key);
-    if (!promise) {
-      promise = new Promise<THREE.Group>((resolve, reject) => {
-        const id = ++requestId;
-        pending.set(id, { resolve, reject });
-        const request: LibraryWorkerRequest = {
-          id,
-          part: entry.part,
-          params: entry.params,
-          logo: entry.logo,
-        };
-        worker.postMessage(request);
-      }).catch((error) => {
-        cache.delete(key);
-        throw error;
-      });
-    }
-    cache.delete(key);
-    cache.set(key, promise);
-    return promise;
+    return cache.get(key, () => new Promise<THREE.Group>((resolve, reject) => {
+      const id = ++requestId;
+      pending.set(id, { resolve, reject });
+      const request: LibraryWorkerRequest = { id, part: entry.part, params: entry.params, logo: entry.logo };
+      worker.postMessage(request);
+    }));
   }
   function trimCache() {
-    const active = new Set(snapshot.resolved.map(geometryKey));
-    for (const [key, promise] of cache) {
-      if (cache.size <= 32) break;
-      if (
-        active.has(key) ||
-        (snapshot.placing && key.startsWith(snapshot.placing.part + ":")) ||
-        (snapshot.structureChoice && key.startsWith(snapshot.structureChoice + ":"))
-      )
-        continue;
-      cache.delete(key);
-      void promise.then(
-        (model) => disposeMeshes(model),
-        () => {},
-      );
-    }
+    cache.trim([
+      ...snapshot.resolved.map(geometryKey),
+      ...(queuedPreview?.entries.map(geometryKey) ?? []),
+    ]);
   }
   function transformed(model: THREE.Group, entry: ResolvedInstance) {
     const g = cloneInstanceMaterials(model, snapshot.doc.appearance, entry.id, finishes);
@@ -249,6 +218,7 @@ export function createBuilderScene(
     rebuilding = true;
     const serial = generation,
       entries = snapshot.resolved;
+    let releaseBatch = cache.pin(entries.map(geometryKey));
     store.patch({
       loading: true,
       status: "Building your rack…",
@@ -267,6 +237,9 @@ export function createBuilderScene(
       const built = models.map((model, i) => transformed(model, entries[i]));
       disposeMeshes(assemblyRoot, false);
       assemblyRoot.clear();
+      releaseAssembly();
+      releaseAssembly = releaseBatch;
+      releaseBatch = () => {};
       instances.clear();
       for (const g of built) {
         assemblyRoot.add(g);
@@ -295,6 +268,8 @@ export function createBuilderScene(
       if (!disposed && serial === generation)
         store.patch({ loading: false, status: message(error), error: true });
     } finally {
+      releaseBatch();
+      if (!disposed) trimCache();
       rebuilding = false;
       if (!disposed && serial !== generation) void rebuild();
     }
@@ -302,6 +277,9 @@ export function createBuilderScene(
   function clearGhost() {
     disposeMeshes(ghostRoot, false);
     ghostRoot.clear();
+    releaseGhost();
+    releaseGhost = () => {};
+    if (!disposed) trimCache();
   }
   function clearMounts() {
     disposeMeshes(mountsRoot);
@@ -497,9 +475,17 @@ export function createBuilderScene(
   async function renderPreview(entries: ResolvedInstance[], serial: number) {
     if (previewBusy) { queuedPreview = { entries, serial }; return; }
     previewBusy = true;
+    let releaseBatch = cache.pin(entries.map(geometryKey));
     try {
-      const models = await Promise.all(entries.map(geometryFor));
+      const results = await Promise.allSettled(entries.map(geometryFor));
+      const models = results.map(result => {
+        if (result.status === 'rejected') throw result.reason;
+        return result.value;
+      });
       if (disposed || serial !== previewSerial) return;
+      clearGhost();
+      releaseGhost = releaseBatch;
+      releaseBatch = () => {};
       for (const [i, model] of models.entries()) {
         const g = transformed(model, entries[i]);
         g.traverse(o => { if (o instanceof THREE.Mesh) {
@@ -513,6 +499,7 @@ export function createBuilderScene(
     } catch (error) {
       if (!disposed && serial === previewSerial) store.patch({ proposal: null, placementText: message(error) });
     } finally {
+      releaseBatch();
       previewBusy = false;
       if (!disposed) trimCache();
       const next = queuedPreview; queuedPreview = null;
@@ -538,7 +525,7 @@ export function createBuilderScene(
       if (!candidate.valid) { store.patch({ proposal: null, placementText: "Won’t fit: " + candidate.reason }); return; }
       const proposal = { ...candidate, label: 'Swap ' + candidate.ownerId };
       const collision = proposalCollision(snapshot.resolved, proposal);
-      store.patch({ proposal: collision ? null : proposal, placementText: collision || proposal.label + ' · Click to replace · Undo restores the previous part' });
+      store.patch({ proposal: collision ? null : proposal, placementText: collision || proposal.label });
       return;
     }
     const hadSwap = !!hoveredSwap;
@@ -548,7 +535,7 @@ export function createBuilderScene(
     try {
       const proposal = proposalAt(snapshot.doc, snapshot.placing!.part, target, snapshot.paired, snapshot.placing!.movingId);
       const collision = proposalCollision(snapshot.resolved, proposal);
-      store.patch({ proposal: collision ? null : proposal, placementText: collision || `${proposal.label} — Place or pick another spot` });
+      store.patch({ proposal: collision ? null : proposal, placementText: collision || proposal.label });
     } catch(error) { store.patch({ proposal: null, placementText: message(error) }); }
   }
   function dropPlacement(event: { clientX: number; clientY: number }) {
@@ -570,7 +557,13 @@ export function createBuilderScene(
     return [grid(point.x),grid(point.z)];
   }
   const floorKey=(event:KeyboardEvent)=>{
-    if(event.key==='Escape') { floorDrag=null; store.cancelGesture(); controls.enabled=true; pointerDown=null; return; }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !(event.target instanceof HTMLElement && /INPUT|SELECT|TEXTAREA/.test(event.target.tagName))) {
+      // BuilderPage invokes history next; leave store gesture finalization to history.
+      floorDrag = null; pointerGesture.finish(); selecting = false; marquee.style.display = 'none';
+      controls.enabled = !snapshot.selectionTool;
+      return;
+    }
+    if(event.key==='Escape') { floorDrag=null; store.cancelGesture(); controls.enabled=true; pointerGesture.finish(); return; }
     if(event.key.toLowerCase()!=='r' || event.ctrlKey || event.metaKey || (event.target instanceof HTMLElement && /INPUT|SELECT|TEXTAREA/.test(event.target.tagName))) return;
     const delta=(event.shiftKey?-1:1)*Math.PI/12;
     if(snapshot.placing?.part==='rep-nighthawk') {event.preventDefault();store.previewFloor(undefined,delta);return;}
@@ -584,48 +577,50 @@ export function createBuilderScene(
   viewport.append(marquee);
   let selecting = false;
   const onDown = (event: PointerEvent) => {
-    pointerDown = [event.clientX, event.clientY];
+    pointerGesture.begin(event);
     if(event.button===0 && !snapshot.placing && !snapshot.structureChoice && !snapshot.selectionTool && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
       const hit=pickOwner(event),item=snapshot.doc.floorItems?.find(i=>i.id===hit?.id),point=floorPoint(event,false);
       if(item && point && (snapshot.selection.length<=1 || !snapshot.selection.includes(item.id))) {
         store.select(item.id);store.beginGesture();floorDrag={id:item.id,start:point,position:[...item.position],moved:false};
-        controls.enabled=false;renderer.domElement.setPointerCapture(event.pointerId);event.stopImmediatePropagation();return;
+        controls.enabled=false;pointerGesture.capture();event.stopImmediatePropagation();return;
       }
     }
     selecting = snapshot.selectionTool && !snapshot.placing && !snapshot.structureChoice && event.button === 0;
     if ((!addingStructure() && (snapshot.placing || snapshot.structureChoice) || selecting) && event.button === 0) controls.enabled = false;
-    if (selecting) renderer.domElement.setPointerCapture(event.pointerId);
+    if ((!addingStructure() && (snapshot.placing || snapshot.structureChoice) || selecting) && event.button === 0) pointerGesture.capture();
   };
   const onMove = (event: PointerEvent) => {
-    if(floorDrag && pointerDown) {
-      if(Math.hypot(event.clientX-pointerDown[0],event.clientY-pointerDown[1])>4)floorDrag.moved=true;
+    if(floorDrag && pointerGesture.start) {
+      if(Math.hypot(event.clientX-pointerGesture.start[0],event.clientY-pointerGesture.start[1])>4)floorDrag.moved=true;
       const point=floorPoint(event,false);
       if(point && floorDrag.moved) {const grid=(v:number)=>event.altKey?v:Math.round(v/25)*25;store.updateFloor(floorDrag.id,{position:[grid(floorDrag.position[0]+point[0]-floorDrag.start[0]),grid(floorDrag.position[1]+point[1]-floorDrag.start[1])]});}
       return;
     }
-    if (selecting && pointerDown) {
-      Object.assign(marquee.style, { display: 'block', left: `${Math.min(pointerDown[0], event.clientX)}px`, top: `${Math.min(pointerDown[1], event.clientY)}px`, width: `${Math.abs(event.clientX - pointerDown[0])}px`, height: `${Math.abs(event.clientY - pointerDown[1])}px` });
+    if (selecting && pointerGesture.start) {
+      Object.assign(marquee.style, { display: 'block', left: `${Math.min(pointerGesture.start[0], event.clientX)}px`, top: `${Math.min(pointerGesture.start[1], event.clientY)}px`, width: `${Math.abs(event.clientX - pointerGesture.start[0])}px`, height: `${Math.abs(event.clientY - pointerGesture.start[1])}px` });
     }
-    if (!pointerDown) void updatePreview(event);
+    if (!pointerGesture.start) void updatePreview(event);
   };
   const onUp = (event: PointerEvent) => {
-    if(floorDrag) {floorDrag=null;pointerDown=null;store.endGesture();controls.enabled=true;return;}
+    if(floorDrag) {floorDrag=null;pointerGesture.finish();store.endGesture();controls.enabled=true;return;}
     controls.enabled = !floorDrag && !snapshot.selectionTool;
     marquee.style.display = 'none';
-    if (selecting && pointerDown && Math.hypot(event.clientX - pointerDown[0], event.clientY - pointerDown[1]) > 6) {
+    if (selecting && pointerGesture.start && Math.hypot(event.clientX - pointerGesture.start[0], event.clientY - pointerGesture.start[1]) > 6) {
       const rect = renderer.domElement.getBoundingClientRect();
-      const left = Math.min(pointerDown[0], event.clientX), right = Math.max(pointerDown[0], event.clientX);
-      const top = Math.min(pointerDown[1], event.clientY), bottom = Math.max(pointerDown[1], event.clientY);
+      const left = Math.min(pointerGesture.start[0], event.clientX), right = Math.max(pointerGesture.start[0], event.clientX);
+      const top = Math.min(pointerGesture.start[1], event.clientY), bottom = Math.max(pointerGesture.start[1], event.clientY);
       const ids: string[] = [];
       for (const g of instances.values()) {
         const center = new THREE.Box3().setFromObject(g).getCenter(new THREE.Vector3()).project(camera);
         const x = rect.left + (center.x + 1) * rect.width / 2, y = rect.top + (1 - center.y) * rect.height / 2;
         if (center.z >= -1 && center.z <= 1 && x >= left && x <= right && y >= top && y <= bottom) ids.push(g.userData.id as string);
       }
-      store.selectMany(ids, event.metaKey || event.ctrlKey); pointerDown = null; selecting = false; return;
+      store.selectMany(ids, event.metaKey || event.ctrlKey); pointerGesture.finish(); selecting = false; return;
     }
     selecting = false;
-    const down = pointerDown; pointerDown = null;
+    const down = pointerGesture.finish();
+    const bounds = renderer.domElement.getBoundingClientRect();
+    if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) return;
     if (
       event.button !== 0 ||
       !down ||
@@ -635,7 +630,6 @@ export function createBuilderScene(
       ) > 6
     )
       return;
-    pointerDown = null;
     if (snapshot.placing || snapshot.structureChoice) {
       dropPlacement(event);
       return;
@@ -663,10 +657,11 @@ export function createBuilderScene(
   };
   const onCancel = () => {
     if(floorDrag) {floorDrag=null;store.cancelGesture();}
-    pointerDown = null;
+    pointerGesture.finish();
     selecting = false; marquee.style.display = 'none';
     controls.enabled = !floorDrag && !snapshot.selectionTool;
   };
+  const pointerGesture = new PointerGesture(renderer.domElement, onCancel);
   const onDrag = (event: DragEvent) => {
     event.preventDefault();
     if (snapshot.placing || snapshot.structureChoice) void updatePreview(event);
@@ -755,7 +750,7 @@ export function createBuilderScene(
     if (disposed) return;
     if (snapshot.doc !== previous.doc) requestRebuild();
     if (snapshot.selection !== previous.selection) refreshSelection();
-    controls.enabled = !floorDrag && !snapshot.selectionTool && !selecting && !(pointerDown && !addingStructure() && (snapshot.placing || snapshot.structureChoice));
+    controls.enabled = !floorDrag && !snapshot.selectionTool && !selecting && !(pointerGesture.start && !addingStructure() && (snapshot.placing || snapshot.structureChoice));
     if (previous.selectionTool && !snapshot.selectionTool) onCancel();
     if (
       snapshot.placing !== previous.placing ||
@@ -801,6 +796,7 @@ export function createBuilderScene(
       unsubscribe();
       cancelAnimationFrame(frame);
       observer.disconnect();
+      pointerGesture.dispose();
       controls.dispose();
       window.removeEventListener("keydown", onStructureKey);
       structureHandles.remove();
@@ -826,12 +822,8 @@ export function createBuilderScene(
       disposeMeshes(assemblyRoot, false);
       assemblyRoot.clear();
       instances.clear();
-      for (const promise of cache.values())
-        void promise.then(
-          (model) => disposeMeshes(model),
-          () => {},
-        );
-      cache.clear();
+      releaseAssembly();
+      cache.dispose();
       floor.dispose();
 
       finishes.dispose();
