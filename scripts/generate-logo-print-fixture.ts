@@ -12,7 +12,9 @@ const doc = replaceStructurePart(createAssembly({emptyAccessories:true}),'rear-c
 const source = {kind:'text' as const,text:'BOS',font:'helvetiker' as const};
 doc.logo=finalizeLogo(api,source,textContours(source),true);
 doc.removed=[...new Set(resolveAssembly(doc).map(r=>r.ownerId))].filter(id=>!['rear-left','rear-right','rear-crossmember'].includes(id));
-const result=exportPrint3MF(api,doc,definitions,{layout:'laid-out'});
-writeFileSync(`${directory}/logo.3mf`,result.bytes);
 writeFileSync(`${directory}/logo.json`,JSON.stringify(doc,null,2));
-console.log(JSON.stringify(result.report));
+for (const scale of [10,20] as const) {
+  const result=exportPrint3MF(api,doc,definitions,{layout:'laid-out',scale});
+  writeFileSync(`${directory}/logo-1-${scale}.3mf`,result.bytes);
+  console.log(JSON.stringify(result.report));
+}
