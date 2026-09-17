@@ -65,3 +65,10 @@ Pending visuals integration before #31 closure: frameFinish/finishOverrides bulk
 editing and finish override preservation during duplication must be connected once
 #25 reaches main. The visuals stream has been notified; current paint overrides and
 export resolver behavior are covered, but this does not yet cover unmerged finishes.
+
+Shared-standard regression: NumericControl forwards mixed explicitly and
+StandardSizeControl treats the first value only as a scrub seed, never a selected
+preset. A component-render test uses first value 32 with shared 32/40 options and
+asserts no checked radio, expanded Custom, blank Mixed input, no error, and no
+hidden representative value. Browser BulkInspector fixture confirmed the same,
+then selected 40 for both parts and undid back to blank Mixed.

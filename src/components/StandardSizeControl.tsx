@@ -7,8 +7,9 @@ export function StandardSizeControl({ label, name, value, mixed, options, disabl
   reset?: ReactNode; disabled?: boolean; onValue: (value: number) => void; children: ReactNode;
 }) {
   const [custom, setCustom] = useState(false);
+  // A mixed value is only a scrub seed, never an active preset.
   const match = mixed ? -1 : options.findIndex(option => Math.abs(option.value - value) < 1e-6);
-  const expanded = custom || match === -1;
+  const expanded = !!mixed || custom || match === -1;
   function select(value: number) { onValue(value); setCustom(false); }
   return <span className="standard-size-control">
     <span className="standard-options" role="radiogroup" aria-label={label}>

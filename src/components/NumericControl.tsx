@@ -32,9 +32,9 @@ export function NumericControl(props: NumericControlProps) {
     props.onValue(props.normalize ? props.normalize(value) : value);
     props.onGestureEnd?.();
   }
-  return <StandardSizeControl {...props} options={props.standardOptions} onValue={select}
+  return <StandardSizeControl {...props} mixed={props.mixed} options={props.standardOptions} onValue={select}
     reset={props.defaultValue !== undefined && <ResetButton label={props.label} value={props.defaultValue}
-      changed={props.value !== props.defaultValue} disabled={props.disabled} onReset={() => select(props.defaultValue!)} />}>
+      changed={!!props.mixed || props.value !== props.defaultValue} disabled={props.disabled} onReset={() => select(props.defaultValue!)} />}>
     <FreeformNumericControl {...props} showSlider={false} />
   </StandardSizeControl>;
 }
