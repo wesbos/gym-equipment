@@ -1,3 +1,4 @@
+import { ResetButton } from './ResetButton.tsx';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { BuilderStore } from '../state/builder-store.ts';
 import type { LogoSource, ValidatedLogo } from '../../rack-generator/logos/types.ts';
@@ -46,15 +47,22 @@ export function LogoControls({ store }: { store: BuilderStore }) {
     <label className="field"><span>Logo source</span><select aria-label="Logo source" value={source.kind} onChange={e => update(e.target.value === 'text' ? { kind: 'text', text: 'MY GYM', font: 'helvetiker' } : e.target.value === 'svg' ? { kind: 'svg', data: '' } : { kind: 'raster', data: '', threshold: 128, contrast: 1 })}>
       <option value="text">Text</option><option value="svg">SVG upload</option><option value="raster">PNG / JPEG upload</option>
     </select></label>
+    <ResetButton label="logo source" changed={source.kind !== 'text'} onReset={() => update({ kind: 'text', text: 'MY GYM', font: 'helvetiker' })} />
     {source.kind === 'text' ? <>
       <label className="field"><span>Logo text</span><input aria-label="Logo text" maxLength={32} value={source.text} onChange={e => update({ ...source, text: e.target.value })} /></label>
+      <ResetButton label="logo text" value="MY GYM" changed={source.text !== 'MY GYM'} onReset={() => update({ ...source, text: 'MY GYM' })} />
       <label className="field"><span>Logo font</span><select aria-label="Logo font" value={source.font} onChange={e => update({ ...source, font: e.target.value as 'helvetiker' | 'helvetikerRegular' })}><option value="helvetiker">Helvetiker Bold</option><option value="helvetikerRegular">Helvetiker Regular</option></select></label>
-    </> : <label className="field"><span>Upload logo (250 KB maximum)</span><input aria-label="Upload logo" type="file" accept=".svg,.png,.jpg,.jpeg" onChange={e => void upload(e.target.files?.[0])} /></label>}
+      <ResetButton label="logo font" value="Helvetiker Bold" changed={source.font !== 'helvetiker'} onReset={() => update({ ...source, font: 'helvetiker' })} />
+    </> : <label className="field"><span>Upload logo (250 KB maximum)</span><input key={source.data ? 'uploaded' : 'empty'} aria-label="Upload logo" type="file" accept=".svg,.png,.jpg,.jpeg" onChange={e => void upload(e.target.files?.[0])} /></label>}
+    {source.kind !== 'text' && <ResetButton label="logo upload" changed={!!source.data} onReset={() => update({ ...source, data: '' })} />}
     {source.kind === 'raster' && <>
       <label className="field"><span>Threshold: {source.threshold ?? 128}</span><input aria-label="Logo threshold" type="range" min="1" max="254" value={source.threshold ?? 128} onChange={e => update({ ...source, threshold: Number(e.target.value) })} /></label>
+      <ResetButton label="logo threshold" value={128} changed={(source.threshold ?? 128) !== 128} onReset={() => update({ ...source, threshold: 128 })} />
       <label className="field"><span>Contrast: {source.contrast ?? 1}</span><input aria-label="Logo contrast" type="range" min="0.5" max="3" step="0.1" value={source.contrast ?? 1} onChange={e => update({ ...source, contrast: Number(e.target.value) })} /></label>
+      <ResetButton label="logo contrast" value={1} changed={(source.contrast ?? 1) !== 1} onReset={() => update({ ...source, contrast: 1 })} />
     </>}
     <label><input type="checkbox" checked={bridges} onChange={e => { stop(); setBusy(false); setBridges(e.target.checked); setPreview(null); }} /> Automatic island bridges</label>
+    <ResetButton label="automatic island bridges" changed={!bridges} onReset={() => { stop(); setBusy(false); setBridges(true); setPreview(null); setError(''); }} />
     <button type="button" onClick={inspect}>{busy ? 'Restart preview' : 'Validate & preview logo'}</button>
     {busy && <p role="status">Tracing and validating logo…</p>}
     {error && <p role="alert">{error}</p>}
@@ -65,6 +73,6 @@ export function LogoControls({ store }: { store: BuilderStore }) {
       <p className="note">{preview.loops.length} closed contours · {preview.minimum} mm minimum feature. {preview.warnings.join(' ')}</p>
       <button type="button" onClick={() => store.act(() => store.commit({ ...store.getSnapshot().doc, logo: preview }))}>Apply logo to rack</button>
     </>}
-    <button type="button" disabled={!doc.logo} onClick={() => store.act(() => { const next = { ...store.getSnapshot().doc }; delete next.logo; store.commit(next); setPreview(null); })}>Reset stock BOS lettering</button>
+    <ResetButton label="stock BOS lettering" changed={!!doc.logo} onReset={() => store.act(() => { const next = { ...store.getSnapshot().doc }; delete next.logo; store.commit(next); setPreview(null); })} />
   </details>;
 }

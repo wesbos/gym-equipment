@@ -4,8 +4,8 @@ Verified 2026-09-17 in isolated `gym-wave2-logos` Chrome, production preview on
 127.0.0.1:5305. Screenshot shows the persisted JPEG threshold/contrast settings,
 bridged contour preview and the real through-cut on the mounted nameplate.
 
-- Final main integration: b10ec2a (structure placement, vendor attachments, multiselect, proposals, 3MF and prior integrations retained).
-- `npm test`: 255 passed, 0 failed/skipped (89.22 s).
+- Final main integration: ea07439 (finishes/lighting, structure placement, vendor attachments, multiselect, proposals, 3MF and prior integrations retained).
+- `npm test`: 268 passed, 0 failed/skipped (106.03 s).
 - `npm run build`: strict TypeScript and production Vite build passed. Existing
   large-chunk and Manifold node:module browser-externalization advisories remain.
 - `GYM_LOGO_CDP_URL=<isolated Chrome endpoint> npm run test:logos:browser -- --reporter=line`:
@@ -34,3 +34,5 @@ The final domain suite also resolves an actual paired Darko Anchor with a custom
 BOS nameplate and proves vendor instances receive no user logo payload.
 
 The latest browser rerun passed in 18.1 seconds after #48 and concise #30 logo controls. The screenshot above predates the prose removal; geometry and upload settings are unchanged. Scale denominators 10/20 await the separate #46 exporter integration; the fixture and expected volume checks are documented in custom-logos.md.
+
+Reset integration preserves the shared reset.ts/swap.ts/ResetButton APIs and viewport handlers. Browser coverage now resets text, font, threshold, contrast, bridges and uploaded files, reuploads the same file, and checks undoable stock-lettering reset.

@@ -5,7 +5,10 @@ Open **Custom logo** in the builder, type text or upload SVG/PNG/JPEG, then
 Only **Apply logo to rack** changes the working document (undoable). Named
 configurations still require **Save**. **Reset stock BOS lettering** removes the
 optional logo; the original BOS STRENGTH stencil and bridges are used unchanged.
-Vendor branding is not part of this system.
+Vendor branding is not part of this system. Each source, text, font, upload,
+threshold, contrast and island-bridge control uses the shared ResetButton.
+These field resets change only the transient preview inputs; stock-lettering
+reset changes the rack document and is undoable.
 
 ## Geometry and integration
 
