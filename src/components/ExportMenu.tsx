@@ -2,7 +2,7 @@ import './export-menu.css';
 import { useEffect, useId, useRef, useState } from 'react';
 import { ResetButton } from './ResetButton.tsx';
 import type { BuilderStore } from '../state/builder-store.ts';
-import type { PrintLayout } from '../exports/print-3mf.ts';
+import type { PrintLayout, PrintScale } from '../exports/print-3mf.ts';
 import { ExportJob, readExportFormat, rememberExportFormat, type ExportFormat } from '../exports/export-job.ts';
 
 const DEFAULT_LAYOUT: PrintLayout = 'laid-out';
@@ -17,6 +17,7 @@ export function ExportMenu({ store, exportGLB, loading, empty }: {
   });
   const [focusedFormat, setFocusedFormat] = useState<ExportFormat>(format);
   const [layout, setLayout] = useState<PrintLayout>(DEFAULT_LAYOUT);
+  const [scale, setScale] = useState<PrintScale>(10);
   const [busy, setBusy] = useState<ExportFormat | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -58,7 +59,7 @@ export function ExportMenu({ store, exportGLB, loading, empty }: {
     try { rememberExportFormat(sessionStorage, format); } catch { /* Storage may be unavailable. */ }
     // Keep focus inside the popover before disabling its download button.
     items.current[formats.indexOf(format)]?.focus();
-    void job.start(format, store.getSnapshot().doc, layout);
+    void job.start(format, store.getSnapshot().doc, layout, scale);
   };
   return <div className="export-menu" ref={root}
     onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) close(); }}
@@ -96,12 +97,16 @@ export function ExportMenu({ store, exportGLB, loading, empty }: {
       {format === '3mf' && <div className="export-print-options">
         <label>Part arrangement <select aria-label="Print arrangement" disabled={!!busy} value={layout}
           onChange={event => setLayout(event.target.value as PrintLayout)}>
-          <option value="laid-out">Laid out — flat, spaced in a row</option>
-          <option value="assembled">Assembled — rack coordinates (Z up)</option>
+          <option value="laid-out">Laid out — print plates</option>
+          <option value="assembled">Assembled — Z up</option>
         </select></label>
         <ResetButton label="print arrangement" value="laid out" changed={layout !== DEFAULT_LAYOUT}
           disabled={!!busy} onReset={() => setLayout(DEFAULT_LAYOUT)} />
-        <p>One file · Separate named objects · Millimetres · 100% scale</p>
+        <label>Model scale <select aria-label="Print scale" disabled={!!busy} value={scale}
+          onChange={event => setScale(Number(event.target.value) as PrintScale)}>
+          <option value="10">1:10</option><option value="20">1:20</option>
+        </select></label>
+        <p>One file · Separate named objects · Millimetres · 1:{scale} scale</p>
         <dl className="export-print-facts">
           <dt>Colors</dt><dd>Solid colors; textures omitted</dd>
           <dt>Profile</dt><dd>Placeholder: 256 mm bed · 0.4 mm nozzle · PLA</dd>

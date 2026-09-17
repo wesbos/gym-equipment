@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createAssembly } from '../../rack-generator/assembly.ts';
 import { ExportJob, FORMAT_KEY, readExportFormat, rememberExportFormat, type ExportFormat } from './export-job.ts';
+import type { PrintScale } from './print-3mf.ts';
 import type { PrintRequest, PrintResponse } from './print-worker.ts';
 
 class FakeWorker {
@@ -27,8 +28,8 @@ function setup(exportGLB = async () => new Uint8Array([1, 2, 3]).buffer) {
   });
   return { job, workers, downloads, statuses, busy, completed: () => completed };
 }
-const complete = (bytes = new Uint8Array([8, 4, 2])) => ({
-  type: 'complete', bytes, report: { unit: 'millimeter', layout: 'laid-out', instances: 4, volumes: 8, triangles: 12, occludedComponents: [], overlapPolicy: '', textureLimitation: '', vendorCredits: [], parts: [] },
+const complete = (bytes = new Uint8Array([8, 4, 2]), scale: PrintScale = 10) => ({
+  type: 'complete', bytes, report: { scale, scaleFactor: 1 / scale, plates: [], excludedInstances: [], unit: 'millimeter', layout: 'laid-out', instances: 4, volumes: 8, triangles: 12, occludedComponents: [], overlapPolicy: '', textureLimitation: '', vendorCredits: [], parts: [] },
 }) as Extract<PrintResponse, { type: 'complete' }>;
 
 test('cancel terminates worker; queued callbacks cannot download or disrupt a retry', async () => {
@@ -49,18 +50,19 @@ test('cancel terminates worker; queued callbacks cannot download or disrupt a re
   assert.equal(s.completed(), 1);
 });
 
-test('print snapshot, layout, MIME, filename and payload pass through unchanged for both layouts', async () => {
-  for (const layout of ['laid-out', 'assembled'] as const) {
+test('print snapshot, layout, MIME, filename and payload pass through unchanged for both layouts and scales', async () => {
+  for (const layout of ['laid-out', 'assembled'] as const) for (const scale of [10, 20] as const) {
     const s = setup();
-    await s.job.start('3mf', doc, layout);
+    await s.job.start('3mf', doc, layout, scale);
     const worker = s.workers[0];
-    assert.deepEqual(worker.requests[0], { doc, options: { layout } });
+    assert.deepEqual(worker.requests[0], { doc, options: { layout, scale } });
     assert.notEqual(worker.requests[0].doc, doc);
-    const response = complete();
+    const response = complete(undefined, scale);
     worker.send(response);
     assert.equal(worker.terminated, true);
-    assert.equal(s.downloads[0].filename, 'bos-strength-print-parts.3mf');
+    assert.equal(s.downloads[0].filename, `bos-strength-print-parts-1-${scale}.3mf`);
     assert.equal(s.downloads[0].blob.type, 'model/3mf');
+    assert.ok(s.statuses.at(-1)?.[0].includes(`1:${scale} scale`));
     assert.deepEqual(new Uint8Array(await s.downloads[0].blob.arrayBuffer()), response.bytes);
   }
 });
