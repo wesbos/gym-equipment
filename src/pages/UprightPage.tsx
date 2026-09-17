@@ -1,3 +1,4 @@
+import { UPRIGHT_HEIGHT_OPTIONS } from '../../rack-generator/standards.ts';
 import { NumericControl } from "../components/NumericControl.tsx";
 import { LatestRequest } from "../geometry/latest-request.ts";
 import type { UprightWorkerRequest } from "../../rack-generator/worker-types.ts";
@@ -129,7 +130,7 @@ export default function UprightPage() {
       >
         {def.label}
         <div className="input-wrap">
-          <NumericControl label={def.label} name={key} value={params[key]} min={def.min} max={def.max} step={def.step}
+          <NumericControl standardOptions={key === "height" ? UPRIGHT_HEIGHT_OPTIONS.map(option => ({ ...option, value: option.value / 25.4 })) : undefined} label={def.label} name={key} value={params[key]} min={def.min} max={def.max} step={def.step}
             onInvalid={() => { ++sequence.current; setValid(false); setStatus("Enter a valid dimension."); }}
             onValue={value => { const next = { ...params, [key]: value }; setParams(next); update(next); }} />
           <span>{key === "height" ? "in" : "mm"}</span>

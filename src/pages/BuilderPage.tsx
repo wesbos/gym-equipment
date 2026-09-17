@@ -1,3 +1,4 @@
+import { dimensionOptions } from '../../rack-generator/standards.ts';
 import { gridProfile } from '../../rack-generator/profiles.ts';
 import { RackPresets } from '../components/RackPresets.tsx';
 import { TopologyEditor } from '../components/TopologyEditor.tsx';
@@ -173,12 +174,12 @@ function Inspector({ store }: { store: BuilderStore }) {
         </p>
         <form id="frame-form" onSubmit={e => { e.preventDefault(); store.endGesture(); }}>
           {(['height', 'width', 'depth'] as const).map(key => {
-            const factor = key === 'height' ? 25.4 : 1;
+            const factor = 1;
             const label = key === 'height' ? 'Upright height' : `Clear rack ${key}`;
             return <Field key={key} label={label}><div className="input-wrap">
-              <NumericControl name={key === 'height' ? 'heightIn' : key} label={label}
-                value={doc.rack[key] / factor} min={key === 'height' ? 40 : key === 'width' ? 400 : 300}
-                max={key === 'height' ? 157 : key === 'width' ? 2000 : 1500} step={doc.rack.pitch / factor}
+              <NumericControl standardOptions={dimensionOptions(doc.rack, key, doc.profileId)} name={key === 'height' ? 'heightIn' : key} label={label}
+                value={doc.rack[key] / factor} min={key === 'height' ? 1000 : key === 'width' ? 400 : 300}
+                max={key === 'height' ? 4000 : key === 'width' ? 2000 : 1500} step={doc.rack.pitch / factor}
                 normalize={value => {
                   const current = store.getSnapshot().doc;
                   const target = snapDimensions(current.rack, { [key]: value * factor }, current.profileId)[key];
@@ -191,7 +192,7 @@ function Inspector({ store }: { store: BuilderStore }) {
                 }}
                 onGestureStart={store.beginGesture} onGestureEnd={store.endGesture}
                 onValue={value => store.act(() => store.commit(resizeAssembly(store.getSnapshot().doc, { [key]: value * factor })))} />
-              <span>{key === 'height' ? 'in' : 'mm'}</span>
+              <span>mm</span>
             </div></Field>;
           })}
           <output aria-live="polite">{snapHint || `Grid: ${doc.rack.pitch} mm · depths ${gridProfile(doc.profileId).depths.join(' / ')} mm`}</output>
@@ -392,7 +393,7 @@ function Inspector({ store }: { store: BuilderStore }) {
           )}
           {fields.map((field) => (
             <Field key={field.key} label={`${field.label} (mm)`}>
-              <NumericControl name={field.key} label={field.label}
+              <NumericControl standardOptions={definitions.find(d => d.id === part)?.standardOptions?.[field.key]} name={field.key} label={field.label}
                 value={entry?.params[field.key] ?? (ownerId ? doc.structure[ownerId]?.params[field.key] : undefined) ?? physical.params[field.key] ?? definitions.find(d => d.id === part)?.defaults[field.key] ?? 0}
                 min={field.min} max={field.max} step={field.step}
                 onGestureStart={store.beginGesture} onGestureEnd={store.endGesture}

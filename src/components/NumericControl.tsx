@@ -1,7 +1,11 @@
+import { StandardSizeControl } from './StandardSizeControl.tsx';
+import type { StandardOption } from '../../rack-generator/types.ts';
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import "./numeric-control.css";
 export interface NumericControlProps {
   label: string;
+  standardOptions?: readonly StandardOption[];
+  showSlider?: boolean;
   name?: string;
   value: number;
   min?: number;
@@ -16,8 +20,18 @@ export interface NumericControlProps {
   onGestureEnd?: () => void;
   onInvalid?: () => void;
 }
-export function NumericControl({
+export function NumericControl(props: NumericControlProps) {
+  if (!props.standardOptions?.length) return <FreeformNumericControl {...props} />;
+  return <StandardSizeControl {...props} options={props.standardOptions} onValue={value => {
+    props.onGestureEnd?.();
+    props.onGestureStart?.();
+    props.onValue(props.normalize ? props.normalize(value) : value);
+    props.onGestureEnd?.();
+  }}><FreeformNumericControl {...props} showSlider={false} /></StandardSizeControl>;
+}
+function FreeformNumericControl({
   label,
+  showSlider = true,
   name,
   value,
   min,
@@ -171,7 +185,7 @@ export function NumericControl({
         }}
         onDoubleClick={(e) => e.currentTarget.select()}
       />
-      <input
+      {showSlider && <input
         type="range"
         aria-label={`${label} slider`}
         min={min ?? Math.min(range.current.min, value)}
@@ -195,7 +209,7 @@ export function NumericControl({
           begin();
           scrub(e.target.valueAsNumber);
         }}
-      />
+      />}
       {invalid && (
         <small role="status">
           Enter a number{min !== undefined ? ` ≥ ${min}` : ""}

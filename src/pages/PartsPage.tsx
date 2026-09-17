@@ -356,7 +356,7 @@ export default function PartsPage() {
               <label key={key}>
                 {labelOf(key)}
                 <div className="input-wrap">
-                  <NumericControl key={`${selected?.id}:${key}`} name={key} label={labelOf(key)} value={value} step="any"
+                  <NumericControl standardOptions={selected?.standardOptions?.[key]} key={`${selected?.id}:${key}`} name={key} label={labelOf(key)} value={value} step="any"
                     onInvalid={() => { ++sequence.current; setValid(false); setStatus("Enter a valid parameter."); }}
                     onValue={next => changeParam(key, next)} />
                   <span>
