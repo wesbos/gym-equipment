@@ -1,3 +1,4 @@
+import { addsStructure } from '../../rack-generator/structure-candidates.ts';
 import { VendorControls, VendorCredit } from '../components/VendorControls.tsx';
 import { VOLTRA_IDS, DARKO_IDS } from '../../rack-generator/vendor-metadata.ts';
 import { editableFields } from '../state/selection.ts';
@@ -131,7 +132,12 @@ function Inspector({ store }: { store: BuilderStore }) {
       <>
         <h2 id="selection-title">{nameOf(structureChoice)}</h2>
         <div id="inspector" className="inspector-fields">
-          {slots.map((slot) => (
+          {addsStructure(structureChoice) && <div role="group" aria-label="Structure mode">
+            <button aria-pressed={state.structureMode === 'add'} onClick={() => store.patch({ structureMode: 'add' })}>Add structure</button>
+            <button aria-pressed={state.structureMode === 'swap'} onClick={() => store.patch({ structureMode: 'swap' })}>Swap</button>
+          </div>}
+          {state.structureMode === 'add' && <TopologyEditor doc={doc} store={store} selected={null} />}
+          {state.structureMode === 'swap' && slots.map((slot) => (
             <button
               key={slot.ownerId}
               onClick={() => store.previewStructure(slot.ownerId)}
@@ -140,7 +146,7 @@ function Inspector({ store }: { store: BuilderStore }) {
               {slot.ownerId.replaceAll("-", " ")}
             </button>
           ))}
-          {!slots.length && (
+          {state.structureMode === 'swap' && !slots.length && (
             <p>
               {structureChoice === "upright"
                 ? "No upright slots"
@@ -620,7 +626,7 @@ export default function BuilderPage() {
                 {state.placementText ||
                   `Place ${nameOf(state.placing?.part ?? state.structureChoice!)} · choose a highlighted connection`}
               </span>
-              <button id="accept-placement" disabled={!state.proposal} onClick={store.acceptProposal}>Place</button>
+              {!(state.structureChoice && state.structureMode === "add") && <button id="accept-placement" disabled={!state.proposal} onClick={store.acceptProposal}>Place</button>}
               <button id="cancel-placement" onClick={store.cancelPlacement}>
                 Cancel <kbd>ESC</kbd>
               </button>
