@@ -1,0 +1,3 @@
+.part-thumbnail { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 56px; height: 56px; color: #496454; }
+.part-thumbnail img, .part-thumbnail > span, .part-thumbnail svg { display: block; width: 100%; height: 100%; object-fit: contain; }
+.library-gallery .part-thumbnail { align-self: center; width: 128px; height: 128px; margin-bottom: 12px; }

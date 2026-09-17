@@ -1,6 +1,7 @@
 import { gridProfile } from './profiles.ts';
 import { legacyGraph, validateGraph, structureSlots } from './topology.ts';
 import { snapDimensions } from './grid.ts';
+import { validateAppearance } from './appearance.ts';
 import type { RackDoc, RackDimensions, Accessory, Target, Mount, ResolvedInstance, Vec3, NumericParams, PartId, Face, UprightId, StructureSlot, StructureVariant, PlacementInfo } from './types.ts';
 import { attachmentPartIds, getAttachmentDefaults, getAttachmentPlacementInfo, getAttachmentAnchor, getAttachmentCollisionBoxes } from './attachment-mounts.ts';
 
@@ -252,7 +253,8 @@ export function validateAssembly(input: unknown): RackDoc {
     return clean;
   });
   if (typeof input.nextId !== 'number' || !Number.isSafeInteger(input.nextId) || input.nextId < 1 || input.nextId > 1000000) fail('Invalid next accessory ID.');
-  return { ...copy(input), ...graph, version: ASSEMBLY_VERSION, rack, removed: [...removed], structure, accessories, nextId: input.nextId };
+  const appearance = validateAppearance(input.appearance);
+  return { ...copy(input), ...(appearance ? { appearance } : {}), ...graph, version: ASSEMBLY_VERSION, rack, removed: [...removed], structure, accessories, nextId: input.nextId };
 }
 export function getPartPlacementInfo(part: string, input?: RackDoc): PlacementInfo | null {
   if (isMountedAttachment(part)) {
@@ -316,6 +318,14 @@ export function unpairAccessory(input: RackDoc, id: string): RackDoc {
   if (!a.paired) return doc;
   const other = targetsFor(a)[1]; let secondId: string;
   do { secondId = `accessory-${doc.nextId++}`; } while (doc.accessories.some(x => x.id === secondId) || Object.hasOwn(doc.uprights, secondId) || doc.connections.some(e => e.id === secondId));
+  const overrides = doc.appearance?.overrides;
+  if (overrides) {
+    const first = overrides[`${a.id}:${pairSuffix(a.target.uprightId, 0)}`];
+    const second = overrides[`${a.id}:${pairSuffix(other.uprightId, 1)}`];
+    if (first) overrides[a.id] = first;
+    if (second) overrides[secondId] = second;
+    delete overrides[`${a.id}:left`]; delete overrides[`${a.id}:right`];
+  }
   a.paired = false;
   const second = { ...a, id: secondId, target: { ...other }, ...(a.pairedSpanTo ? { spanTo: a.pairedSpanTo } : {}), params: { ...a.params } };
   delete second.pairTo; delete second.pairedSpanTo; delete a.pairTo; delete a.pairedSpanTo;

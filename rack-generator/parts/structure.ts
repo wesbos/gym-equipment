@@ -47,7 +47,7 @@ function construct(api: ManifoldAPI, p: NumericParams, make: (g: Geometry, p: Nu
     out.forEach(item=>owned.delete(item.solid));return out;
   } finally {[...owned].reverse().forEach(s=>s.delete());}
 }
-const part=(name: string,solid: Manifold,color=steel)=>({name,solid,color});
+const part=(name: string,solid: Manifold,color=steel,role: SolidPart['role']='frame'): SolidPart=>({name,solid,color,role});
 const mapProfiles=(loops: Vec2[][],fn: (point: Vec2) => Vec2)=>loops.map(loop=>loop.map(fn));
 function mountingBores(loops: Vec2[][],diameter=25,original=17): Vec2[][] {
   return loops.map(loop=>{
@@ -76,7 +76,7 @@ function endFlanges(g: Geometry,p: NumericParams,rise=0) {
     const plate=g.profile(loops,p.plateThickness,'x',[s===1?p.length/2-p.plateThickness:-p.length/2,0,s===1?rise:0]);
     // Above x-profile uses local [y,z].
     out.push(part(`${s<0?'Left':'Right'} rounded mounting flange`,plate));
-    for(const z of [25,p.plateHeight-25])out.push(part(p.boltDiameter ? 'Estimated profile bolt, nut and washers' : 'M16 bolt, nut and washers',fastener(g,'x',[s*p.length/2,0,z+(s===1?rise:0)],s,false,p.boltDiameter ?? 16),zinc));
+    for(const z of [25,p.plateHeight-25])out.push(part(p.boltDiameter ? 'Estimated profile bolt, nut and washers' : 'M16 bolt, nut and washers',fastener(g,'x',[s*p.length/2,0,z+(s===1?rise:0)],s,false,p.boltDiameter ?? 16),zinc,'fastener'));
   }
   return out;
 }
@@ -142,7 +142,7 @@ function shapedCrossmember(api: ManifoldAPI,p: NumericParams,angled: boolean) {r
   for(const sign of [-1,1]) {
     const x=sign*575*sx,y=61.484*sy;
     const plate=g.profile(mountingBores(measuredProfiles.flange,p.holeDiameter),6,'y',[x,y+6,0]);out.push(part('Rounded offset end flange',plate));
-    for(const z of [25,125])out.push(part('M16 bolt, nut and washers',fastener(g,'y',[x,y+6,z],1,true),zinc));
+    for(const z of [25,125])out.push(part('M16 bolt, nut and washers',fastener(g,'y',[x,y+6,z],1,true),zinc,'fastener'));
   }
   return out;
 });}
@@ -192,7 +192,7 @@ function foot(api: ManifoldAPI,p: NumericParams) {return construct(api,p,(g,p)=>
   // Actual foot has one widened toe plate, with the beam bending down to it.
   const pad=g.difference(g.move(g.keep(g.rounded(p.padWidth,p.padDepth*sy,7.5).extrude(p.baseThickness)),[0,padEnd-p.padDepth*sy/2,0]),[g.hole(p.baseThickness+3,p.holeDiameter,'z',[0,padEnd-25,4])]);
   solid=g.union([solid,pad]);
-  return [part('Perforated bent stabilizer with toe plate',solid),... [65,165].map(z=>part('M16 bolt, nut and washers',fastener(g,'y',[0,flangeY,z],-1,true),zinc))];
+  return [part('Perforated bent stabilizer with toe plate',solid),... [65,165].map(z=>part('M16 bolt, nut and washers',fastener(g,'y',[0,flangeY,z],-1,true),zinc,'fastener'))];
 });}
 const beamDefaults = { length: 1075, width: 75, wall: 3, holeDiameter: 25, spacing: 50, plateThickness: 6, plateHeight: 150 };
 export const definitions: PartDefinition[] = [

@@ -76,12 +76,14 @@ in active rack settings. Physical REP fit is unverified. PR-1100/1000/1050 and
 Apollo/Omni-specific geometry remain outside this implementation; #8 still has
 that residual coverage gap. Generic two-post half rack is not labelled Apollo.
 
-Integration conflicts are concentrated in assembly/types and small BuilderPage
-imports/settings/inspector edits. New TopologyEditor and RackPresets components
-avoid restructuring shared UI. Numeric-control integration should call
-snapDimensions/resizeAssembly and retain the visible target feedback. Materials
-can attach optional appearance JSON without a schema bump. Thumbnail code needs
-no changes. No deployment or named save UI is included.
+Integration with main through PR22 retains explicit named saves and working drafts,
+per-physical-piece appearance, semantic worker material roles, and thumbnails.
+Storage passes both legacy single-slot and named documents through validateAssembly;
+the migration does not snap or relocate existing parts. Appearance is validated
+additive v2 data. Structural/accessory edits resolve the selected physical ID to
+its owner; paint keeps the physical ID. NumericControl normalizes live dimensions
+through snapDimensions and uses stepDimension for catalog keyboard steps, while
+keeping gesture-coalesced undo. No deployment changes are included.
 
 Special adapters retain their measured restrictions: multi-grip/sphere bars need
 original rectangular upper rails; offset/nameplate adapters need horizontal

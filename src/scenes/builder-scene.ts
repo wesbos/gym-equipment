@@ -1,3 +1,4 @@
+import { cloneInstanceMaterials } from './instance-materials.ts';
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
@@ -155,7 +156,7 @@ export function createBuilderScene(
     }
   }
   function transformed(model: THREE.Group, entry: ResolvedInstance) {
-    const g = model.clone();
+    const g = cloneInstanceMaterials(model, snapshot.doc.appearance, entry.id);
     g.position.set(...entry.position);
     g.rotation.set(...entry.rotation);
     g.userData = { id: entry.id, ownerId: entry.ownerId || entry.id };
@@ -196,6 +197,7 @@ export function createBuilderScene(
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.name = m.name;
+        mesh.userData.materialSource = { role: m.role, color: m.color, metalness: m.metalness, roughness: m.roughness };
         model.add(mesh);
       }
       request.resolve(model);
@@ -248,8 +250,15 @@ export function createBuilderScene(
           );
     return `${Math.ceil(size.x)} W × ${Math.ceil(size.z)} D × ${Math.ceil(size.y)} H mm`;
   }
+  let rebuilding = false;
+  function requestRebuild() {
+    ++generation;
+    store.patch({ loading: true, dimensions: dimensions() });
+    if (!rebuilding) void rebuild();
+  }
   async function rebuild() {
-    const serial = ++generation,
+    rebuilding = true;
+    const serial = generation,
       entries = snapshot.resolved;
     store.patch({
       loading: true,
@@ -258,12 +267,16 @@ export function createBuilderScene(
       dimensions: dimensions(),
     });
     try {
-      const built = await Promise.all(
-        entries.map(async (entry) =>
-          transformed(await geometryFor(entry), entry),
-        ),
-      );
+      // Wait for the whole batch, including errors, before starting the latest one.
+      const results = await Promise.allSettled(entries.map(geometryFor));
       if (disposed || serial !== generation) return;
+      const models = results.map(result => {
+        if (result.status === 'rejected') throw result.reason;
+        return result.value;
+      });
+      // Allocate per-instance materials only after rejecting stale/failed batches.
+      const built = models.map((model, i) => transformed(model, entries[i]));
+      disposeMeshes(assemblyRoot, false);
       assemblyRoot.clear();
       instances.clear();
       for (const g of built) {
@@ -279,7 +292,7 @@ export function createBuilderScene(
         dimensions: dimensions(true),
         status: warnings.length
           ? `${warnings.length} placement warning${warnings.length === 1 ? "" : "s"} · ${entries.length} parts`
-          : `${entries.length} parts · All connections aligned · Saved locally`,
+          : `${entries.length} parts · All connections aligned`,
         error: false,
       });
       if (!hasFit) {
@@ -289,6 +302,9 @@ export function createBuilderScene(
     } catch (error) {
       if (!disposed && serial === generation)
         store.patch({ loading: false, status: message(error), error: true });
+    } finally {
+      rebuilding = false;
+      if (!disposed && serial !== generation) void rebuild();
     }
   }
   function clearGhost() {
@@ -405,19 +421,20 @@ export function createBuilderScene(
       store.patch({
         placementText: `${target.uprightId.replaceAll("-", " ")} · ${target.label || target.face + " · Hole " + (target.hole + 1)} · ${Math.round(target.position[2])} mm · Click to place`,
       });
-      const models = await Promise.all(
-        entries.map(async (r) => transformed(await geometryFor(r), r)),
-      );
+      const models = await Promise.all(entries.map(geometryFor));
       if (disposed || serial !== previewSerial || !snapshot.placing) return;
-      for (const g of models) {
+      for (const [i, model] of models.entries()) {
+        const g = transformed(model, entries[i]);
         g.traverse((o) => {
-          if (o instanceof THREE.Mesh)
+          if (o instanceof THREE.Mesh) {
+            disposeMaterial(o.material);
             o.material = new THREE.MeshStandardMaterial({
               color: "#c68b45",
               transparent: true,
               opacity: 0.48,
               depthWrite: false,
             });
+          }
         });
         ghostRoot.add(g);
       }
@@ -479,8 +496,8 @@ export function createBuilderScene(
     let object: THREE.Object3D | null = hit?.object ?? null;
     while (object && !object.userData.ownerId) object = object.parent;
     store.select(
-      typeof object?.userData.ownerId === "string"
-        ? object.userData.ownerId
+      typeof object?.userData.id === "string"
+        ? object.userData.id
         : null,
     );
   };
@@ -572,7 +589,7 @@ export function createBuilderScene(
     const previous = snapshot;
     snapshot = store.getSnapshot();
     if (disposed) return;
-    if (snapshot.doc !== previous.doc) void rebuild();
+    if (snapshot.doc !== previous.doc) requestRebuild();
     if (snapshot.selected !== previous.selected) refreshSelection();
     if (
       snapshot.placing !== previous.placing ||
@@ -581,7 +598,7 @@ export function createBuilderScene(
     )
       refreshPlacement();
   });
-  void rebuild();
+  requestRebuild();
   if (snapshot.placing) refreshPlacement();
   return {
     fit,
@@ -625,6 +642,7 @@ export function createBuilderScene(
       clearGhost();
       clearMounts();
       clearSelection();
+      disposeMeshes(assemblyRoot, false);
       assemblyRoot.clear();
       instances.clear();
       for (const promise of cache.values())

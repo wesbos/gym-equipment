@@ -7,7 +7,7 @@ import { detectCollisions } from './assembly-collisions.ts';
 test('v1 migration preserves exact world transforms, IDs and optional appearance at every level', () => {
   const current = createAssembly();
   const { uprights, connections, ...rest } = current;
-  const legacy = { ...rest, version: 1, appearance: { finish: 'red' }, accessories: current.accessories.map(({spanTo, pairTo, pairedSpanTo, ...a}) => ({ ...a, appearance: { metalness: 0.3 } })) };
+  const legacy = { ...rest, version: 1, appearance: { frameColor: '#ff0000' }, accessories: current.accessories.map(({spanTo, pairTo, pairedSpanTo, ...a}) => ({ ...a, appearance: { metalness: 0.3 } })) };
   const migrated = validateAssembly(legacy);
   assert.equal(migrated.version, 2);
   assert.deepEqual(resolveAssembly(migrated), resolveAssembly(current));

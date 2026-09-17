@@ -3,7 +3,10 @@ import { RackPresets } from '../components/RackPresets.tsx';
 import { TopologyEditor } from '../components/TopologyEditor.tsx';
 import { structureSlots } from '../../rack-generator/topology.ts';
 import { snapDimensions, stepDimension } from '../../rack-generator/grid.ts';
-import { partIcon } from "../components/part-icon.ts";
+import { NumericControl } from "../components/NumericControl.tsx";
+import { ConfigManager } from "../components/ConfigManager.tsx";
+import { PartThumbnail } from "../components/PartThumbnail.tsx";
+import { AppearanceControls } from "../components/AppearanceControls.tsx";
 import {
   useEffect,
   useRef,
@@ -16,7 +19,6 @@ import { Link } from "@tanstack/react-router";
 import { getBuilderStore, type BuilderStore } from "../state/builder-store.ts";
 import { createBuilderScene } from "../scenes/builder-scene.ts";
 import {
-  createAssembly,
   getPartPlacementInfo,
   getAvailableStructure,
   restoreInstance,
@@ -93,13 +95,14 @@ function Inspector({ store }: { store: BuilderStore }) {
     definitions
       .find((d) => d.id === part)
       ?.name.replace(/^BOS STRENGTH\s*/, "") || part;
-  const entry = doc.accessories.find((a) => a.id === selected),
+  const ownerId = store.ownerOf(selected);
+  const entry = doc.accessories.find((a) => a.id === ownerId),
     physical =
       resolved.find((r) => r.id === selected) ||
       resolved.find((r) => r.ownerId === selected);
   const part =
     entry?.part ||
-    (selected ? doc.structure[selected]?.part : undefined) ||
+    (ownerId ? doc.structure[ownerId]?.part : undefined) ||
     physical?.part;
   const info = part ? getPartPlacementInfo(part, doc) : null;
   const submit = (
@@ -164,88 +167,34 @@ function Inspector({ store }: { store: BuilderStore }) {
         <h2 id="selection-title">Rack settings</h2>
         <RackPresets store={store} />
         {gridProfile(doc.profileId).reconstructionNote && <p className="note">{gridProfile(doc.profileId).label}: {gridProfile(doc.profileId).reconstructionNote}</p>}
-        <TopologyEditor key={JSON.stringify(doc)} doc={doc} store={store} selected={selected} />
+        <TopologyEditor key={JSON.stringify(doc)} doc={doc} store={store} selected={ownerId} />
         <p className="settings-intro">
           Build your frame, then add parts at highlighted connections.
         </p>
-        <form
-          id="frame-form"
-          onKeyDown={event => {
-            if (!['ArrowUp', 'ArrowDown'].includes(event.key) || !(event.target instanceof HTMLInputElement)) return;
-            const input = event.target, name = input.name;
-            if (!['width', 'depth', 'heightIn'].includes(name)) return;
-            event.preventDefault();
-            const key = name === 'heightIn' ? 'height' : name as 'width' | 'depth';
+        <form id="frame-form" onSubmit={e => { e.preventDefault(); store.endGesture(); }}>
+          {(['height', 'width', 'depth'] as const).map(key => {
             const factor = key === 'height' ? 25.4 : 1;
-            const value = stepDimension(doc.rack, key, Number(input.value) * factor, event.key === 'ArrowUp' ? 1 : -1, doc.profileId);
-            input.value = String(value / factor);
-            setSnapHint(`Snapped ${key} target: ${value} mm`);
-          }}
-          onChange={(event) => {
-            const data = new FormData(event.currentTarget);
-            const snapped = snapDimensions(doc.rack, { height: Number(data.get("heightIn")) * 25.4, width: Number(data.get("width")), depth: Number(data.get("depth")) }, doc.profileId);
-            setSnapHint(`Snapped target: ${snapped.height} mm high × ${snapped.width} mm wide × ${snapped.depth} mm deep`);
-          }}
-          key={JSON.stringify(doc.rack)}
-          onSubmit={(e) => {
-            submit(e, (data) => {
-              const next = resizeAssembly(doc, {
-                  height: Number(data.get("heightIn")) * 25.4,
-                  width: Number(data.get("width")),
-                  depth: Number(data.get("depth")),
-                });
-              store.commit(next);
-              const form = e.currentTarget;
-              (form.elements.namedItem('heightIn') as HTMLInputElement).value = String(Number((next.rack.height / 25.4).toFixed(4)));
-              (form.elements.namedItem('width') as HTMLInputElement).value = String(next.rack.width);
-              (form.elements.namedItem('depth') as HTMLInputElement).value = String(next.rack.depth);
-            });
-          }}
-        >
-          <Field label="Upright height">
-            <div className="input-wrap">
-              <input
-                name="heightIn"
-                type="number"
-                defaultValue={Number((doc.rack.height / 25.4).toFixed(2))}
-                min="40"
-                max="157"
-                step="any"
-                required
-              />
-              <span>in</span>
-            </div>
-          </Field>
-          <Field label="Clear rack width">
-            <div className="input-wrap">
-              <input
-                name="width"
-                step="any"
-                type="number"
-                defaultValue={doc.rack.width}
-                min="400"
-                max="2000"
-                required
-              />
-              <span>mm</span>
-            </div>
-          </Field>
-          <Field label="Clear rack depth">
-            <div className="input-wrap">
-              <input
-                name="depth"
-                step="any"
-                type="number"
-                defaultValue={doc.rack.depth}
-                min="300"
-                max="1500"
-                required
-              />
-              <span>mm</span>
-            </div>
-          </Field>
-          <output aria-live="polite">{snapHint || `Grid: ${doc.rack.pitch} mm · depths ${gridProfile(doc.profileId).depths.join(" / ")} mm`}</output>
-          <button className="primary update-frame">Update frame ↗</button>
+            const label = key === 'height' ? 'Upright height' : `Clear rack ${key}`;
+            return <Field key={key} label={label}><div className="input-wrap">
+              <NumericControl name={key === 'height' ? 'heightIn' : key} label={label}
+                value={doc.rack[key] / factor} min={key === 'height' ? 40 : key === 'width' ? 400 : 300}
+                max={key === 'height' ? 157 : key === 'width' ? 2000 : 1500} step={doc.rack.pitch / factor}
+                normalize={value => {
+                  const current = store.getSnapshot().doc;
+                  const target = snapDimensions(current.rack, { [key]: value * factor }, current.profileId)[key];
+                  setSnapHint(`Snapped ${key} target: ${target} mm`);
+                  return target / factor;
+                }}
+                advance={(value, direction) => {
+                  const current = store.getSnapshot().doc;
+                  return stepDimension(current.rack, key, value * factor, direction, current.profileId) / factor;
+                }}
+                onGestureStart={store.beginGesture} onGestureEnd={store.endGesture}
+                onValue={value => store.act(() => store.commit(resizeAssembly(store.getSnapshot().doc, { [key]: value * factor })))} />
+              <span>{key === 'height' ? 'in' : 'mm'}</span>
+            </div></Field>;
+          })}
+          <output aria-live="polite">{snapHint || `Grid: ${doc.rack.pitch} mm · depths ${gridProfile(doc.profileId).depths.join(' / ')} mm`}</output>
         </form>
       </>
     );
@@ -324,11 +273,11 @@ function Inspector({ store }: { store: BuilderStore }) {
   return (
     <>
       <h2 id="selection-title">{nameOf(part)}</h2>
-      <TopologyEditor key={JSON.stringify(doc)} doc={doc} store={store} selected={selected} />
+      <TopologyEditor key={JSON.stringify(doc)} doc={doc} store={store} selected={ownerId} />
       <div id="inspector" className="inspector-fields">
         <form
           className="selection-form"
-          key={JSON.stringify([selected, entry, physical.params, part])}
+          key={JSON.stringify([selected, part])}
           onSubmit={(e) =>
             submit(e, (data) => {
               const variant = (data.get("variant") || part) as PartId;
@@ -375,7 +324,7 @@ function Inspector({ store }: { store: BuilderStore }) {
         >
           {part !== "upright" && (
             <Field label={entry ? "Variant" : "Frame member"}>
-              <select name="variant" defaultValue={part}>
+              <select name="variant" value={part} onChange={e => e.currentTarget.form?.requestSubmit()}>
                 {variants.map((id) => (
                   <option value={id} key={id}>
                     {nameOf(id)}
@@ -387,7 +336,7 @@ function Inspector({ store }: { store: BuilderStore }) {
           {entry && (
             <>
               <Field label="Mounting upright">
-                <select name="upright" defaultValue={entry.target.uprightId}>
+                <select name="upright" value={entry.target.uprightId} onChange={e => e.currentTarget.form?.requestSubmit()}>
                   {Object.keys(doc.uprights)
                     .filter((id) => resolved.some((r) => r.id === id))
                     .map((id) => (
@@ -397,11 +346,12 @@ function Inspector({ store }: { store: BuilderStore }) {
                     ))}
                 </select>
               </Field>
-              {entry.spanTo && <Field label="Span end upright"><select name="spanTo" defaultValue={entry.spanTo}>{Object.keys(doc.uprights).filter(id => !doc.removed.includes(id)).map(id => <option key={id}>{id}</option>)}</select></Field>}
+              {entry.spanTo && <Field label="Span end upright"><select name="spanTo" value={entry.spanTo} onChange={e => e.currentTarget.form?.requestSubmit()}>{Object.keys(doc.uprights).filter(id => !doc.removed.includes(id)).map(id => <option key={id}>{id}</option>)}</select></Field>}
               <Field label="Mounting face">
                 <select
                   name="face"
-                  defaultValue={entry.target.face}
+                  value={entry.target.face}
+                  onChange={e => e.currentTarget.form?.requestSubmit()}
                   disabled={spanning}
                 >
                   {(spanning
@@ -415,26 +365,21 @@ function Inspector({ store }: { store: BuilderStore }) {
                 </select>
               </Field>
               <Field label="Hole number">
-                <input
-                  name="hole"
-                  step={doc.rack.benchSpacing ? 0.5 : 1}
-                  type="number"
-                  defaultValue={entry.target.hole + 1}
-                  min="1"
-                  max={
-                    Math.floor(
-                      (doc.rack.height - doc.rack.firstHole) / doc.rack.pitch,
-                    ) + 1
-                  }
-                  disabled={fixedHole}
-                  required
-                />
+                <NumericControl name="hole" label="Hole number" value={entry.target.hole + 1} min={1} step={doc.rack.benchSpacing ? 0.5 : 1} normalize={value => doc.rack.benchSpacing ? Math.round(value * 2) / 2 : Math.round(value)}
+                  max={Math.floor((doc.rack.height - doc.rack.firstHole) / doc.rack.pitch) + 1} disabled={fixedHole}
+                  onGestureStart={store.beginGesture} onGestureEnd={store.endGesture}
+                  onValue={value => store.act(() => {
+                    const next = structuredClone(store.getSnapshot().doc);
+                    next.accessories.find(a => a.id === entry.id)!.target.hole = value - 1;
+                    store.commit(next);
+                  })} />
               </Field>
               <Field label="Matching pair">
                 <input
                   type="checkbox"
                   name="paired"
-                  defaultChecked={entry.paired}
+                  checked={entry.paired}
+                  onChange={e => e.currentTarget.form?.requestSubmit()}
                   disabled={!info?.paired}
                 />
               </Field>
@@ -447,22 +392,15 @@ function Inspector({ store }: { store: BuilderStore }) {
           )}
           {fields.map((field) => (
             <Field key={field.key} label={`${field.label} (mm)`}>
-              <input
-                name={field.key}
-                type="number"
-                defaultValue={
-                  entry?.params[field.key] ??
-                  (selected
-                    ? doc.structure[selected]?.params[field.key]
-                    : undefined) ??
-                  physical.params[field.key] ??
-                  definitions.find((d) => d.id === part)?.defaults[field.key]
-                }
-                min={field.min}
-                max={field.max}
-                step={field.step}
-                required
-              />
+              <NumericControl name={field.key} label={field.label}
+                value={entry?.params[field.key] ?? (ownerId ? doc.structure[ownerId]?.params[field.key] : undefined) ?? physical.params[field.key] ?? definitions.find(d => d.id === part)?.defaults[field.key] ?? 0}
+                min={field.min} max={field.max} step={field.step}
+                onGestureStart={store.beginGesture} onGestureEnd={store.endGesture}
+                onValue={value => store.act(() => {
+                  const next = structuredClone(store.getSnapshot().doc);
+                  if (entry) { next.accessories.find(a => a.id === entry.id)!.params[field.key] = value; store.commit(next); }
+                  else store.commit(replaceStructurePart(next, physical.ownerId || physical.id, part, { ...next.structure[physical.ownerId || physical.id]?.params, [field.key]: value }));
+                })} />
             </Field>
           ))}
           {part !== "upright" && (
@@ -499,7 +437,7 @@ function Inspector({ store }: { store: BuilderStore }) {
             type="button"
             onClick={() =>
               store.act(() => {
-                store.commit(removeInstance(doc, selected!));
+                store.commit(removeInstance(doc, ownerId!));
                 store.select(null);
               })
             }
@@ -512,8 +450,8 @@ function Inspector({ store }: { store: BuilderStore }) {
   );
 }
 export default function BuilderPage() {
-  const store = getBuilderStore(),
-    state = useSyncExternalStore(store.subscribe, store.getSnapshot);
+  const [store] = useState(getBuilderStore);
+  const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const viewport = useRef<HTMLDivElement>(null),
     controller = useRef<ReturnType<typeof createBuilderScene> | null>(null),
     importFile = useRef<HTMLInputElement>(null);
@@ -542,7 +480,7 @@ export default function BuilderPage() {
       if ((e.key === "Delete" || e.key === "Backspace") && selected) {
         e.preventDefault();
         store.act(() => {
-          store.commit(removeInstance(store.getSnapshot().doc, selected));
+          store.commit(removeInstance(store.getSnapshot().doc, store.ownerOf(selected)!));
           store.select(null);
         });
       }
@@ -586,6 +524,7 @@ export default function BuilderPage() {
             <span className="live-dot" /> YOUR WORKSPACE
           </div>
           <div className="toolbar-actions">
+            <ConfigManager store={store} />
             <div className="history-actions">
               <button
                 id="undo"
@@ -728,10 +667,11 @@ export default function BuilderPage() {
                         store.startPlacement(id);
                       }}
                     >
-                      <span
+                      <PartThumbnail
+                        enabled={state.definitions.length > 0}
+                        part={id}
+                        params={state.definitions.find((d) => d.id === id)?.defaults}
                         className="thumb"
-                        aria-hidden="true"
-                        dangerouslySetInnerHTML={{ __html: partIcon(id) }}
                       />
                       <span>{nameOf(id)}</span>
                       <span className="part-plus">+</span>
@@ -820,7 +760,8 @@ export default function BuilderPage() {
           >
             ← Rack settings
           </button>
-          <Inspector store={store} />
+          <AppearanceControls store={store} />
+          <Inspector key={state.inputRevision} store={store} />
           <div id="warnings">
             {warnings.map((warning, i) => (
               <button
@@ -843,8 +784,7 @@ export default function BuilderPage() {
               className="new-rack-button"
               onClick={() => {
                 controller.current?.refitOnNextBuild();
-                store.commit(createAssembly());
-                store.select(null);
+                store.newRack();
               }}
             >
               New rack +
