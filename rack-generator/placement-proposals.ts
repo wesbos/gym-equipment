@@ -38,9 +38,10 @@ export function placementMounts(doc: RackDoc, part: PartId, movingId: string | n
   return getMounts(doc, part, proposalParams(doc, part, movingId));
 }
 /** Strip renderer metadata, retaining all domain target fields (including future target kinds). */
-export function placementTarget<T extends Mount>(target: T) {
+type DomainTarget<T> = T extends Mount ? Omit<T, 'position' | 'center' | 'localAnchor' | 'pinAxis' | 'label' | 'connectorId'> : never;
+export function placementTarget<T extends Mount>(target: T): DomainTarget<T> {
   const { position, center, localAnchor, pinAxis, label, connectorId, ...domainTarget } = target;
-  return structuredClone(domainTarget);
+  return structuredClone(domainTarget) as DomainTarget<T>;
 }
 /** Pure preview document adapter, also usable by swap/hover callers. */
 export function proposalAt(doc: RackDoc, part: PartId, target: Mount, paired: boolean, movingId: string | null = null): PlacementProposal {

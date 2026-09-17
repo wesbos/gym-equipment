@@ -23,7 +23,7 @@ for (const part of ['voltra-sliding', 'voltra-adaptive', 'voltra-fixed', 'darko-
       const paired = validateAssembly(doc);
       const instances = resolveAssembly(paired).filter(p => p.ownerId === 'pair');
       assert.deepEqual(instances.map(p => p.id), [`pair:${firstSuffix}`, `pair:${secondSuffix}`], `${first}/${second}`);
-      assert.deepEqual(instances.map(p => p.mount.uprightId), [first, second]);
+      assert.deepEqual(instances.map(p => p.mount!.uprightId), [first, second]);
       paired.appearance = { overrides: { [instances[0].id]: '#123456', [instances[1].id]: '#abcdef' } };
       const restored = validateAssembly(JSON.parse(JSON.stringify(paired)));
       assert.deepEqual(resolveAssembly(restored).filter(p => p.ownerId === 'pair').map(p => p.id), instances.map(p => p.id));
