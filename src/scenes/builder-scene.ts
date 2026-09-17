@@ -53,7 +53,7 @@ export function createBuilderScene(
     hasFit = false,
     view: BuilderView = "iso";
   let previewTarget: Mount | null = null,
-    selectionBox: THREE.Box3Helper | null = null,
+    selectionBoxes: THREE.Box3Helper[] = [],
     pointerDown: [number, number] | null = null;
   let mountPoints: Mount[] = [];
   const scene = new THREE.Scene();
@@ -208,28 +208,17 @@ export function createBuilderScene(
       store.status("Geometry worker failed. Reload to retry.", true);
   };
   function clearSelection() {
-    if (selectionBox) {
-      scene.remove(selectionBox);
-      selectionBox.geometry.dispose();
-      disposeMaterial(selectionBox.material);
-      selectionBox = null;
-    }
+    for (const box of selectionBoxes) { scene.remove(box); box.geometry.dispose(); disposeMaterial(box.material); }
+    selectionBoxes = [];
   }
   function refreshSelection() {
     clearSelection();
-    const box = new THREE.Box3();
-    for (const g of instances.values())
-      if (
-        g.userData.ownerId === snapshot.selected ||
-        g.userData.id === snapshot.selected
-      )
-        box.union(new THREE.Box3().setFromObject(g));
-    if (!box.isEmpty()) {
-      selectionBox = new THREE.Box3Helper(
-        box.expandByScalar(5),
-        new THREE.Color("#c77c36"),
-      );
-      scene.add(selectionBox);
+    for (const g of instances.values()) {
+      if (!snapshot.selection.includes(g.userData.id as string)) continue;
+      const box = new THREE.Box3().setFromObject(g);
+      if (box.isEmpty()) continue;
+      const helper = new THREE.Box3Helper(box.expandByScalar(5), new THREE.Color('#c77c36'));
+      selectionBoxes.push(helper); scene.add(helper);
     }
   }
   function dimensions(measured = false) {
@@ -473,15 +462,38 @@ export function createBuilderScene(
     updatePreview(event);
     store.acceptProposal();
   }
+  const marquee = document.createElement('div');
+  marquee.style.cssText = 'position:fixed;pointer-events:none;border:1px solid #c77c36;background:#c77c3622;z-index:100;display:none';
+  viewport.append(marquee);
+  let selecting = false;
   const onDown = (event: PointerEvent) => {
     pointerDown = [event.clientX, event.clientY];
-    if ((snapshot.placing || snapshot.structureChoice) && event.button === 0) controls.enabled = false;
+    selecting = snapshot.selectionTool && !snapshot.placing && !snapshot.structureChoice && event.button === 0;
+    if ((snapshot.placing || snapshot.structureChoice || selecting) && event.button === 0) controls.enabled = false;
+    if (selecting) renderer.domElement.setPointerCapture(event.pointerId);
   };
   const onMove = (event: PointerEvent) => {
+    if (selecting && pointerDown) {
+      Object.assign(marquee.style, { display: 'block', left: `${Math.min(pointerDown[0], event.clientX)}px`, top: `${Math.min(pointerDown[1], event.clientY)}px`, width: `${Math.abs(event.clientX - pointerDown[0])}px`, height: `${Math.abs(event.clientY - pointerDown[1])}px` });
+    }
     void updatePreview(event);
   };
   const onUp = (event: PointerEvent) => {
-    controls.enabled = true;
+    controls.enabled = !snapshot.selectionTool;
+    marquee.style.display = 'none';
+    if (selecting && pointerDown && Math.hypot(event.clientX - pointerDown[0], event.clientY - pointerDown[1]) > 6) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      const left = Math.min(pointerDown[0], event.clientX), right = Math.max(pointerDown[0], event.clientX);
+      const top = Math.min(pointerDown[1], event.clientY), bottom = Math.max(pointerDown[1], event.clientY);
+      const ids: string[] = [];
+      for (const g of instances.values()) {
+        const center = new THREE.Box3().setFromObject(g).getCenter(new THREE.Vector3()).project(camera);
+        const x = rect.left + (center.x + 1) * rect.width / 2, y = rect.top + (1 - center.y) * rect.height / 2;
+        if (center.z >= -1 && center.z <= 1 && x >= left && x <= right && y >= top && y <= bottom) ids.push(g.userData.id as string);
+      }
+      store.selectMany(ids, event.metaKey || event.ctrlKey); pointerDown = null; selecting = false; return;
+    }
+    selecting = false;
     if (
       event.button !== 0 ||
       !pointerDown ||
@@ -509,11 +521,13 @@ export function createBuilderScene(
       typeof object?.userData.id === "string"
         ? object.userData.id
         : null,
+      event,
     );
   };
   const onCancel = () => {
     pointerDown = null;
-    controls.enabled = true;
+    selecting = false; marquee.style.display = 'none';
+    controls.enabled = !snapshot.selectionTool;
   };
   const onDrag = (event: DragEvent) => {
     event.preventDefault();
@@ -523,7 +537,7 @@ export function createBuilderScene(
     event.preventDefault();
     dropPlacement(event);
   };
-  renderer.domElement.addEventListener("pointerdown", onDown);
+  renderer.domElement.addEventListener("pointerdown", onDown, true);
   renderer.domElement.addEventListener("pointermove", onMove);
   renderer.domElement.addEventListener("pointerup", onUp);
   renderer.domElement.addEventListener("pointercancel", onCancel);
@@ -600,7 +614,9 @@ export function createBuilderScene(
     snapshot = store.getSnapshot();
     if (disposed) return;
     if (snapshot.doc !== previous.doc) requestRebuild();
-    if (snapshot.selected !== previous.selected) refreshSelection();
+    if (snapshot.selection !== previous.selection) refreshSelection();
+    controls.enabled = !snapshot.selectionTool && !selecting && !(pointerDown && (snapshot.placing || snapshot.structureChoice));
+    if (previous.selectionTool && !snapshot.selectionTool) onCancel();
     if (
       snapshot.placing !== previous.placing ||
       snapshot.structureChoice !== previous.structureChoice ||
@@ -642,7 +658,8 @@ export function createBuilderScene(
       cancelAnimationFrame(frame);
       observer.disconnect();
       controls.dispose();
-      renderer.domElement.removeEventListener("pointerdown", onDown);
+      marquee.remove();
+      renderer.domElement.removeEventListener("pointerdown", onDown, true);
       renderer.domElement.removeEventListener("pointermove", onMove);
       renderer.domElement.removeEventListener("pointerup", onUp);
       renderer.domElement.removeEventListener("pointercancel", onCancel);

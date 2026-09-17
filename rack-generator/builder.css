@@ -33,3 +33,4 @@
 
 /* Maintain measurement contrast above dark gym flooring. */
 .builder-page .stage-caption{background:#f6f8f0e8;border:1px solid #cdd8c5;border-radius:6px;padding:9px 12px}
+.bom-row[aria-pressed="true"] { border-color: #c77c36; background: #c77c3622; }
