@@ -485,23 +485,27 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
     } else {
       const row = rowOf(a.target.uprightId), y = postCenter(r, `${row}-left`)[1];
       let mounts = (['left', 'right'] as const).map((side, i) => mount(r, `${row}-${side}`, a.target.hole, i ? 'left' : 'right', [(i ? 1 : -1) * r.width / 2, 0, a.part === 'pullup-straight' ? 25 : 30]));
+      // Source sphere grips extend along +Y. Turn front mounts around the
+      // asymmetric plate center so grips face the user without moving rail holes.
+      const angle = a.part === 'pullup-sphere' && row === 'front' ? Math.PI : 0;
+      const direction = angle ? -1 : 1;
       let yy = y, zz = holeZ(r, a.target.hole) - 25;
       if (a.part !== 'pullup-straight') {
         // These wide plates bolt to the upper depth rails, not one upright hole.
         // Their four bolts follow the rail's 50 mm stations across a 250/300 mm span.
         const sy = a.part === 'pullup-sphere' ? (params.projection / 190) : (params.projection / 170);
         yy = (row === 'front' ? -1 : 1) * (r.depth / 2 - 62.5 - (a.part === 'pullup-sphere' ? 150 : 125) * sy);
-        if (a.part === 'pullup-sphere') yy += 46.194 * sy;
+        if (a.part === 'pullup-sphere') yy += direction * 46.194 * sy;
         zz = holeZ(r, upperHole(r)) + 50 - 30;
         const stations = a.part === 'pullup-sphere' ? [-196.194 * sy, 103.806 * sy] : [-125 * sy, 125 * sy];
         mounts = (['left', 'right'] as const).flatMap((side, i) => stations.map(yStation => {
-          const localAnchor: Vec3 = [(i ? 1 : -1) * r.width / 2, yStation, 30];
+          const localAnchor: Vec3 = [direction * (i ? 1 : -1) * r.width / 2, yStation, 30];
           const m = mount(r, `${row}-${side}`, a.target.hole, i ? 'left' : 'right', localAnchor);
-          m.center[1] = m.position[1] = yy + yStation;
+          m.center[1] = m.position[1] = yy + direction * yStation;
           return { ...m, label: 'Upper side rails', connectorId: `${side}-upper-crossmember` };
         }));
       }
-      append(a.id, a.part, { ...params, length: r.width }, [0, yy, zz], 0, mounts, 'accessory', a.id, false, dependencies(a));
+      append(a.id, a.part, { ...params, length: r.width }, [0, yy, zz], angle, mounts, 'accessory', a.id, false, dependencies(a));
     }
   }
   return result;
