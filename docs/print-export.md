@@ -106,7 +106,7 @@ Tests cover every catalog builder's decimal XML mesh round-trip through Manifold
 roles, identity, colors, vendor marks/credits, scale ratios, positions, packing,
 bounding-box overflow and failure behavior.
 
-Real installed **Bambu Studio 02.08.01.55** CLI and **OrcaSlicer 01.09.05.51** GUI
+Real installed **Bambu Studio 02.08.01.55** CLI and **OrcaSlicer 2.2.0** GUI
 imports/re-exports were used at both scales. The independent Python auditor checks
 ZIP CRC, relationships, mesh indices/areas/directed edge closure, zero repair
 counters, exact named-plate membership, in-bed positions, dimensions, volume names
