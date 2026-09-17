@@ -10,6 +10,7 @@ export interface NumericControlProps {
   disabled?: boolean;
   /** Domain-specific snapping can be supplied without coupling this control to rack topology. */
   normalize?: (value: number) => number;
+  advance?: (value: number, direction: -1 | 1) => number;
   onValue: (value: number) => void;
   onGestureStart?: () => void;
   onGestureEnd?: () => void;
@@ -24,6 +25,7 @@ export function NumericControl({
   step = 1,
   disabled,
   normalize,
+  advance,
   onValue,
   onGestureStart,
   onGestureEnd,
@@ -109,10 +111,15 @@ export function NumericControl({
         value={text}
         min={min}
         max={max}
-        step={step}
+        step={advance ? "any" : step}
         disabled={disabled}
         required
         className={dragging ? "scrubbing" : ""}
+        onKeyDown={e => {
+          if (advance && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+            e.preventDefault(); begin(); scrub(advance(value, e.key === 'ArrowUp' ? 1 : -1));
+          }
+        }}
         onFocus={begin}
         onBlur={() => {
           if (!pointer.current?.moved) end();
@@ -169,7 +176,7 @@ export function NumericControl({
         aria-label={`${label} slider`}
         min={min ?? Math.min(range.current.min, value)}
         max={max ?? Math.max(range.current.max, value)}
-        step={step === "any" ? 0.1 : step}
+        step={advance ? "any" : step === "any" ? 0.1 : step}
         value={value}
         disabled={disabled}
         onFocus={begin}
@@ -177,7 +184,12 @@ export function NumericControl({
         onPointerDown={begin}
         onPointerUp={end}
         onPointerCancel={end}
-        onKeyDown={begin}
+        onKeyDown={e => {
+          begin();
+          if (advance && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+            e.preventDefault(); scrub(advance(value, e.key === 'ArrowUp' || e.key === 'ArrowRight' ? 1 : -1));
+          }
+        }}
         onKeyUp={end}
         onChange={(e) => {
           begin();

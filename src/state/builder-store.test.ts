@@ -32,13 +32,13 @@ test('snapshots remain stable between updates and subscriptions can unsubscribe'
 
 test('invalid edits and imports preserve document, selection, persistence and history', () => {
   const storage = new MemoryStorage(), store = new BuilderStore(storage);
-  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1200 }));
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 725 }));
   store.history('undo');
   store.select('jhooks-front:left');
   const before = store.getSnapshot(), writes = storage.writes.length;
   assert.throws(() => store.commit({ ...before.doc, rack: { ...before.doc.rack, height: NaN } }), /Height/);
   assert.throws(() => store.importJSON('{broken'), SyntaxError);
-  assert.throws(() => store.importJSON(JSON.stringify({ ...before.doc, version: 2 })), /Unsupported/);
+  assert.throws(() => store.importJSON(JSON.stringify({ ...before.doc, version: 99 })), /Unsupported/);
   assert.equal(store.getSnapshot(), before);
   assert.equal(storage.writes.length, writes);
   store.act(() => store.importJSON('{}'));
@@ -48,19 +48,19 @@ test('invalid edits and imports preserve document, selection, persistence and hi
   assert.equal(store.getSnapshot().canUndo, false);
   assert.equal(store.getSnapshot().canRedo, true);
   store.history('redo');
-  assert.equal(store.getSnapshot().doc.rack.width, 1200);
+  assert.equal(store.getSnapshot().doc.rack.width, 725);
 });
 
 test('commits detach inputs and replace redo; only explicit save persists durable documents', async () => {
   const storage = new MemoryStorage(), store = new BuilderStore(storage);
-  const changed = resizeAssembly(store.getSnapshot().doc, { width: 1200 });
+  const changed = resizeAssembly(store.getSnapshot().doc, { width: 725 });
   store.commit(changed); changed.rack.width = 1500;
-  assert.equal(store.getSnapshot().doc.rack.width, 1200);
-  store.commit(resizeAssembly(store.getSnapshot().doc, { depth: 900 }));
+  assert.equal(store.getSnapshot().doc.rack.width, 725);
+  store.commit(resizeAssembly(store.getSnapshot().doc, { depth: 425 }));
   store.history('undo');
-  assert.deepEqual([store.getSnapshot().doc.rack.width, store.getSnapshot().doc.rack.depth], [1200, 725]);
+  assert.deepEqual([store.getSnapshot().doc.rack.width, store.getSnapshot().doc.rack.depth], [725, 725]);
   store.history('redo');
-  assert.equal(store.getSnapshot().doc.rack.depth, 900);
+  assert.equal(store.getSnapshot().doc.rack.depth, 425);
   store.history('undo');
   store.commit(resizeAssembly(store.getSnapshot().doc, { height: 2300 }));
   assert.equal(store.getSnapshot().canRedo, false);
@@ -72,7 +72,7 @@ test('commits detach inputs and replace redo; only explicit save persists durabl
   assert.deepEqual(saved.doc, store.getSnapshot().doc);
   assert.equal(saved.canUndo, false);
   assert.equal(saved.canRedo, false);
-  assert.equal(saved.doc.rack.height, 2300);
+  assert.equal(saved.doc.rack.height, 2282);
 });
 
 test('JSON import is undoable and clears selection and transient placement', () => {
@@ -150,8 +150,8 @@ test('unavailable or corrupt storage has a recoverable error without losing comm
   assert.deepEqual(recovered.getSnapshot().doc, createAssembly());
   const unavailable: StorageLike = { getItem() { throw new Error('denied'); }, setItem() { throw new Error('quota'); } };
   const store = new BuilderStore(unavailable);
-  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1300 }));
-  assert.equal(store.getSnapshot().doc.rack.width, 1300);
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 425 }));
+  assert.equal(store.getSnapshot().doc.rack.width, 425);
   assert.equal(store.getSnapshot().canUndo, true);
   await store.flushStorage();
   assert.match(store.getSnapshot().status, /Save your design as JSON/);
@@ -161,14 +161,14 @@ test('unavailable or corrupt storage has a recoverable error without losing comm
 
 test('history retains the newest one hundred edits without an unbounded document stack', () => {
   const store = new BuilderStore();
-  for (let i = 1; i <= 102; i++) store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1075 + i }));
+  for (let i = 1; i <= 102; i++) store.commit({ ...store.getSnapshot().doc, nextId: i + 1 });
   for (let i = 0; i < 100; i++) store.history('undo');
-  assert.equal(store.getSnapshot().doc.rack.width, 1077);
+  assert.equal(store.getSnapshot().doc.nextId, 3);
   assert.equal(store.getSnapshot().canUndo, false);
   const exhausted = store.getSnapshot(); store.history('undo');
   assert.equal(store.getSnapshot(), exhausted);
   for (let i = 0; i < 100; i++) store.history('redo');
-  assert.equal(store.getSnapshot().doc.rack.width, 1177);
+  assert.equal(store.getSnapshot().doc.nextId, 103);
   assert.equal(store.getSnapshot().canRedo, false);
 });
 
@@ -178,14 +178,14 @@ test('named save/load, duplicate, rename, delete and draft recovery keep working
   await store.ready;
   await store.save('Original');
   const original = store.getSnapshot().activeId!;
-  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1400 }));
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 425 }));
   await store.flushStorage();
   const reopened = new BuilderStore(storage);
   await reopened.ready;
   assert.equal(reopened.getSnapshot().doc.rack.width, 1075);
   assert.equal(reopened.getSnapshot().draftAvailable, true);
   reopened.recoverDraft();
-  assert.equal(reopened.getSnapshot().doc.rack.width, 1400);
+  assert.equal(reopened.getSnapshot().doc.rack.width, 425);
   await reopened.save('Wide', true);
   const wide = reopened.getSnapshot().activeId!;
   assert.notEqual(wide, original);
@@ -219,41 +219,41 @@ test('legacy single-slot doc migrates once and transient import never overwrites
 test('a gesture contributes one undo entry, while subsequent edits remain independent', () => {
   const store = new BuilderStore();
   store.beginGesture();
-  for (let width = 1100; width <= 1300; width += 10) store.commit(resizeAssembly(store.getSnapshot().doc, { width }));
+  for (let width = 425; width <= 725; width += 10) store.commit(resizeAssembly(store.getSnapshot().doc, { width }));
   store.endGesture();
   store.history('undo');
   assert.equal(store.getSnapshot().doc.rack.width, 1075);
   assert.equal(store.getSnapshot().canUndo, false);
   store.history('redo');
-  assert.equal(store.getSnapshot().doc.rack.width, 1300);
-  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1400 }));
+  assert.equal(store.getSnapshot().doc.rack.width, 725);
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 425 }));
   store.history('undo');
-  assert.equal(store.getSnapshot().doc.rack.width, 1300);
+  assert.equal(store.getSnapshot().doc.rack.width, 725);
 });
 
 test('failed saves leave named snapshots untouched and the working copy exportable', async () => {
   const storage = new MemoryStorage(), store = new BuilderStore(storage);
   await store.ready; await store.save('Original');
-  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1400 }));
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 425 }));
   storage.setItem = () => { throw new Error('quota'); };
   await assert.rejects(store.save('Changed'), /quota/);
   assert.equal(store.getSnapshot().configs[0]!.name, 'Original');
   assert.equal(store.getSnapshot().configs[0]!.doc.rack.width, 1075);
-  assert.equal(store.getSnapshot().doc.rack.width, 1400);
+  assert.equal(store.getSnapshot().doc.rack.width, 425);
   assert.equal(store.getSnapshot().dirty, true);
 });
 
 test('new rack saves separately and unsaved new racks reopen the last named configuration', async () => {
   const storage = new MemoryStorage(), store = new BuilderStore(storage);
   await store.ready;
-  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1400 }));
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 425 }));
   await store.save('First');
   const first = store.getSnapshot().activeId;
   store.newRack();
   await store.flushStorage();
   assert.equal(store.getSnapshot().activeId, null);
   const reopened = new BuilderStore(storage); await reopened.ready;
-  assert.equal(reopened.getSnapshot().doc.rack.width, 1400);
+  assert.equal(reopened.getSnapshot().doc.rack.width, 425);
   await store.save('Second');
   assert.notEqual(store.getSnapshot().activeId, first);
   assert.equal(store.getSnapshot().configs.length, 2);
@@ -264,11 +264,11 @@ test('corrupt configuration collections are not overwritten by draft autosave', 
   const key = 'bos-strength-configurations-v1';
   storage.setItem(key, '{broken');
   const store = new BuilderStore(storage); await store.ready;
-  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1400 }));
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 425 }));
   await store.flushStorage();
   assert.equal(storage.getItem(key), '{broken');
   await assert.rejects(store.save('Recovery'), /could not be read/);
-  assert.equal(store.getSnapshot().doc.rack.width, 1400);
+  assert.equal(store.getSnapshot().doc.rack.width, 425);
 });
 
 test('slow async storage preserves save-time doc and coalesces later working edits', async () => {
@@ -284,13 +284,13 @@ test('slow async storage preserves save-time doc and coalesces later working edi
     },
   });
   await store.ready; await store.save('Original');
-  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1200 }));
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 725 }));
   await writing;
   const saving = store.save('Original');
-  for (let width = 1201; width <= 1300; width++) store.commit(resizeAssembly(store.getSnapshot().doc, { width }));
+  for (let width = 724; width >= 425; width--) store.commit(resizeAssembly(store.getSnapshot().doc, { width }));
   release(); await saving; await store.flushStorage();
-  assert.equal(persisted.configs[0]!.doc.rack.width, 1200);
-  assert.equal(persisted.draft!.rack.width, 1300);
+  assert.equal(persisted.configs[0]!.doc.rack.width, 725);
+  assert.equal(persisted.draft!.rack.width, 425);
   assert.equal(store.getSnapshot().dirty, true);
   assert.equal(count, 4);
 });
@@ -319,4 +319,31 @@ test('structural selection resolves its owner for replacement', () => {
   const edited = replaceStructurePart(store.getSnapshot().doc, store.ownerOf(piece.id)!, 'nameplate');
   store.commit(edited);
   assert.equal(store.getSnapshot().doc.structure['rear-crossmember']?.part, 'nameplate');
+});
+
+test('real v1 saved rack migrates paint and physical IDs while graph edits remain drafts until saved', async () => {
+  const storage = new MemoryStorage();
+  storage.setItem(storageKey, JSON.stringify({
+    version: 1, rack: createAssembly().rack, removed: [], structure: {}, nextId: 1,
+    accessories: [{ id: 'legacy-hooks', part: 'j-hook-standard', target: { uprightId: 'front-left', face: 'front', hole: 24 }, paired: true, params: {} }],
+    appearance: { frameColor: '#aa2222', hardwareFinish: 'gold', overrides: { 'legacy-hooks:right': '#2244aa' } },
+  }));
+  const store = new BuilderStore(storage); await store.ready;
+  const original = store.getSnapshot().doc;
+  assert.equal(original.version, 2);
+  assert.equal(original.rack.height, 2032);
+  store.select('legacy-hooks:right');
+  assert.equal(store.getSnapshot().selected, 'legacy-hooks:right');
+  assert.equal(store.ownerOf('legacy-hooks:right'), 'legacy-hooks');
+  const { extendUpright } = await import('../../rack-generator/graph-edits.ts');
+  store.commit(extendUpright(original, 'front-left', 'left', 425));
+  await store.flushStorage();
+  assert.equal(Object.keys(store.getSnapshot().configs[0]!.doc.uprights).length, 4);
+  assert.equal(Object.keys(store.getSnapshot().doc.uprights).length, 5);
+  store.history('undo'); assert.equal(Object.keys(store.getSnapshot().doc.uprights).length, 4);
+  store.history('redo');
+  await store.save('Imported rack');
+  const reopened = new BuilderStore(storage); await reopened.ready;
+  assert.equal(Object.keys(reopened.getSnapshot().doc.uprights).length, 5);
+  assert.deepEqual(reopened.getSnapshot().doc.appearance, original.appearance);
 });
