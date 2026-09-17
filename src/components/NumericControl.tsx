@@ -121,7 +121,7 @@ function FreeformNumericControl({
         type="number"
         aria-label={label}
         aria-invalid={invalid}
-        title="Drag to scrub · Shift for fine steps · click to type"
+        title="Scrub value (Shift: fine)"
         value={text}
         min={min}
         max={max}

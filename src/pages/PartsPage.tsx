@@ -167,10 +167,8 @@ export default function PartsPage() {
         <div className="eyebrow">
           BOS STRENGTH <span>02 / PARTS</span>
         </div>
-        <h1>Every piece.</h1>
+        <h1>Parts</h1>
         <p className="intro">
-          A library of editable Manifold reconstructions.
-          <br />
           <Link to="/">← Original upright builder</Link>
         </p>
         <Link className="source-link" to="/builder">
@@ -329,7 +327,6 @@ export default function PartsPage() {
           <span id="status" className={error ? "error" : ""} role="status">
             {status}
           </span>
-          <span>DRAG TO ORBIT · SCROLL TO ZOOM · RIGHT-DRAG TO PAN</span>
         </footer>
       </main>
       <section id="editor">
@@ -337,11 +334,6 @@ export default function PartsPage() {
           03 <span>Part parameters</span>
           <small>MILLIMETRES / DEGREES</small>
         </div>
-        <p id="part-note" className="note">
-          {selected?.description ||
-            selected?.note ||
-            "Rebuilt from reference components. Edit the dimensions to generate a new part."}
-        </p>
         <form
           id="parameters"
           ref={form}
@@ -383,10 +375,6 @@ export default function PartsPage() {
         >
           Reset this part
         </button>
-        <p className="note">
-          Built from source profiles and component dimensions. Compare side by
-          side or use Overlay to inspect the match against the original model.
-        </p>
         <a
           className="source-link"
           href="https://strengthshop.eu/products/3d-rack-builder-riot-mrr-75"

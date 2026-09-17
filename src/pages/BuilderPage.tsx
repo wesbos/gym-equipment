@@ -130,9 +130,6 @@ function Inspector({ store }: { store: BuilderStore }) {
       <>
         <h2 id="selection-title">{nameOf(structureChoice)}</h2>
         <div id="inspector" className="inspector-fields">
-          <p>
-            Choose the frame connection. Its span follows the rack dimensions.
-          </p>
           {slots.map((slot) => (
             <button
               key={slot.id}
@@ -154,8 +151,8 @@ function Inspector({ store }: { store: BuilderStore }) {
           {!slots.length && (
             <p>
               {structureChoice === "upright"
-                ? "Use Uprights & connections to extend the rack."
-                : "Restore the supporting uprights to use this member."}
+                ? "No upright slots"
+                : "Missing supporting uprights"}
             </p>
           )}
         </div>
@@ -167,11 +164,7 @@ function Inspector({ store }: { store: BuilderStore }) {
       <>
         <h2 id="selection-title">Rack settings</h2>
         <RackPresets store={store} />
-        {gridProfile(doc.profileId).reconstructionNote && <p className="note">{gridProfile(doc.profileId).label}: {gridProfile(doc.profileId).reconstructionNote}</p>}
         <TopologyEditor key={JSON.stringify(doc)} doc={doc} store={store} selected={ownerId} />
-        <p className="settings-intro">
-          Build your frame, then add parts at highlighted connections.
-        </p>
         <form id="frame-form" onSubmit={e => { e.preventDefault(); store.endGesture(); }}>
           {(['height', 'width', 'depth'] as const).map(key => {
             const factor = 1;
@@ -386,7 +379,7 @@ function Inspector({ store }: { store: BuilderStore }) {
               </Field>
               <p className="note">
                 {fixedHole
-                  ? "Mount follows the frame."
+                  ? "Frame mount"
                   : `Mount height ${doc.rack.firstHole + entry.target.hole * doc.rack.pitch} mm`}
               </p>
             </>
@@ -416,12 +409,6 @@ function Inspector({ store }: { store: BuilderStore }) {
             >
               Move in 3D ↗
             </button>
-          )}
-          {!entry && (
-            <p className="note">
-              Connected frame member. Change rack dimensions to resize the
-              frame. Removing an upright also removes attached accessories.
-            </p>
           )}
           {entry?.paired && (
             <button
@@ -614,7 +601,7 @@ export default function BuilderPage() {
           <div className="panel-heading">
             <span className="eyebrow">MAKE IT YOURS</span>
             <h1>Build your rack.</h1>
-            <p>Select a part, then choose a connection.</p>
+
           </div>
           <div className="search-wrap">
             <input
@@ -702,7 +689,7 @@ export default function BuilderPage() {
             ))}
           </div>
           <div className="stage-caption">
-            <span className="eyebrow">YOUR BOS STRENGTH RACK</span>
+            <span className="eyebrow">Your rack</span>
             <div id="dimensions">{state.dimensions}</div>
           </div>
           <div className="stage-actions">
@@ -775,11 +762,6 @@ export default function BuilderPage() {
             ))}
           </div>
           <div className="inspector-bottom">
-            <div className="help-card">
-              <p>
-                Click a part on your rack to adjust its position and dimensions.
-              </p>
-            </div>
             <button
               id="reset-design"
               className="new-rack-button"
@@ -800,10 +782,6 @@ export default function BuilderPage() {
           >
             {state.status}
           </span>
-          <span className="navigation-help">
-            DRAG TO ORBIT · SCROLL TO ZOOM · RIGHT-DRAG TO PAN
-          </span>
-          <span>BOS / STRENGTH</span>
         </footer>
       </div>
     </div>

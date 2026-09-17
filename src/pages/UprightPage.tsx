@@ -144,12 +144,8 @@ export default function UprightPage() {
         <div className="eyebrow">
           BOS STRENGTH <span>01 / UPRIGHT</span>
         </div>
-        <h1>Built to measure.</h1>
+        <h1>Upright</h1>
         <p className="intro">
-          A parametric squat rack upright.
-          <br />
-          Set your dimensions. Explore the details.
-          <br />
           <Link to="/parts">Explore the full parts library →</Link>
         </p>
         <form
@@ -186,10 +182,6 @@ export default function UprightPage() {
             Update model <span>↗</span>
           </button>
         </form>
-        <p className="note">
-          Metric 75 mm starting dimensions. Radius, wall, hole diameter and end
-          offsets are assumptions—measure your rack for an exact fit.
-        </p>
         <div className="aside-footer">
           <button
             id="reset"
@@ -301,7 +293,6 @@ export default function UprightPage() {
           <span id="status" role="status" className={error ? "error" : ""}>
             {status}
           </span>
-          <span>DRAG TO ORBIT · SCROLL TO ZOOM · RIGHT-DRAG TO PAN</span>
         </footer>
       </main>
     </div>
