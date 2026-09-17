@@ -106,3 +106,11 @@ import/re-export `.verification/logo.3mf` using the installed Bambu Studio and
 OrcaSlicer CLIs with `--info --arrange 0 --orient 0 --export-3mf`, then run
 `scripts/verify-print-export.py` on the source and both output archives.
 `docs/evidence/issue-11/slicer-audit.txt` records the passing independent audit.
+
+For #46 scale integration, reuse `.verification/logo.json` from the generator:
+export at denominator 10 and 20 and compare each reconstructed nameplate volume
+with the unscaled custom CAD volume divided by the denominator cubed (1000 and
+8000 respectively). Dimensions must halve between the two exports; source and
+contours remain in full-size rack units. Continue forwarding `instance.logo` to
+`buildPrintInstance` before scaling the resulting solid. The current tests verify
+unscaled geometry; #46's scaled exporter is a separate integration check.
