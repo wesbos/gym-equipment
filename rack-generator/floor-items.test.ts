@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import Module from 'manifold-3d';
 import {addFloorItem, resolveFloorItems, validateFloorItems, floorWarnings, BACKREST_ANGLES, SEAT_ANGLES} from './floor-items.ts';
 import {createAssembly,validateAssembly,resizeAssembly,removeInstance,resolveAssembly} from './assembly.ts';
-import {buildNighthawk} from './parts/nighthawk.ts';
+import {buildNighthawk, nighthawkContacts} from './parts/nighthawk.ts';
 import {resolveMaterial,HARDWARE_FINISHES} from './appearance.ts';
 test('floor items validate, persist independently of graph, and use explicit coordinate conversion',()=>{
  const doc=addFloorItem(createAssembly(),[1300,-900]);doc.floorItems![0].rotation=Math.PI/2;
@@ -36,6 +36,27 @@ test('all 28 bench settings produce finite positive closed Manifold solids with 
    if(backrestAngle===85)assert.ok(pad.solid.boundingBox().max[2]>1250);
    const seat=parts.find(p=>p.name.startsWith('Seat pad'))!;
    if(seatAngle===0)assert.ok(Math.abs(seat.solid.boundingBox().max[1]-seat.solid.boundingBox().min[1]-330)<.1);
+   const contacts=nighthawkContacts(backrestAngle,seatAngle);
+   const intersectionVolume=(a:import('manifold-3d').Manifold,b:import('manifold-3d').Manifold)=>{const intersection=api.Manifold.intersection([a,b]);try{return intersection.volume();}finally{intersection.delete();}};
+   const named=(name:string)=>parts.find(p=>p.name===name)!.solid;
+   for(const [prefix,top,bottom,length,angle,localY,localZ,radius,pinHalf] of [
+     ['Back',contacts.backTop,contacts.backBottom,450,backrestAngle,28,341,11,95],
+     ['Seat',contacts.seatTop,contacts.seatBottom,115,-seatAngle,-440,340,10,100],
+   ] as const){
+     const label=`${prefix} at back=${backrestAngle}, seat=${seatAngle}`;
+     // Independently undo the pad transform: attachment must remain fixed in rail coordinates.
+     const radians=angle*Math.PI/180,y=top[1]+272,z=top[2]-366;
+     assert.ok(Math.abs(y*Math.cos(radians)+z*Math.sin(radians)-272-localY)<1e-8,label+' local Y');
+     assert.ok(Math.abs(-y*Math.sin(radians)+z*Math.cos(radians)+366-localZ)<1e-8,label+' local Z');
+     assert.ok(Math.abs(Math.hypot(...top.map((v,i)=>v-bottom[i]))-length)<1e-8,label+' fixed link length');
+     const link=named(`${prefix} support link`),rail=named(`${prefix} pad steel rail`),pin=named(`${prefix} ladder pin`),gauge=named('Closed ladder gauges');
+     // Check actual generated CAD, not just matching endpoint formulas.
+     assert.ok(intersectionVolume(link,rail)>1,label+' link reaches articulated rail');
+     assert.ok(intersectionVolume(link,pin)>1,label+' link reaches retaining pin');
+     assert.ok(intersectionVolume(pin,gauge)<0.001,label+' pin fits slot without steel penetration');
+     const expanded=api.Manifold.cylinder(pinHalf*2,radius+.1,radius+.1,32).rotate([0,90,0]).translate([-pinHalf,bottom[1],bottom[2]]);
+     try{assert.ok(intersectionVolume(expanded,gauge)>.01,label+' pin seats against gauge within 0.1 mm');}finally{expanded.delete();}
+   }
    const hardware=parts.find(p=>p.role==='fastener')!;
    assert.equal(resolveMaterial(hardware).color,'#343638');assert.deepEqual(resolveMaterial(hardware,{hardwareFinish:'gold'}),HARDWARE_FINISHES.gold);
    assert.equal(resolveMaterial(pad,{frameColor:'#ffffff',hardwareFinish:'gold'}).metalness,0);

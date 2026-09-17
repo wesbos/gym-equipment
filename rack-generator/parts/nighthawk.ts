@@ -1,10 +1,27 @@
 import type { CrossSection, Manifold, ManifoldAPI, NumericParams, PartDefinition, SolidPart, Vec3 } from '../types.ts';
 import { BACKREST_ANGLES, SEAT_ANGLES, NIGHTHAWK_DEFAULTS } from '../floor-items.ts';
+export const NIGHTHAWK_PIVOT: Vec3 = [0, -272, 366];
+/** Identical pivot/rotation to the pad and its steel rail, including local Z offset. */
+export function articulateBenchPoint(point: Vec3, degrees: number): Vec3 {
+  const a = degrees * Math.PI / 180, y = point[1] - NIGHTHAWK_PIVOT[1], z = point[2] - NIGHTHAWK_PIVOT[2];
+  return [point[0], NIGHTHAWK_PIVOT[1] + y * Math.cos(a) - z * Math.sin(a), NIGHTHAWK_PIVOT[2] + y * Math.sin(a) + z * Math.cos(a)];
+}
+/** Reconstructed fixed-length links. Ladder stations are solved from the linkage,
+ * not evenly spaced guesses; both pins seat on the bottom of their closed slots. */
+export function nighthawkContacts(backrestAngle: number, seatAngle: number) {
+  const backTop = articulateBenchPoint([0, 28, 341], backrestAngle);
+  const seatTop = articulateBenchPoint([0, -440, 340], -seatAngle);
+  const backLength = 450, seatLength = 115, backPinZ = 228;
+  const backBottom: Vec3 = [0, backTop[1] + Math.sqrt(backLength ** 2 - (backTop[2] - backPinZ) ** 2), backPinZ];
+  const seatBottom: Vec3 = [0, -440, seatTop[2] - Math.sqrt(seatLength ** 2 - (seatTop[1] + 440) ** 2)];
+  return { backTop, backBottom, seatTop, seatBottom, backLength, seatLength };
+}
 /** Published envelope; secondary steel sections reconstructed from REP drawings/photos.
  * Source axes: X across bench, +Y toward head, Z up. Origin at footprint centre.
  */
 export function buildNighthawk(api: ManifoldAPI, p: NumericParams): SolidPart[] {
   if (!(BACKREST_ANGLES as readonly number[]).includes(p.backrestAngle) || !(SEAT_ANGLES as readonly number[]).includes(p.seatAngle)) throw Error('Unsupported bench angle.');
+  const contacts = nighthawkContacts(p.backrestAngle, p.seatAngle);
   const {Manifold:M,CrossSection:C}=api, owned:(Manifold|CrossSection)[]=[], out:SolidPart[]=[];
   const k=<T extends Manifold|CrossSection>(s:T):T=>(owned.push(s),s);
   const move=(s:Manifold,v:Vec3)=>k(s.translate(v));
@@ -36,11 +53,12 @@ export function buildNighthawk(api: ManifoldAPI, p: NumericParams): SolidPart[] 
     for(const x of [-49,49]) {
       let plate=box([7,760,78],[x,105,207]);
       const slots:Manifold[]=[];
-      for(let i=0;i<7;i++) slots.push(box([11,44,24],[x,-207+i*99,229]));
+      for(const angle of BACKREST_ANGLES) slots.push(box([11,44,24],[x,nighthawkContacts(angle,0).backBottom[1],229]));
       plate=cut(plate,slots); ladders.push(plate,beam([x,-275,264],[x,485,264],12,12));
+      for(const y of [-270,480]) ladders.push(beam([x,y,240],[x,y,264],12,12));
       for(const y of [-250,95,465])hardware.push(screw(x-5,y,198));
     }
-    const pivot:Vec3=[0,-272,366];
+    const pivot=NIGHTHAWK_PIVOT;
     const articulate=(s:Manifold,angle:number)=>move(rot(move(s,[0,-pivot[1],-pivot[2]]),[angle,0,0]),pivot);
     // Rounded rectangular back pad, tapered molded seat, separate underside backing.
     add('Back pad · CleanGrip vinyl',articulate(rounded(300,914,58,30,[0,185,366]),p.backrestAngle),'liner','#151719',0,.92);
@@ -48,23 +66,21 @@ export function buildNighthawk(api: ManifoldAPI, p: NumericParams): SolidPart[] 
     const seatProfile=k(k(new C([seatOutline])).offset(-15,'Round',2,24));
     const seatRounded=k(seatProfile.offset(15,'Round',2,24));
     add('Seat pad · CleanGrip vinyl',articulate(move(k(seatRounded.extrude(58)),[0,0,366]),-p.seatAngle),'liner','#151719',0,.92);
-    frame.push(articulate(beam([0,-273,346],[0,610,346],50,30),p.backrestAngle),articulate(beam([0,-320,346],[0,-612,346],50,30),-p.seatAngle));
-    // Back support pivots follow pad angle and meet a retained ladder station.
-    const a=p.backrestAngle*Math.PI/180;
-    const supportTop:Vec3=[0,pivot[1]+520*Math.cos(a),pivot[2]+520*Math.sin(a)-25];
-    const station=460-BACKREST_ANGLES.indexOf(p.backrestAngle as typeof BACKREST_ANGLES[number])*99;
-    frame.push(beam([0,station,245],supportTop,40,35));
-    ladders.push(cylinder([-95,station,245],[95,station,245],22));
+    add('Back pad steel rail',articulate(beam([0,-273,346],[0,610,346],50,30),p.backrestAngle),'frame','#353739');
+    add('Seat pad steel rail',articulate(beam([0,-320,346],[0,-612,346],50,30),-p.seatAngle),'frame','#353739');
+    add('Back support link',beam(contacts.backBottom,contacts.backTop,40,35),'frame','#353739');
+    const station=contacts.backBottom[1];
+    add('Back ladder pin',cylinder([-95,station,228],[95,station,228],22),'source','#292b2e',.15,.5);
     // Closed seat ladder gauges on the angled front post, with four retained slots.
     for(const x of [-48,48]) {
       const plate=box([6,78,195],[x,-440,205]);
-      const holes=[-15,0,10,20].map((_,i)=>box([10,38,19],[x,-440,140+i*40]));
+      const holes=SEAT_ANGLES.map(angle=>box([10,38,22],[x,-440,nighthawkContacts(0,angle).seatBottom[2]+1]));
       ladders.push(cut(plate,holes));
       hardware.push(screw(x-4,-435,290),screw(x-4,-435,120));
     }
-    const seatZ=180+SEAT_ANGLES.indexOf(p.seatAngle as typeof SEAT_ANGLES[number])*35;
-    ladders.push(cylinder([-100,-440,seatZ],[100,-440,seatZ],20));
-    frame.push(beam([0,-440,seatZ],[0,-440,340],32,32));
+    const seatZ=contacts.seatBottom[2];
+    add('Seat ladder pin',cylinder([-100,-440,seatZ],[100,-440,seatZ],20),'source','#292b2e',.15,.5);
+    add('Seat support link',beam(contacts.seatBottom,contacts.seatTop,32,32),'frame','#353739');
     // Rear transport wheels, fork covers, axle hardware.
     for(const x of [-245,245]) {
       rubber.push(cut(cylinder([x-18,589,47],[x+18,589,47],90,48),[cylinder([x-20,589,47],[x+20,589,47],16)]));

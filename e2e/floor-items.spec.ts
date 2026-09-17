@@ -12,7 +12,7 @@ test('gym-wave2-floor_items: ghost, plane drag, snap, rotate, Escape, undo, insp
   await page.reload();
   const ready=()=>expect(page.getByRole('button',{name:'Export GLB ↗'})).toBeEnabled({timeout:30000});
   const floor=()=>page.evaluate(()=>{const data=JSON.parse(localStorage.getItem('bos-strength-configurations-v1') ?? '{}');return (data.draft ?? data.configs?.find((c:{id:string})=>c.id===data.activeId)?.doc)?.floorItems ?? [];});
-  await ready();
+  await ready(); console.log('Rack ready');
   await page.getByRole('button',{name:/REP Nighthawk adjustable bench/}).click();
   await expect(page.getByRole('button',{name:'Place',exact:true})).toBeVisible();
   expect(await floor()).toEqual([]); // ghost has not mutated the document
@@ -33,6 +33,7 @@ test('gym-wave2-floor_items: ghost, plane drag, snap, rotate, Escape, undo, insp
   await expect.poll(async()=>JSON.stringify((await floor())[0].position)).not.toBe(JSON.stringify(original.position));
   expect((await floor())[0].position.some((n:number)=>Math.abs(n/25-Math.round(n/25))>0.001)).toBe(true);
   await page.getByRole('button',{name:'Undo',exact:true}).click();await ready();
+  console.log('Drag/rotate/Escape/undo/snap passed');
   await page.getByLabel('Backrest angle',{exact:true}).selectOption('85');
   await page.getByLabel('Seat angle',{exact:true}).selectOption('-15');
   await page.getByLabel('This piece steel finish',{exact:true}).selectOption('stainless');
@@ -47,15 +48,17 @@ test('gym-wave2-floor_items: ghost, plane drag, snap, rotate, Escape, undo, insp
   await expect(page.getByLabel('This piece steel finish',{exact:true})).toHaveValue('stainless');
   await page.getByRole('button',{name:'Reset this bench',exact:true}).click();expect((await floor())[0].params).toEqual({backrestAngle:0,seatAngle:0});
   await page.getByLabel('Backrest angle',{exact:true}).selectOption('60');await page.getByLabel('Seat angle',{exact:true}).selectOption('-15');
+  console.log('Independent resets passed');
   await page.locator('.config-manager summary').click();await page.getByLabel('Configuration name').fill('Nighthawk browser acceptance');await page.getByRole('button',{name:'Save configuration',exact:true}).click();
   await expect(page.locator('.config-manager summary')).not.toContainText('Unsaved');
   const saved=await floor();await page.reload();await ready();expect(await floor()).toEqual(saved);
   const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Export GLB ↗'}).click();const download=await pending;
   const bytes=await fs.readFile((await download.path())!);const gltf=JSON.parse(bytes.subarray(20,20+bytes.readUInt32LE(12)).toString());
-  const bench=gltf.nodes.find((n:{extras?:{id:string}})=>n.extras?.id===saved[0].id);expect(bench.children).toHaveLength(7);expect(bench.extras.vendorAttribution.vendor).toBe('REP Fitness');
+  const bench=gltf.nodes.find((n:{extras?:{id:string}})=>n.extras?.id===saved[0].id);expect(bench.children).toHaveLength(13);expect(bench.extras.vendorAttribution.vendor).toBe('REP Fitness');
   const sources=bench.children.map((i:number)=>gltf.nodes[i].extras.materialSource);
   expect(sources.filter((s:{role:string;metalness:number})=>s.role==='liner').every((s:{metalness:number})=>s.metalness===0)).toBe(true);
   expect(sources.find((s:{role:string})=>s.role==='fastener').authoredFastenerFinish).toBe(true);
+  console.log('Save/reload and GLB passed');
   await page.getByRole('button',{name:/Parts list \(/}).click();
   await page.locator('[data-instance-id="floor-1"]').click();
   await page.locator('[data-instance-id="front-left"]').click({modifiers:['Meta']});
