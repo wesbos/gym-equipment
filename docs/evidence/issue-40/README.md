@@ -15,3 +15,5 @@ Pure/store tests additionally cover removed anchors, out-of-bounds cells, interm
 Integration: shares PR39's `PlacementProposal` and ghost renderer. PR37 physical selection was subsequently merged from main: entering add mode exits the Select tool, dragging a live proposal still orbits without placing, and the full fifth-post/crossmember/undo/redo/ESC browser flow was repeated successfully. PR36 vendor targets were inspected read-only and were not yet on main; no incomplete branch was cherry-picked. Structural proposals do not introduce or alter attachment Target types.
 
 Final validation after merging PR37: `npm test` 197/197 passing, `npm run build` passing (existing bundle-size warning), `git diff --check` clean.
+
+Latest-main follow-up: merged PR36 at `b772ccd`; build and all 242 tests pass. Repeated fifth-post (14→17), adjacent crossmember (17→18), and undo/redo in the isolated browser using the catalog search. Darko Barbell Anchor suggestion/Place committed a `crossmember-top` target retaining connectionId, face, hole, side, station, and uprightId. Earlier screenshots document the same structural interaction before vendor catalog ordering changed.
