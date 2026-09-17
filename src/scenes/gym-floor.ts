@@ -56,7 +56,7 @@ export function fitRackShadow(light: THREE.DirectionalLight, bounds: THREE.Box3)
   const center = bounds.getCenter(new THREE.Vector3());
   const radius = Math.max(800, bounds.getSize(new THREE.Vector3()).length() / 2 + 100);
   light.target.position.copy(center);
-  light.position.copy(center).add(new THREE.Vector3(1, 2, 1.2).normalize().multiplyScalar(radius * 3));
+  light.position.copy(center).add(new THREE.Vector3(-1, 2, 2).normalize().multiplyScalar(radius * 3));
   const camera = light.shadow.camera;
   camera.left = camera.bottom = -radius;
   camera.right = camera.top = radius;

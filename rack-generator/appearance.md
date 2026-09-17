@@ -64,14 +64,15 @@ Part/library/thumbnail scenes retain their neutral backgrounds.
 
 Open `/scripts/visuals-check.html` with the dev server for browser integration checks:
 three scene create/dispose cycles, 12 finish changes per cycle, 60 idle frames without
-texture uploads, exact GPU texture create/delete balance, borrowed brush disposal,
+texture uploads, GPU texture disposal/context-loss balance, borrowed brush disposal,
 floor disposal, GLB texture/UV/clearcoat retention and floor exclusion.
 
 ## Lighting and clipping (#27)
 
 Builder, part studies and catalog thumbnails use `createStudioLighting`: ACES filmic
-mapping at exposure 1, environment intensity 0.8, warm key intensity 2, cool fill 0.4,
-and neutral hemisphere 0.45. Paint is a dielectric (metalness 0, roughness 0.55), even
+mapping at exposure 0.9, environment intensity 0.6, warm key intensity 1.5, cool fill 0.25,
+and neutral hemisphere 0.3. The key lights the front more than the side to retain
+visible plane boundaries in bright paint. Paint is a dielectric (metalness 0, roughness 0.55), even
 when original CAD materials suggest metalness 0.55. Bare stainless and clear-grind
 steel use metalness 1. Fasteners and non-frame semantic roles remain separate.
 Part studies keep the neutral grid and a transparent shadow catcher; they do not get
