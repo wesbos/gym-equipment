@@ -6,6 +6,7 @@ import type { PrintLayout, PrintScale } from '../exports/print-3mf.ts';
 import { ExportJob, readExportFormat, rememberExportFormat, type ExportFormat } from '../exports/export-job.ts';
 
 const DEFAULT_LAYOUT: PrintLayout = 'laid-out';
+const DEFAULT_SCALE: PrintScale = 10;
 const formats: ExportFormat[] = ['glb', '3mf'];
 
 export function ExportMenu({ store, exportGLB, loading, empty }: {
@@ -17,10 +18,12 @@ export function ExportMenu({ store, exportGLB, loading, empty }: {
   });
   const [focusedFormat, setFocusedFormat] = useState<ExportFormat>(format);
   const [layout, setLayout] = useState<PrintLayout>(DEFAULT_LAYOUT);
-  const [scale, setScale] = useState<PrintScale>(10);
+  const [scale, setScale] = useState<PrintScale>(DEFAULT_SCALE);
   const [busy, setBusy] = useState<ExportFormat | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  const layoutSelect = useRef<HTMLSelectElement>(null);
+  const scaleSelect = useRef<HTMLSelectElement>(null);
   const items = useRef<(HTMLButtonElement | null)[]>([]);
   const menuId = useId();
   const latestGLB = useRef(exportGLB);
@@ -95,23 +98,25 @@ export function ExportMenu({ store, exportGLB, loading, empty }: {
         </button>)}
       </div>
       {format === '3mf' && <div className="export-print-options">
-        <label>Part arrangement <select aria-label="Print arrangement" disabled={!!busy} value={layout}
+        <label>Part arrangement <select ref={layoutSelect} aria-label="Print arrangement" disabled={!!busy} value={layout}
           onChange={event => setLayout(event.target.value as PrintLayout)}>
           <option value="laid-out">Laid out — print plates</option>
           <option value="assembled">Assembled — Z up</option>
         </select></label>
         <ResetButton label="print arrangement" value="laid out" changed={layout !== DEFAULT_LAYOUT}
-          disabled={!!busy} onReset={() => setLayout(DEFAULT_LAYOUT)} />
-        <label>Model scale <select aria-label="Print scale" disabled={!!busy} value={scale}
+          disabled={!!busy} onReset={() => { layoutSelect.current?.focus(); setLayout(DEFAULT_LAYOUT); }} />
+        <label>Model scale <select ref={scaleSelect} aria-label="Print scale" disabled={!!busy} value={scale}
           onChange={event => setScale(Number(event.target.value) as PrintScale)}>
           <option value="10">1:10</option><option value="20">1:20</option>
         </select></label>
+        <ResetButton label="print scale" value="1:10" changed={scale !== DEFAULT_SCALE}
+          disabled={!!busy} onReset={() => { scaleSelect.current?.focus(); setScale(DEFAULT_SCALE); }} />
         <p>One file · Separate named objects · Millimetres · 1:{scale} scale</p>
         <dl className="export-print-facts">
           <dt>Colors</dt><dd>Solid colors; textures omitted</dd>
           <dt>Profile</dt><dd>Placeholder: 256 mm bed · 0.4 mm nozzle · PLA</dd>
         </dl>
-        <p>Open as project. Select your printer and filaments.</p>
+        <p>Select printer and filaments.</p>
         <a href="https://github.com/wesbos/gym-equipment/blob/main/docs/print-export.md" target="_blank" rel="noreferrer">Export details ↗</a>
       </div>}
       <div className="export-menu-actions">
