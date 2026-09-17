@@ -1,0 +1,41 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import * as THREE from 'three';
+import { cloneInstanceMaterials } from './instance-materials.ts';
+import { BuilderStore, type StorageLike } from '../state/builder-store.ts';
+
+test('repeated geometry shares buffers but never shares instance/cache materials', () => {
+  const model = new THREE.Group(), geometry = new THREE.BoxGeometry(), material = new THREE.MeshStandardMaterial({ color: '#123456' });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.userData.materialSource = { role: 'frame', color: '#123456' }; model.add(mesh);
+  const appearance = { frameColor: '#ff0000', overrides: { left: '#0000ff' } };
+  const left = cloneInstanceMaterials(model, appearance, 'left').children[0] as THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
+  const right = cloneInstanceMaterials(model, appearance, 'right').children[0] as typeof left;
+  assert.equal(left.geometry, right.geometry);
+  assert.notEqual(left.material, right.material); assert.notEqual(left.material, material);
+  assert.equal(left.material.color.getHexString(), '0000ff'); assert.equal(right.material.color.getHexString(), 'ff0000');
+  assert.equal(material.color.getHexString(), '123456');
+  left.material.dispose(); right.material.dispose(); geometry.dispose(); material.dispose();
+});
+test('appearance survives explicit save/reload, JSON import, undo and redo with physical selection', async () => {
+  const saved = new Map<string, string>();
+  const storage: StorageLike = { getItem: key => saved.get(key) ?? null, setItem: (key, value) => { saved.set(key, value); } };
+  const store = new BuilderStore(storage), doc = store.getSnapshot().doc;
+  const appearance = { frameColor: '#ff0000', hardwareFinish: 'gold' as const, overrides: { 'jhooks-front:right': '#00ff00' } };
+  await store.ready;
+  store.commit({ ...doc, appearance }); store.select('jhooks-front:right');
+  assert.equal(store.getSnapshot().selected, 'jhooks-front:right');
+  await store.save("Painted rack");
+  const reopened = new BuilderStore(storage); await reopened.ready;
+  assert.deepEqual(reopened.getSnapshot().doc.appearance, appearance);
+  store.history('undo'); assert.equal(store.getSnapshot().doc.appearance, undefined);
+  store.history('redo'); assert.deepEqual(store.getSnapshot().doc.appearance, appearance);
+  store.importJSON(JSON.stringify(store.getSnapshot().doc)); assert.deepEqual(store.getSnapshot().doc.appearance, appearance);
+  store.commit({ ...store.getSnapshot().doc, appearance: { ...appearance, frameColor: '#0000ff' } });
+  await store.flushStorage();
+  const unsaved = new BuilderStore(storage); await unsaved.ready;
+  assert.deepEqual(unsaved.getSnapshot().doc.appearance, appearance);
+  unsaved.recoverDraft();
+  assert.equal(unsaved.getSnapshot().doc.appearance?.frameColor, '#0000ff');
+  assert.equal(unsaved.getSnapshot().doc.appearance?.overrides?.['jhooks-front:right'], '#00ff00');
+});

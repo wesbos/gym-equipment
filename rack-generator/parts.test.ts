@@ -17,7 +17,8 @@ for (const def of definitions)
     const parts = def.build(api, def.defaults);
     try {
       assert.ok(parts.length);
-      for (const { solid, name } of parts) {
+      for (const { solid, name, role } of parts) {
+        assert.ok(["frame", "fastener", "handle", "rod", "sleeve", "liner", "source"].includes(role), `${name}: semantic material role`);
         assert.equal(solid.status(), "NoError", name);
         assert.ok(solid.volume() > 0, name);
         const mesh = solid.getMesh();

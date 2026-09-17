@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PartThumbnail } from "../components/PartThumbnail.tsx";
 import { Link } from "@tanstack/react-router";
 import "../../rack-generator/library-gallery.css";
 import type {
@@ -6,7 +7,7 @@ import type {
   LibraryWorkerResponse,
 } from "../../rack-generator/worker-types.ts";
 type CatalogPart = CatalogDefinition & { note?: string };
-/** Catalog arrives as serializable metadata; this page never initializes Three. */
+/** Catalog metadata loads first; visible cards request geometry thumbnails lazily. */
 export default function LibraryPage() {
   const [parts, setParts] = useState<CatalogPart[]>([]);
   const [search, setSearch] = useState("");
@@ -89,6 +90,7 @@ export default function LibraryPage() {
             to="/parts"
             hash={part.id}
           >
+            <PartThumbnail part={part.id} params={part.defaults} />
             <span className="gallery-category">{part.category}</span>
             <h2>{part.name}</h2>
             <p>

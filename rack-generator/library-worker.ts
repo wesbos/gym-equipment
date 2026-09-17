@@ -45,12 +45,13 @@ self.onmessage = async ({ data }: MessageEvent<LibraryWorkerRequest>) => {
     )
       throw new Error("Too many bench holes: increase spacing.");
     parts = def.build(await ready, params);
-    const meshes = parts.map(({ name, solid, color, metalness, roughness }) => {
+    const meshes = parts.map(({ name, solid, role, color, metalness, roughness }) => {
       if (solid.status() !== "NoError" || solid.isEmpty())
         throw new Error(`Invalid solid: ${name}`);
       const mesh = solid.getMesh();
       return {
         name,
+        role,
         color,
         metalness,
         roughness,

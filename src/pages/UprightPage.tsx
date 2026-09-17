@@ -92,7 +92,7 @@ export default function UprightPage() {
       modelRef.current = next;
       setModel(next);
       controller.setMeshes(
-        [{ ...next, name: "BOS STRENGTH upright (millimetres)" }],
+        [{ ...next, role: "frame", name: "BOS STRENGTH upright (millimetres)" }],
         pairRef.current
       );
       setStatus(
@@ -262,7 +262,7 @@ export default function UprightPage() {
                       [
                         {
                           ...modelRef.current,
-                          name: "BOS STRENGTH upright (millimetres)",
+                          role: "frame", name: "BOS STRENGTH upright (millimetres)",
                         },
                       ],
                       e.target.checked

@@ -1,7 +1,8 @@
+import type { MaterialSource } from './appearance.ts';
 import type { LibraryWorkerRequest, NumericParams, PartDefinition, UprightMesh, UprightWorkerRequest } from './types.ts';
 export type { LibraryWorkerRequest, UprightWorkerRequest } from './types.ts';
 /** Transferable mesh payload. Positions may contain additional properties after XYZ. */
-export interface LibraryMesh {
+export interface LibraryMesh extends MaterialSource {
  name: string;
  color?: string;
  metalness?: number;

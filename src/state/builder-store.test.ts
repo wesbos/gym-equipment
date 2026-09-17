@@ -43,7 +43,7 @@ test('invalid edits and imports preserve document, selection, persistence and hi
   assert.equal(storage.writes.length, writes);
   store.act(() => store.importJSON('{}'));
   assert.equal(store.getSnapshot().doc, before.doc);
-  assert.equal(store.getSnapshot().selected, 'jhooks-front');
+  assert.equal(store.getSnapshot().selected, 'jhooks-front:left');
   assert.equal(store.getSnapshot().error, true);
   assert.equal(store.getSnapshot().canUndo, false);
   assert.equal(store.getSnapshot().canRedo, true);
@@ -89,11 +89,12 @@ test('JSON import is undoable and clears selection and transient placement', () 
   assert.equal(store.getSnapshot().doc.accessories.length, 3);
 });
 
-test('selection resolves paired mesh IDs and structural composites to their owning group', () => {
+test('selection preserves physical side IDs and structural composite IDs', () => {
   const store = new BuilderStore();
   store.startPlacement('spotter-arm');
   store.select('jhooks-front:right');
-  assert.equal(store.getSnapshot().selected, 'jhooks-front');
+  assert.equal(store.getSnapshot().selected, 'jhooks-front:right');
+  assert.equal(store.ownerOf(store.getSnapshot().selected), 'jhooks-front');
   assert.equal(store.getSnapshot().placing, null);
   store.startPlacement('nameplate');
   assert.equal(store.getSnapshot().structureChoice, 'nameplate');
@@ -304,4 +305,18 @@ test('a full browser can still open and export its legacy single-slot design', a
   await assert.rejects(store.save('Migrated'), /quota/);
   assert.equal(store.getSnapshot().doc.rack.width, 1350);
   assert.match(store.getSnapshot().storageError!, /JSON/);
+});
+
+
+test('structural selection resolves its owner for replacement', () => {
+  const store = new BuilderStore();
+  store.commit(replaceStructurePart(store.getSnapshot().doc, 'rear-crossmember', 'branded-crossmember'));
+  const piece = store.getSnapshot().resolved.find(r => r.ownerId === 'rear-crossmember')!;
+  assert.ok(piece);
+  store.select(piece.id);
+  assert.equal(store.getSnapshot().selected, piece.id);
+  assert.equal(store.ownerOf(piece.id), 'rear-crossmember');
+  const edited = replaceStructurePart(store.getSnapshot().doc, store.ownerOf(piece.id)!, 'nameplate');
+  store.commit(edited);
+  assert.equal(store.getSnapshot().doc.structure['rear-crossmember']?.part, 'nameplate');
 });

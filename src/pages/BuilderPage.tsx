@@ -1,6 +1,7 @@
 import { NumericControl } from "../components/NumericControl.tsx";
 import { ConfigManager } from "../components/ConfigManager.tsx";
-import { partIcon } from "../components/part-icon.ts";
+import { PartThumbnail } from "../components/PartThumbnail.tsx";
+import { AppearanceControls } from "../components/AppearanceControls.tsx";
 import {
   useEffect,
   useRef,
@@ -88,13 +89,14 @@ function Inspector({ store }: { store: BuilderStore }) {
     definitions
       .find((d) => d.id === part)
       ?.name.replace(/^BOS STRENGTH\s*/, "") || part;
-  const entry = doc.accessories.find((a) => a.id === selected),
+  const ownerId = store.ownerOf(selected);
+  const entry = doc.accessories.find((a) => a.id === ownerId),
     physical =
       resolved.find((r) => r.id === selected) ||
       resolved.find((r) => r.ownerId === selected);
   const part =
     entry?.part ||
-    (selected ? doc.structure[selected]?.part : undefined) ||
+    (ownerId ? doc.structure[ownerId]?.part : undefined) ||
     physical?.part;
   const info = part ? getPartPlacementInfo(part, doc) : null;
   const submit = (
@@ -401,7 +403,7 @@ function Inspector({ store }: { store: BuilderStore }) {
           {fields.map((field) => (
             <Field key={field.key} label={`${field.label} (mm)`}>
               <NumericControl name={field.key} label={field.label}
-                value={entry?.params[field.key] ?? (selected ? doc.structure[selected]?.params[field.key] : undefined) ?? physical.params[field.key] ?? definitions.find(d => d.id === part)?.defaults[field.key] ?? 0}
+                value={entry?.params[field.key] ?? (ownerId ? doc.structure[ownerId]?.params[field.key] : undefined) ?? physical.params[field.key] ?? definitions.find(d => d.id === part)?.defaults[field.key] ?? 0}
                 min={field.min} max={field.max} step={field.step}
                 onGestureStart={store.beginGesture} onGestureEnd={store.endGesture}
                 onValue={value => store.act(() => {
@@ -445,7 +447,7 @@ function Inspector({ store }: { store: BuilderStore }) {
             type="button"
             onClick={() =>
               store.act(() => {
-                store.commit(removeInstance(doc, selected!));
+                store.commit(removeInstance(doc, ownerId!));
                 store.select(null);
               })
             }
@@ -488,7 +490,7 @@ export default function BuilderPage() {
       if ((e.key === "Delete" || e.key === "Backspace") && selected) {
         e.preventDefault();
         store.act(() => {
-          store.commit(removeInstance(store.getSnapshot().doc, selected));
+          store.commit(removeInstance(store.getSnapshot().doc, store.ownerOf(selected)!));
           store.select(null);
         });
       }
@@ -675,10 +677,11 @@ export default function BuilderPage() {
                         store.startPlacement(id);
                       }}
                     >
-                      <span
+                      <PartThumbnail
+                        enabled={state.definitions.length > 0}
+                        part={id}
+                        params={state.definitions.find((d) => d.id === id)?.defaults}
                         className="thumb"
-                        aria-hidden="true"
-                        dangerouslySetInnerHTML={{ __html: partIcon(id) }}
                       />
                       <span>{nameOf(id)}</span>
                       <span className="part-plus">+</span>
@@ -767,6 +770,7 @@ export default function BuilderPage() {
           >
             ← Rack settings
           </button>
+          <AppearanceControls store={store} />
           <Inspector key={state.inputRevision} store={store} />
           <div id="warnings">
             {warnings.map((warning, i) => (

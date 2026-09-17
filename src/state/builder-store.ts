@@ -311,9 +311,12 @@ export class BuilderStore {
     });
     this.autosave();
   };
+  /** Editing targets the owning group; selection remains a physical piece for paint. */
+  ownerOf = (id: string | null) =>
+    this.state.resolved.find(instance => instance.id === id)?.ownerId || id;
   select = (id: string | null) =>
     this.patch({
-      selected: this.state.resolved.find((r) => r.id === id)?.ownerId || id,
+      selected: id,
       placing: null,
       structureChoice: null,
     });
