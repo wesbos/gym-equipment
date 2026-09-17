@@ -1,3 +1,4 @@
+import { ResetButton } from './ResetButton.tsx';
 import { useSyncExternalStore } from 'react';
 import { DEFAULT_FRAME_COLOR, PAINT_SWATCHES, type Appearance, type FrameFinish, type HardwareFinish } from '../../rack-generator/appearance.ts';
 import type { BuilderStore } from '../state/builder-store.ts';
@@ -27,9 +28,10 @@ export function AppearanceControls({ store }: { store: BuilderStore }) {
   return <section aria-label="Rack appearance" className="appearance-controls">
     <h3>Appearance</h3>
     <PaintPicker label="Rack" color={color} finish={appearance.frameFinish ?? 'paint'} onColor={frameColor => update({ frameColor, frameFinish: 'paint' })} onFinish={frameFinish => update({ frameFinish })} />
+    <ResetButton label="rack appearance" changed={color !== DEFAULT_FRAME_COLOR || !!appearance.frameFinish && appearance.frameFinish !== 'paint'} onReset={() => update({ frameColor: DEFAULT_FRAME_COLOR, frameFinish: 'paint' })} />
     <label className="field"><span>Hardware finish</span><select aria-label="Hardware finish" value={appearance.hardwareFinish ?? 'chrome'} onChange={e => update({ hardwareFinish: e.target.value as HardwareFinish })}>
       <option value="chrome">Chrome</option><option value="gold">Gold</option><option value="oxide">Oxide (black)</option>
-    </select></label>
+    </select><ResetButton label="hardware finish" changed={!!appearance.hardwareFinish && appearance.hardwareFinish !== 'chrome'} onReset={() => update({ hardwareFinish: undefined })} /></label>
     {physical && <>
       <PaintPicker label="This piece" color={appearance.overrides?.[physical.id] ?? color}
         finish={appearance.finishOverrides?.[physical.id] ?? (appearance.overrides?.[physical.id] ? 'paint' : appearance.frameFinish ?? 'paint')}
