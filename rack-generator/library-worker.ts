@@ -5,13 +5,8 @@ import type { LibraryWorkerResponse } from './worker-types.ts';
 const send = (message: LibraryWorkerResponse, transfer: Transferable[] = []): void => self.postMessage(message, transfer);
 import Module from "manifold-3d";
 import wasmUrl from "manifold-3d/manifold.wasm?url";
-import { definitions as structure } from "./parts/structure.ts";
-import { definitions as attachments } from "./parts/attachments.ts";
-import { definitions as bars } from "./parts/bars-safeties.ts";
-import { definitions as cables } from './parts/cable-systems.ts';
-import { definitions as smith } from './parts/smith.ts';
+import { definitions } from './catalog.ts';
 import { isSystemPart } from './system-types.ts';
-const definitions = [...structure, ...bars, ...attachments, ...cables, ...smith];
 const ready = Module({ locateFile: () => wasmUrl }).then((api) => {
   api.setup();
   return api;

@@ -1,5 +1,6 @@
 import { CableSmithControls } from '../components/CableSmithControls.tsx';
 import { isSystemPart } from '../../rack-generator/system-types.ts';
+import { PrintExport } from '../components/PrintExport.tsx';
 import { dimensionOptions } from '../../rack-generator/standards.ts';
 import { swapCandidates, swapCandidate } from '../../rack-generator/swap.ts';
 import { ResetButton } from '../components/ResetButton.tsx';
@@ -130,14 +131,7 @@ function Inspector({ store }: { store: BuilderStore }) {
           {slots.map((slot) => (
             <button
               key={slot.ownerId}
-              onClick={() =>
-                store.act(() => {
-                  store.commit(
-                    slot.valid ? slot.doc : doc,
-                  );
-                  store.select(slot.ownerId);
-                })
-              }
+              onClick={() => store.previewStructure(slot.ownerId)}
             >
               {resolved.some((r) => r.ownerId === slot.ownerId) ? "Replace" : "Add"}{" "}
               {slot.ownerId.replaceAll("-", " ")}
@@ -516,6 +510,7 @@ export default function BuilderPage() {
           </div>
           <div className="toolbar-actions">
             <ConfigManager store={store} />
+            <PrintExport store={store} />
             <div className="history-actions">
               <button
                 id="undo"
@@ -712,6 +707,7 @@ export default function BuilderPage() {
                 {state.placementText ||
                   `Place ${nameOf(state.placing?.part ?? state.structureChoice!)} · choose a highlighted connection`}
               </span>
+              <button id="accept-placement" disabled={!state.proposal} onClick={store.acceptProposal}>Place</button>
               <button id="cancel-placement" onClick={store.cancelPlacement}>
                 Cancel <kbd>ESC</kbd>
               </button>
