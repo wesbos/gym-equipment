@@ -4,6 +4,9 @@ The isolated `gym-wave2-export_menu` browser session used `http://127.0.0.1:5314
 `export-menu.png` and `export-menu-mobile.png` show the shared GLB/3MF menu, layout and
 scale controls, independent resets, and retained print facts. JSON stays separate.
 
+Validation: **281/281 unit tests**, production build, and the complete export-menu
+browser regression passed.
+
 Checks:
 
 - Keyboard opening, ArrowUp/Down, Home/End, format typeahead, Enter, Tab into settings,
