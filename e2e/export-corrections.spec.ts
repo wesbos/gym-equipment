@@ -50,7 +50,7 @@ test('failed current CAD build cannot export stale GLB, even after status change
     expect(result.failed).toMatch(/current rack has not built successfully/);
     expect(result.failedAgain).toMatch(/current rack has not built successfully/);
     expect(result.initial).toBe('glTF'); expect(result.retry).toBe('glTF');
-  } finally { await page.close(); }
+  } finally { await page.close(); await browser.close(); }
 });
 
 test('builder and standalone GLB retain system product credits with identity and metre scale', async () => {
@@ -109,7 +109,7 @@ test('builder and standalone GLB retain system product credits with identity and
     }
     const matrix = result.assembly.nodes.find((n: any) => n.name === 'BOS STRENGTH rack').matrix;
     for (const offset of [0, 4, 8]) expect(Math.hypot(...matrix.slice(offset, offset + 3))).toBeCloseTo(.001, 9);
-  } finally { await page.close(); }
+  } finally { await page.close(); await browser.close(); }
 });
 
 test('Parts parameter downloads and original-reference links use system attribution', async () => {
@@ -146,5 +146,5 @@ test('Parts parameter downloads and original-reference links use system attribut
       expect(json.vendorAttribution.url).toBe(await link.getAttribute('href'));
       expect(json.vendorAttribution.reconstruction).toBeTruthy();
     }
-  } finally { await page.close(); }
+  } finally { await page.close(); await browser.close(); }
 });

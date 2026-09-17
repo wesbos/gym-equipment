@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild-wasm';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -9,7 +10,7 @@ import type { NumericControlProps } from './NumericControl.tsx';
 test('mixed NumericControl with a matching shared standard keeps a blank Custom input and no checked preset', async () => {
   // Bundle only the component tree so node:test can exercise the real JSX without
   // loading browser CSS. React remains shared with the server renderer.
-  const result = await build({ entryPoints: [new URL('./NumericControl.tsx', import.meta.url).pathname],
+  const result = await build({ entryPoints: [fileURLToPath(new URL('./NumericControl.tsx', import.meta.url))],
     bundle: true, write: false, platform: 'node', format: 'cjs',
     external: ['react', 'react-dom', 'react/*'], loader: { '.css': 'empty' } });
   const module = { exports: {} as { NumericControl: (props: NumericControlProps) => ReturnType<typeof createElement> } };
