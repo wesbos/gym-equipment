@@ -250,8 +250,15 @@ export function createBuilderScene(
           );
     return `${Math.ceil(size.x)} W × ${Math.ceil(size.z)} D × ${Math.ceil(size.y)} H mm`;
   }
+  let rebuilding = false;
+  function requestRebuild() {
+    ++generation;
+    store.patch({ loading: true, dimensions: dimensions() });
+    if (!rebuilding) void rebuild();
+  }
   async function rebuild() {
-    const serial = ++generation,
+    rebuilding = true;
+    const serial = generation,
       entries = snapshot.resolved;
     store.patch({
       loading: true,
@@ -260,8 +267,14 @@ export function createBuilderScene(
       dimensions: dimensions(),
     });
     try {
-      const models = await Promise.all(entries.map(geometryFor));
+      // Wait for the whole batch, including errors, before starting the latest one.
+      const results = await Promise.allSettled(entries.map(geometryFor));
       if (disposed || serial !== generation) return;
+      const models = results.map(result => {
+        if (result.status === 'rejected') throw result.reason;
+        return result.value;
+      });
+      // Allocate per-instance materials only after rejecting stale/failed batches.
       const built = models.map((model, i) => transformed(model, entries[i]));
       disposeMeshes(assemblyRoot, false);
       assemblyRoot.clear();
@@ -279,7 +292,7 @@ export function createBuilderScene(
         dimensions: dimensions(true),
         status: warnings.length
           ? `${warnings.length} placement warning${warnings.length === 1 ? "" : "s"} · ${entries.length} parts`
-          : `${entries.length} parts · All connections aligned · Saved locally`,
+          : `${entries.length} parts · All connections aligned`,
         error: false,
       });
       if (!hasFit) {
@@ -289,6 +302,9 @@ export function createBuilderScene(
     } catch (error) {
       if (!disposed && serial === generation)
         store.patch({ loading: false, status: message(error), error: true });
+    } finally {
+      rebuilding = false;
+      if (!disposed && serial !== generation) void rebuild();
     }
   }
   function clearGhost() {
@@ -573,7 +589,7 @@ export function createBuilderScene(
     const previous = snapshot;
     snapshot = store.getSnapshot();
     if (disposed) return;
-    if (snapshot.doc !== previous.doc) void rebuild();
+    if (snapshot.doc !== previous.doc) requestRebuild();
     if (snapshot.selected !== previous.selected) refreshSelection();
     if (
       snapshot.placing !== previous.placing ||
@@ -582,7 +598,7 @@ export function createBuilderScene(
     )
       refreshPlacement();
   });
-  void rebuild();
+  requestRebuild();
   if (snapshot.placing) refreshPlacement();
   return {
     fit,

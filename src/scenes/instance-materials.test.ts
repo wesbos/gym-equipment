@@ -17,15 +17,25 @@ test('repeated geometry shares buffers but never shares instance/cache materials
   assert.equal(material.color.getHexString(), '123456');
   left.material.dispose(); right.material.dispose(); geometry.dispose(); material.dispose();
 });
-test('appearance survives local reload, JSON import, undo and redo with physical selection', () => {
-  let saved: string | null = null;
-  const storage: StorageLike = { getItem: () => saved, setItem: (_, value) => { saved = value; } };
+test('appearance survives explicit save/reload, JSON import, undo and redo with physical selection', async () => {
+  const saved = new Map<string, string>();
+  const storage: StorageLike = { getItem: key => saved.get(key) ?? null, setItem: (key, value) => { saved.set(key, value); } };
   const store = new BuilderStore(storage), doc = store.getSnapshot().doc;
   const appearance = { frameColor: '#ff0000', hardwareFinish: 'gold' as const, overrides: { 'jhooks-front:right': '#00ff00' } };
+  await store.ready;
   store.commit({ ...doc, appearance }); store.select('jhooks-front:right');
   assert.equal(store.getSnapshot().selected, 'jhooks-front:right');
-  assert.deepEqual(new BuilderStore(storage).getSnapshot().doc.appearance, appearance);
+  await store.save("Painted rack");
+  const reopened = new BuilderStore(storage); await reopened.ready;
+  assert.deepEqual(reopened.getSnapshot().doc.appearance, appearance);
   store.history('undo'); assert.equal(store.getSnapshot().doc.appearance, undefined);
   store.history('redo'); assert.deepEqual(store.getSnapshot().doc.appearance, appearance);
   store.importJSON(JSON.stringify(store.getSnapshot().doc)); assert.deepEqual(store.getSnapshot().doc.appearance, appearance);
+  store.commit({ ...store.getSnapshot().doc, appearance: { ...appearance, frameColor: '#0000ff' } });
+  await store.flushStorage();
+  const unsaved = new BuilderStore(storage); await unsaved.ready;
+  assert.deepEqual(unsaved.getSnapshot().doc.appearance, appearance);
+  unsaved.recoverDraft();
+  assert.equal(unsaved.getSnapshot().doc.appearance?.frameColor, '#0000ff');
+  assert.equal(unsaved.getSnapshot().doc.appearance?.overrides?.['jhooks-front:right'], '#00ff00');
 });

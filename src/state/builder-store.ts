@@ -1,4 +1,12 @@
 import {
+  LocalConfigStorage,
+  type ConfigStorage,
+  type ConfigCollection,
+  type SavedConfig,
+  type StorageLike,
+} from "./config-storage.ts";
+export type { StorageLike } from "./config-storage.ts";
+import {
   createAssembly,
   validateAssembly,
   resolveAssembly,
@@ -15,6 +23,13 @@ import type {
 } from "../../rack-generator/types.ts";
 export type CatalogPart = Omit<PartDefinition, "build">;
 export interface BuilderSnapshot {
+  inputRevision: number;
+  configs: SavedConfig[];
+  activeId: string | null;
+  dirty: boolean;
+  draftAvailable: boolean;
+  storageReady: boolean;
+  storageError: string | null;
   doc: RackDoc;
   resolved: ResolvedInstance[];
   selected: string | null;
@@ -30,28 +45,38 @@ export interface BuilderSnapshot {
   canUndo: boolean;
   canRedo: boolean;
 }
-export interface StorageLike {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-}
-const STORAGE = "bos-strength-assembly-v1";
 export class BuilderStore {
   private listeners = new Set<() => void>();
   private undo: RackDoc[] = [];
   private redo: RackDoc[] = [];
   private state: BuilderSnapshot;
-  constructor(private storage?: StorageLike) {
-    let doc = createAssembly(),
+  private repository: ConfigStorage;
+  private collection: ConfigCollection = {
+    configs: [],
+    activeId: null,
+    draft: null,
+  };
+  private writes: Promise<void> = Promise.resolve();
+  private storageReadable = true;
+  private pendingDraft: RackDoc | null = null;
+  private draftQueued = false;
+  private gesture = false;
+  private gestureChanged = false;
+  readonly ready: Promise<void>;
+  constructor(storage?: StorageLike | ConfigStorage) {
+    this.repository =
+      storage && "read" in storage ? storage : new LocalConfigStorage(storage);
+    const doc = createAssembly(),
       status = "Preparing your workspace…",
       error = false;
-    try {
-      const saved = storage?.getItem(STORAGE);
-      if (saved) doc = validateAssembly(JSON.parse(saved));
-    } catch {
-      status = "Saved design could not be opened. Started a new rack.";
-      error = true;
-    }
     this.state = {
+      inputRevision: 0,
+      configs: [],
+      activeId: null,
+      dirty: false,
+      draftAvailable: false,
+      storageReady: false,
+      storageError: null,
       doc,
       resolved: resolveAssembly(doc),
       selected: null,
@@ -67,6 +92,32 @@ export class BuilderStore {
       canUndo: false,
       canRedo: false,
     };
+    this.ready = this.repository
+      .read()
+      .then((collection) => {
+        this.collection = collection;
+        const saved = collection.configs.find(
+          (c) => c.id === collection.activeId,
+        );
+        this.patch({
+          configs: collection.configs,
+          activeId: collection.activeId,
+          draftAvailable: !!collection.draft,
+          storageReady: true,
+        });
+        if (!this.state.dirty && saved)
+          this.patch({ doc: saved.doc, resolved: resolveAssembly(saved.doc) });
+      })
+      .catch(() => {
+        this.storageReadable = false;
+        this.patch({
+          storageError: "Saved designs could not be opened. Export your design as JSON before clearing browser storage.",
+          storageReady: true,
+          status:
+            "Saved designs could not be opened. Export your design as JSON before clearing browser storage.",
+          error: true,
+        });
+      });
   }
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
@@ -87,17 +138,150 @@ export class BuilderStore {
       this.status(error instanceof Error ? error.message : String(error), true);
     }
   };
-  private persist() {
-    try {
-      this.storage?.setItem(STORAGE, JSON.stringify(this.state.doc));
-    } catch {
-      this.status("Browser storage is full. Save your design as JSON.", true);
-    }
+  private mutateStorage(
+    update: (current: ConfigCollection) => ConfigCollection,
+  ) {
+    const operation = this.writes.then(async () => {
+      await this.ready;
+      if (!this.storageReadable)
+        throw new Error(
+          "Saved storage could not be read. Export your design as JSON.",
+        );
+      const next = update(this.collection);
+      await this.repository.write(structuredClone(next));
+      this.collection = next;
+      this.patch({ configs: next.configs, storageError: null });
+    });
+    this.writes = operation.catch(() => {
+      this.patch({
+        storageError: "Browser storage failed. Save your design as JSON.",
+      });
+      this.status("Browser storage failed. Save your design as JSON.", true);
+    });
+    return operation;
   }
+  /** Await pending storage work, useful for adapters and lifecycle tests. */
+  flushStorage = async () => {
+    await this.ready;
+    do {
+      const pending = this.writes;
+      await pending;
+      if (pending === this.writes) break;
+    } while (true);
+  };
+  private autosave() {
+    const saved = this.collection.configs.find(
+      (c) => c.id === this.state.activeId,
+    );
+    const dirty =
+      !saved || JSON.stringify(saved.doc) !== JSON.stringify(this.state.doc);
+    this.patch({ dirty, draftAvailable: false });
+    this.pendingDraft = dirty ? this.state.doc : null;
+    if (this.draftQueued) return;
+    this.draftQueued = true;
+    void this.mutateStorage((current) => {
+      const draft = this.pendingDraft;
+      this.pendingDraft = null;
+      this.draftQueued = false;
+      return { ...current, draft };
+    }).catch(() => {
+      this.draftQueued = false;
+    });
+  }
+  save = async (name: string, duplicate = false) => {
+    if (!name.trim()) throw new Error("Enter a configuration name.");
+    const doc = validateAssembly(this.state.doc);
+    const id =
+      !duplicate && this.state.activeId
+        ? this.state.activeId
+        : crypto.randomUUID();
+    await this.mutateStorage((current) => {
+      const config = { id, name: name.trim(), doc };
+      return {
+        configs: [...current.configs.filter((c) => c.id !== id), config],
+        activeId: id,
+        draft: null,
+      };
+    });
+    this.patch({
+      activeId: id,
+      dirty: JSON.stringify(this.state.doc) !== JSON.stringify(doc),
+      draftAvailable: false,
+    });
+  };
+  load = async (id: string) => {
+    await this.ready;
+    const config = this.collection.configs.find((c) => c.id === id);
+    if (!config) throw new Error("Configuration not found.");
+    await this.mutateStorage((current) => ({ ...current, activeId: id }));
+    this.replaceWorking(config.doc);
+    this.patch({ activeId: id, draftAvailable: !!this.collection.draft });
+  };
+  rename = async (id: string, name: string) => {
+    if (!name.trim()) throw new Error("Enter a configuration name.");
+    await this.mutateStorage((current) => ({
+      ...current,
+      configs: current.configs.map((c) =>
+        c.id === id ? { ...c, name: name.trim() } : c,
+      ),
+    }));
+  };
+  deleteConfig = async (id: string) => {
+    await this.mutateStorage((current) => ({
+      ...current,
+      configs: current.configs.filter((c) => c.id !== id),
+      activeId: current.activeId === id ? null : current.activeId,
+    }));
+    this.patch({
+      activeId: this.state.activeId === id ? null : this.state.activeId,
+      dirty: true,
+    });
+  };
+  newRack = () => {
+    this.commit(createAssembly());
+    this.select(null);
+    this.patch({
+      activeId: null,
+      dirty: true,
+      inputRevision: this.state.inputRevision + 1,
+    });
+  };
+  recoverDraft = () => {
+    if (this.collection.draft) {
+      this.commit(this.collection.draft);
+      this.patch({ draftAvailable: false });
+    }
+  };
+  private replaceWorking(doc: RackDoc) {
+    this.undo = [];
+    this.redo = [];
+    this.patch({
+      inputRevision: this.state.inputRevision + 1,
+      doc: validateAssembly(doc),
+      resolved: resolveAssembly(doc),
+      selected: null,
+      placing: null,
+      structureChoice: null,
+      dirty: false,
+      canUndo: false,
+      canRedo: false,
+    });
+  }
+  beginGesture = () => {
+    this.gesture = true;
+    this.gestureChanged = false;
+  };
+  endGesture = () => {
+    this.gesture = false;
+    this.gestureChanged = false;
+  };
   commit = (input: RackDoc) => {
     const doc = validateAssembly(input),
       resolved = resolveAssembly(doc);
-    this.undo.push(structuredClone(this.state.doc));
+    if (JSON.stringify(doc) === JSON.stringify(this.state.doc)) return;
+    if (!this.gesture || !this.gestureChanged)
+      this.undo.push(structuredClone(this.state.doc));
+    this.gestureChanged = true;
     if (this.undo.length > 100) this.undo.shift();
     this.redo = [];
     this.patch({
@@ -108,7 +292,7 @@ export class BuilderStore {
       canUndo: true,
       canRedo: false,
     });
-    this.persist();
+    this.autosave();
   };
   history = (direction: "undo" | "redo") => {
     const source = direction === "undo" ? this.undo : this.redo,
@@ -117,6 +301,7 @@ export class BuilderStore {
     if (!doc) return;
     target.push(structuredClone(this.state.doc));
     this.patch({
+      inputRevision: this.state.inputRevision + 1,
       doc,
       resolved: resolveAssembly(doc),
       placing: null,
@@ -124,8 +309,11 @@ export class BuilderStore {
       canUndo: !!this.undo.length,
       canRedo: !!this.redo.length,
     });
-    this.persist();
+    this.autosave();
   };
+  /** Editing targets the owning group; selection remains a physical piece for paint. */
+  ownerOf = (id: string | null) =>
+    this.state.resolved.find(instance => instance.id === id)?.ownerId || id;
   select = (id: string | null) =>
     this.patch({
       selected: id,
@@ -159,17 +347,14 @@ export class BuilderStore {
     const doc = validateAssembly(JSON.parse(text));
     resolveAssembly(doc);
     this.commit(doc);
+    this.patch({ inputRevision: this.state.inputRevision + 1 });
     this.select(null);
   };
 }
-let sharedStore: BuilderStore | undefined;
 export function getBuilderStore() {
-  if (!sharedStore) {
-    let storage: StorageLike | undefined;
-    try {
-      storage = window.localStorage;
-    } catch {}
-    sharedStore = new BuilderStore(storage);
-  }
-  return sharedStore;
+  let storage: StorageLike | undefined;
+  try {
+    storage = window.localStorage;
+  } catch {}
+  return new BuilderStore(storage);
 }

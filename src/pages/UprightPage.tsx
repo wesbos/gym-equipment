@@ -1,3 +1,6 @@
+import { NumericControl } from "../components/NumericControl.tsx";
+import { LatestRequest } from "../geometry/latest-request.ts";
+import type { UprightWorkerRequest } from "../../rack-generator/worker-types.ts";
 import type { PartScene, View } from "../scenes/part-scene";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
@@ -29,13 +32,16 @@ const fields: {
   },
 ];
 export default function UprightPage() {
+  const form = useRef<HTMLFormElement>(null);
   const viewport = useRef<HTMLDivElement>(null),
     scene = useRef<PartScene | null>(null),
     worker = useRef<Worker | null>(null),
+    requests = useRef<LatestRequest<UprightWorkerRequest> | null>(null),
     sequence = useRef(0),
     pairRef = useRef(true),
     modelRef = useRef<Model | null>(null);
   const [params, setParams] = useState<Params>({ ...defaults }),
+    [inputRevision, setInputRevision] = useState(0),
     [model, setModel] = useState<Model | null>(null),
     [pair, setPair] = useState(true),
     [wireframe, setWireframe] = useState(false),
@@ -47,7 +53,7 @@ export default function UprightPage() {
     setStatus("Building solid…");
     setError(false);
     setValid(false);
-    worker.current?.postMessage({ id: ++sequence.current, params: next });
+    requests.current?.submit({ id: ++sequence.current, params: next });
   }
   useEffect(() => {
     if (!viewport.current) return;
@@ -62,6 +68,7 @@ export default function UprightPage() {
       { type: "module" }
     );
     worker.current = geometryWorker;
+    requests.current = new LatestRequest(value => geometryWorker.postMessage(value));
     geometryWorker.onerror = (e) => {
       if (active) {
         setStatus(e.message || "Could not initialize geometry engine.");
@@ -72,7 +79,9 @@ export default function UprightPage() {
     geometryWorker.onmessage = ({
       data,
     }: MessageEvent<UprightWorkerResponse>) => {
-      if (!active || data.id !== sequence.current) return;
+      if (!active) return;
+      requests.current?.complete();
+      if (data.id !== sequence.current) return;
       if ("error" in data) {
         setStatus(data.error);
         setError(true);
@@ -92,7 +101,9 @@ export default function UprightPage() {
         ).toLocaleString()} triangles / upright`
       );
       setError(false);
-      setValid(true);
+      const invalid = !!form.current?.querySelector('[aria-invalid="true"]');
+      setValid(!invalid);
+      if (invalid) setStatus("Enter a valid number in every field.");
     };
     update({ ...defaults });
     return () => {
@@ -101,6 +112,8 @@ export default function UprightPage() {
       geometryWorker.onmessage = null;
       geometryWorker.onerror = null;
       geometryWorker.terminate();
+      requests.current?.clear();
+      requests.current = null;
       worker.current = null;
       controller.dispose();
       scene.current = null;
@@ -116,24 +129,9 @@ export default function UprightPage() {
       >
         {def.label}
         <div className="input-wrap">
-          <input
-            id={key}
-            name={key}
-            type="number"
-            min={def.min}
-            max={def.max}
-            step={def.step}
-            required
-            value={Number.isNaN(params[key]) ? "" : params[key]}
-            onChange={(e) => {
-              const value = e.target.valueAsNumber;
-              setParams((p) => ({ ...p, [key]: value }));
-              ++sequence.current;
-              setValid(false);
-              setError(false);
-              setStatus("Dimensions changed · update model to apply");
-            }}
-          />
+          <NumericControl label={def.label} name={key} value={params[key]} min={def.min} max={def.max} step={def.step}
+            onInvalid={() => { ++sequence.current; setValid(false); setStatus("Enter a valid dimension."); }}
+            onValue={value => { const next = { ...params, [key]: value }; setParams(next); update(next); }} />
           <span>{key === "height" ? "in" : "mm"}</span>
         </div>
       </label>
@@ -155,6 +153,8 @@ export default function UprightPage() {
         </p>
         <form
           id="parameters"
+          ref={form}
+          key={inputRevision}
           onSubmit={(e) => {
             e.preventDefault();
             update(params);
@@ -166,7 +166,7 @@ export default function UprightPage() {
           </div>
           {field("height")}
           <p id="height-mm" className="conversion">
-            {(model?.height ?? 2032).toLocaleString(undefined, {
+            {(params.height * 25.4).toLocaleString(undefined, {
               maximumFractionDigits: 2,
             })}{" "}
             mm
@@ -193,6 +193,7 @@ export default function UprightPage() {
           <button
             id="reset"
             onClick={() => {
+              setInputRevision(n => n + 1);
               setParams({ ...defaults });
               update({ ...defaults });
             }}
