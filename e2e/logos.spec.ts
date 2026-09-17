@@ -109,7 +109,7 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   const vertices = panel.mesh.vertices.vertex.flatMap((v:{x:number;y:number;z:number})=>[v.x,v.y,v.z]);
   const indices = panel.mesh.triangles.triangle.flatMap((t:{v1:number;v2:number;v3:number})=>[t.v1,t.v2,t.v3]);
   const printSolid = new api.Manifold(new api.Mesh({numProp:3,vertProperties:new Float32Array(vertices),triVerts:new Uint32Array(indices)}));
-  try { expect(printSolid.status()).toBe('NoError'); expect(Math.abs(printSolid.volume()-expectedVolume)).toBeLessThan(.1); } finally { printSolid.delete(); }
+  try { expect(printSolid.status()).toBe('NoError'); expect(Math.abs(printSolid.volume()-expectedVolume/10**3)).toBeLessThan(.0001); } finally { printSolid.delete(); }
   await page.locator('.config-manager summary').click();
   await page.getByRole('button', { name: 'Front', exact: true }).click();
   await controls.getByRole('button', { name: 'Validate & preview logo' }).click();

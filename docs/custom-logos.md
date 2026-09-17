@@ -126,3 +126,5 @@ contours remain in full-size rack units. Continue forwarding `instance.logo` to
 unscaled geometry; #46's scaled exporter is a separate integration check.
 
 Focused PR49 reset/race check: `GYM_LOGO_CDP_URL=<isolated endpoint> npx playwright test e2e/logo-reset.spec.ts --workers=1`. It deliberately releases captured SVG/raster reads and worker callbacks after reset, verifies preview-only reset, and checks applied reset/undo and draft-reset redo preservation.
+
+After integrating #50, the targeted 3MF regression covers all three branding sites at both 1:10 and 1:20 scales. The previously pending scale integration is verified at the XML/Manifold level. The long browser flow uses the new default 1:10 volume expectation. Native scaled slicer checks are owned by the exporter stream.

@@ -4,8 +4,10 @@ import path from 'node:path';
 test('stock reset clears drafts, cancels async completions, and only records applied changes', async () => {
   test.setTimeout(90000);
   const browser = await chromium.connectOverCDP(process.env.GYM_LOGO_CDP_URL!, { timeout: 15000 });
+  console.log('Connected to isolated reset browser');
   const context = await browser.newContext();
   const page = await context.newPage();
+  page.setDefaultTimeout(10000); page.setDefaultNavigationTimeout(15000);
   await page.addInitScript(() => {
     const state = window as typeof window & { holdLogo: boolean; releaseLogo: () => number };
     const pending: (() => void)[] = [];
@@ -35,6 +37,7 @@ test('stock reset clears drafts, cancels async completions, and only records app
     };
   });
   await page.goto('http://127.0.0.1:5305/builder');
+  console.log('Reset fixture loaded');
   await page.locator('.logo-controls summary').click();
   const controls = page.locator('.logo-controls');
   const reset = controls.getByRole('button', { name: 'Reset stock BOS lettering', exact: true });
@@ -66,6 +69,7 @@ test('stock reset clears drafts, cancels async completions, and only records app
   await reset.click();
   expect(await page.evaluate(() => (window as any).releaseLogo())).toBe(2);
   await defaults(); await expect(undo).toBeDisabled();
+  console.log('Late file and worker completions ignored');
   await page.evaluate(() => { (window as any).holdLogo = false; });
   await controls.getByLabel('Logo text', { exact: true }).fill('BOS');
   await controls.getByRole('button', { name: 'Validate & preview logo', exact: true }).click();
@@ -85,5 +89,6 @@ test('stock reset clears drafts, cancels async completions, and only records app
   await reset.click(); // Also preserve the existing redo chain.
   await page.getByRole('button', { name: 'Redo', exact: true }).click();
   await expect(controls.getByLabel('Logo text', { exact: true })).toHaveValue('BOS');
+  console.log('Preview reset, applied undo and draft redo verified');
   await context.close(); await browser.close();
 });
