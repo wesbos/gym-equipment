@@ -1,3 +1,4 @@
+import { unzipSync, strFromU8 } from 'fflate';
 import { test, expect, chromium } from '@playwright/test';
 import fs from 'node:fs/promises';
 
@@ -10,7 +11,12 @@ test('gym-wave2-floor_items: ghost, plane drag, snap, rotate, Escape, undo, insp
   await page.setViewportSize({width:1280,height:633});
   await page.evaluate(() => localStorage.removeItem('bos-strength-configurations-v1'));
   await page.reload();
-  const ready=()=>expect(page.getByRole('button',{name:'Export GLB ↗'})).toBeEnabled({timeout:30000});
+  const chooseExport=async(format:'GLB'|'3MF')=>{
+    if(await page.locator('#export').getAttribute('aria-expanded')!=='true')await page.locator('#export').click();
+    await page.getByRole('menuitemradio',{name:new RegExp(format)}).click();
+    await expect(page.getByRole('button',{name:`Download ${format}`,exact:true})).toBeEnabled({timeout:30000});
+  };
+  const ready=async()=>{await chooseExport('GLB');await page.keyboard.press('Escape');};
   const floor=()=>page.evaluate(()=>{const data=JSON.parse(localStorage.getItem('bos-strength-configurations-v1') ?? '{}');return (data.draft ?? data.configs?.find((c:{id:string})=>c.id===data.activeId)?.doc)?.floorItems ?? [];});
   await ready(); console.log('Rack ready');
   await page.getByRole('button',{name:/REP Nighthawk adjustable bench/}).click();
@@ -52,13 +58,20 @@ test('gym-wave2-floor_items: ghost, plane drag, snap, rotate, Escape, undo, insp
   await page.locator('.config-manager summary').click();await page.getByLabel('Configuration name').fill('Nighthawk browser acceptance');await page.getByRole('button',{name:'Save configuration',exact:true}).click();
   await expect(page.locator('.config-manager summary')).not.toContainText('Unsaved');
   const saved=await floor();await page.reload();await ready();expect(await floor()).toEqual(saved);
-  const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Export GLB ↗'}).click();const download=await pending;
+  await chooseExport('GLB');const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Download GLB',exact:true}).click();const download=await pending;
   const bytes=await fs.readFile((await download.path())!);const gltf=JSON.parse(bytes.subarray(20,20+bytes.readUInt32LE(12)).toString());
   const bench=gltf.nodes.find((n:{extras?:{id:string}})=>n.extras?.id===saved[0].id);expect(bench.children).toHaveLength(13);expect(bench.extras.vendorAttribution.vendor).toBe('REP Fitness');
   const sources=bench.children.map((i:number)=>gltf.nodes[i].extras.materialSource);
   expect(sources.filter((s:{role:string;metalness:number})=>s.role==='liner').every((s:{metalness:number})=>s.metalness===0)).toBe(true);
   expect(sources.find((s:{role:string})=>s.role==='fastener').authoredFastenerFinish).toBe(true);
-  console.log('Save/reload and GLB passed');
+  await chooseExport('3MF');const printPending=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Download 3MF',exact:true}).click();const printDownload=await printPending;
+  const printBytes=await fs.readFile((await printDownload.path())!);await fs.writeFile('/tmp/nighthawk-excluded.3mf',printBytes);
+  const archive=unzipSync(printBytes),report=JSON.parse(strFromU8(archive['Metadata/print-report.json']));
+  expect(report.excludedInstances).toEqual(['floor-1']);expect(report.instances).toBe(14);
+  expect(strFromU8(archive['3D/3dmodel.model'])).not.toContain('rep-nighthawk');
+  expect(strFromU8(archive['Metadata/model_settings.config'])).not.toContain('rep-nighthawk');
+  console.log('Save/reload, GLB inclusion and 3MF exclusion passed');
   await page.getByRole('button',{name:/Parts list \(/}).click();
   await page.locator('[data-instance-id="floor-1"]').click();
   await page.locator('[data-instance-id="front-left"]').click({modifiers:['Meta']});
@@ -72,6 +85,18 @@ test('gym-wave2-floor_items: ghost, plane drag, snap, rotate, Escape, undo, insp
   await page.mouse.click(550,320);await ready();expect(await floor()).toHaveLength(2);
   await expect(page.getByText('Bench overlaps the rack footprint.',{exact:false})).toBeVisible();
   await page.getByRole('button',{name:'Undo',exact:true}).click();await ready();expect(await floor()).toEqual(saved);
+  // Isolate the actual production geometry for a high-angle mechanical contact review.
+  const isolated=await page.evaluate(()=>JSON.parse(localStorage.getItem('bos-strength-configurations-v1')!).configs[0].doc);
+  const savedDocument=structuredClone(isolated);
+  isolated.removed=Object.keys(isolated.uprights);isolated.accessories=[];
+  isolated.floorItems[0].params={backrestAngle:85,seatAngle:20};isolated.floorItems[0].position=[0,0];
+  isolated.appearance={overrides:{'floor-1':'#a9232c'}};
+  await page.locator('#import-file').setInputFiles({name:'bench-contact-review.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(isolated))});
+  await ready();await page.getByRole('button',{name:'Side',exact:true}).click();
+  await page.locator('canvas[aria-label="Rack assembly: drag to orbit, click a part to edit"]').screenshot({path:'docs/evidence/issue-47/nighthawk-high-angle.png'});
+  await page.getByRole('button',{name:'3D',exact:true}).click();
+  await page.locator('canvas[aria-label="Rack assembly: drag to orbit, click a part to edit"]').screenshot({path:'docs/evidence/issue-47/nighthawk-high-angle-3d.png'});
+  await page.locator('#import-file').setInputFiles({name:'restore-test-rack.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(savedDocument))});await ready();
   } finally {
     // connectOverCDP close disconnects this transport; it does not terminate Chrome.
     await browser.close();

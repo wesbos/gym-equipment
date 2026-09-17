@@ -11,6 +11,8 @@ Published dimensions: 51 × 25.9 inches footprint; 16.7 inches flat pad height; 
 
 Geometry uses Manifold tube shells, rounded pad profiles, tapered seat, closed cut-out ladder gauges, supports, forked wheels, knurled carrying handle, storage bumper, and socket fasteners. Secondary steel section sizes and hidden linkages are reconstructed estimates, not manufacturer CAD or fabrication instructions. Pads and liners have nonmetallic soft PBR, gauges retain their dark finish, and fasteners have authored black nickel unless the user explicitly applies a global hardware finish. No source meshes or manufacturer logos are embedded.
 
+Both support upper endpoints use the same pivot transform as their pad rails, including the attachment's local height offset. Reconstructed fixed-length links (450 mm back, 115 mm seat) determine the discrete ladder stations. All 28 settings verify actual CAD contact between links, rails and pins; pins fit without penetrating the gauges and sit within 0.1 mm of the slot floor. These checks establish continuity of the reconstruction, not a manufacturer-certified mechanism.
+
 ## Coordinates and ownership
 
 `RackDoc.floorItems` is optional and additive. Each item has its own stable `floor-*` identity, part, floor position `[worldX, worldZ]` in mm, world Y rotation in radians, and validated pad angles. It has no rack node/edge dependencies. Rack graph changes preserve this list; explicit whole-design resets can replace the entire document.
