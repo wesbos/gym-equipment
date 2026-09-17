@@ -100,3 +100,15 @@ including same-side/reversed/arbitrary upright pairs. A finish-only override is
 copied even if the piece has no color override. Geometry and removal still dedupe
 owners; appearance never collapses physical IDs to owner IDs. Bulk operations and
 resets each commit once for undo. Named configuration Save remains explicit.
+
+## Independent reset fields
+
+`resetAppearanceField` resets global color and steel finish independently. Physical
+color resets remove only that physical color override and preserve its effective
+finish, including legacy color-only overrides that implied paint. Physical finish
+resets use the current rack finish while retaining the saved custom color; an
+explicit finish is stored when needed to counter the legacy color-implies-paint
+rule. This is the rack's finish at reset time, not a new persisted inheritance mode.
+Group “Use rack appearance” still clears both overrides for full inheritance.
+Every applied reset is a normal document commit and is undoable. Generic reset,
+swap, export material resolution and source/vendor branding are unchanged.

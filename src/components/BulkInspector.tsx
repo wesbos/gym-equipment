@@ -29,6 +29,6 @@ export function BulkInspector({ store }: { store: BuilderStore }) {
     })}
     {canDuplicate && <button onClick={() => store.act(store.duplicateSelected)}>Duplicate parts</button>}
     <button className="danger" onClick={() => store.act(store.removeSelected)}>Remove parts</button>
-    {instances.some(r => r.paired) && <p className="note">Pair dimensions/removal affect both sides.</p>}
+    {instances.some(r => r.paired) && <p className="note">Paired · edits affect both sides</p>}
   </div>;
 }
