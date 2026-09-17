@@ -325,7 +325,6 @@ export default function PartsPage() {
         <div className="model-caption">
           <h2 id="model-title">{selected?.name || "Loading parts…"}</h2>
           <p id="model-description">{description}</p>
-          {selected && <VendorCredit part={selected.id} />}
         </div>
         <footer>
           <span id="status" className={error ? "error" : ""} role="status">
@@ -344,6 +343,7 @@ export default function PartsPage() {
             selected?.note ||
             "Rebuilt from reference components. Edit the dimensions to generate a new part."}
         </p>
+        {selected && <VendorCredit part={selected.id} />}
         <form
           id="parameters"
           ref={form}

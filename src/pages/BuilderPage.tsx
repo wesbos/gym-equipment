@@ -1,5 +1,5 @@
 import { VendorControls, VendorCredit } from '../components/VendorControls.tsx';
-import { VOLTRA_IDS } from '../../rack-generator/vendor-metadata.ts';
+import { VOLTRA_IDS, DARKO_IDS } from '../../rack-generator/vendor-metadata.ts';
 import { gridProfile } from '../../rack-generator/profiles.ts';
 import { RackPresets } from '../components/RackPresets.tsx';
 import { TopologyEditor } from '../components/TopologyEditor.tsx';
@@ -40,6 +40,7 @@ import type {
 import "../../rack-generator/builder.css";
 const groups: [string, PartId[]][] = [
   ["Digital resistance", VOLTRA_IDS],
+  ["Darko Lifting", DARKO_IDS],
   [
     "Frame",
     [
@@ -297,7 +298,7 @@ function Inspector({ store }: { store: BuilderStore }) {
                   variant === part ? { ...item.params, ...params } : {};
                 item.part = variant;
                 const uprightId = data.get("upright") as UprightId;
-                item.target = {
+                if (entry.target.kind !== "crossmember-top") item.target = {
                   uprightId,
                   face: spanning
                     ? uprightId.endsWith("left")
@@ -309,7 +310,7 @@ function Inspector({ store }: { store: BuilderStore }) {
                     : Number(data.get("hole")) - 1,
                 };
                 if (item.spanTo && data.get("spanTo")) item.spanTo = String(data.get("spanTo"));
-                item.paired =
+                if (entry.target.kind !== "crossmember-top") item.paired =
                   !!getPartPlacementInfo(variant, doc)?.paired &&
                   data.get("paired") === "on";
                 store.commit(next);
@@ -336,7 +337,7 @@ function Inspector({ store }: { store: BuilderStore }) {
               </select>
             </Field>
           )}
-          {entry && (
+          {entry && entry.target.kind !== "crossmember-top" && (
             <>
               <Field label="Mounting upright">
                 <select name="upright" value={entry.target.uprightId} onChange={e => e.currentTarget.form?.requestSubmit()}>

@@ -15,8 +15,6 @@ test('VOLTRA height, orientation, shafts and fixed stations validated',()=>{
  assert.deepEqual(resolveAssembly(a).find(p=>p.part==='voltra-fixed')!.mounts.map(m=>m.hole),[11,13]);
  assert.throws(()=>addAccessory(doc,'voltra-sliding',{hole:0},false,{orientation:2}),/fits hole/);
  assert.throws(()=>addAccessory(doc,'voltra-fixed',{hole:12.5},false),/Invalid connection/);
- const rep={...doc,profileId:'rep-pr4000',rack:{...doc.rack,pitch:50.8,holeDiameter:15.875}};
- // Profile IDs are tested through the registry elsewhere; use its actual identity below.
  assert.throws(()=>addAccessory(doc,'voltra-adaptive',{},false,{pinDiameter:30}),/pin/);
  assert.equal(validateAssembly(JSON.parse(JSON.stringify(a))).accessories[0].part,'voltra-fixed');
  assert.equal(unpairAccessory(a,a.accessories[0].id).accessories.length,2);

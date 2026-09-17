@@ -9,7 +9,8 @@ import { definitions as structure } from "./parts/structure.ts";
 import { definitions as attachments } from "./parts/attachments.ts";
 import { definitions as bars } from "./parts/bars-safeties.ts";
 import { definitions as voltra } from './parts/voltra.ts';
-const definitions = [...structure, ...bars, ...attachments, ...voltra];
+import { definitions as darko } from './parts/darko.ts';
+const definitions = [...structure, ...bars, ...attachments, ...voltra, ...darko];
 const ready = Module({ locateFile: () => wasmUrl }).then((api) => {
   api.setup();
   return api;
