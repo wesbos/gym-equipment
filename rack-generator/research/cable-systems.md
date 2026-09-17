@@ -116,3 +116,22 @@ library views and thumbnails share the same solids. System fields never enter
 legacy single-hole accessory validation. Removing dependent frame structure
 removes systems conservatively; undo restores both. Changing a supported frame
 span re-resolves system geometry; unsupported topology edits are rejected.
+
+### Front Smith adapter follow-up (17 September 2026)
+
+Vertical PR-5000 front mounting includes the upper extension brackets and full
+FFE 2.0 pair in the Smith assembly. REP publishes 176.50 mm upper extension length,
+75 mm square tube and 658.35 mm from upright face to the end of the FFE 2.0.
+The lower tube aligns with the rack lower crossmember. Rev B steps 7–12 show
+front-facing upright through-bolts, lateral bracket bolts, and leveling feet.
+Plate thicknesses, gussets, foot hardware and exact first side-hole offset are
+reconstructed estimates. The mounting station follows the active rack lattice;
+this is a visualization, not fabrication documentation or certified fit.
+
+Sources: [front extension bracket](https://repfitness.com/products/smith-machine-front-extension-bracket),
+[FFE 2.0](https://repfitness.com/products/front-foot-extension-pair-2-0), and the
+Smith Rev B manual linked above. Front mounting rejects every cable family.
+PR-4000 front mounting, original/mini feet and angled front mounting remain
+unavailable pending verified geometry. Inside PR-4000/5000 still supports the
+existing 0/±5° configurations and compatibility rules. No additional rack
+families are introduced (issue #8 was cancelled by the user).

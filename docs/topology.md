@@ -146,3 +146,9 @@ finish. Current static collision boxes cover occupied stack/trolley/bar bodies.
 Exports should consume resolved instances and the worker catalog, not a fixed
 list of original part IDs. See `rack-generator/research/cable-systems.md` for
 manuals, dimension confidence and deliberately unsupported configurations.
+
+Smith `outside: 1` selects the vertical PR-5000 front adapter with its full FFE
+2.0 pair. Its eight rack mounts are front-facing upright stations with Y pin
+axes. Internal extension-to-Smith bolts belong to the system geometry, not rack
+connections. Front tubes contribute collision bodies. Other front variants are
+explicitly rejected; inside configurations and existing profiles are unchanged.

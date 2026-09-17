@@ -75,6 +75,7 @@ function Options({
     <>
       {smith ? (
         <>
+          {select("outside", "Smith mounting", [[0, "Inside rack"], [1, "Front — PR-5000, full FFE 2.0 pair"]])}
           {select("angle", "Smith install angle", [
             [-5, "−5°"],
             [0, "Vertical (0°)"],
@@ -109,8 +110,7 @@ function Options({
             />
           </label>
           <p className="note">
-            Inside mount. Front/outside mounting is unavailable until the
-            required extension bracket and front feet are modeled. Rods, bar and
+            Front includes reconstructed extension brackets and full FFE 2.0 feet; vertical PR-5000 only. Rods, bar and
             sleeves stay polished independently of bolt finish.
           </p>
         </>

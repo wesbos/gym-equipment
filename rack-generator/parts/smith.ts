@@ -1,3 +1,4 @@
+import { smithFrontAdapters } from "./smith-front.ts";
 import { smithLayout } from "../system-mounts.ts";
 import type { PartDefinition, Vec3 } from "../types.ts";
 import { SYSTEM_DEFAULTS, SYSTEM_NOTE } from "../system-types.ts";
@@ -24,8 +25,8 @@ export const definitions: PartDefinition[] = [
       validateSystemParams(
         "smith-rep",
         Object.fromEntries(
-          Object.keys(SYSTEM_DEFAULTS["smith-rep"]).map((k) => [k, p[k]]),
-        ),
+          Object.keys(SYSTEM_DEFAULTS["smith-rep"]).map((k) => [k, p[k]])
+        )
       );
       if (
         ![2032, 2362.2].includes(p.height) ||
@@ -33,6 +34,7 @@ export const definitions: PartDefinition[] = [
       )
         throw Error("Invalid Smith height/travel.");
       return mechanical(api, (g) => {
+        if (p.outside) smithFrontAdapters(g, p);
         const count = p.height === 2032 ? 16 : 19,
           max = p.height === 2032 ? 1721 : 2029;
         const { lowerBeam, top, at, stations } = smithLayout(p);
@@ -44,7 +46,7 @@ export const definitions: PartDefinition[] = [
           g.add(
             "Polished Smith guide rod",
             g.rod(at(x, lowerBeam + p.tube / 2 + 10), at(x, top), 15),
-            "rod",
+            "rod"
           );
           for (const { index, beamZ, guideZ, guideY, stationY } of stations) {
             const faceX = postX - side * (p.tube / 2 + 3);
@@ -54,29 +56,29 @@ export const definitions: PartDefinition[] = [
                 faceX,
                 stationY + (n * p.pitch) / 2,
                 beamZ,
-              ]),
+              ])
             );
             const deckZ = beamZ + (index ? -1 : 1) * (p.tube / 2 + 4);
             const deck = g.box(
               [Math.abs(postX - x) + p.tube / 2, p.pitch + 40, 8],
-              [(postX + x) / 2, stationY, deckZ],
+              [(postX + x) / 2, stationY, deckZ]
             );
             // A bored deck and paired oval windows reproduce the two-piece L-bracket.
             const deckHole = g.cylinder(12, 18, "z", [x, guideY, deckZ]);
             g.add(
               "Smith crossmember L-bracket",
-              g.union([g.cut(web, holes), g.cut(deck, [deckHole])]),
+              g.union([g.cut(web, holes), g.cut(deck, [deckHole])])
             );
             for (const n of [-1, 1])
               g.bolt(
                 "Smith crossmember through-bolt",
                 [postX, stationY + (n * p.pitch) / 2, beamZ],
                 p.bore - 0.8,
-                p.tube + 40,
+                p.tube + 40
               );
             g.add(
               "Guide rod split clamp",
-              tilt(g.ring(35, 27, 15.1, "z", [0, 0, 0]), x, guideZ),
+              tilt(g.ring(35, 27, 15.1, "z", [0, 0, 0]), x, guideZ)
             );
             g.bolt("Guide clamp locking bolt", at(x, guideZ), 8, 68, "y");
           }
@@ -86,8 +88,8 @@ export const definitions: PartDefinition[] = [
             tilt(
               g.box([30, 30, max - 275], [0, 0, (max - 275) / 2]),
               x + side * 53,
-              330,
-            ),
+              330
+            )
           );
           for (let i = 0; i < count; i++) {
             const z = 396 + (i * (max - 396)) / (count - 1),
@@ -95,23 +97,23 @@ export const definitions: PartDefinition[] = [
             g.add(
               `Racking post ${i + 1} of ${count}`,
               g.cylinder(72, 10, "x", q),
-              "rod",
+              "rod"
             );
             g.add(
               `Racking post end cap ${i + 1}`,
               g.cylinder(5, 14, "x", [q[0] - side * 38, q[1], q[2]]),
-              "source",
+              "source"
             );
           }
           for (const dz of [-52, 52]) {
             g.add(
               "Smith linear bearing housing",
-              tilt(g.ring(60, 31, 15.2, "z", [0, 0, 0]), x, p.barHeight + dz),
+              tilt(g.ring(60, 31, 15.2, "z", [0, 0, 0]), x, p.barHeight + dz)
             );
             g.add(
               "Linear bearing dust seal",
               tilt(g.ring(5, 30, 15, "z", [0, 0, 0]), x, p.barHeight + dz + 32),
-              "liner",
+              "liner"
             );
           }
           g.add(
@@ -121,8 +123,8 @@ export const definitions: PartDefinition[] = [
                 g.cylinder(12, 18, "x", [side * 37, -60, 0]),
               ]),
               x,
-              p.barHeight,
-            ),
+              p.barHeight
+            )
           );
           const hook = [
             [-15, -28],
@@ -137,12 +139,12 @@ export const definitions: PartDefinition[] = [
           ] as [number, number][];
           g.add(
             "Rotating bar locking hook",
-            tilt(g.profile(hook, 10, [side * 35, -60, 0], "x"), x, p.barHeight),
+            tilt(g.profile(hook, 10, [side * 35, -60, 0], "x"), x, p.barHeight)
           );
           g.add(
             "Composite hook contact liner",
             tilt(g.box([12, 33, 5], [side * 40, -30, -1]), x, p.barHeight),
-            "liner",
+            "liner"
           );
           g.add(
             "Bar rotation lever",
@@ -152,18 +154,18 @@ export const definitions: PartDefinition[] = [
                 at(x - side * 30, p.barHeight + 75),
                 at(x - side * 100, p.barHeight + 75),
               ],
-              9,
+              9
             ),
-            "handle",
+            "handle"
           );
           g.add(
             "Low-profile Smith safety stop",
-            tilt(g.ring(55, 38, 15.3, "z", [0, 0, 0]), x, p.safetyHeight),
+            tilt(g.ring(55, 38, 15.3, "z", [0, 0, 0]), x, p.safetyHeight)
           );
           g.add(
             "Safety stop impact pad",
             tilt(g.ring(18, 39, 15.2, "z", [0, 0, 0]), x, p.safetyHeight + 36),
-            "liner",
+            "liner"
           );
           g.bolt("Safety locking pin", at(x, p.safetyHeight), 12, 100, "y");
         }
@@ -172,29 +174,29 @@ export const definitions: PartDefinition[] = [
         g.add(
           "Polished 35 mm Smith bar shaft",
           g.ring(1280, 17.5, 11, "x", b),
-          "rod",
+          "rod"
         );
         for (const side of [-1, 1]) {
           g.add(
             "289.5 mm loadable Olympic sleeve",
             g.ring(289.5, 25, 18, "x", [side * (940 - 289.5 / 2), b[1], b[2]]),
-            "sleeve",
+            "sleeve"
           );
           g.add(
             "Sleeve shoulder collar",
             g.ring(20, 40, 17.6, "x", [side * 640, b[1], b[2]]),
-            "sleeve",
+            "sleeve"
           );
           g.add(
             "Sleeve end cap",
             g.cylinder(5, 24, "x", [side * 937.5, b[1], b[2]]),
-            "source",
+            "source"
           );
           for (const x of [405, 455])
             g.add(
               "IWF/IPF grip ring",
               g.ring(3, 17.65, 17.4, "x", [side * x, b[1], b[2]]),
-              "source",
+              "source"
             );
         }
       });

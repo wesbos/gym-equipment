@@ -18,7 +18,7 @@ const preset = (
   profile = "rep-pr-5000",
   kind = "six",
   depth = 762,
-  height = 2032,
+  height = 2032
 ) =>
   applyPreset(
     RACK_PRESETS.find(
@@ -26,8 +26,8 @@ const preset = (
         p.profileId === profile &&
         p.kind === kind &&
         p.depth === depth &&
-        p.height === height,
-    )!.id,
+        p.height === height
+    )!.id
   );
 test("generic source rack remains 75/25/50 and cannot masquerade as vendor cable rack", () => {
   const d = createAssembly();
@@ -36,37 +36,37 @@ test("generic source rack remains 75/25/50 and cannot masquerade as vendor cable
   assert.equal(d.rack.pitch, 50);
   assert.throws(
     () => validateAssembly(withSystem(d, "cable-kraken")),
-    /manufacturer|height|width/,
+    /manufacturer|height|width/
   );
 });
 test("ARES four-post documented shallow configuration requires anchoring; deeper four-post is rejected", () => {
   const d = preset("rep-pr-5000", "four", 406.4);
   assert.throws(
     () => validateAssembly(withSystem(d, "cable-ares2")),
-    /anchoring/,
+    /anchoring/
   );
   assert.equal(
     validateAssembly(withSystem(d, "cable-ares2", { anchored: 1 })).systems
       ?.length,
-    1,
+    1
   );
   assert.throws(
     () =>
       validateAssembly(
         withSystem(preset("rep-pr-5000", "four"), "cable-ares2", {
           anchored: 1,
-        }),
+        })
       ),
-    /16-inch/,
+    /16-inch/
   );
   assert.throws(
     () =>
       validateAssembly(
         withSystem(preset("rep-pr-4000", "four", 406.4), "cable-ares2", {
           anchored: 1,
-        }),
+        })
       ),
-    /PR-5000/,
+    /PR-5000/
   );
 });
 test("all cable families use typed persistence and graph coordinates independent of node names", () => {
@@ -77,13 +77,13 @@ test("all cable families use typed persistence and graph coordinates independent
   ] as const) {
     const d = preset();
     const mapping = Object.fromEntries(
-      Object.keys(d.uprights).map((id, i) => [id, `custom-${i}`]),
+      Object.keys(d.uprights).map((id, i) => [id, `custom-${i}`])
     );
     d.uprights = Object.fromEntries(
       Object.entries(d.uprights).map(([id, n]) => [
         mapping[id],
         { x: n.x + 127, y: n.y - 83 },
-      ]),
+      ])
     );
     d.connections = d.connections.map((e) => ({
       ...e,
@@ -106,33 +106,33 @@ test("cable bay exclusion and Smith restrictions validate both insertion orders"
   const athena = validateAssembly(withSystem(d, "cable-athena"));
   assert.throws(
     () => validateAssembly(withSystem(athena, "smith-rep")),
-    /four-post/,
+    /four-post/
   );
   const smith = validateAssembly(withSystem(d, "smith-rep"));
   assert.throws(
     () => validateAssembly(withSystem(smith, "cable-athena")),
-    /four-post/,
+    /four-post/
   );
   const six = validateAssembly(withSystem(preset(), "cable-ares2"));
   assert.equal(
     validateAssembly(withSystem(six, "smith-rep", { angle: 5 })).systems
       ?.length,
-    2,
+    2
   );
   assert.throws(
     () => validateAssembly(withSystem(six, "cable-athena")),
-    /same side/,
+    /same side/
   );
   const pr4 = validateAssembly(
-    withSystem(preset("rep-pr-4000"), "cable-ares1"),
+    withSystem(preset("rep-pr-4000"), "cable-ares1")
   );
   assert.throws(
     () => validateAssembly(withSystem(pr4, "smith-rep", { angle: -5 })),
-    /vertical/,
+    /vertical/
   );
   assert.equal(
     validateAssembly(withSystem(pr4, "smith-rep")).systems?.length,
-    2,
+    2
   );
 });
 test("Kraken true 3-inch profiles, bore sizes, bay depths and side variants", () => {
@@ -141,16 +141,16 @@ test("Kraken true 3-inch profiles, bore sizes, bay depths and side variants", ()
     assert.equal(d.rack.tube, 76.2);
     assert.equal(d.rack.holeDiameter, profile === "bos-hydra" ? 15.875 : 25.4);
     const left = validateAssembly(
-      withSystem(d, "cable-kraken", { sides: 1, loading: 0 }),
+      withSystem(d, "cable-kraken", { sides: 1, loading: 0 })
     );
     assert.equal(
       validateAssembly(withSystem(left, "cable-kraken", { sides: 2 })).systems
         ?.length,
-      2,
+      2
     );
     assert.throws(
       () => validateAssembly(withSystem(left, "cable-kraken", { sides: 1 })),
-      /same side/,
+      /same side/
     );
   }
 });
@@ -159,14 +159,14 @@ test("systems reject malformed params, unsupported angles, outside adapters, bad
   for (const params of [
     { angle: 2 },
     { angle: NaN },
-    { outside: 1 },
+    { outside: 2 },
     { barHeight: 1800 },
     { safetyHeight: 1200 },
   ] as NumericParams[])
     assert.throws(() => validateAssembly(withSystem(d, "smith-rep", params)));
   assert.throws(
     () => validateAssembly(withSystem(d, "cable-ares2", { sides: 1 })),
-    /dual/,
+    /dual/
   );
   assert.throws(
     () =>
@@ -174,7 +174,7 @@ test("systems reject malformed params, unsupported angles, outside adapters, bad
         ...d,
         systems: [{ id: "bad", part: "unknown", params: {} }],
       }),
-    /Unknown/,
+    /Unknown/
   );
   d.uprights[Object.keys(d.uprights).at(-1)!].x += 50.8;
   assert.throws(() => systemLayout(d), /align/);
@@ -191,7 +191,7 @@ test("system dependency removal cascades, and named profiles retain strict tube 
           tube: 75,
         },
       }),
-    /Tube/,
+    /Tube/
   );
 });
 const ready = Module().then((api) => {
@@ -209,14 +209,14 @@ for (const def of [...cables, ...smith])
         assert.ok(p.solid.volume() > 0, p.name);
         assert.ok(
           [...p.solid.getMesh().vertProperties].every(Number.isFinite),
-          p.name,
+          p.name
         );
       }
       const rod = parts.find((p) => p.role === "rod")!;
       assert.ok(rod);
       assert.deepEqual(
         resolveMaterial(rod, { hardwareFinish: "gold" }),
-        resolveMaterial(rod, { hardwareFinish: "oxide" }),
+        resolveMaterial(rod, { hardwareFinish: "oxide" })
       );
       assert.ok(parts.some((p) => p.role === "fastener"));
       assert.ok(parts.some((p) => p.role === "liner"));
@@ -227,7 +227,7 @@ for (const def of [...cables, ...smith])
 test("plate loaded variants and tall angled Smith build within published width", async () => {
   const api = await ready;
   for (const def of cables.filter((d) =>
-    ["cable-kraken", "cable-athena"].includes(d.id),
+    ["cable-kraken", "cable-athena"].includes(d.id)
   )) {
     const parts = def.build(api, {
       ...def.defaults,
@@ -252,9 +252,9 @@ test("plate loaded variants and tall angled Smith build within published width",
       assert.equal(
         parts.filter(
           (p) =>
-            p.name.startsWith("Racking post ") && !p.name.includes("end cap"),
+            p.name.startsWith("Racking post ") && !p.name.includes("end cap")
         ).length,
-        38,
+        38
       );
       const min = Math.min(...parts.map((p) => p.solid.boundingBox().min[0]));
       const max = Math.max(...parts.map((p) => p.solid.boundingBox().max[0]));
@@ -266,18 +266,18 @@ test("plate loaded variants and tall angled Smith build within published width",
 });
 test("static collision envelopes include cable stacks and Smith bar, not whole rack air", () => {
   const d = validateAssembly(
-    withSystem(withSystem(preset(), "cable-ares2"), "smith-rep"),
+    withSystem(withSystem(preset(), "cable-ares2"), "smith-rep")
   );
   const systems = resolveAssembly(d).filter(
-    (r) => r.part.startsWith("cable-") || r.part === "smith-rep",
+    (r) => r.part.startsWith("cable-") || r.part === "smith-rep"
   );
   assert.equal(systems.length, 2);
   assert.ok(
-    systems.every((s) => s.collisionEnabled && s.collisionBoxes?.length),
+    systems.every((s) => s.collisionEnabled && s.collisionBoxes?.length)
   );
   assert.equal(
     systems.find((s) => s.part === "smith-rep")!.collisionBoxes!.length,
-    3,
+    3
   );
 });
 test("unknown system metadata is detached and appearance remains optional", () => {
@@ -296,16 +296,17 @@ test("unknown system metadata is detached and appearance remains optional", () =
   const clean = validateAssembly(input);
   input.systems[0].vendorMetadata.confidence = "mutated";
   assert.equal(
-    (clean.systems![0] as unknown as { vendorMetadata: { confidence: string } })
-      .vendorMetadata.confidence,
-    "estimated",
+    ((clean.systems![0] as unknown) as {
+      vendorMetadata: { confidence: string };
+    }).vendorMetadata.confidence,
+    "estimated"
   );
   assert.deepEqual(clean.appearance, input.appearance);
 });
 
 test("Smith crossmember bolts land on beam lattice and do not claim cable upright slots", () => {
   const d = validateAssembly(
-    withSystem(withSystem(preset(), "cable-ares2"), "smith-rep", { angle: 5 }),
+    withSystem(withSystem(preset(), "cable-ares2"), "smith-rep", { angle: 5 })
   );
   const resolved = resolveAssembly(d),
     s = resolved.find((r) => r.part === "smith-rep")!;
@@ -317,7 +318,55 @@ test("Smith crossmember bolts land on beam lattice and do not claim cable uprigh
   }
   assert.ok(
     !detectCollisions(resolved).some(
-      (w) => w.message.includes("share mounting") && w.ids.includes(s.id),
-    ),
+      (w) => w.message.includes("share mounting") && w.ids.includes(s.id)
+    )
   );
+});
+
+test("front Smith includes adapter solids and upright mounts, blocks cables and unverified angles", async () => {
+  const d = validateAssembly(withSystem(preset(), "smith-rep", { outside: 1 }));
+  const system = resolveAssembly(d).find((p) => p.part === "smith-rep")!;
+  assert.equal(system.mounts.length, 8);
+  assert.ok(
+    system.mounts.every(
+      (m) => m.face === "front" && !m.connectorId && m.pinAxis?.[1] === 1
+    )
+  );
+  assert.throws(
+    () => validateAssembly(withSystem(d, "cable-ares2")),
+    /Front Smith/
+  );
+  assert.throws(
+    () =>
+      validateAssembly(
+        withSystem(preset(), "smith-rep", { outside: 1, angle: 5 })
+      ),
+    /vertical/
+  );
+  assert.equal(system.collisionBoxes?.length, 7);
+  assert.throws(
+    () =>
+      validateAssembly(
+        withSystem(preset("rep-pr-4000"), "smith-rep", { outside: 1 })
+      ),
+    /PR-5000/
+  );
+  const api = await ready;
+  const parts = smith[0].build(api, { ...smith[0].defaults, outside: 1 });
+  try {
+    assert.equal(
+      parts.filter((p) => p.name === "FFE 2.0 drilled extension tube").length,
+      2
+    );
+    assert.equal(
+      parts.filter((p) => p.name === "Smith front extension drilled tube")
+        .length,
+      2
+    );
+    assert.ok(
+      parts.every((p) => p.solid.status() === "NoError" && !p.solid.isEmpty())
+    );
+  } finally {
+    parts.forEach((p) => p.solid.delete());
+  }
 });

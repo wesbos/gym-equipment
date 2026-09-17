@@ -120,8 +120,7 @@ export function validateSystemParams(
       p.safetyHeight <=
         p.barHeight -
           100, "Smith safeties must remain at least 100 mm below the bar.");
-    require(p.outside ===
-      0, "Front/outside Smith mounting requires the Front Extension Bracket and Front Foot Extensions; that adapter is not available yet.");
+    require(!p.outside || p.angle === 0, "Front Smith currently supports vertical installation only; angled front mounting is not yet verified.");
   }
   return p;
 }
@@ -207,6 +206,8 @@ export function validateSystems(
       require(p.trolley <=
         doc.rack.height - 250, "Trolley must clear the top pulley brackets.");
     if (s.part === "smith-rep") {
+      require(!p.outside || profile === "rep-pr-5000", "Front Smith currently requires PR-5000 with the modeled FFE 2.0 pair.");
+      require(!(p.outside && cable.length), "Front Smith cannot share a rack with ARES or Athena: trolley interference.");
       require(!(
         cable.length && layout.rows.length === 2
       ), "Smith and cable systems cannot share a four-post rack.");
@@ -225,7 +226,7 @@ export function validateSystems(
           (a.part === "spotter-arm" &&
             ["left", "right"].includes(a.target.face)),
       );
-      require(!internal.some(
+      require(p.outside === 1 || !internal.some(
         (a) => a.part === "safety-box" || a.part === "safety-webbing",
       ) &&
         !(
@@ -272,6 +273,10 @@ export function systemCollisionBoxes(
     return [
       box(0, y, p.barHeight, 1280, 35, 35),
       ...[-1, 1].map((s) => box(s * 795, y, p.barHeight, 289.5, 50, 50)),
+      ...(p.outside ? [-1, 1].flatMap(s => smithLayout(p).stations.map(station => {
+        const length = station.index ? 176.5 : 658.35;
+        return box(s * p.rackWidth / 2, -p.tube / 2 - length / 2, station.beamZ, 75, length, 75);
+      })) : []),
     ];
   }
   const ares = part.includes("ares"),
@@ -330,7 +335,15 @@ export function resolveSystems(doc: RackDoc): ResolvedInstance[] {
         ...(connectorId ? { connectorId, label: "Crossmember bolt row" } : {}),
       });
     };
-    if (s.part === "smith-rep") {
+    if (s.part === "smith-rep" && s.params.outside) {
+      for (const side of [0, 1]) for (const station of smithLayout(params).stations)
+        for (const n of [-1, 1]) {
+          const z = station.beamZ + n * r.pitch;
+          add(l.rows[0][side][0], "front", Math.round((z - r.firstHole) / r.pitch),
+            [((side ? 1 : -1) * l.width) / 2, 0, z]);
+          mounts.at(-1)!.pinAxis = [0, 1, 0];
+        }
+    } else if (s.part === "smith-rep") {
       for (const side of [0, 1])
         for (const station of smithLayout(params).stations) {
           const row = l.rows[0][side][0],
