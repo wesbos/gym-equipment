@@ -66,7 +66,7 @@ test('dynamic attachment collisions retain real adapters and unpair keeps both s
 
 test('data-driven generic four/six/half presets resolve, extend and round-trip through JSON', async () => {
   const { RACK_PRESETS, applyPreset } = await import('./presets.ts');
-  for (const [i,preset] of RACK_PRESETS.entries()) {
+  for (const [i,preset] of RACK_PRESETS.filter(p => p.profileId === 'generic-75').entries()) {
     const doc = applyPreset(preset.id);
     assert.equal(Object.keys(doc.uprights).length,[4,6,2][i]);
     assert.ok(resolveAssembly(doc).length > 0);

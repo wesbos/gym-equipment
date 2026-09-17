@@ -1,5 +1,6 @@
+import { gridProfile } from './profiles.ts';
 import { validateAssembly } from './assembly.ts';
-import { GENERIC_SPANS, nearest } from './grid.ts';
+import { nearest } from './grid.ts';
 import type { RackDoc, PartId } from './types.ts';
 export type Direction = 'left' | 'right' | 'rear' | 'front';
 const directions = { left: [-1, 0], right: [1, 0], rear: [0, 1], front: [0, -1] } as const;
@@ -12,7 +13,7 @@ export function extendUpright(input: RackDoc, from: string, direction: Direction
   const doc = validateAssembly(input), anchor = doc.uprights[from];
   if (!anchor || doc.removed.includes(from)) throw new Error('Choose an existing upright.');
   const id = nextId(doc, 'upright'), [dx, dy] = directions[direction];
-  const span = nearest(clear, GENERIC_SPANS) + doc.rack.tube;
+  const span = nearest(clear, gridProfile(doc.profileId).depths) + doc.rack.tube;
   doc.uprights[id] = { x: anchor.x + dx * span, y: anchor.y + dy * span };
   if (connect) for (const level of ['upper', 'lower'] as const) doc.connections.push({ id: nextId(doc, 'connection'), from, to: id, level });
   return validateAssembly(doc);

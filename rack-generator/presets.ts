@@ -1,19 +1,29 @@
 import { createAssembly, validateAssembly, addAccessory } from './assembly.ts';
 import { extendUpright } from './graph-edits.ts';
+import { GRID_PROFILES, gridProfile } from './profiles.ts';
 import type { RackDoc } from './types.ts';
-export const RACK_PRESETS = [
-  { id:'generic-four', label:'BOS 4-post', kind:'four', depth:725 },
-  { id:'generic-six', label:'BOS 6-post + storage', kind:'six', depth:725 },
-  { id:'generic-half', label:'BOS half rack', kind:'half', depth:425 },
-] as const;
+export interface RackPreset { id:string; label:string; kind:'four'|'six'|'half'; depth:number; profileId:string; height:number }
+export const RACK_PRESETS: readonly RackPreset[] = [
+  { id:'generic-four', label:'BOS 4-post', kind:'four', depth:725, profileId:'generic-75',height:2032 },
+  { id:'generic-six', label:'BOS 6-post + storage', kind:'six', depth:725, profileId:'generic-75',height:2032 },
+  { id:'generic-half', label:'BOS half rack', kind:'half', depth:425, profileId:'generic-75',height:2032 },
+  ...GRID_PROFILES.filter(p => p.id.startsWith('rep-')).flatMap(profile => profile.heights!.flatMap(height => profile.depths.flatMap(depth => (['four','six'] as const).map(kind => ({
+    id:`${profile.id}-${kind}-${height}-${depth}`, profileId:profile.id, height, depth, kind,
+    label:`${profile.label} ${kind === 'four' ? depth === 406.4 ? 'shallow half rack (4 posts)' : '4-post' : '6-post + 16″ storage'} · ${Math.round(height/25.4)}″ high · ${Math.round(depth/25.4)}″ deep`,
+  })))))
+];
 export function applyPreset(id: string): RackDoc {
   const preset = RACK_PRESETS.find(p => p.id === id);
   if (!preset) throw new Error('Unknown rack preset.');
-  let doc = createAssembly({depth:preset.depth,emptyAccessories:true});
-  doc.profileId = 'generic-75';
+  const profile = gridProfile(preset.profileId);
+  let doc = createAssembly({depth:preset.depth,height:preset.height,emptyAccessories:true});
+  // Start the graph only after establishing profile dimensions; migration builds
+  // exact centers without snapping vendor spans through the source catalog.
+  doc = validateAssembly({ ...doc, version:1, profileId:profile.id, rack:{...doc.rack, width:profile.widths.at(-1)!, pitch:profile.pitch, holeDiameter:profile.holeDiameter} });
   if (preset.kind === 'six') {
-    doc = extendUpright(doc,'rear-left','rear',425);
-    doc = extendUpright(doc,'rear-right','rear',425);
+    const storageDepth = profile.id === 'generic-75' ? 425 : 406.4;
+    doc = extendUpright(doc,'rear-left','rear',storageDepth);
+    doc = extendUpright(doc,'rear-right','rear',storageDepth);
   }
   if (preset.kind === 'half') {
     delete doc.uprights['rear-left']; delete doc.uprights['rear-right'];

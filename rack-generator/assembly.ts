@@ -1,3 +1,4 @@
+import { gridProfile } from './profiles.ts';
 import { legacyGraph, validateGraph, structureSlots } from './topology.ts';
 import { snapDimensions } from './grid.ts';
 import type { RackDoc, RackDimensions, Accessory, Target, Mount, ResolvedInstance, Vec3, NumericParams, PartId, Face, UprightId, StructureSlot, StructureVariant, PlacementInfo } from './types.ts';
@@ -70,6 +71,12 @@ const pairSuffix = (id: string, index: number) => UPRIGHT_IDS.includes(id) ? sid
 const otherSide = (id: string): UprightId => `${rowOf(id)}-${sideOf(id) === 'left' ? 'right' : 'left'}`;
 const maxHole = (rack: RackDimensions) => Math.floor((rack.height - rack.holeDiameter / 2 - rack.firstHole) / rack.pitch);
 const holeZ = (rack: RackDimensions, hole: number) => rack.firstHole + hole * rack.pitch;
+export function validHole(rack: RackDimensions, hole: number, face: Face): boolean {
+  if (!Number.isFinite(hole) || hole < 0 || hole > maxHole(rack)) return false;
+  if (Number.isInteger(hole)) return true;
+  const z = holeZ(rack,hole);
+  return (face === 'front' || face === 'back') && rack.benchSpacing === rack.pitch/2 && Number.isInteger(hole*2) && z >= (rack.benchStart ?? Infinity) && z <= (rack.benchEnd ?? -Infinity);
+}
 const upperHole = (rack: RackDimensions) => Math.floor((rack.height - 25 - rack.firstHole) / rack.pitch) - Math.round(100 / rack.pitch);
 const pullupHole = (rack: RackDimensions) => Math.floor((rack.height - 25 - rack.firstHole) / rack.pitch) - Math.round(200 / rack.pitch);
 function finiteRange(value: unknown, low: number, high: number, label: string): asserts value is number {
@@ -151,11 +158,21 @@ export function validateAssembly(input: unknown): RackDoc {
   const r = input.rack;
   finiteRange(r.height, 1000, 4000, 'Height'); finiteRange(r.width, 400, 2000, 'Clear width'); finiteRange(r.depth, 300, 1500, 'Clear depth');
   if (r.tube !== 75) fail('These rack connections require 75 mm uprights.');
-  if (r.holeDiameter !== 25) fail('This assembly uses 25 mm mounting holes.');
+  const profile = gridProfile(typeof input.profileId === 'string' ? input.profileId : undefined), manufacturer = profile.id !== 'generic-75';
+  if (r.holeDiameter !== profile.holeDiameter) fail(`This profile uses ${profile.holeDiameter} mm mounting holes.`);
+  if (manufacturer && r.pitch !== profile.pitch) fail('Manufacturer pitch must match its rack profile.');
   finiteRange(r.pitch, 50, 100, 'Hole pitch');
-  if (Math.abs(100 / r.pitch - Math.round(100 / r.pitch)) > 1e-8) fail('Hole pitch must divide the 100 mm flange bolt spacing.');
+  if (!manufacturer && Math.abs(100 / r.pitch - Math.round(100 / r.pitch)) > 1e-8) fail('Hole pitch must divide the 100 mm flange bolt spacing.');
   finiteRange(r.firstHole, 30, 150, 'First hole height');
   const rack: RackDimensions = { ...copy(r), height: r.height, width: r.width, depth: r.depth, tube: r.tube, holeDiameter: r.holeDiameter, pitch: r.pitch, firstHole: r.firstHole };
+  if (profile.benchZone) {
+    const zone = profile.benchZone;
+    rack.benchStart = r.firstHole + zone.startStation * r.pitch;
+    rack.benchEnd = r.firstHole + zone.endStation * r.pitch;
+    rack.benchSpacing = zone.spacing;
+  } else {
+    delete rack.benchStart; delete rack.benchEnd; delete rack.benchSpacing;
+  }
   const graph = input.version === 1 ? legacyGraph(rack) : validateGraph(input);
   const slots = structureSlots(graph);
   if (!Array.isArray(input.accessories) || input.accessories.length > 40) fail('An assembly can contain at most 40 accessory groups.');
@@ -186,7 +203,7 @@ export function validateAssembly(input: unknown): RackDoc {
     if (!isRecord(a) || typeof a.id !== 'string' || !/^[a-z][a-z0-9-]{0,79}$/.test(a.id) || ids.has(a.id)) fail('Accessory IDs must be unique and valid.');
     ids.add(a.id);
     if (typeof a.part !== 'string' || !ACCESSORY_PARTS.includes(a.part)) fail(`No rack connection adapter for ${a.part}.`);
-    if (!isRecord(a.target) || typeof a.target.uprightId !== "string" || !Object.hasOwn(graph.uprights, a.target.uprightId) || !FACES.includes(a.target.face as Face) || typeof a.target.hole !== 'number' || !Number.isInteger(a.target.hole)) fail(`Invalid connection target for ${a.id}.`);
+    if (!isRecord(a.target) || typeof a.target.uprightId !== "string" || !Object.hasOwn(graph.uprights, a.target.uprightId) || !FACES.includes(a.target.face as Face) || typeof a.target.hole !== 'number' || !(Number.isInteger(a.target.hole) || validHole(rack, a.target.hole, a.target.face as Face))) fail(`Invalid connection target for ${a.id}.`);
     if (!a.spanTo && (isSafety(a.part) || isPullup(a.part)) && a.target.face !== (sideOf(a.target.uprightId as UprightId) === 'left' ? 'right' : 'left')) fail('Spanning parts mount on the inward-facing connection of an upright.');
     if (typeof a.paired !== 'boolean' || !supportsPair(a.part) && a.paired) fail('This part is placed as one complete or handed assembly.');
     const params = a.params ?? {}; validateParams(a.part, params);
@@ -196,6 +213,7 @@ export function validateAssembly(input: unknown): RackDoc {
     }
     if (isWidePullup(a.part) && (rack.pitch !== 50 || rack.depth < (a.part === 'pullup-sphere' ? 425 : 375))) fail('This pull-up plate requires 50 mm rail stations and enough clear depth for its full bolt span.');
     if (isWidePullup(a.part) && ['left-upper-crossmember', 'right-upper-crossmember'].some(id => structure[id]?.part === 'angled-crossmember')) fail('Wide pull-up plates require level upper side rails.');
+    if (manufacturer && isFoot(a.part)) fail('BOS floor-foot bolt patterns are unavailable on this reconstructed profile.');
     if (isFoot(a.part) && rack.firstHole !== 65) fail('Floor-mounted feet require the first upright hole at 65 mm.');
     if (isMountedAttachment(a.part)) {
       const anchor = getAttachmentAnchor(a.part, params);
@@ -221,6 +239,11 @@ export function validateAssembly(input: unknown): RackDoc {
       if (clean.paired && !clean.pairedSpanTo) fail('Paired spans require explicit second endpoints.');
       const p = graph.uprights[clean.target.uprightId], q = graph.uprights[clean.spanTo];
       if ((p.x !== q.x && p.y !== q.y) || Math.hypot(q.x-p.x, q.y-p.y) < rack.tube + 300 || Math.hypot(q.x-p.x, q.y-p.y) > rack.tube + 3000) fail('Spanning endpoints must be axis aligned and at least 300 mm apart.');
+    }
+    if (clean.spanTo) {
+      const p = graph.uprights[clean.target.uprightId], q = graph.uprights[clean.spanTo];
+      const spanFace: Face = p.x === q.x ? 'front' : 'left';
+      if (!validHole(rack,clean.target.hole,spanFace)) fail('The span requires real holes on its mounting faces.');
     }
     const [min, max] = accessoryLimits(rack, clean);
     if (!isWidePullup(clean.part) && (clean.target.hole < min || clean.target.hole > max)) fail(`${a.part} fits hole numbers ${min + 1}–${max + 1} at this rack height.`);
@@ -257,7 +280,8 @@ export function replaceStructurePart(input: RackDoc, id: string, part: string, p
   return validateAssembly(doc);
 }
 export function createAssembly(overrides: Partial<RackDimensions> & { rack?: Partial<RackDimensions>; emptyAccessories?: boolean } = {}): RackDoc {
-  const rack = { ...RACK_DEFAULTS, ...(overrides.rack ?? overrides) };
+  const { emptyAccessories: _emptyAccessories, rack: rackOverrides, ...dimensions } = overrides;
+  const rack = { ...RACK_DEFAULTS, ...(rackOverrides ?? dimensions) };
   const base = { version: 1, rack, removed: [], accessories: [], nextId: 1 };
   const result = validateAssembly(base);
   if (overrides.emptyAccessories) return result;
@@ -324,8 +348,9 @@ export function resizeAssembly(input: RackDoc, patch: Partial<RackDimensions>): 
   const previous = doc.rack;
   doc.rack = snapDimensions(doc.rack, patch, doc.profileId);
   for (const node of Object.values(doc.uprights)) {
-    node.x *= (doc.rack.width + doc.rack.tube) / (previous.width + previous.tube);
-    node.y *= (doc.rack.depth + doc.rack.tube) / (previous.depth + previous.tube);
+    const shift = (value: number, before: number, after: number) => value <= -before ? value-(after-before) : value >= before ? value+(after-before) : value*after/before;
+    node.x = shift(node.x,(previous.width+previous.tube)/2,(doc.rack.width+doc.rack.tube)/2);
+    node.y = shift(node.y,(previous.depth+previous.tube)/2,(doc.rack.depth+doc.rack.tube)/2);
   }
   // Validate dimensions before using them in arithmetic; adapt placements only after.
   validateAssembly({ ...doc, accessories: [] });
@@ -348,7 +373,7 @@ export function getMounts(input: RackDoc, part?: string): Mount[] {
     }
     return result;
   }
-  for (const id of Object.keys(doc.uprights)) if (!doc.removed.includes(id)) for (let hole = 0; hole <= maxHole(doc.rack); hole++) for (const face of FACES) result.push(mount({ ...doc.rack, uprights: doc.uprights }, id, hole, face));
+  for (const id of Object.keys(doc.uprights)) if (!doc.removed.includes(id)) for (let hole = 0; hole <= maxHole(doc.rack); hole += doc.rack.benchSpacing ? 0.5 : 1) for (const face of FACES) if (validHole(doc.rack, hole, face)) result.push(mount({ ...doc.rack, uprights: doc.uprights }, id, hole, face));
   if (!part) return result;
   return result.filter(m => {
     const candidate = { id: 'mount-preview', part, target: { uprightId: m.uprightId, face: m.face, hole: m.hole }, paired: false, params: {} };
@@ -363,7 +388,7 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
   };
   for (const id of Object.keys(doc.uprights)) if (!doc.removed.includes(id)) {
     const angle = sideOf(id) === 'right' ? Math.PI : 0, center = postCenter(r, id), offset = rotateZ([15, 0, 0], angle);
-    const params = { height: r.height, width: r.tube, wall: 3, cornerRadius: 3, holeDiameter: r.holeDiameter, spacing: r.pitch, firstHole: r.firstHole, benchStart: r.firstHole, benchEnd: r.height, benchSpacing: r.pitch, baseWidth: 105, baseDepth: 135, baseThickness: 8 };
+    const params = { height: r.height, width: r.tube, wall: 3, cornerRadius: 3, holeDiameter: r.holeDiameter, spacing: r.pitch, firstHole: r.firstHole, benchStart: r.benchStart ?? r.firstHole, benchEnd: r.benchEnd ?? r.height, benchSpacing: r.benchSpacing ?? r.pitch, baseWidth: 105, baseDepth: 135, baseThickness: 8 };
     append(id, 'upright', params, center.map((v, i) => v - offset[i]) as Vec3, angle, [mount(r, id, 0, 'front', [15, 0, r.firstHole])], 'structure');
   }
   for (const slot of structureSlots(doc).filter(s => s.part !== 'upright')) if (!doc.removed.includes(slot.id) && slot.connectedTo.every(id => !doc.removed.includes(id))) {
@@ -374,13 +399,14 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
     const rear = a[1] === b[1], high = edge.level === 'upper';
     const angle = Math.atan2(b[1] - a[1], b[0] - a[0]);
     const span = Math.hypot(b[0] - a[0], b[1] - a[1]) - r.tube;
-    const flangeHeight = framePart === 'branded-crossmember' ? 300 : 150;
+    const flangeHeight = framePart === 'branded-crossmember' ? 300 : r.pitch === 50.8 ? 50 + 2*r.pitch : 150;
     const rise = framePart === 'angled-crossmember' ? settings.rise : 0;
     const upper = Math.floor((r.height - 25 - r.firstHole) / r.pitch) - Math.round((flangeHeight - 50 + rise) / r.pitch);
     const hole = high ? upper : 0;
     const side = slot.id.startsWith('right') ? 'right' : 'left';
     const x = (a[0] + b[0]) / 2, y = (a[1] + b[1]) / 2;
     const params: NumericParams = { length: span, width: r.tube, wall: 3, holeDiameter: r.holeDiameter, spacing: r.pitch, plateThickness: 6, plateHeight: flangeHeight };
+    if (r.pitch === 50.8) params.boltDiameter = r.holeDiameter - 0.8;
     if (rise) params.rise = rise;
     if (framePart.startsWith('branded-')) params.panelHeight = flangeHeight;
     if (framePart === 'offset-crossmember') { params.length = 1225 * (span + r.tube) / 1150; params.offset = settings.offset; }
@@ -413,7 +439,7 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
       const faces: [Face, Face] = Math.abs(end[0]-start[0]) > 0 ? (end[0] > start[0] ? ['right','left'] : ['left','right']) : (end[1] > start[1] ? ['back','front'] : ['front','back']);
       const anchorSpan = a.part === 'pullup-straight' ? clear : clear + r.tube;
       const mounts = [t.uprightId, endpoint].map((id, i) => mount(r, id, t.hole, faces[i], [(i ? 1 : -1) * anchorSpan / 2, 0, z]));
-      append(a.paired ? `${a.id}:${pairSuffix(t.uprightId, index)}` : a.id, a.part, { ...params, length: clear - (isSafety(a.part) && a.part !== 'safety-pin-pipe' ? 6 : 0), upright: r.tube }, [(start[0]+end[0])/2, (start[1]+end[1])/2, holeZ(r,a.target.hole)-z], angle, mounts, 'accessory', a.id, a.paired, [t.uprightId,endpoint]);
+      append(a.paired ? `${a.id}:${pairSuffix(t.uprightId, index)}` : a.id, a.part, { ...params, mountSpacing: r.pitch === 50.8 ? 4*r.pitch : 200, boltDiameter: r.pitch === 50.8 ? r.holeDiameter-0.8 : 16, holeDiameter: r.holeDiameter, length: clear - (isSafety(a.part) && a.part !== 'safety-pin-pipe' ? 6 : 0), upright: r.tube }, [(start[0]+end[0])/2, (start[1]+end[1])/2, holeZ(r,a.target.hole)-z], angle, mounts, 'accessory', a.id, a.paired, [t.uprightId,endpoint]);
       }
     } else if (isMountedAttachment(a.part)) {
       const anchor = getAttachmentAnchor(a.part, params);

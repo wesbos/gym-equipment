@@ -1,3 +1,4 @@
+import { gridProfile } from '../../rack-generator/profiles.ts';
 import './TopologyEditor.css';
 import { useState } from 'react';
 import { connectUprights, extendUpright, moveConnection, moveUpright, spanAccessory, type Direction } from '../../rack-generator/graph-edits.ts';
@@ -25,14 +26,14 @@ export function TopologyEditor({ doc, store, selected }: { doc: RackDoc; store: 
     <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget); propose(() => extendUpright(doc, String(f.get('from')), f.get('direction') as Direction, Number(f.get('span')))); }}>
       <label>From upright<select name="from" defaultValue={selected && ids.includes(selected) ? selected : ids[0]}>{ids.map(id => <option key={id}>{id}</option>)}</select></label>
       <label>Direction<select name="direction"><option value="left">Left</option><option value="right">Right</option><option value="rear">Rear</option><option value="front">Front</option></select></label>
-      <label>Clear span<select name="span">{[425,725,1075].map(n => <option key={n}>{n}</option>)}</select></label>
+      <label>Clear span<select name="span">{gridProfile(doc.profileId).depths.map(n => <option key={n}>{n}</option>)}</select></label>
       <button>Preview add upright</button>
     </form>
     <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget), from = String(f.get('from')), to = String(f.get('to')), kind = String(f.get('kind')); propose(() => kind === 'upper' || kind === 'lower' ? connectUprights(doc, from, to, kind) : spanAccessory(doc, from, to, kind as PartId, Number(f.get('hole'))-1)); }}>
       <label>Start<select name="from">{ids.map(id => <option key={id}>{id}</option>)}</select></label>
       <label>End<select name="to" defaultValue={ids[1]}>{ids.map(id => <option key={id}>{id}</option>)}</select></label>
       <label>Connection<select name="kind"><option value="upper">Upper crossmember</option><option value="lower">Lower crossmember</option><option value="pullup-straight">Straight pull-up bar</option><option value="safety-box">Box safety</option><option value="safety-pin-pipe">Pin-pipe safety</option><option value="safety-webbing">Webbing safety</option></select></label>
-      <label>Hole number<input name="hole" type="number" min="1" defaultValue="25" /></label>
+      <label>Hole number<input name="hole" type="number" step={doc.rack.benchSpacing ? 0.5 : 1} min="1" defaultValue="25" /></label>
       <button>Preview connection</button>
     </form>
     {selected && doc.uprights[selected] && <form key={selected+JSON.stringify(doc.uprights[selected])} onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget); propose(() => moveUpright(doc, selected, Number(f.get('x')), Number(f.get('y')))); }}>

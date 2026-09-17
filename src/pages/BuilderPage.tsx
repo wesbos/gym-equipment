@@ -1,3 +1,4 @@
+import { gridProfile } from '../../rack-generator/profiles.ts';
 import { RackPresets } from '../components/RackPresets.tsx';
 import { TopologyEditor } from '../components/TopologyEditor.tsx';
 import { structureSlots } from '../../rack-generator/topology.ts';
@@ -162,6 +163,7 @@ function Inspector({ store }: { store: BuilderStore }) {
       <>
         <h2 id="selection-title">Rack settings</h2>
         <RackPresets store={store} />
+        {gridProfile(doc.profileId).reconstructionNote && <p className="note">{gridProfile(doc.profileId).label}: {gridProfile(doc.profileId).reconstructionNote}</p>}
         <TopologyEditor key={JSON.stringify(doc)} doc={doc} store={store} selected={selected} />
         <p className="settings-intro">
           Build your frame, then add parts at highlighted connections.
@@ -218,6 +220,7 @@ function Inspector({ store }: { store: BuilderStore }) {
             <div className="input-wrap">
               <input
                 name="width"
+                step="any"
                 type="number"
                 defaultValue={doc.rack.width}
                 min="400"
@@ -231,6 +234,7 @@ function Inspector({ store }: { store: BuilderStore }) {
             <div className="input-wrap">
               <input
                 name="depth"
+                step="any"
                 type="number"
                 defaultValue={doc.rack.depth}
                 min="300"
@@ -240,7 +244,7 @@ function Inspector({ store }: { store: BuilderStore }) {
               <span>mm</span>
             </div>
           </Field>
-          <output aria-live="polite">{snapHint || `Grid: ${doc.rack.pitch} mm · spans 425 / 725 / 1075 mm`}</output>
+          <output aria-live="polite">{snapHint || `Grid: ${doc.rack.pitch} mm · depths ${gridProfile(doc.profileId).depths.join(" / ")} mm`}</output>
           <button className="primary update-frame">Update frame ↗</button>
         </form>
       </>
@@ -413,6 +417,7 @@ function Inspector({ store }: { store: BuilderStore }) {
               <Field label="Hole number">
                 <input
                   name="hole"
+                  step={doc.rack.benchSpacing ? 0.5 : 1}
                   type="number"
                   defaultValue={entry.target.hole + 1}
                   min="1"

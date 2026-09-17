@@ -47,13 +47,34 @@ Primary sources checked 2026-09-17:
   geometry/adaptor class from the BOS source.
 - PR-1000 and PR-1050 product URLs currently redirect to collections.
 
-The catalog records verified published profile values but **does not enable
-manufacturer presets**: first-hole datum, physical crossmember mounting span,
-PR-4000 bench-zone bounds and manufacturer-specific flange/hardware adapters
-remain unverified/unimplemented. PR-1100/1000/1050 and Apollo/Omni geometry is
-not supplied. #8 is partial, not closable by this PR. Generic 4/6/2-post half-rack
-starting points are implemented and freely extendable. They are labelled BOS,
-not REP. No load capacity or vendor compatibility is inferred from a layout.
+PR-5000 and PR-4000 reconstructed profiles and presets are enabled. All published
+4-post depths, shallow 16-inch half-rack layouts (4 posts), and 6-post layouts
+with a 16-inch rear bay are provided at 80/93-inch heights. The main pitch is
+50.8 mm in validation, mounts, rendered holes, crossmember flanges and straight
+pull-up bolt stations. PR-5000 uses 25.4 mm bores; PR-4000 uses 15.875 mm bores.
+These overrides are named manufacturer profiles; generic remains 25/50 mm.
+
+REP confirms PR-4000's 25.4 mm bench spacing, but exact bench-zone limits were
+not found in the primary docs. The model explicitly estimates bounds at stations
+8–22 (471.4–1182.6 mm with the estimated 65 mm first-hole datum). Only front/back
+faces have additional half stations; side faces retain 50.8 mm spacing. Fractional
+station indices (e.g. 8.5) describe these extra holes, preserving integer station
+identities and v1 migration. UI hole-number controls permit half steps on this
+profile. Validation rejects half stations outside the zone/on side faces.
+
+Flange outlines, first-hole datum, bases and hardware proportions are estimated
+from the detailed BOS reconstruction. Straight frame flange holes are 101.6 mm
+apart; straight pull-up plate holes are 203.2 mm apart. Reconstructed frame bolt
+shafts have 0.8 mm diametral clearance; hardware dimensions are estimates, not
+manufacturer specifications. Multi-bolt source attachments with incompatible
+patterns remain unavailable rather than falsely align 50 mm to 50.8 mm. BOS
+floor feet are not offered on REP profiles. Six-post bay resizing preserves the
+rear storage span instead of scaling it with the main bay.
+
+The UI names these as reconstructions and shows estimates before applying and
+in active rack settings. Physical REP fit is unverified. PR-1100/1000/1050 and
+Apollo/Omni-specific geometry remain outside this implementation; #8 still has
+that residual coverage gap. Generic two-post half rack is not labelled Apollo.
 
 Integration conflicts are concentrated in assembly/types and small BuilderPage
 imports/settings/inspector edits. New TopologyEditor and RackPresets components

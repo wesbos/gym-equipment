@@ -66,11 +66,12 @@ function pullup(kind: string, api: ManifoldAPI, p: NumericParams) {
     const {plateX,cyl,union,path,ball,profileXZ,boltX} = h;
     const half=p.length/2, scale=p.length/1075, body=[], bolts=[];
     if(kind==='straight') {
+      const mountingSpan = p.mountSpacing ?? 200, topHole = 25 + mountingSpan;
       for(const s of [-1,1]){
-        body.push(plateX(s*(half-4),0,125,60,250,8,10,[[0,25],[0,225]]));
+        body.push(plateX(s*(half-4),0,(topHole+25)/2,60,mountingSpan+50,8,10,[[0,25,p.holeDiameter ?? 25],[0,topHole,p.holeDiameter ?? 25]]));
         // Curved triangular under-bar reinforcement, 5 mm thick.
         body.push(profileXZ([[s*(half-8),77],[s*(half-8),175],[s*(half-79),175],[s*(half-66),162],[s*(half-46),142],[s*(half-30),116],[s*(half-20),92]],5));
-        for(const z of [25,225])bolts.push(boltX(s*(half-8),0,z,s));
+        for(const z of [25,topHole])bolts.push(boltX(s*(half-8),0,z,s,83,p.boltDiameter ?? 16));
       }
       body.push(cyl([-half+8,0,175],[half-8,0,175],p.diameter));
     } else {

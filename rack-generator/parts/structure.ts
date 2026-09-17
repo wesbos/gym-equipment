@@ -58,14 +58,15 @@ function mountingBores(loops: Vec2[][],diameter=25,original=17): Vec2[][] {
     return loop.map(([x,y])=>[cx+(x-cx)*diameter/(xmax-xmin),cy+(y-cy)*diameter/(ymax-ymin)]);
   });
 }
-function fastener(g: Geometry,axis: string,at: number[],direction=1,reversed=false) {
+function fastener(g: Geometry,axis: string,at: number[],direction=1,reversed=false,diameter=16) {
   const axisIndex=axis==='x'?0:axis==='y'?1:2;
   const point = (t: number) => at.map((v,k)=>v+(k===axisIndex?(reversed?69-t:t)*direction:0));
   // M16 shaft, hex head, hex nut and two 30 mm washers, measured from source.
-  const washer=(t: number)=>g.difference(g.cylinder(3,15,axis,point(t)),[g.hole(5,17,axis,point(t))]);
-  const shaft=g.cylinder(105,8,axis,point(25.5));
-  const head=g.cylinder(10.32,13.7,axis,point(83.16),6);
-  const nut=g.difference(g.cylinder(13,13.856,axis,point(-15.5),6),[g.hole(15,16.2,axis,point(-15.5))]);
+  const radial=diameter/16;
+  const washer=(t: number)=>g.difference(g.cylinder(3,15*radial,axis,point(t)),[g.hole(5,diameter+1,axis,point(t))]);
+  const shaft=g.cylinder(105,diameter/2,axis,point(25.5));
+  const head=g.cylinder(10.32,13.7*radial,axis,point(83.16),6);
+  const nut=g.difference(g.cylinder(13,13.856*radial,axis,point(-15.5),6),[g.hole(15,diameter+.2,axis,point(-15.5))]);
   return g.union([shaft,head,nut,washer(-7.5),washer(76.5)]);
 }
 function endFlanges(g: Geometry,p: NumericParams,rise=0) {
@@ -75,7 +76,7 @@ function endFlanges(g: Geometry,p: NumericParams,rise=0) {
     const plate=g.profile(loops,p.plateThickness,'x',[s===1?p.length/2-p.plateThickness:-p.length/2,0,s===1?rise:0]);
     // Above x-profile uses local [y,z].
     out.push(part(`${s<0?'Left':'Right'} rounded mounting flange`,plate));
-    for(const z of [25,p.plateHeight-25])out.push(part('M16 bolt, nut and washers',fastener(g,'x',[s*p.length/2,0,z+(s===1?rise:0)],s),zinc));
+    for(const z of [25,p.plateHeight-25])out.push(part(p.boltDiameter ? 'Estimated profile bolt, nut and washers' : 'M16 bolt, nut and washers',fastener(g,'x',[s*p.length/2,0,z+(s===1?rise:0)],s,false,p.boltDiameter ?? 16),zinc));
   }
   return out;
 }
