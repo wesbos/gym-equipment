@@ -37,7 +37,7 @@ export function TopologyEditor({ doc, store, selected }: { doc: RackDoc; store: 
       <button>Preview connection</button>
     </form>
     {selected && doc.uprights[selected] && <form key={selected+JSON.stringify(doc.uprights[selected])} onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget); propose(() => moveUpright(doc, selected, Number(f.get('x')), Number(f.get('y')))); }}>
-      <p>Move {selected}; coordinates snap by {doc.rack.pitch} mm. Connected beams must remain axis aligned.</p>
+      <p>{selected} · {doc.rack.pitch} mm grid</p>
       <label>X (mm)<input name="x" type="number" step="any" defaultValue={doc.uprights[selected].x}/></label>
       <label>Depth (mm)<input name="y" type="number" step="any" defaultValue={doc.uprights[selected].y}/></label>
       <button>Preview move</button><button type="button" onClick={() => propose(() => removeInstance(doc, selected))}>Preview remove upright</button>
@@ -50,7 +50,7 @@ export function TopologyEditor({ doc, store, selected }: { doc: RackDoc; store: 
       <button>Preview move connection</button>
       <button type="button" onClick={() => propose(() => removeInstance(doc,edge.id))}>Preview remove connection</button>
     </form>}
-    <p role="status">{error || (preview ? 'Gold preview: review placement, then apply. Undo restores the previous graph.' : 'Select an upright in the top view or 3D scene.')}</p>
+    <p role="status">{error || (preview ? 'Preview' : '')}</p>
     {preview && <><button type="button" onClick={() => { store.act(() => store.commit(preview)); setPreview(null); }}>Apply topology</button><button type="button" onClick={() => setPreview(null)}>Cancel preview</button></>}
   </details>;
 }
