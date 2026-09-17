@@ -51,7 +51,7 @@ test('invalid edits and imports preserve document, selection, persistence and hi
   assert.equal(store.getSnapshot().doc.rack.width, 1200);
 });
 
-test('commits detach inputs, persist documents and replace the redo branch after an edit', () => {
+test('commits detach inputs and replace redo; only explicit save persists durable documents', async () => {
   const storage = new MemoryStorage(), store = new BuilderStore(storage);
   const changed = resizeAssembly(store.getSnapshot().doc, { width: 1200 });
   store.commit(changed); changed.rack.width = 1500;
@@ -65,7 +65,10 @@ test('commits detach inputs, persist documents and replace the redo branch after
   store.commit(resizeAssembly(store.getSnapshot().doc, { height: 2300 }));
   assert.equal(store.getSnapshot().canRedo, false);
   store.history('redo');
-  const saved = new BuilderStore(storage).getSnapshot();
+  await store.save('Training rack');
+  const reopened = new BuilderStore(storage);
+  await reopened.ready;
+  const saved = reopened.getSnapshot();
   assert.deepEqual(saved.doc, store.getSnapshot().doc);
   assert.equal(saved.canUndo, false);
   assert.equal(saved.canRedo, false);
@@ -138,9 +141,10 @@ test('new placement respects pair preference and complete attachments cannot bec
   assert.equal(store.getSnapshot().canUndo, true);
 });
 
-test('unavailable or corrupt storage has a recoverable error without losing committed work', () => {
+test('unavailable or corrupt storage has a recoverable error without losing committed work', async () => {
   const storage = new MemoryStorage(); storage.values.set(storageKey, '{broken');
   const recovered = new BuilderStore(storage);
+  await recovered.ready;
   assert.equal(recovered.getSnapshot().error, true);
   assert.deepEqual(recovered.getSnapshot().doc, createAssembly());
   const unavailable: StorageLike = { getItem() { throw new Error('denied'); }, setItem() { throw new Error('quota'); } };
@@ -148,6 +152,7 @@ test('unavailable or corrupt storage has a recoverable error without losing comm
   store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1300 }));
   assert.equal(store.getSnapshot().doc.rack.width, 1300);
   assert.equal(store.getSnapshot().canUndo, true);
+  await store.flushStorage();
   assert.match(store.getSnapshot().status, /Save your design as JSON/);
   store.history('undo');
   assert.equal(store.getSnapshot().doc.rack.width, 1075);
@@ -164,4 +169,139 @@ test('history retains the newest one hundred edits without an unbounded document
   for (let i = 0; i < 100; i++) store.history('redo');
   assert.equal(store.getSnapshot().doc.rack.width, 1177);
   assert.equal(store.getSnapshot().canRedo, false);
+});
+
+
+test('named save/load, duplicate, rename, delete and draft recovery keep working copies separate', async () => {
+  const storage = new MemoryStorage(), store = new BuilderStore(storage);
+  await store.ready;
+  await store.save('Original');
+  const original = store.getSnapshot().activeId!;
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1400 }));
+  await store.flushStorage();
+  const reopened = new BuilderStore(storage);
+  await reopened.ready;
+  assert.equal(reopened.getSnapshot().doc.rack.width, 1075);
+  assert.equal(reopened.getSnapshot().draftAvailable, true);
+  reopened.recoverDraft();
+  assert.equal(reopened.getSnapshot().doc.rack.width, 1400);
+  await reopened.save('Wide', true);
+  const wide = reopened.getSnapshot().activeId!;
+  assert.notEqual(wide, original);
+  await reopened.rename(wide, 'Wide rack');
+  assert.equal(reopened.getSnapshot().configs.find(c => c.id === wide)!.name, 'Wide rack');
+  await reopened.load(original);
+  assert.equal(reopened.getSnapshot().doc.rack.width, 1075);
+  assert.equal(reopened.getSnapshot().canUndo, false);
+  await reopened.deleteConfig(wide);
+  const final = new BuilderStore(storage); await final.ready;
+  assert.equal(final.getSnapshot().configs.length, 1);
+  assert.equal(final.getSnapshot().configs[0]!.name, 'Original');
+});
+
+test('legacy single-slot doc migrates once and transient import never overwrites it', async () => {
+  const storage = new MemoryStorage();
+  storage.setItem(storageKey, JSON.stringify(createAssembly({ width: 1300 })));
+  const store = new BuilderStore(storage); await store.ready;
+  assert.equal(store.getSnapshot().doc.rack.width, 1300);
+  assert.equal(store.getSnapshot().configs[0]!.name, 'Imported rack');
+  store.importJSON(JSON.stringify(createAssembly({ width: 1500 })));
+  await store.flushStorage();
+  const reopened = new BuilderStore(storage); await reopened.ready;
+  assert.equal(reopened.getSnapshot().doc.rack.width, 1300);
+  assert.equal(reopened.getSnapshot().draftAvailable, true);
+  await reopened.deleteConfig('legacy');
+  const empty = new BuilderStore(storage); await empty.ready;
+  assert.equal(empty.getSnapshot().configs.length, 0);
+});
+
+test('a gesture contributes one undo entry, while subsequent edits remain independent', () => {
+  const store = new BuilderStore();
+  store.beginGesture();
+  for (let width = 1100; width <= 1300; width += 10) store.commit(resizeAssembly(store.getSnapshot().doc, { width }));
+  store.endGesture();
+  store.history('undo');
+  assert.equal(store.getSnapshot().doc.rack.width, 1075);
+  assert.equal(store.getSnapshot().canUndo, false);
+  store.history('redo');
+  assert.equal(store.getSnapshot().doc.rack.width, 1300);
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1400 }));
+  store.history('undo');
+  assert.equal(store.getSnapshot().doc.rack.width, 1300);
+});
+
+test('failed saves leave named snapshots untouched and the working copy exportable', async () => {
+  const storage = new MemoryStorage(), store = new BuilderStore(storage);
+  await store.ready; await store.save('Original');
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1400 }));
+  storage.setItem = () => { throw new Error('quota'); };
+  await assert.rejects(store.save('Changed'), /quota/);
+  assert.equal(store.getSnapshot().configs[0]!.name, 'Original');
+  assert.equal(store.getSnapshot().configs[0]!.doc.rack.width, 1075);
+  assert.equal(store.getSnapshot().doc.rack.width, 1400);
+  assert.equal(store.getSnapshot().dirty, true);
+});
+
+test('new rack saves separately and unsaved new racks reopen the last named configuration', async () => {
+  const storage = new MemoryStorage(), store = new BuilderStore(storage);
+  await store.ready;
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1400 }));
+  await store.save('First');
+  const first = store.getSnapshot().activeId;
+  store.newRack();
+  await store.flushStorage();
+  assert.equal(store.getSnapshot().activeId, null);
+  const reopened = new BuilderStore(storage); await reopened.ready;
+  assert.equal(reopened.getSnapshot().doc.rack.width, 1400);
+  await store.save('Second');
+  assert.notEqual(store.getSnapshot().activeId, first);
+  assert.equal(store.getSnapshot().configs.length, 2);
+});
+
+test('corrupt configuration collections are not overwritten by draft autosave', async () => {
+  const storage = new MemoryStorage();
+  const key = 'bos-strength-configurations-v1';
+  storage.setItem(key, '{broken');
+  const store = new BuilderStore(storage); await store.ready;
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1400 }));
+  await store.flushStorage();
+  assert.equal(storage.getItem(key), '{broken');
+  await assert.rejects(store.save('Recovery'), /could not be read/);
+  assert.equal(store.getSnapshot().doc.rack.width, 1400);
+});
+
+test('slow async storage preserves save-time doc and coalesces later working edits', async () => {
+  let persisted: import('./config-storage.ts').ConfigCollection = { configs: [], activeId: null, draft: null };
+  let release!: () => void, started!: () => void, count = 0;
+  const blocked = new Promise<void>(resolve => { release = resolve; });
+  const writing = new Promise<void>(resolve => { started = resolve; });
+  const store = new BuilderStore({
+    async read() { return structuredClone(persisted); },
+    async write(value) {
+      if (++count === 2) { started(); await blocked; }
+      persisted = structuredClone(value);
+    },
+  });
+  await store.ready; await store.save('Original');
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1200 }));
+  await writing;
+  const saving = store.save('Original');
+  for (let width = 1201; width <= 1300; width++) store.commit(resizeAssembly(store.getSnapshot().doc, { width }));
+  release(); await saving; await store.flushStorage();
+  assert.equal(persisted.configs[0]!.doc.rack.width, 1200);
+  assert.equal(persisted.draft!.rack.width, 1300);
+  assert.equal(store.getSnapshot().dirty, true);
+  assert.equal(count, 4);
+});
+
+test('a full browser can still open and export its legacy single-slot design', async () => {
+  const storage: StorageLike = {
+    getItem(key) { return key === storageKey ? JSON.stringify(createAssembly({ width: 1350 })) : null; },
+    setItem() { throw new Error('quota'); },
+  };
+  const store = new BuilderStore(storage); await store.ready;
+  assert.equal(store.getSnapshot().doc.rack.width, 1350);
+  await assert.rejects(store.save('Migrated'), /quota/);
+  assert.equal(store.getSnapshot().doc.rack.width, 1350);
+  assert.match(store.getSnapshot().storageError!, /JSON/);
 });

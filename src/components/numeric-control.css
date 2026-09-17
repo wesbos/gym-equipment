@@ -1,0 +1,72 @@
+.numeric-control {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+}
+.numeric-control input[type="number"] {
+  cursor: ew-resize;
+  touch-action: none;
+}
+.numeric-control input.scrubbing {
+  user-select: none;
+}
+.numeric-control input[type="range"] {
+  width: 100%;
+  min-width: 0;
+  height: 18px;
+  padding: 0;
+  accent-color: #648455;
+  cursor: ew-resize;
+}
+.numeric-control small {
+  color: #d66c55;
+  font-size: 11px;
+}
+.numeric-control input[aria-invalid="true"] {
+  outline: 1px solid #d66c55;
+}
+.config-manager {
+  position: relative;
+  font-size: 12px;
+}
+.config-manager summary {
+  cursor: pointer;
+  padding: 10px;
+}
+.config-manager fieldset {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 30;
+  width: 300px;
+  padding: 16px;
+  background: var(--paper, #f8f9f4);
+  color: var(--ink, #233b30);
+  border: 1px solid var(--line, #d6ded2);
+  box-shadow: 0 8px 24px #233b3020;
+  display: grid;
+  gap: 10px;
+}
+.config-manager label {
+  display: grid;
+  gap: 5px;
+}
+.config-manager input,
+.config-manager select {
+  width: 100%;
+}
+.config-manager p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.config-manager input,
+.config-manager select {
+  padding: 8px;
+  border: 1px solid var(--line, #d6ded2);
+  border-radius: 4px;
+  background: white;
+  color: inherit;
+}

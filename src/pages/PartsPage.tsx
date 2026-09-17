@@ -1,3 +1,6 @@
+import { NumericControl } from "../components/NumericControl.tsx";
+import { LatestRequest } from "../geometry/latest-request.ts";
+import type { LibraryWorkerRequest } from "../../rack-generator/worker-types.ts";
 import type { PartScene, View } from "../scenes/part-scene";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
@@ -12,15 +15,18 @@ type Definition = CatalogDefinition & { note?: string };
 const labelOf = (key: string) =>
   key.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
 export default function PartsPage() {
+  const form = useRef<HTMLFormElement>(null);
   const viewport = useRef<HTMLDivElement>(null),
     scene = useRef<PartScene | null>(null),
     worker = useRef<Worker | null>(null),
+    requests = useRef<LatestRequest<LibraryWorkerRequest> | null>(null),
     sequence = useRef(0);
   const definitionsRef = useRef<Definition[]>([]),
     selectedRef = useRef<Definition | null>(null),
     values = useRef(new Map<string, Record<string, number>>());
   const compareRef = useRef({ enabled: false, overlay: false });
   const [definitions, setDefinitions] = useState<Definition[]>([]),
+    [inputRevision, setInputRevision] = useState(0),
     [selected, setSelected] = useState<Definition | null>(null),
     [params, setParams] = useState<Record<string, number>>({});
   const [search, setSearch] = useState(""),
@@ -38,14 +44,14 @@ export default function PartsPage() {
     setValid(false);
     setError(false);
     setStatus("Building " + def.name + "…");
-    worker.current?.postMessage({
+    requests.current?.submit({
       id: ++sequence.current,
-      brand: "BOS STRENGTH",
       part: def.id,
       params: next,
     });
   }
   function select(def: Definition, reset = false) {
+    if (reset) setInputRevision(n => n + 1);
     const next = reset
       ? { ...def.defaults }
       : values.current.get(def.id) || { ...def.defaults };
@@ -72,6 +78,7 @@ export default function PartsPage() {
       { type: "module" }
     );
     worker.current = geometryWorker;
+    requests.current = new LatestRequest(value => geometryWorker.postMessage(value));
     geometryWorker.onerror = (e) => {
       if (active) {
         setError(true);
@@ -92,6 +99,7 @@ export default function PartsPage() {
         if (def) select(def);
         return;
       }
+      requests.current?.complete();
       if (data.id !== sequence.current) return;
       if (data.type === "error") {
         setError(true);
@@ -110,7 +118,9 @@ export default function PartsPage() {
           .toLocaleString()} triangles`
       );
       setError(false);
-      setValid(true);
+      const invalid = !!form.current?.querySelector('[aria-invalid="true"]');
+      setValid(!invalid);
+      if (invalid) setStatus("Enter a valid number in every field.");
       void controller.compare(
         selectedRef.current?.reference,
         compareRef.current.enabled,
@@ -131,6 +141,8 @@ export default function PartsPage() {
       geometryWorker.onmessage = null;
       geometryWorker.onerror = null;
       geometryWorker.terminate();
+      requests.current?.clear();
+      requests.current = null;
       worker.current = null;
       controller.dispose();
       scene.current = null;
@@ -143,11 +155,10 @@ export default function PartsPage() {
     void scene.current?.compare(selected?.reference, enabled, overlayValue);
   }
   function changeParam(key: string, value: number) {
-    setParams((p) => ({ ...p, [key]: value }));
-    ++sequence.current;
-    setValid(false);
-    setError(false);
-    setStatus("Parameters changed · rebuild to apply");
+    const next = { ...params, [key]: value };
+    setParams(next);
+    if (selected && Object.values(next).every(Number.isFinite)) build(selected, next);
+    else { setValid(false); setStatus("Enter a valid parameter."); }
   }
   const categories = [...new Set(definitions.map((d) => d.category))];
   return (
@@ -333,6 +344,8 @@ export default function PartsPage() {
         </p>
         <form
           id="parameters"
+          ref={form}
+          key={inputRevision}
           onSubmit={(e) => {
             e.preventDefault();
             if (selected) build(selected, params);
@@ -343,15 +356,9 @@ export default function PartsPage() {
               <label key={key}>
                 {labelOf(key)}
                 <div className="input-wrap">
-                  <input
-                    name={key}
-                    type="number"
-                    step="any"
-                    required
-                    value={Number.isNaN(value) ? "" : value}
-                    aria-label={labelOf(key)}
-                    onChange={(e) => changeParam(key, e.target.valueAsNumber)}
-                  />
+                  <NumericControl key={`${selected?.id}:${key}`} name={key} label={labelOf(key)} value={value} step="any"
+                    onInvalid={() => { ++sequence.current; setValid(false); setStatus("Enter a valid parameter."); }}
+                    onValue={next => changeParam(key, next)} />
                   <span>
                     {/angle/i.test(key)
                       ? "°"

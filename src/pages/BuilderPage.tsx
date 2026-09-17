@@ -1,3 +1,5 @@
+import { NumericControl } from "../components/NumericControl.tsx";
+import { ConfigManager } from "../components/ConfigManager.tsx";
 import { partIcon } from "../components/part-icon.ts";
 import {
   useEffect,
@@ -11,7 +13,6 @@ import { Link } from "@tanstack/react-router";
 import { getBuilderStore, type BuilderStore } from "../state/builder-store.ts";
 import { createBuilderScene } from "../scenes/builder-scene.ts";
 import {
-  createAssembly,
   getPartPlacementInfo,
   getAvailableStructure,
   restoreInstance,
@@ -161,7 +162,6 @@ function Inspector({ store }: { store: BuilderStore }) {
         </p>
         <form
           id="frame-form"
-          key={JSON.stringify(doc.rack)}
           onSubmit={(e) =>
             submit(e, (data) =>
               store.commit(
@@ -176,41 +176,25 @@ function Inspector({ store }: { store: BuilderStore }) {
         >
           <Field label="Upright height">
             <div className="input-wrap">
-              <input
-                name="heightIn"
-                type="number"
-                defaultValue={Number((doc.rack.height / 25.4).toFixed(2))}
-                min="40"
-                max="157"
-                step="0.5"
-                required
-              />
+              <NumericControl name="heightIn" label="Upright height" value={Number((doc.rack.height / 25.4).toFixed(2))} min={40} max={157} step={0.5}
+                onGestureStart={store.beginGesture} onGestureEnd={store.endGesture}
+                onValue={value => store.act(() => store.commit(resizeAssembly(store.getSnapshot().doc, { height: value * 25.4 })))} />
               <span>in</span>
             </div>
           </Field>
           <Field label="Clear rack width">
             <div className="input-wrap">
-              <input
-                name="width"
-                type="number"
-                defaultValue={doc.rack.width}
-                min="400"
-                max="2000"
-                required
-              />
+              <NumericControl name="width" label="Clear rack width" value={doc.rack.width} min={400} max={2000}
+                onGestureStart={store.beginGesture} onGestureEnd={store.endGesture}
+                onValue={value => store.act(() => store.commit(resizeAssembly(store.getSnapshot().doc, { width: value })))} />
               <span>mm</span>
             </div>
           </Field>
           <Field label="Clear rack depth">
             <div className="input-wrap">
-              <input
-                name="depth"
-                type="number"
-                defaultValue={doc.rack.depth}
-                min="300"
-                max="1500"
-                required
-              />
+              <NumericControl name="depth" label="Clear rack depth" value={doc.rack.depth} min={300} max={1500}
+                onGestureStart={store.beginGesture} onGestureEnd={store.endGesture}
+                onValue={value => store.act(() => store.commit(resizeAssembly(store.getSnapshot().doc, { depth: value })))} />
               <span>mm</span>
             </div>
           </Field>
@@ -296,7 +280,7 @@ function Inspector({ store }: { store: BuilderStore }) {
       <div id="inspector" className="inspector-fields">
         <form
           className="selection-form"
-          key={JSON.stringify([selected, entry, physical.params, part])}
+          key={JSON.stringify([selected, part])}
           onSubmit={(e) =>
             submit(e, (data) => {
               const variant = (data.get("variant") || part) as PartId;
@@ -342,7 +326,7 @@ function Inspector({ store }: { store: BuilderStore }) {
         >
           {part !== "upright" && (
             <Field label={entry ? "Variant" : "Frame member"}>
-              <select name="variant" defaultValue={part}>
+              <select name="variant" value={part} onChange={e => e.currentTarget.form?.requestSubmit()}>
                 {variants.map((id) => (
                   <option value={id} key={id}>
                     {nameOf(id)}
@@ -354,7 +338,7 @@ function Inspector({ store }: { store: BuilderStore }) {
           {entry && (
             <>
               <Field label="Mounting upright">
-                <select name="upright" defaultValue={entry.target.uprightId}>
+                <select name="upright" value={entry.target.uprightId} onChange={e => e.currentTarget.form?.requestSubmit()}>
                   {(
                     [
                       "front-left",
@@ -374,7 +358,8 @@ function Inspector({ store }: { store: BuilderStore }) {
               <Field label="Mounting face">
                 <select
                   name="face"
-                  defaultValue={entry.target.face}
+                  value={entry.target.face}
+                  onChange={e => e.currentTarget.form?.requestSubmit()}
                   disabled={spanning}
                 >
                   {(spanning
@@ -388,25 +373,21 @@ function Inspector({ store }: { store: BuilderStore }) {
                 </select>
               </Field>
               <Field label="Hole number">
-                <input
-                  name="hole"
-                  type="number"
-                  defaultValue={entry.target.hole + 1}
-                  min="1"
-                  max={
-                    Math.floor(
-                      (doc.rack.height - doc.rack.firstHole) / doc.rack.pitch,
-                    ) + 1
-                  }
-                  disabled={fixedHole}
-                  required
-                />
+                <NumericControl name="hole" label="Hole number" value={entry.target.hole + 1} min={1} normalize={Math.round}
+                  max={Math.floor((doc.rack.height - doc.rack.firstHole) / doc.rack.pitch) + 1} disabled={fixedHole}
+                  onGestureStart={store.beginGesture} onGestureEnd={store.endGesture}
+                  onValue={value => store.act(() => {
+                    const next = structuredClone(store.getSnapshot().doc);
+                    next.accessories.find(a => a.id === entry.id)!.target.hole = Math.round(value) - 1;
+                    store.commit(next);
+                  })} />
               </Field>
               <Field label="Matching pair">
                 <input
                   type="checkbox"
                   name="paired"
-                  defaultChecked={entry.paired}
+                  checked={entry.paired}
+                  onChange={e => e.currentTarget.form?.requestSubmit()}
                   disabled={!info?.paired}
                 />
               </Field>
@@ -419,22 +400,15 @@ function Inspector({ store }: { store: BuilderStore }) {
           )}
           {fields.map((field) => (
             <Field key={field.key} label={`${field.label} (mm)`}>
-              <input
-                name={field.key}
-                type="number"
-                defaultValue={
-                  entry?.params[field.key] ??
-                  (selected
-                    ? doc.structure[selected]?.params[field.key]
-                    : undefined) ??
-                  physical.params[field.key] ??
-                  definitions.find((d) => d.id === part)?.defaults[field.key]
-                }
-                min={field.min}
-                max={field.max}
-                step={field.step}
-                required
-              />
+              <NumericControl name={field.key} label={field.label}
+                value={entry?.params[field.key] ?? (selected ? doc.structure[selected]?.params[field.key] : undefined) ?? physical.params[field.key] ?? definitions.find(d => d.id === part)?.defaults[field.key] ?? 0}
+                min={field.min} max={field.max} step={field.step}
+                onGestureStart={store.beginGesture} onGestureEnd={store.endGesture}
+                onValue={value => store.act(() => {
+                  const next = structuredClone(store.getSnapshot().doc);
+                  if (entry) { next.accessories.find(a => a.id === entry.id)!.params[field.key] = value; store.commit(next); }
+                  else store.commit(replaceStructurePart(next, physical.ownerId || physical.id, part, { ...physical.params, [field.key]: value }));
+                })} />
             </Field>
           ))}
           {part !== "upright" && (
@@ -484,8 +458,8 @@ function Inspector({ store }: { store: BuilderStore }) {
   );
 }
 export default function BuilderPage() {
-  const store = getBuilderStore(),
-    state = useSyncExternalStore(store.subscribe, store.getSnapshot);
+  const [store] = useState(getBuilderStore);
+  const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const viewport = useRef<HTMLDivElement>(null),
     controller = useRef<ReturnType<typeof createBuilderScene> | null>(null),
     importFile = useRef<HTMLInputElement>(null);
@@ -558,6 +532,7 @@ export default function BuilderPage() {
             <span className="live-dot" /> YOUR WORKSPACE
           </div>
           <div className="toolbar-actions">
+            <ConfigManager store={store} />
             <div className="history-actions">
               <button
                 id="undo"
@@ -792,7 +767,7 @@ export default function BuilderPage() {
           >
             ← Rack settings
           </button>
-          <Inspector store={store} />
+          <Inspector key={state.inputRevision} store={store} />
           <div id="warnings">
             {warnings.map((warning, i) => (
               <button
@@ -815,8 +790,7 @@ export default function BuilderPage() {
               className="new-rack-button"
               onClick={() => {
                 controller.current?.refitOnNextBuild();
-                store.commit(createAssembly());
-                store.select(null);
+                store.newRack();
               }}
             >
               New rack +
