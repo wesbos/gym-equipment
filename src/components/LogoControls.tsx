@@ -43,22 +43,18 @@ export function LogoControls({ store }: { store: BuilderStore }) {
   }
   return <details className="appearance-controls logo-controls">
     <summary>Custom logo</summary>
-    <p className="note">Cut into every BOS nameplate and branded crossmember. Vendor marks stay unchanged. Apply updates the working rack; use Save to update a named configuration.</p>
     <label className="field"><span>Logo source</span><select aria-label="Logo source" value={source.kind} onChange={e => update(e.target.value === 'text' ? { kind: 'text', text: 'MY GYM', font: 'helvetiker' } : e.target.value === 'svg' ? { kind: 'svg', data: '' } : { kind: 'raster', data: '', threshold: 128, contrast: 1 })}>
       <option value="text">Text</option><option value="svg">SVG upload</option><option value="raster">PNG / JPEG upload</option>
     </select></label>
     {source.kind === 'text' ? <>
       <label className="field"><span>Logo text</span><input aria-label="Logo text" maxLength={32} value={source.text} onChange={e => update({ ...source, text: e.target.value })} /></label>
       <label className="field"><span>Logo font</span><select aria-label="Logo font" value={source.font} onChange={e => update({ ...source, font: e.target.value as 'helvetiker' | 'helvetikerRegular' })}><option value="helvetiker">Helvetiker Bold</option><option value="helvetikerRegular">Helvetiker Regular</option></select></label>
-      <p className="note">Bundled Magenta fonts, used under the MgOpen font license.</p>
     </> : <label className="field"><span>Upload logo (250 KB maximum)</span><input aria-label="Upload logo" type="file" accept=".svg,.png,.jpg,.jpeg" onChange={e => void upload(e.target.files?.[0])} /></label>}
     {source.kind === 'raster' && <>
       <label className="field"><span>Threshold: {source.threshold ?? 128}</span><input aria-label="Logo threshold" type="range" min="1" max="254" value={source.threshold ?? 128} onChange={e => update({ ...source, threshold: Number(e.target.value) })} /></label>
       <label className="field"><span>Contrast: {source.contrast ?? 1}</span><input aria-label="Logo contrast" type="range" min="0.5" max="3" step="0.1" value={source.contrast ?? 1} onChange={e => update({ ...source, contrast: Number(e.target.value) })} /></label>
-      <p className="note">Dark pixels become cuts; transparency becomes white. Traced at up to 256 × 256 pixels. Adjust threshold, then preview again.</p>
     </>}
     <label><input type="checkbox" checked={bridges} onChange={e => { stop(); setBusy(false); setBridges(e.target.checked); setPreview(null); }} /> Automatic island bridges</label>
-    <p className="note">Minimum cut/steel feature: 0.8 mm at the smallest logo site. Curves are flattened; fine details may be rejected. This is a geometric check, not certified physical fit or fabrication approval.</p>
     <button type="button" onClick={inspect}>{busy ? 'Restart preview' : 'Validate & preview logo'}</button>
     {busy && <p role="status">Tracing and validating logo…</p>}
     {error && <p role="alert">{error}</p>}
@@ -66,7 +62,7 @@ export function LogoControls({ store }: { store: BuilderStore }) {
       <svg role="img" aria-label="Validated cut contour preview" viewBox="-94 -16 188 32" style={{ width: '100%', background: '#d5d8d1', marginTop: 12 }}>
         <path fill="#252a23" fillRule="evenodd" transform="scale(1,-1)" d={preview.loops.map(l => `M${l.map(p => p.join(',')).join('L')}Z`).join('')} />
       </svg>
-      <p className="note">Dark areas are through-cuts. {preview.loops.length} closed contours. {preview.warnings.join(' ')}</p>
+      <p className="note">{preview.loops.length} closed contours · {preview.minimum} mm minimum feature. {preview.warnings.join(' ')}</p>
       <button type="button" onClick={() => store.act(() => store.commit({ ...store.getSnapshot().doc, logo: preview }))}>Apply logo to rack</button>
     </>}
     <button type="button" disabled={!doc.logo} onClick={() => store.act(() => { const next = { ...store.getSnapshot().doc }; delete next.logo; store.commit(next); setPreview(null); })}>Reset stock BOS lettering</button>
