@@ -1,163 +1,118 @@
-# Printable 3MF export
+# Printable miniature 3MF export
 
-The builder's **Export → 3MF** menu downloads a full-size millimetre model of the
-current document snapshot. Existing JSON and GLB exports remain available.
-Choose **Open project** in Bambu Studio / OrcaSlicer to keep the color slots.
-Select your real printer and filament profiles before slicing. The package has
-an explicitly disclosed placeholder 256 mm bed, 0.4 mm nozzle and Generic PLA
-color slots. It contains no machine G-code, temperatures or support settings.
-These are reconstructed equipment models, not certified load-bearing printed
-hardware or a guarantee of physical fit.
+The **Export → 3MF** menu offers **1:10** by default and **1:20** miniature scale.
+Open the downloaded 3MF as a **project** in Bambu Studio or OrcaSlicer. It contains
+two named 256 × 256 × 256 mm plates: **Parts** and **Hardware**. Select your real
+printer, nozzle and filament profiles before slicing; the archive supplies only a
+placeholder 256 mm bed, 0.4 mm nozzle and Generic PLA color slots, not G-code or a
+validated process profile. These equipment reconstructions are miniature models.
 
-## Objects, topology and color
+## Objects, identities and materials
 
-- One build object per resolved physical instance: four uprights mean four
-  independently selectable objects. Paired accessories retain `:left` / `:right`
-  identity, independently of their shared editor owner ID.
-- Each object contains named material volumes from its CAD builder. New entries
-  in `rack-generator/catalog.ts` automatically use this path. It shares the
-  registry with `library-worker.ts`; thumbnails use that library worker.
-- Geometry is built directly with Manifold, never taken from Three's display
-  scene. Grid, lighting, selection, reference assets and placement ghosts cannot
-  enter the export. Real CSG lettering/cutouts carry through automatically.
-- Within a physical part, later catalog components own overlapping space. Earlier
-  solids are cut against the accumulated union of later solids. This preserves
-  separate color volumes without double-filled material. Separate physical
-  instances remain independent; assembled mode can contain rack-part contacts.
-  Fully covered components are omitted and listed in the archive report and
-  completion message. Disconnected shells within a named component remain
-  together; slicers can split them into objects if separate printing is wanted.
-- Every source and partition result must have successful Manifold status and
-  positive volume (except intentionally covered components). The exact Float32
-  coordinates from `getMesh()` are reconstructed through Manifold to eliminate
-  triangles collapsed by double-to-float conversion. No blanket decimation or
-  arbitrary positional welding is used. Explicit Manifold vertex merge vectors
-  are honored; exported indices, finite positions, nonzero triangle area and
-  closed, consistently directed edges are checked. Errors fail the whole export.
-- Colors come exclusively from `resolveMaterial(source, appearance, physicalId)`.
-  Hardware finish affects fasteners only. Rods, handles and liners retain their
-  semantic material. Per-side paint uses physical IDs, never owner IDs. Texture
-  patterns, metallic reflections and roughness export as dominant solid colors;
-  this limitation is shown before download and included in metadata.
+Only CAD solids explicitly marked `role: 'fastener'` go to Hardware. Rods, handles,
+liners and other structural volumes stay on Parts. A hardware-only instance goes
+entirely to Hardware. Each physical instance can therefore produce two independent
+build objects. Both retain its original `id`, `ownerId` and catalog `part` in
+`Metadata/print-report.json`; object names include the original ID and plate name.
+Empty plates are still declared, without fabricated geometry.
 
-## Coordinates and resource lifetime
+Colors use `resolveMaterial(source, appearance, physicalId)`. Hardware finishes
+apply to fasteners only; per-side paint uses physical IDs. Both parent-object and
+child-volume filament assignments are written, because slicers use the parent's
+filament for single-volume objects. Textures, reflections and roughness are reduced
+to solid color. Vendor attribution remains in model Copyright metadata and the
+structured report. CAD logo cuts, holes and official vendor wordmarks are retained.
 
-Flat mode chooses the smallest bounding-box axis as the new Z axis with a proper
-right-angle rotation. It moves each whole part to Z=0 and lays objects in one row
-with 20 mm gaps. This is a simple initial orientation, not support/bed optimization.
-It preserves each part's internal assembly and never scales to fit a bed. Full-size
-rack members usually exceed desktop printers; cut/scale explicitly in the slicer
-if that is your intent. Assembled mode bakes document positions and XYZ Euler
-rotations into Z-up millimetre vertices, without the viewer's Y-up conversion.
+The exporter rebuilds CAD with Manifold, never scene meshes. `buildPrintInstance`
+forwards resolved logo contours to the builder. Resolved `kind: 'floor-item'`
+instances are excluded before CAD building, packing and vendor-credit collection;
+the report lists excluded IDs. Grid, lighting, reference assets and selection
+geometry never enter the exporter.
 
-The UI starts one dedicated worker for one snapshot. There is no queued export,
-CAD cache or scene dependency. Cancel, unmount, errors and success terminate it;
-all owned export solids are deleted in `finally`. Downloads revoke their blob URL.
-The exporter stops above two million triangles instead of producing an unbounded
-archive. Source document/history/saves remain unchanged.
+Within a physical instance, later CAD components own overlapping space. Earlier
+solids are cut against their union **before** splitting by role, preserving the
+existing cavities and material boundaries. Fully covered components are reported.
+Every source, Boolean result and exact Float32 mesh is checked with Manifold;
+exported indices, finite coordinates, triangle area and closed directed edges are
+validated. Disconnected shells within a named CAD solid stay together. No meshes
+are silently clipped, repaired by a slicer, or dropped to fit a plate.
 
-## 3MF compatibility contract
+## Scale, packing and overflow
 
-The package uses standard OPC content types and root model relationship, core
-`unit="millimeter"`, base materials (`displaycolor="#RRGGBBAA"`), per-mesh `pid`
-/ `pindex`, child-before-parent components and one build item per physical ID.
-The archive also contains `Metadata/print-report.json` with counts, IDs, dimensions,
-covered components and the overlap/texture policies.
+`PrintScale = 10 | 20` is the denominator; `PrintOptions.scale` defaults to `10`.
+The report records `scale`, `scaleFactor`, each object's dimensions, placement,
+scaled source position, roles and plate. The menu appends `-1-10` or `-1-20` to the
+filename. No individual part is resized to fit.
 
-Bambu 2.8's project reader ignores the palette for a generic Application value;
-its CLI round trip replaced the palette with a default green. Therefore the file
-uses the **BambuStudio-01.09.00.00 compatibility marker** to select that reader.
-`Designer` and `Description` explicitly identify **BOS STRENGTH print exporter**
-as the actual generator. This does not rename or replace source/vendor branding.
-`Metadata/model_settings.config` maps each volume to a 1-based filament slot;
-`Metadata/project_settings.config` contains matching colors and minimal placeholder
-profile fields needed by the readers. Without the nullable per-filament fields,
-the installed older Orca CLI crashed in its flush-volume code after geometry load.
-No reference-project printer configuration or G-code is copied.
+Laid-out mode rotates each role group to its smallest bounding-box height, lowers
+it to Z=0, then packs bounding rectangles largest-first with optional 90° rotations.
+At 1:10 the arrangement reserves 2 mm between rectangles and at bed edges. At
+1:20 both geometry **and this arrangement** are halved (1 mm clearance). If the
+configuration cannot pack at 1:10, 1:20 retries against the larger source-space
+bed. Packing is deterministic, conservative and not an optimal nesting solver.
+Brims and supports are not generated; configure and check their clearance in your
+slicer. The second plate's 307.2 mm X offset is slicer workspace spacing, not a
+model dimension, and does not scale.
 
-Implementation references inspected September 17, 2026:
+Assembled mode scales the document's XYZ Euler rotations/positions in source
+Z-up coordinates, then translates each plate's whole assembly onto its bed.
+Relative geometry and positions remain intact; this mode can contain contacts and
+floating components and is not the flat printing arrangement.
 
-- [Manifold Mesh API](https://manifoldcad.org/docs/jsapi/classes/manifold.Mesh.html)
-  and installed manifold-3d 3.5.3 declarations/exporter (merge vectors, status,
-  float conversion and child-before-parent resource ordering).
+Every transformed object's bounding box and final placement must lie within the
+256 mm volume, including diagonal extents after rotation. The assembled plate's
+aggregate bounds are also checked. An oversized object or packed plate fails the
+**whole export**, naming the dimensions or packing failure and suggesting 1:20
+when 1:10 fails. At 1:20 it suggests a smaller configuration/laid-out arrangement.
+It does not add extra plates or silently alter geometry.
+
+The dedicated one-shot worker preserves progress, error and cancellation behavior.
+Termination cancels the job; all owned CAD solids are deleted in `finally`. No
+source document, undo history, geometry cache or saved design is modified. Exports
+stop above two million triangles.
+
+## Slicer format and verification
+
+The package uses standard OPC relationships, millimetres, base materials,
+child-before-parent resources and independent build items. Bambu/Orca plate
+membership uses `Metadata/model_settings.config` plate entries with `plater_id`,
+`plater_name` and `model_instance` object/instance/identify IDs. Application uses
+`BambuStudio-01.09.00.00` solely as a compatibility marker; Designer identifies
+BOS STRENGTH. This selects readers that preserve the filament palette.
+
+Official implementation references inspected September 17, 2026:
+
 - [Bambu 3MF reader/writer](https://github.com/bambulab/BambuStudio/blob/master/src/libslic3r/Format/bbs_3mf.cpp)
-  and [CLI](https://github.com/bambulab/BambuStudio/blob/master/src/BambuStudio.cpp).
-- [Orca CLI](https://github.com/SoftFever/OrcaSlicer/blob/v1.9.1/src/OrcaSlicer.cpp).
-- The repository's `Tricep Pulley v15.3mf` for OPC relationships and named volume
-  / filament metadata structure. Its machine configuration is not reused.
+- [Bambu plate coordinates](https://github.com/bambulab/BambuStudio/blob/master/src/slic3r/GUI/PartPlate.cpp)
+- [Orca 3MF reader/writer](https://github.com/SoftFever/OrcaSlicer/blob/main/src/libslic3r/Format/bbs_3mf.cpp)
+- [Manifold Mesh API](https://manifoldcad.org/docs/jsapi/classes/manifold.Mesh.html)
 
-## Reproducing acceptance checks
+Reproduce fixtures and automated checks:
 
 ```sh
 npm ci
 npm test
 npm run build
 npx tsx scripts/generate-print-fixtures.ts
+/path/to/BambuStudio --info --arrange 0 --orient 0 \
+  --export-3mf bambu-roundtrip.3mf --outputdir /absolute/output \
+  /absolute/output/rack-laid-out-1-10.3mf
+python3 scripts/verify-print-export.py source.3mf bambu-roundtrip.3mf orca-roundtrip.3mf
 ```
 
-The fixture has 14 physical objects, 83 material volumes, 311,988 triangles and
-six colors (including one differently painted upright and gold fasteners).
-Tests round-trip the decimal XML meshes through Manifold for every catalog
-builder, inspect materials/relationships/counts, check paired paint, verify
-non-overlap and volume preservation, and check dimensions/arrangement/errors.
+The default six-color fixture has 14 physical identities, split into 14 Parts
+objects and 10 Hardware objects, retaining all 83 volumes and 311,988 triangles.
+Tests cover every catalog builder's decimal XML mesh round-trip through Manifold,
+roles, identity, colors, vendor marks/credits, scale ratios, positions, packing,
+bounding-box overflow and failure behavior.
 
-Run each installed slicer with **absolute** input and output paths (Bambu's CLI
-failed to save when given a relative output directory):
-
-```sh
-/path/to/slicer --info --arrange 0 --orient 0 \
-  --export-3mf roundtrip.3mf --outputdir /absolute/output \
-  /absolute/output/rack-laid-out.3mf
-python3 scripts/verify-print-export.py /absolute/output/rack-laid-out.3mf \
-  /absolute/output/bambu-roundtrip.3mf /absolute/output/orca-roundtrip.3mf
-```
-
-The independent standard-library Python audit checks ZIP CRC, XML, model
-relationships, triangle indices/area/directed edge closure, unique physical names,
-material assignments, dimensions and repair counters. It compares the actual
-re-exported geometry/metadata with the source, not just a successful process exit.
-
-Verified locally with **Bambu Studio 02.08.01.55** and **OrcaSlicer 01.09.05.51**:
-all 14 identities, 83 volumes, 311,988 triangles, six colors and millimetre sizes
-survived both CLI imports/re-exports; all reported repair counters were zero.
-Browser checks used session `gym-wave2-print_export`, port 5304. Native GUI
-inspection was attempted twice but the computer-use service timed out. CLI
-imports and archive round trips are verified; GUI dialogs/rendering, G-code
-slicing and physical printing are not claimed. No full-size model was silently
-scaled to enable slicing on a desktop printer.
-
-## Wave 2 extension handoff
-
-`buildPrintInstance` forwards the resolved instance's optional `logo` as the third
-CAD build argument. Its generic payload type follows the builder; it does not
-copy the logo schema or bypass document/site validation. The print worker has no
-geometry cache, so changing contours cannot reuse stale solids. The logo stream
-still owns `RackDoc.logo`, validation, `resolveAssembly` site selection and its
-actual CSG builders; those are not duplicated in this branch.
-
-The registry also exports `catalog: CADCatalog`. When the vendor stream lands,
-wire its existing helper in the same registry alongside its definitions:
-
-```ts
-import { vendorAttribution } from './vendor-metadata.ts';
-export const catalog: CADCatalog = { definitions, attribution: vendorAttribution };
-```
-
-The print worker and fixture generator already pass `catalog.attribution` to the
-exporter. All five fields (`vendor`, `url`, `credit`, `trademark`, `reconstruction`)
-are preserved in model Copyright metadata and structured `vendorCredits` in the
-print report, with a part-ID association. Tests cover Unicode/XML escaping and
-preservation of the actual generator identity. Current main has no vendor CAD
-or attribution module; this hook is deliberately optional until that stream
-registers it. Actual vendor/logo end-to-end acceptance still requires those
-unmerged definitions; only their forward-compatible export contracts are tested
-here.
-
-The export panel follows #30's concise-copy contract: scale, color limitation and
-placeholder-profile data remain visible; explanatory prose lives in this document.
-The #28 standard size controls and existing reset/swap helpers are preserved from
-main; print export neither replaces them nor adds independent dimension controls.
-
-The export arrangement's shared `ResetButton` restores the `laid-out` default.
-It is disabled at the default and while a print worker is active. This transient
-export preference does not mutate the rack document, save state or edit history.
+Real installed **Bambu Studio 02.08.01.55** CLI and **OrcaSlicer 01.09.05.51** GUI
+imports/re-exports were used at both scales. The independent Python auditor checks
+ZIP CRC, relationships, mesh indices/areas/directed edge closure, zero repair
+counters, exact named-plate membership, in-bed positions, dimensions, volume names
+and colors against each source. Orca's GUI visibly shows Parts and Hardware at
+both scales. Its CLI crashes on named plates in `generate_plate_name_texture`
+(OpenGL without a context); GUI Open Project → Save Project As verifies the actual
+named archive without removing plate names to bypass that crash. Placeholder
+process settings are deliberately not suitable for immediate G-code slicing.
+Physical printing and G-code generation are not claimed.
