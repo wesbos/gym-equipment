@@ -1,10 +1,11 @@
 # Issue 3 acceptance evidence — September 17, 2026
 
-Branch `wave2/print_export`, implementation `42611d2`, with origin/main `54e3183`
-merged in `b3146f5` before final tests. No deployment or issue closure.
+Branch `wave2/print_export`, implementation `42611d2`, with origin/main `8a53045`
+merged in `604d9bf` for final integration. The additive BuilderPage import conflict
+was resolved preserving both export and editor reset/swap controls. No deployment or issue closure.
 
 - Isolated `npm ci`: passed, no shared node_modules.
-- `npm test`: **156 passed, 0 failed/skipped**, 81.9 seconds after merging main.
+- `npm test`: **166 passed, 0 failed/skipped**, 134.9 seconds on the final integration.
 - `npm run build`: typecheck and Vite production build passed. Vite reports its
   >500 kB bundle advisory (main bundle and CAD workers); no build errors.
 - 32 print-specific tests include all 28 catalog builders, Float32/Manifold/XML
