@@ -1,3 +1,4 @@
+import { systemAttribution } from "./system-attribution.ts";
 import { test } from "node:test";
 import type { NumericParams } from "./types.ts";
 import assert from "node:assert/strict";
@@ -369,4 +370,11 @@ test("front Smith includes adapter solids and upright mounts, blocks cables and 
   } finally {
     parts.forEach((p) => p.solid.delete());
   }
+});
+
+test("system export attribution identifies vendors without claiming source CAD", () => {
+  assert.equal(systemAttribution("cable-kraken")?.vendor, "Bells of Steel");
+  assert.equal(systemAttribution("smith-rep")?.vendor, "REP Fitness");
+  assert.match(systemAttribution("cable-ares1")!.credit, /reconstruction/);
+  assert.equal(systemAttribution("upright"), undefined);
 });

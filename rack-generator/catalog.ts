@@ -1,3 +1,4 @@
+import { systemAttribution } from './system-attribution.ts';
 import { definitions as cables } from './parts/cable-systems.ts';
 import { definitions as smith } from './parts/smith.ts';
 /** Shared CAD registry: rendering, thumbnails and printing use the same builders. */
@@ -8,4 +9,4 @@ export const definitions = [...structure, ...bars, ...attachments, ...cables, ..
 
 import type { CADCatalog } from './catalog-contract.ts';
 /** Vendor/system streams extend this shared registry, not individual workers. */
-export const catalog: CADCatalog = { definitions };
+export const catalog: CADCatalog = { definitions, attribution: systemAttribution };

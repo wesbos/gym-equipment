@@ -152,3 +152,7 @@ Smith `outside: 1` selects the vertical PR-5000 front adapter with its full FFE
 axes. Internal extension-to-Smith bolts belong to the system geometry, not rack
 connections. Front tubes contribute collision bodies. Other front variants are
 explicitly rejected; inside configurations and existing profiles are unchanged.
+The shared `catalog.ts` now registers these builders for scene, thumbnail and
+3MF workers. Its `systemAttribution` resolver supplies manufacturer/reconstruction
+credits. Additional vendor resolvers should compose with this resolver rather
+than replace it. No material finish or source nameplate is changed by attribution.
