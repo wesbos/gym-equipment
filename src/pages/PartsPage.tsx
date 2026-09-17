@@ -1,5 +1,5 @@
 import { hasVendorParameter, VendorParameter } from '../components/VendorParameter.tsx';
-import { vendorAttribution } from '../../rack-generator/vendor-metadata.ts';
+import { partAttribution } from '../../rack-generator/attribution.ts';
 import { VendorCredit } from '../components/VendorControls.tsx';
 import { NumericControl } from "../components/NumericControl.tsx";
 import { LatestRequest } from "../geometry/latest-request.ts";
@@ -226,8 +226,8 @@ export default function PartsPage() {
                       [
                         JSON.stringify(
                           {
-                            brand: vendorAttribution(selected.id)?.vendor ?? "BOS STRENGTH",
-                            vendorAttribution: vendorAttribution(selected.id),
+                            brand: partAttribution(selected.id)?.vendor ?? "BOS STRENGTH",
+                            vendorAttribution: partAttribution(selected.id),
                             part: selected.id,
                             params: currentParams.current,
                             units: "mm",
@@ -383,7 +383,7 @@ export default function PartsPage() {
         </button>
         <a
           className="source-link"
-          href={(selected && vendorAttribution(selected.id)?.url) || "https://strengthshop.eu/products/3d-rack-builder-riot-mrr-75"}
+          href={(selected && partAttribution(selected.id)?.url) || "https://strengthshop.eu/products/3d-rack-builder-riot-mrr-75"}
           target="_blank"
           rel="noreferrer"
         >

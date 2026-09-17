@@ -2,7 +2,7 @@ import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { createGymFloor, fitRackShadow } from './gym-floor.ts';
 import { FrameFinishResources, addSteelUVs } from './frame-finishes.ts';
 import { structureCandidates, type StructureCandidate } from '../../rack-generator/structure-candidates.ts';
-import { vendorAttribution } from '../../rack-generator/vendor-metadata.ts';
+import { partAttribution } from '../../rack-generator/attribution.ts';
 import { placementMounts, proposalAt, proposalCollision, type PlacementProposal } from '../../rack-generator/placement-proposals.ts';
 import { swapCandidate, swapCandidates, type SwapCandidate } from '../../rack-generator/swap.ts';
 import { createSwapRegions } from './swap-regions.ts';
@@ -51,6 +51,7 @@ export function createBuilderScene(
   let snapshot = store.getSnapshot(),
     disposed = false,
     generation = 0,
+    renderedGeneration = -1,
     previewSerial = 0,
     requestId = 0,
     hasFit = false,
@@ -157,7 +158,7 @@ export function createBuilderScene(
     });
     g.position.set(...entry.position);
     g.rotation.set(...entry.rotation);
-    g.userData = { id: entry.id, ownerId: entry.ownerId || entry.id, ...(vendorAttribution(entry.part) ? { vendorAttribution: vendorAttribution(entry.part) } : {}) };
+    g.userData = { id: entry.id, ownerId: entry.ownerId || entry.id, ...(partAttribution(entry.part) ? { vendorAttribution: partAttribution(entry.part) } : {}) };
     return g;
   }
   worker.onmessage = ({ data }: MessageEvent<LibraryWorkerResponse>) => {
@@ -289,6 +290,7 @@ export function createBuilderScene(
         fit();
         hasFit = true;
       }
+      renderedGeneration = serial;
     } catch (error) {
       if (!disposed && serial === generation)
         store.patch({ loading: false, status: message(error), error: true });
@@ -779,6 +781,9 @@ export function createBuilderScene(
       if (disposed) throw Error("Scene has been disposed.");
       if (snapshot.loading)
         throw Error("Wait for the rack to finish building.");
+      // Status messages can clear error flags; only a successful current build is exportable.
+      if (renderedGeneration !== generation)
+        throw Error("The current rack has not built successfully. Fix the build error before exporting.");
       const output = assemblyRoot.clone();
       output.name = "BOS STRENGTH rack";
       output.scale.setScalar(0.001);

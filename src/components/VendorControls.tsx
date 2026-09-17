@@ -4,9 +4,10 @@ import { darkoTopMounts, darkoGuidance } from '../../rack-generator/darko-mounts
 import type { CrossmemberTopTarget } from '../../rack-generator/types.ts';
 import type { Accessory } from '../../rack-generator/types.ts';
 import type { BuilderStore } from '../state/builder-store.ts';
-import { isVoltra, isDarko, isDarkoTop, vendorAttribution } from '../../rack-generator/vendor-metadata.ts';
+import { isVoltra, isDarko, isDarkoTop } from '../../rack-generator/vendor-metadata.ts';
+import { partAttribution } from '../../rack-generator/attribution.ts';
 export function VendorCredit({part,compact=false}:{part:string;compact?:boolean}) {
- const credit=vendorAttribution(part);
+ const credit=partAttribution(part);
  if(!credit)return null;
  return compact ? <small>{credit.credit}</small> : <div className="note"><a href={credit.url} target="_blank" rel="noreferrer">{credit.credit}</a><p>{credit.trademark}</p></div>;
 }
