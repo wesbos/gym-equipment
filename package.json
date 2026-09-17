@@ -31,6 +31,7 @@
     "@types/three": "^0.186.0",
     "@vitejs/plugin-react": "^6.1.1",
     "draco3dgltf": "^1.5.7",
+    "esbuild-wasm": "^0.27.7",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
     "wrangler": "^4.134.0"
