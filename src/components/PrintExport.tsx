@@ -31,13 +31,16 @@ export function PrintExport({store}: {store:BuilderStore}) {
     <button id="print-export" onClick={()=>setOpen(!open)} aria-expanded={open}>Export 3MF</button>
     {open && <section aria-label="Print export options" className="print-export-options">
       <strong>Printable rack parts · 3MF</strong>
-      <p>Each physical part is a separate object with named color volumes. Full size in millimetres; no automatic printer scaling.</p>
+      <p>Millimetres · 100% scale · Separate objects</p>
       <label>Part arrangement <select aria-label="Print arrangement" disabled={busy} value={layout} onChange={e=>setLayout(e.target.value as PrintLayout)}>
         <option value="laid-out">Lay parts flat, spaced in a row</option><option value="assembled">Keep rack assembly coordinates (Z up)</option>
       </select></label>
-      <p>Flat mode minimizes axis-aligned height and places parts on Z = 0, with 20 mm gaps. Arrange for your bed and check supports in the slicer. Full-size rack members exceed desktop printer beds.</p>
-      <p>Open as a project to retain colors. Choose your own printer and filament profiles: the file has a placeholder 256 mm bed, 0.4 mm nozzle and Generic PLA color slots.</p>
-      <p>Overlaps within each part are cut; later catalog volumes keep their color. Textures and metal finishes export as dominant solid colors only.</p>
+      <dl className="print-export-facts">
+        <dt>Colors</dt><dd>Solid colors; textures omitted</dd>
+        <dt>Profile</dt><dd>Placeholder: 256 mm bed · 0.4 mm nozzle · PLA</dd>
+      </dl>
+      <p>Open as project. Select your printer and filaments.</p>
+      <p><a href="https://github.com/wesbos/gym-equipment/blob/main/docs/print-export.md" target="_blank" rel="noreferrer">Export details ↗</a></p>
       <button className="primary" disabled={busy || !store.getSnapshot().resolved.length} onClick={start}>{busy?'Preparing…':'Download 3MF'}</button>
       {busy ? <button onClick={cancel}>Cancel export</button> : <button onClick={()=>setOpen(false)}>Close</button>}
     </section>}

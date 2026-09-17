@@ -125,3 +125,35 @@ inspection was attempted twice but the computer-use service timed out. CLI
 imports and archive round trips are verified; GUI dialogs/rendering, G-code
 slicing and physical printing are not claimed. No full-size model was silently
 scaled to enable slicing on a desktop printer.
+
+## Wave 2 extension handoff
+
+`buildPrintInstance` forwards the resolved instance's optional `logo` as the third
+CAD build argument. Its generic payload type follows the builder; it does not
+copy the logo schema or bypass document/site validation. The print worker has no
+geometry cache, so changing contours cannot reuse stale solids. The logo stream
+still owns `RackDoc.logo`, validation, `resolveAssembly` site selection and its
+actual CSG builders; those are not duplicated in this branch.
+
+The registry also exports `catalog: CADCatalog`. When the vendor stream lands,
+wire its existing helper in the same registry alongside its definitions:
+
+```ts
+import { vendorAttribution } from './vendor-metadata.ts';
+export const catalog: CADCatalog = { definitions, attribution: vendorAttribution };
+```
+
+The print worker and fixture generator already pass `catalog.attribution` to the
+exporter. All five fields (`vendor`, `url`, `credit`, `trademark`, `reconstruction`)
+are preserved in model Copyright metadata and structured `vendorCredits` in the
+print report, with a part-ID association. Tests cover Unicode/XML escaping and
+preservation of the actual generator identity. Current main has no vendor CAD
+or attribution module; this hook is deliberately optional until that stream
+registers it. Actual vendor/logo end-to-end acceptance still requires those
+unmerged definitions; only their forward-compatible export contracts are tested
+here.
+
+The export panel follows #30's concise-copy contract: scale, color limitation and
+placeholder-profile data remain visible; explanatory prose lives in this document.
+The #28 standard size controls and existing reset/swap helpers are preserved from
+main; print export neither replaces them nor adds independent dimension controls.

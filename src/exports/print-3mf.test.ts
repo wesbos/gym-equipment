@@ -108,3 +108,13 @@ for(const def of definitions) test(`print partition and XML round-trip: ${def.id
   const result=exportPrint3MF(api,single(),[adapter],{layout:'laid-out'});
   inspect(result.bytes);assert.ok(result.report.volumes>0);
 });
+test('vendor export credits retain every attribution field without replacing generator branding', () => {
+  const attribution = {vendor:'Vendor & Co',url:'https://example.com/part',credit:'Designed by Vendor',trademark:'Vendor® <part>',reconstruction:'Estimated interface; fit unverified.'};
+  const result=exportPrint3MF(api,single(),[cubeDef],{layout:'laid-out'},undefined,()=>attribution);
+  const files=unzipSync(result.bytes),parser=new XMLParser({ignoreAttributes:false,attributeNamePrefix:''});
+  const metadata=parser.parse(strFromU8(files['3D/3dmodel.model'])).model.metadata as {name:string;'#text':string}[];
+  const credit=metadata.find(m=>m.name==='Copyright')!['#text'];
+  for(const value of Object.values(attribution)) assert.ok(credit.includes(value));
+  assert.equal(metadata.find(m=>m.name==='Designer')!['#text'],'BOS STRENGTH print exporter');
+  assert.deepEqual(JSON.parse(strFromU8(files['Metadata/print-report.json'])).vendorCredits,[{part:'upright',attribution}]);
+});
