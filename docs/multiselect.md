@@ -52,3 +52,16 @@ are computed with `partDefaults` for each part/profile, so mixed selections rese
 to their own domain defaults. Paint reset remains “Use rack color.” A store test
 checks paint preservation and one-step undo. Browser verification selected two
 bars at 32/40 mm, reset both to 32 mm, then restored Mixed with one Undo.
+
+Bulk dimensions use NumericControl with a `mixed` flag, preserving blank Mixed
+text without a validation error, live edits, scrubbing, focus, and gesture undo.
+Shared standardOptions are intersected across selected definitions and bounds;
+NumericControl renders StandardSizeControl when that intersection exists. Per-owner
+domain resets remain separate from the editing gesture. Browser validation typed
+35 then 36 into a mixed 32/40 mm selection without blurring: both live values became
+36, focus stayed on the input, and one Undo restored 32/40 and blank Mixed.
+
+Pending visuals integration before #31 closure: frameFinish/finishOverrides bulk
+editing and finish override preservation during duplication must be connected once
+#25 reaches main. The visuals stream has been notified; current paint overrides and
+export resolver behavior are covered, but this does not yet cover unmerged finishes.

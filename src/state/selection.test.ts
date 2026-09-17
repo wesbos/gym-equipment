@@ -90,3 +90,14 @@ test('bulk field reset uses domain defaults per owner, preserves paint, and undo
   store.select('front-left', { ctrlKey: true });
   assert.throws(() => store.resetSelectionParam('diameter'), /Unsupported/);
 });
+
+test('live bulk edits coalesce one gesture and reset stays independent', () => {
+  const store = new BuilderStore();
+  store.select('pullup-front'); store.duplicateSelected();
+  store.selectMany(store.getSnapshot().resolved.filter(r => r.part.startsWith('pullup')).map(r => r.id));
+  const before = store.getSnapshot().doc;
+  store.beginGesture(); store.editSelectionParam('diameter', 35); store.editSelectionParam('diameter', 40); store.endGesture();
+  store.history('undo'); assert.deepEqual(store.getSnapshot().doc, before);
+  store.history('redo'); const edited = store.getSnapshot().doc;
+  store.resetSelectionParam('diameter'); store.history('undo'); assert.deepEqual(store.getSnapshot().doc, edited);
+});
