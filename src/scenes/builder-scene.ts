@@ -1,3 +1,4 @@
+import { createGymFloor, fitRackShadow } from './gym-floor.ts';
 import { FrameFinishResources, addSteelUVs } from './frame-finishes.ts';
 import { cloneInstanceMaterials } from './instance-materials.ts';
 import * as THREE from "three";
@@ -55,7 +56,9 @@ export function createBuilderScene(
   let mountPoints: Mount[] = [];
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#e9ede7");
+  scene.fog = new THREE.Fog("#e9ede7", 10000, 18000);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x899383, 2.6));
+  let shadowLight: THREE.DirectionalLight | undefined;
   for (const p of [
     [2500, 4500, 2200],
     [-2500, 1800, -2000],
@@ -63,6 +66,15 @@ export function createBuilderScene(
     const l = new THREE.DirectionalLight(0xffffff, 3);
     l.position.set(p[0], p[1], p[2]);
     scene.add(l);
+    if (!shadowLight) {
+      shadowLight = l;
+      l.castShadow = true;
+      l.shadow.mapSize.set(2048, 2048);
+      l.shadow.normalBias = 0.5;
+      l.shadow.bias = -0.00005;
+      l.shadow.autoUpdate = false;
+      scene.add(l.target);
+    }
   }
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
@@ -70,6 +82,8 @@ export function createBuilderScene(
   });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const finishes = new FrameFinishResources(renderer.capabilities.getMaxAnisotropy());
   viewport.append(renderer.domElement);
@@ -93,9 +107,8 @@ export function createBuilderScene(
     root.rotation.x = -Math.PI / 2;
     scene.add(root);
   }
-  const grid = new THREE.GridHelper(10000, 200, "#b4c0b1", "#d6ded2");
-  grid.position.y = -0.5;
-  scene.add(grid);
+  const floor = createGymFloor(renderer.capabilities.getMaxAnisotropy());
+  scene.add(floor.mesh);
   const raycaster = new THREE.Raycaster(),
     pointer = new THREE.Vector2(),
     instances = new Map<string, THREE.Group>();
@@ -160,6 +173,9 @@ export function createBuilderScene(
   }
   function transformed(model: THREE.Group, entry: ResolvedInstance) {
     const g = cloneInstanceMaterials(model, snapshot.doc.appearance, entry.id, finishes);
+    g.traverse(object => {
+      if (object instanceof THREE.Mesh) object.castShadow = object.receiveShadow = true;
+    });
     g.position.set(...entry.position);
     g.rotation.set(...entry.rotation);
     g.userData = { id: entry.id, ownerId: entry.ownerId || entry.id };
@@ -288,6 +304,7 @@ export function createBuilderScene(
         instances.set(String(g.userData.id), g);
       }
       scene.updateMatrixWorld(true);
+      if (shadowLight) fitRackShadow(shadowLight, new THREE.Box3().setFromObject(assemblyRoot));
       refreshSelection();
       trimCache();
       const warnings = detectCollisions(entries);
@@ -431,6 +448,7 @@ export function createBuilderScene(
         const g = transformed(model, entries[i]);
         g.traverse((o) => {
           if (o instanceof THREE.Mesh) {
+            o.castShadow = o.receiveShadow = false;
             disposeMaterial(o.material);
             o.material = new THREE.MeshStandardMaterial({
               color: "#c68b45",
@@ -655,8 +673,8 @@ export function createBuilderScene(
           () => {},
         );
       cache.clear();
-      grid.geometry.dispose();
-      disposeMaterial(grid.material);
+      floor.dispose();
+      shadowLight?.shadow.dispose();
       finishes.dispose();
       environment.dispose();
       scene.environment = null;

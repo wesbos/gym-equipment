@@ -45,3 +45,24 @@ by independently disposable instance materials. Cached geometry owns static plan
 UVs, so live appearance edits never re-run CAD or create extra texture copies.
 Scene teardown disposes the textures after instance materials. Ghosts retain their
 existing translucent material and do not cast shadows. Part-study scenes stay neutral.
+
+## Builder floor (#26)
+
+`createGymFloor` owns one static 1024² sRGB canvas texture, material and plane.
+The seeded 2×2-metre atlas repeats 20 times across 40 metres: four subtly different
+rubber tiles with white/beige fragments and 3 mm seams. Trilinear mipmaps and up to
+8× hardware-supported anisotropy suppress shimmer. The surface sits at scene
+Y = −0.6 mm below the rack datum (CAD Z = 0 rotates into scene Y = 0).
+The floor is a scene sibling, never a child of the assembly: dimensions, picking,
+collisions, fit bounds and rack-only exports therefore exclude it.
+
+One 2048² directional shadow map is cached (`shadow.autoUpdate = false`) and refit
+only after a rack rebuild. Ghosts cannot cast shadows. Teardown explicitly releases
+the shadow render target and all three floor resources. No texture generation or
+texture uploads occur in the steady render loop; the floor adds one draw call.
+Part/library/thumbnail scenes retain their neutral backgrounds.
+
+Open `/scripts/visuals-check.html` with the dev server for browser integration checks:
+three scene create/dispose cycles, 12 finish changes per cycle, 60 idle frames without
+texture uploads, exact GPU texture create/delete balance, borrowed brush disposal,
+floor disposal, GLB texture/UV/clearcoat retention and floor exclusion.
