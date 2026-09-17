@@ -1,3 +1,5 @@
+import { swapCandidate, swapCandidates, type SwapCandidate } from '../../rack-generator/swap.ts';
+import { createSwapRegions } from './swap-regions.ts';
 import { cloneInstanceMaterials } from './instance-materials.ts';
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -145,7 +147,8 @@ export function createBuilderScene(
       if (cache.size <= 32) break;
       if (
         active.has(key) ||
-        (snapshot.placing && key.startsWith(snapshot.placing.part + ":"))
+        (snapshot.placing && key.startsWith(snapshot.placing.part + ":")) ||
+        (snapshot.structureChoice && key.startsWith(snapshot.structureChoice + ":"))
       )
         continue;
       cache.delete(key);
@@ -285,6 +288,7 @@ export function createBuilderScene(
       }
       scene.updateMatrixWorld(true);
       refreshSelection();
+      refreshPlacement();
       trimCache();
       const warnings = detectCollisions(entries);
       store.patch({
@@ -316,7 +320,13 @@ export function createBuilderScene(
     mountsRoot.clear();
     mountPoints = [];
   }
+  let swapRegions: ReturnType<typeof createSwapRegions> | null = null;
+  let hoveredSwap: SwapCandidate | null = null;
+  let previewBusy = false;
+  let queuedPreview: { entries: ResolvedInstance[]; serial: number } | null = null;
+  const swapPart = () => snapshot.structureChoice ?? (!snapshot.placing?.movingId ? snapshot.placing?.part : null);
   function resetPlacement() {
+    swapRegions?.dispose(); swapRegions = null; hoveredSwap = null; queuedPreview = null;
     previewTarget = null;
     previewSerial++;
     clearGhost();
@@ -357,7 +367,16 @@ export function createBuilderScene(
   }
   function refreshPlacement() {
     resetPlacement();
-    const placing = snapshot.placing;
+    const placing = snapshot.placing, part = swapPart();
+    if (part) {
+      swapRegions = createSwapRegions(swapCandidates(snapshot.doc, part), instances, snapshot.doc);
+      scene.add(swapRegions.root);
+    }
+    if (snapshot.structureChoice) {
+      renderer.domElement.style.cursor = 'crosshair';
+      store.patch({ placementText: 'Hover a highlighted frame region to preview · click to swap · ESC cancels' });
+      return;
+    }
     if (!placing) {
       store.patch({ placementText: "" });
       return;
@@ -403,69 +422,92 @@ export function createBuilderScene(
     }
     return best;
   }
-  async function updatePreview(event: { clientX: number; clientY: number }) {
-    if (!snapshot.placing) return;
-    const target = nearestMount(event);
-    if (JSON.stringify(target) === JSON.stringify(previewTarget)) return;
-    previewTarget = target;
-    const serial = ++previewSerial;
-    clearGhost();
-    if (!target) return;
+  function pickOwner(event: { clientX: number; clientY: number }): { id: string; ownerId: string } | null {
+    const rect = renderer.domElement.getBoundingClientRect();
+    pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1);
+    scene.updateMatrixWorld(true); raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects([assemblyRoot, ...(swapRegions ? [swapRegions.root] : [])], true)
+      .filter(hit => hit.object instanceof THREE.Mesh);
+    let object: THREE.Object3D | null = hits[0]?.object ?? null;
+    while (object && !object.userData.ownerId) object = object.parent;
+    return object ? { id: object.userData.id ?? object.userData.ownerId, ownerId: object.userData.ownerId } : null;
+  }
+  /** One ghost batch in flight, one latest pending hover; rapid pointer movement cannot flood the worker. */
+  async function renderPreview(entries: ResolvedInstance[], serial: number) {
+    if (previewBusy) { queuedPreview = { entries, serial }; return; }
+    previewBusy = true;
     try {
-      const next = store.placementDoc(target),
-        all = resolveAssembly(next),
-        nextId =
-          snapshot.placing.movingId ||
-          next.accessories[next.accessories.length - 1].id,
-        entries = all.filter((r) => (r.ownerId || r.id) === nextId);
-      store.patch({
-        placementText: `${target.uprightId.replaceAll("-", " ")} · ${target.label || target.face + " · Hole " + (target.hole + 1)} · ${Math.round(target.position[2])} mm · Click to place`,
-      });
       const models = await Promise.all(entries.map(geometryFor));
-      if (disposed || serial !== previewSerial || !snapshot.placing) return;
+      if (disposed || serial !== previewSerial) return;
       for (const [i, model] of models.entries()) {
         const g = transformed(model, entries[i]);
-        g.traverse((o) => {
-          if (o instanceof THREE.Mesh) {
-            disposeMaterial(o.material);
-            o.material = new THREE.MeshStandardMaterial({
-              color: "#c68b45",
-              transparent: true,
-              opacity: 0.48,
-              depthWrite: false,
-            });
-          }
-        });
+        g.traverse(o => { if (o instanceof THREE.Mesh) {
+          disposeMaterial(o.material);
+          o.material = new THREE.MeshStandardMaterial({ color: '#e2a248', transparent: true, opacity: 0.55, depthWrite: false, depthTest: false });
+          o.renderOrder = 10;
+        } });
         ghostRoot.add(g);
       }
     } catch (error) {
-      if (!disposed && serial === previewSerial) {
-        previewTarget = null;
-        store.patch({ placementText: message(error) });
-      }
+      if (!disposed && serial === previewSerial) store.patch({ placementText: message(error) });
+    } finally {
+      previewBusy = false;
+      if (!disposed) trimCache();
+      const next = queuedPreview; queuedPreview = null;
+      if (next && !disposed && next.serial === previewSerial) void renderPreview(next.entries, next.serial);
     }
   }
-  function dropPlacement(event: { clientX: number; clientY: number }) {
-    if (!snapshot.placing) return;
-    const target = nearestMount(event);
-    if (!target) {
-      store.status(
-        "Choose a highlighted mounting hole. Escape cancels placement.",
-      );
+  function candidateAt(event: { clientX: number; clientY: number }): SwapCandidate | null {
+    const part = swapPart(), hit = pickOwner(event);
+    if (!part || !hit) return null;
+    // A bare post is still a mounting surface when placing accessories.
+    if (snapshot.placing && !snapshot.doc.accessories.some(a => a.id === hit.ownerId)) return null;
+    return swapCandidate(snapshot.doc, hit.id, part);
+  }
+  function updatePreview(event: { clientX: number; clientY: number }) {
+    if (!snapshot.placing && !snapshot.structureChoice) return;
+    const candidate = candidateAt(event);
+    if (candidate) {
+      if (hoveredSwap?.ownerId === candidate.ownerId) return;
+      hoveredSwap = candidate; previewTarget = null; queuedPreview = null;
+      const serial = ++previewSerial; clearGhost(); swapRegions?.hover(candidate.valid ? candidate.ownerId : null);
+      renderer.domElement.style.cursor = candidate.valid ? 'copy' : 'not-allowed';
+      store.patch({ placementText: candidate.valid ? 'Swap ' + candidate.ownerId + ' · Click to replace · Undo restores the previous part' : "Won’t fit: " + candidate.reason });
+      if (candidate.valid) void renderPreview(candidate.entries, serial);
       return;
     }
+    const hadSwap = !!hoveredSwap;
+    hoveredSwap = null; swapRegions?.hover(null);
+    const target = snapshot.placing ? nearestMount(event) : null;
+    if (!hadSwap && JSON.stringify(target) === JSON.stringify(previewTarget)) return;
+    previewTarget = target; queuedPreview = null;
+    const serial = ++previewSerial; clearGhost();
+    renderer.domElement.style.cursor = target ? 'crosshair' : 'not-allowed';
+    if (!target) { store.patch({ placementText: 'Choose a highlighted compatible region or mounting hole · ESC cancels' }); return; }
+    try {
+      const next = store.placementDoc(target), nextId = snapshot.placing?.movingId || next.accessories[next.accessories.length - 1].id;
+      store.patch({ placementText: target.uprightId + ' · ' + target.face + ' · Hole ' + (target.hole + 1) + ' · Click to place' });
+      void renderPreview(resolveAssembly(next).filter(r => (r.ownerId || r.id) === nextId), serial);
+    } catch (error) { previewTarget = null; store.patch({ placementText: message(error) }); }
+  }
+  function dropPlacement(event: { clientX: number; clientY: number }) {
+    const candidate = candidateAt(event);
+    if (candidate) {
+      if (!candidate.valid) { store.status("Won’t fit: " + candidate.reason, true); return; }
+      store.act(() => { store.commit(candidate.doc); store.select(candidate.ownerId); });
+      return;
+    }
+    if (!snapshot.placing) { store.status('Choose a highlighted frame region. Escape cancels.'); return; }
+    const target = nearestMount(event);
+    if (!target) { store.status('Choose a highlighted mounting hole. Escape cancels placement.'); return; }
     store.act(() => {
-      const next = store.placementDoc(target),
-        selected =
-          snapshot.placing?.movingId ||
-          next.accessories[next.accessories.length - 1].id;
-      store.commit(next);
-      store.select(selected);
+      const next = store.placementDoc(target), selected = snapshot.placing?.movingId || next.accessories[next.accessories.length - 1].id;
+      store.commit(next); store.select(selected);
     });
   }
   const onDown = (event: PointerEvent) => {
     pointerDown = [event.clientX, event.clientY];
-    if (snapshot.placing && event.button === 0) controls.enabled = false;
+    if ((snapshot.placing || snapshot.structureChoice) && event.button === 0) controls.enabled = false;
   };
   const onMove = (event: PointerEvent) => {
     void updatePreview(event);
@@ -482,7 +524,7 @@ export function createBuilderScene(
     )
       return;
     pointerDown = null;
-    if (snapshot.placing) {
+    if (snapshot.placing || snapshot.structureChoice) {
       dropPlacement(event);
       return;
     }
@@ -507,7 +549,7 @@ export function createBuilderScene(
   };
   const onDrag = (event: DragEvent) => {
     event.preventDefault();
-    if (snapshot.placing) void updatePreview(event);
+    if (snapshot.placing || snapshot.structureChoice) void updatePreview(event);
   };
   const onDrop = (event: DragEvent) => {
     event.preventDefault();
@@ -593,13 +635,14 @@ export function createBuilderScene(
     if (snapshot.selected !== previous.selected) refreshSelection();
     if (
       snapshot.placing !== previous.placing ||
+      snapshot.structureChoice !== previous.structureChoice ||
       snapshot.paired !== previous.paired ||
       snapshot.doc !== previous.doc
     )
       refreshPlacement();
   });
   requestRebuild();
-  if (snapshot.placing) refreshPlacement();
+  if (snapshot.placing || snapshot.structureChoice) refreshPlacement();
   return {
     fit,
     refitOnNextBuild() {
@@ -639,6 +682,7 @@ export function createBuilderScene(
       for (const request of pending.values())
         request.reject(new Error("Scene disposed"));
       pending.clear();
+      swapRegions?.dispose(); queuedPreview = null;
       clearGhost();
       clearMounts();
       clearSelection();

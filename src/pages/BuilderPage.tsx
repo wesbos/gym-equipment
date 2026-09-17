@@ -1,3 +1,4 @@
+import { swapCandidates, swapCandidate } from '../../rack-generator/swap.ts';
 import { ResetButton } from '../components/ResetButton.tsx';
 import { dimensionDefaults, resetDimensions, partDefaults, resetPart, placementDefaults, defaultVariant } from '../../rack-generator/reset.ts';
 import { gridProfile } from '../../rack-generator/profiles.ts';
@@ -117,40 +118,28 @@ function Inspector({ store }: { store: BuilderStore }) {
     store.act(() => action(data));
   };
   if (structureChoice) {
-    const available = getAvailableStructure(doc),
-      placement = getPartPlacementInfo(structureChoice, doc);
-    const slots =
-      structureChoice === "upright"
-        ? available.filter((r) => r.part === "upright")
-        : structureSlots(doc).filter(
-            (s) =>
-              placement?.slots?.includes(s.id) &&
-              (resolved.some((r) => r.ownerId === s.id) ||
-                available.some((r) => r.id === s.id)),
-          );
+    const slots = swapCandidates(doc, structureChoice).filter(candidate => candidate.valid);
     return (
       <>
         <h2 id="selection-title">{nameOf(structureChoice)}</h2>
         <div id="inspector" className="inspector-fields">
           <p>
-            Choose the frame connection. Its span follows the rack dimensions.
+            Hover a highlighted region in the 3D view, then click to swap. Or choose a connection below. Its span follows the rack dimensions.
           </p>
           {slots.map((slot) => (
             <button
-              key={slot.id}
+              key={slot.ownerId}
               onClick={() =>
                 store.act(() => {
                   store.commit(
-                    structureChoice === "upright"
-                      ? restoreInstance(doc, slot.id)
-                      : replaceStructurePart(doc, slot.id, structureChoice),
+                    slot.valid ? slot.doc : doc,
                   );
-                  store.select(slot.id);
+                  store.select(slot.ownerId);
                 })
               }
             >
-              {resolved.some((r) => r.ownerId === slot.id) ? "Replace" : "Add"}{" "}
-              {slot.id.replaceAll("-", " ")}
+              {resolved.some((r) => r.ownerId === slot.ownerId) ? "Replace" : "Add"}{" "}
+              {slot.ownerId.replaceAll("-", " ")}
             </button>
           ))}
           {!slots.length && (
@@ -729,11 +718,11 @@ export default function BuilderPage() {
               Parts list ({state.resolved.length})
             </button>
           </div>
-          {state.placing && (
+          {(state.placing || state.structureChoice) && (
             <div className="placement-hint" id="placement-hint">
               <span id="placement-text">
                 {state.placementText ||
-                  `Place ${nameOf(state.placing.part)} · choose a highlighted connection`}
+                  `Place ${nameOf(state.placing?.part ?? state.structureChoice!)} · choose a highlighted connection`}
               </span>
               <button id="cancel-placement" onClick={store.cancelPlacement}>
                 Cancel <kbd>ESC</kbd>
@@ -774,6 +763,13 @@ export default function BuilderPage() {
             ← Rack settings
           </button>
           <AppearanceControls store={store} />
+          {state.placing && !state.placing.movingId && <details><summary>Swap an existing accessory</summary>
+            <p>Hover a highlighted accessory in 3D or choose its group here.</p>
+            {state.doc.accessories.map(a => {
+              const candidate = swapCandidate(state.doc, a.id, state.placing!.part);
+              return candidate.valid ? <button key={a.id} onClick={() => store.act(() => { store.commit(candidate.doc); store.select(candidate.ownerId); })}>Swap {a.id}</button> : null;
+            })}
+          </details>}
           <Inspector key={state.inputRevision} store={store} />
           <div id="warnings">
             {warnings.map((warning, i) => (
