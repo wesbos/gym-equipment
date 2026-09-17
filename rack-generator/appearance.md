@@ -83,16 +83,23 @@ implementation; deprecated PCFSoftShadowMap is not used.
 Material behavior follows the official [MeshPhysicalMaterial docs](https://threejs.org/docs/pages/MeshPhysicalMaterial.html)
 and [GLTFExporter extension support](https://threejs.org/docs/pages/GLTFExporter.html).
 
-## Multi-select integration (#31 / PR #37)
+## Multi-select integration (#31)
 
-The current main used here still exposes a single selected physical ID. Preserve the
-multi-select stream's `PhysicalInstanceId[]` when integrating its controls; do not
-collapse it to an owner ID. Bulk finish changes should write `finishOverrides[id]`
-for every selected physical frame piece. Bulk paint changes should also set that
-piece's finish to `paint`. Duplication must remap both `overrides` and
-`finishOverrides`; group appearance reset removes both, while per-field reset
-preserves the other field. The multi-select
-follow-up owns that implementation and its mixed-selection UX/tests.
+Selection retains physical instance IDs. Bulk steel edits write
+`finishOverrides[id]` for each selected physical piece; bulk paint also writes
+explicit `paint` finishes so steel overrides cannot hide a chosen color.
+Color and finish Reset buttons use `resetAppearanceField` to preserve the other
+effective field. Resetting finish inherits rack steel even with a retained custom
+color; resetting color preserves legacy-implied paint when needed. The helper may
+retain an explicit finish to preserve these semantics. Use rack appearance removes
+both maps in one transaction. Mixed finishes have no chosen finish
+until edited. Global settings and unselected pieces remain unchanged.
+
+Complete accessory duplication remaps both maps using resolved physical suffixes,
+including same-side/reversed/arbitrary upright pairs. A finish-only override is
+copied even if the piece has no color override. Geometry and removal still dedupe
+owners; appearance never collapses physical IDs to owner IDs. Bulk operations and
+resets each commit once for undo. Named configuration Save remains explicit.
 
 ## Independent reset fields
 
