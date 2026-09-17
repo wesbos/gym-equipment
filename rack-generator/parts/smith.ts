@@ -37,9 +37,11 @@ export const definitions: PartDefinition[] = [
         if (p.outside) smithFrontAdapters(g, p);
         const count = p.height === 2032 ? 16 : 19,
           max = p.height === 2032 ? 1721 : 2029;
-        const { lowerBeam, top, at, stations } = smithLayout(p);
+        const { lowerBeam, top, at, stations, carriageAt, barAt } = smithLayout(p);
         const tilt = (s: ReturnType<typeof g.box>, x: number, z: number) =>
           g.move(g.rotate(s, [-p.angle, 0, 0]), at(x, z));
+        const carriage = (s: ReturnType<typeof g.box>, x: number) =>
+          g.move(g.rotate(s, [-p.angle, 0, 0]), carriageAt([x, 0, 0]));
         for (const side of [-1, 1]) {
           const x = side * 529,
             postX = (side * p.rackWidth) / 2;
@@ -108,22 +110,21 @@ export const definitions: PartDefinition[] = [
           for (const dz of [-52, 52]) {
             g.add(
               "Smith linear bearing housing",
-              tilt(g.ring(60, 31, 15.2, "z", [0, 0, 0]), x, p.barHeight + dz)
+              carriage(g.ring(60, 31, 15.2, "z", [0, 0, dz]), x)
             );
             g.add(
               "Linear bearing dust seal",
-              tilt(g.ring(5, 30, 15, "z", [0, 0, 0]), x, p.barHeight + dz + 32),
+              carriage(g.ring(5, 30, 15, "z", [0, 0, dz + 32]), x),
               "liner"
             );
           }
           g.add(
             "Carriage side plate",
-            tilt(
+            carriage(
               g.cut(g.box([8, 150, 180], [side * 37, -30, 0]), [
                 g.cylinder(12, 18, "x", [side * 37, -60, 0]),
               ]),
-              x,
-              p.barHeight
+              x
             )
           );
           const hook = [
@@ -139,20 +140,20 @@ export const definitions: PartDefinition[] = [
           ] as [number, number][];
           g.add(
             "Rotating bar locking hook",
-            tilt(g.profile(hook, 10, [side * 35, -60, 0], "x"), x, p.barHeight)
+            carriage(g.profile(hook, 10, [side * 35, -60, 0], "x"), x)
           );
           g.add(
             "Composite hook contact liner",
-            tilt(g.box([12, 33, 5], [side * 40, -30, -1]), x, p.barHeight),
+            carriage(g.box([12, 33, 5], [side * 40, -30, -1]), x),
             "liner"
           );
           g.add(
             "Bar rotation lever",
             g.path(
               [
-                at(x, p.barHeight),
-                at(x - side * 30, p.barHeight + 75),
-                at(x - side * 100, p.barHeight + 75),
+                carriageAt([x, 0, 0]),
+                carriageAt([x - side * 30, 0, 75]),
+                carriageAt([x - side * 100, 0, 75]),
               ],
               9
             ),
@@ -169,8 +170,7 @@ export const definitions: PartDefinition[] = [
           );
           g.bolt("Safety locking pin", at(x, p.safetyHeight), 12, 100, "y");
         }
-        const b = at(0, p.barHeight);
-        b[1] -= 60;
+        const b = barAt(0);
         g.add(
           "Polished 35 mm Smith bar shaft",
           g.ring(1280, 17.5, 11, "x", b),
