@@ -1,8 +1,9 @@
+import { PAINT_SWATCHES } from './appearance.ts';
 import type { FloorItem, RackDoc, ResolvedInstance, Vec2 } from './types.ts';
 export const BACKREST_ANGLES = [0, 15, 30, 45, 60, 75, 85] as const;
 export const SEAT_ANGLES = [-15, 0, 10, 20] as const;
 export const NIGHTHAWK_DEFAULTS = { backrestAngle: 0, seatAngle: 0 };
-export const NIGHTHAWK_COLORS = [['Metallic Black','#353739'],['Red','#a9232c'],['Blue','#24528a'],['Matte Black','#242526'],['Army Green','#454f36'],['White','#eeeeea']] as const;
+export const NIGHTHAWK_COLORS = PAINT_SWATCHES.filter(([name]) => ['Metallic Black','Red','Blue','Matte Black','Army Green','White'].includes(name));
 export function validateFloorItems(input: unknown, reserved: string[] = []): FloorItem[] {
   if (input === undefined) return [];
   if (!Array.isArray(input) || input.length > 100) throw Error('At most 100 floor items are allowed.');
