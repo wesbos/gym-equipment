@@ -129,7 +129,7 @@ export default function UprightPage() {
       >
         {def.label}
         <div className="input-wrap">
-          <NumericControl label={def.label} name={key} value={params[key]} min={def.min} max={def.max} step={def.step}
+          <NumericControl label={def.label} defaultValue={defaults[key]} name={key} value={params[key]} min={def.min} max={def.max} step={def.step}
             onInvalid={() => { ++sequence.current; setValid(false); setStatus("Enter a valid dimension."); }}
             onValue={value => { const next = { ...params, [key]: value }; setParams(next); update(next); }} />
           <span>{key === "height" ? "in" : "mm"}</span>

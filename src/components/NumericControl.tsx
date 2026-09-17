@@ -1,7 +1,9 @@
+import { ResetButton } from './ResetButton.tsx';
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import "./numeric-control.css";
 export interface NumericControlProps {
   label: string;
+  defaultValue?: number;
   name?: string;
   value: number;
   min?: number;
@@ -18,6 +20,7 @@ export interface NumericControlProps {
 }
 export function NumericControl({
   label,
+  defaultValue,
   name,
   value,
   min,
@@ -196,6 +199,9 @@ export function NumericControl({
           scrub(e.target.valueAsNumber);
         }}
       />
+      {defaultValue !== undefined && <ResetButton label={label} value={defaultValue} changed={invalid || value !== defaultValue} disabled={disabled} onReset={() => {
+        end(); begin(); setText(String(defaultValue)); emit(defaultValue); end();
+      }} />}
       {invalid && (
         <small role="status">
           Enter a number{min !== undefined ? ` ≥ ${min}` : ""}
