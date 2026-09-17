@@ -1,4 +1,6 @@
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
+import { createGymFloor, fitRackShadow } from './gym-floor.ts';
+import { FrameFinishResources, addSteelUVs } from './frame-finishes.ts';
 import { structureCandidates, type StructureCandidate } from '../../rack-generator/structure-candidates.ts';
 import { vendorAttribution } from '../../rack-generator/vendor-metadata.ts';
 import { placementMounts, proposalAt, proposalCollision, type PlacementProposal } from '../../rack-generator/placement-proposals.ts';
@@ -9,7 +11,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import { toCreasedNormals } from "three/addons/utils/BufferGeometryUtils.js";
-import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { createStudioLighting } from './studio-lighting.ts';
 import { detectCollisions } from "../../rack-generator/assembly-collisions.ts";
 import type {
   Mount,
@@ -59,21 +61,14 @@ export function createBuilderScene(
   let mountPoints: Mount[] = [];
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#e9ede7");
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x899383, 2.6));
-  for (const p of [
-    [2500, 4500, 2200],
-    [-2500, 1800, -2000],
-  ]) {
-    const l = new THREE.DirectionalLight(0xffffff, 3);
-    l.position.set(p[0], p[1], p[2]);
-    scene.add(l);
-  }
+  scene.fog = new THREE.Fog("#e9ede7", 10000, 18000);
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     preserveDrawingBuffer: true,
   });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  const lighting = createStudioLighting(scene, renderer, true);
+  const finishes = new FrameFinishResources(renderer.capabilities.getMaxAnisotropy());
   viewport.append(renderer.domElement);
   renderer.domElement.setAttribute(
     "aria-label",
@@ -82,12 +77,6 @@ export function createBuilderScene(
   const camera = new THREE.PerspectiveCamera(35, 1, 1, 40000),
     controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  const pmrem = new THREE.PMREMGenerator(renderer),
-    room = new RoomEnvironment(),
-    environment = pmrem.fromScene(room, 0.04);
-  scene.environment = environment.texture;
-  room.dispose();
-  pmrem.dispose();
   const assemblyRoot = new THREE.Group(),
     ghostRoot = new THREE.Group(),
     mountsRoot = new THREE.Group();
@@ -95,9 +84,8 @@ export function createBuilderScene(
     root.rotation.x = -Math.PI / 2;
     scene.add(root);
   }
-  const grid = new THREE.GridHelper(10000, 200, "#b4c0b1", "#d6ded2");
-  grid.position.y = -0.5;
-  scene.add(grid);
+  const floor = createGymFloor(renderer.capabilities.getMaxAnisotropy());
+  scene.add(floor.mesh);
   const raycaster = new THREE.Raycaster(),
     pointer = new THREE.Vector2(),
     instances = new Map<string, THREE.Group>();
@@ -162,7 +150,10 @@ export function createBuilderScene(
     }
   }
   function transformed(model: THREE.Group, entry: ResolvedInstance) {
-    const g = cloneInstanceMaterials(model, snapshot.doc.appearance, entry.id);
+    const g = cloneInstanceMaterials(model, snapshot.doc.appearance, entry.id, finishes);
+    g.traverse(object => {
+      if (object instanceof THREE.Mesh) object.castShadow = object.receiveShadow = true;
+    });
     g.position.set(...entry.position);
     g.rotation.set(...entry.rotation);
     g.userData = { id: entry.id, ownerId: entry.ownerId || entry.id, ...(vendorAttribution(entry.part) ? { vendorAttribution: vendorAttribution(entry.part) } : {}) };
@@ -196,6 +187,7 @@ export function createBuilderScene(
         indexed.setIndex(new THREE.BufferAttribute(m.indices, 1));
         const geometry = toCreasedNormals(indexed, Math.PI / 5);
         indexed.dispose();
+        addSteelUVs(geometry);
         const material = new THREE.MeshStandardMaterial({
           color: m.color || "#283e32",
           metalness: m.metalness ?? 0.55,
@@ -279,6 +271,7 @@ export function createBuilderScene(
         instances.set(String(g.userData.id), g);
       }
       scene.updateMatrixWorld(true);
+      fitRackShadow(lighting.key, new THREE.Box3().setFromObject(assemblyRoot));
       refreshSelection();
       refreshPlacement();
       trimCache();
@@ -507,6 +500,7 @@ export function createBuilderScene(
       for (const [i, model] of models.entries()) {
         const g = transformed(model, entries[i]);
         g.traverse(o => { if (o instanceof THREE.Mesh) {
+          o.castShadow = o.receiveShadow = false;
           disposeMaterial(o.material);
           o.material = new THREE.MeshStandardMaterial({ color: '#e2a248', transparent: true, opacity: 0.55, depthWrite: false, depthTest: false });
           o.renderOrder = 10;
@@ -832,10 +826,10 @@ export function createBuilderScene(
           () => {},
         );
       cache.clear();
-      grid.geometry.dispose();
-      disposeMaterial(grid.material);
-      environment.dispose();
-      scene.environment = null;
+      floor.dispose();
+
+      finishes.dispose();
+      lighting.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
       renderer.domElement.remove();
