@@ -4,8 +4,8 @@ Verified 2026-09-17 in isolated `gym-wave2-logos` Chrome, production preview on
 127.0.0.1:5305. Screenshot shows the persisted JPEG threshold/contrast settings,
 bridged contour preview and the real through-cut on the mounted nameplate.
 
-- Final main integration: 43ea341 (3MF export, size controls, reset/swap and orientation retained).
-- `npm test`: 183 passed, 0 failed/skipped (82.56 s).
+- Final main integration: 8e8ef7e (multiselect, placement proposals, 3MF and prior integrations retained).
+- `npm test`: 201 passed, 0 failed/skipped (66.52 s).
 - `npm run build`: strict TypeScript and production Vite build passed. Existing
   large-chunk and Manifold node:module browser-externalization advisories remain.
 - `GYM_LOGO_CDP_URL=<isolated Chrome endpoint> npm run test:logos:browser -- --reporter=line`:

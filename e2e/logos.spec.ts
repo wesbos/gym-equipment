@@ -27,6 +27,7 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Nameplate panel +', exact: true }).click();
   await page.getByRole('button', { name: 'Replace rear crossmember' }).click();
+  await page.getByRole('button', { name: 'Place', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Export GLB ↗' })).toBeEnabled({ timeout: 20000 });
   console.log('Text applied; nameplate mounted');
   for (const filename of ['logo.svg', 'logo.png', 'logo.jpg']) {
@@ -51,6 +52,7 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   const jsonDownload = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Save JSON', exact: true }).click();
   const json = await jsonDownload; const doc = JSON.parse(await fs.readFile((await json.path())!, 'utf8'));
+  expect(doc.structure['rear-crossmember'].part).toBe('nameplate');
   expect(doc.logo.source.kind).toBe('raster'); expect(doc.logo.source.threshold).toBe(140); expect(doc.logo.loops.length).toBeGreaterThan(0);
   await controls.getByLabel('Upload logo', { exact: true }).setInputFiles(path.resolve('rack-generator/logos/fixtures/unsafe.svg'));
   await controls.getByRole('button', { name: 'Validate & preview logo' }).click();
