@@ -72,3 +72,21 @@ test('shared fields intersect every part; bulk dimensions validate and undo toge
   assert.deepEqual(sharedFields(before, store.getSnapshot().resolved.filter(r => store.getSnapshot().selection.includes(r.id))), []);
   assert.throws(() => store.editSelectionParam('diameter', 35), /Unsupported/);
 });
+
+test('bulk field reset uses domain defaults per owner, preserves paint, and undoes once', () => {
+  const store = new BuilderStore();
+  store.select('pullup-front'); store.duplicateSelected();
+  const bars = store.getSnapshot().resolved.filter(r => r.part.startsWith('pullup'));
+  store.selectMany(bars.map(r => r.id)); store.paintSelection('#ff0000');
+  store.editSelectionParam('diameter', 35);
+  const before = store.getSnapshot().doc;
+  store.resetSelectionParam('diameter');
+  const after = store.getSnapshot();
+  for (const r of bars) {
+    assert.notEqual(after.doc.accessories.find(a => a.id === r.ownerId)?.params.diameter, 35);
+    assert.equal(after.doc.appearance?.overrides?.[r.id], '#ff0000');
+  }
+  store.history('undo'); assert.deepEqual(store.getSnapshot().doc, before);
+  store.select('front-left', { ctrlKey: true });
+  assert.throws(() => store.resetSelectionParam('diameter'), /Unsupported/);
+});

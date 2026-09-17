@@ -45,3 +45,10 @@ shared fields, and atomic parameter edits. Browser session
 Cmd-clicks, list range/toggle/plain selection, Escape, placement precedence,
 marquee dragging (14 pieces), orbit, mixed pair paint, duplicate/delete/undo,
 explicit Save/reload, and downloaded GLB JSON material inspection (red paint).
+
+Bulk parameter fields use the shared `ResetButton`; `resetSelectionParam` calls
+`resetPart` once per unique owner and commits the combined result once. Defaults
+are computed with `partDefaults` for each part/profile, so mixed selections reset
+to their own domain defaults. Paint reset remains “Use rack color.” A store test
+checks paint preservation and one-step undo. Browser verification selected two
+bars at 32/40 mm, reset both to 32 mm, then restored Mixed with one Undo.

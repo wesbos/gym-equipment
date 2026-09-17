@@ -1,3 +1,4 @@
+import { resetPart } from '../../rack-generator/reset.ts';
 import { removeSelection, selectionOwners, sharedFields, type PhysicalInstanceId, type SelectionGesture } from './selection.ts';
 import {
   LocalConfigStorage,
@@ -364,6 +365,13 @@ export class BuilderStore {
     const owners = selectionOwners(this.state.resolved, this.state.selection), doc = structuredClone(this.state.doc);
     for (const item of doc.accessories) if (owners.includes(item.id)) item.params[key] = value;
     this.commit(doc);
+  };
+  resetSelectionParam = (key: string) => {
+    const { doc, resolved, selection } = this.state;
+    const instances = resolved.filter(r => selection.includes(r.id));
+    if (!sharedFields(doc, instances).some(field => field.key === key)) throw Error('Unsupported shared parameter.');
+    const next = selectionOwners(resolved, selection).reduce((current, owner) => resetPart(current, owner, key), doc);
+    this.commit(next);
   };
   /** Copies complete accessory owners at existing mounts; the user can then move them. */
   duplicateSelected = () => {
