@@ -84,10 +84,6 @@ export function ConfigManager({ store }: { store: BuilderStore }) {
             Recover unsaved draft
           </button>
         )}
-        <p>
-          Only Save updates a named configuration. Drafts are kept separately
-          and recovered only when you choose.
-        </p>
       </fieldset>
     </details>
   );

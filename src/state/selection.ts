@@ -10,7 +10,7 @@ export function removeSelection(doc: RackDoc, resolved: ResolvedInstance[], ids:
   return selectionOwners(resolved, ids).reduce((next, id) => removeInstance(next, id), doc);
 }
 export function sharedFields(doc: RackDoc, instances: ResolvedInstance[]): PlacementField[] {
-  if (!instances.length || instances.some(r => r.kind !== 'accessory')) return [];
+  if (!instances.length || instances.some(r => r.kind !== 'accessory' || !doc.accessories.some(a => a.id === r.ownerId))) return [];
   const fields = instances.map(r => editableFields(r.part, doc));
   return fields[0].flatMap(field => {
     const matches = fields.map(list => list.find(f => f.key === field.key));

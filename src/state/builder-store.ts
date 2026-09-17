@@ -369,7 +369,7 @@ export class BuilderStore {
   duplicateSelected = () => {
     const { doc, resolved, selection } = this.state;
     const instances = resolved.filter(r => selection.includes(r.id));
-    if (!instances.length || instances.some(r => r.kind !== 'accessory')) return;
+    if (!instances.length || instances.some(r => r.kind !== 'accessory' || !doc.accessories.some(a => a.id === r.ownerId))) return;
     const owners = selectionOwners(resolved, selection);
     if (resolved.some(r => owners.includes(r.ownerId) && !selection.includes(r.id))) return;
     const next = structuredClone(doc), newOwners: string[] = [];
