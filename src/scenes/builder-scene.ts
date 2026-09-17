@@ -1,3 +1,4 @@
+import { placementMounts, proposalAt, proposalCollision, type PlacementProposal } from '../../rack-generator/placement-proposals.ts';
 import { swapCandidate, swapCandidates, type SwapCandidate } from '../../rack-generator/swap.ts';
 import { createSwapRegions } from './swap-regions.ts';
 import { cloneInstanceMaterials } from './instance-materials.ts';
@@ -6,7 +7,6 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import { toCreasedNormals } from "three/addons/utils/BufferGeometryUtils.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-import { resolveAssembly, getMounts } from "../../rack-generator/assembly.ts";
 import { detectCollisions } from "../../rack-generator/assembly-collisions.ts";
 import type {
   Mount,
@@ -51,7 +51,7 @@ export function createBuilderScene(
     hasFit = false,
     view: BuilderView = "iso";
   let previewTarget: Mount | null = null,
-    selectionBox: THREE.Box3Helper | null = null,
+    selectionBoxes: THREE.Box3Helper[] = [],
     pointerDown: [number, number] | null = null;
   let mountPoints: Mount[] = [];
   const scene = new THREE.Scene();
@@ -217,28 +217,17 @@ export function createBuilderScene(
       store.status("Geometry worker failed. Reload to retry.", true);
   };
   function clearSelection() {
-    if (selectionBox) {
-      scene.remove(selectionBox);
-      selectionBox.geometry.dispose();
-      disposeMaterial(selectionBox.material);
-      selectionBox = null;
-    }
+    for (const box of selectionBoxes) { scene.remove(box); box.geometry.dispose(); disposeMaterial(box.material); }
+    selectionBoxes = [];
   }
   function refreshSelection() {
     clearSelection();
-    const box = new THREE.Box3();
-    for (const g of instances.values())
-      if (
-        g.userData.ownerId === snapshot.selected ||
-        g.userData.id === snapshot.selected
-      )
-        box.union(new THREE.Box3().setFromObject(g));
-    if (!box.isEmpty()) {
-      selectionBox = new THREE.Box3Helper(
-        box.expandByScalar(5),
-        new THREE.Color("#c77c36"),
-      );
-      scene.add(selectionBox);
+    for (const g of instances.values()) {
+      if (!snapshot.selection.includes(g.userData.id as string)) continue;
+      const box = new THREE.Box3().setFromObject(g);
+      if (box.isEmpty()) continue;
+      const helper = new THREE.Box3Helper(box.expandByScalar(5), new THREE.Color('#c77c36'));
+      selectionBoxes.push(helper); scene.add(helper);
     }
   }
   function dimensions(measured = false) {
@@ -337,16 +326,7 @@ export function createBuilderScene(
   }
   function showMounts() {
     clearMounts();
-    mountPoints = getMounts(snapshot.doc, snapshot.placing?.part).filter(
-      (mount) => {
-        try {
-          store.placementDoc(mount);
-          return true;
-        } catch {
-          return false;
-        }
-      },
-    );
+    mountPoints = snapshot.placing ? placementMounts(snapshot.doc, snapshot.placing.part, snapshot.placing.movingId) : [];
     const geometry = new THREE.SphereGeometry(6, 8, 6),
       material = new THREE.MeshBasicMaterial({
         color: "#d28a40",
@@ -373,20 +353,16 @@ export function createBuilderScene(
       swapRegions = createSwapRegions(swapCandidates(snapshot.doc, part), instances, snapshot.doc);
       scene.add(swapRegions.root);
     }
-    if (snapshot.structureChoice) {
-      renderer.domElement.style.cursor = 'crosshair';
-      store.patch({ placementText: 'Hover a highlighted frame region to preview · click to swap · ESC cancels' });
-      return;
-    }
-    if (!placing) {
-      store.patch({ placementText: "" });
-      return;
-    }
-    showMounts();
+    if (!placing && !snapshot.structureChoice) return;
+    if (placing) showMounts();
     renderer.domElement.style.cursor = "crosshair";
-    store.patch({
-      placementText: `${placing.movingId ? "Move" : "Place"} ${nameOf(placing.part)} · choose a highlighted connection`,
-    });
+    if (snapshot.proposal) void renderProposal(snapshot.proposal);
+  }
+  function renderProposal(proposal: PlacementProposal) {
+    previewTarget = proposal.target ?? null;
+    const serial = ++previewSerial;
+    clearGhost();
+    void renderPreview(proposal.entries, serial);
   }
   const normals: Record<Mount["face"], Vec3> = {
     front: [0, -1, 0],
@@ -450,7 +426,7 @@ export function createBuilderScene(
         ghostRoot.add(g);
       }
     } catch (error) {
-      if (!disposed && serial === previewSerial) store.patch({ placementText: message(error) });
+      if (!disposed && serial === previewSerial) store.patch({ proposal: null, placementText: message(error) });
     } finally {
       previewBusy = false;
       if (!disposed) trimCache();
@@ -470,51 +446,61 @@ export function createBuilderScene(
     const candidate = candidateAt(event);
     if (candidate) {
       if (hoveredSwap?.ownerId === candidate.ownerId) return;
-      hoveredSwap = candidate; previewTarget = null; queuedPreview = null;
-      const serial = ++previewSerial; clearGhost(); swapRegions?.hover(candidate.valid ? candidate.ownerId : null);
-      renderer.domElement.style.cursor = candidate.valid ? 'copy' : 'not-allowed';
-      store.patch({ placementText: candidate.valid ? 'Swap ' + candidate.ownerId + ' · Click to replace · Undo restores the previous part' : "Won’t fit: " + candidate.reason });
-      if (candidate.valid) void renderPreview(candidate.entries, serial);
+      hoveredSwap = candidate; previewTarget = null;
+      swapRegions?.hover(candidate.valid ? candidate.ownerId : null);
+      if (!candidate.valid) { store.patch({ proposal: null, placementText: "Won’t fit: " + candidate.reason }); return; }
+      const proposal = { ...candidate, label: 'Swap ' + candidate.ownerId };
+      const collision = proposalCollision(snapshot.resolved, proposal);
+      store.patch({ proposal: collision ? null : proposal, placementText: collision || proposal.label + ' · Click to replace · Undo restores the previous part' });
       return;
     }
     const hadSwap = !!hoveredSwap;
     hoveredSwap = null; swapRegions?.hover(null);
     const target = snapshot.placing ? nearestMount(event) : null;
-    if (!hadSwap && JSON.stringify(target) === JSON.stringify(previewTarget)) return;
-    previewTarget = target; queuedPreview = null;
-    const serial = ++previewSerial; clearGhost();
-    renderer.domElement.style.cursor = target ? 'crosshair' : 'not-allowed';
-    if (!target) { store.patch({ placementText: 'Choose a highlighted compatible region or mounting hole · ESC cancels' }); return; }
+    if (!target || (!hadSwap && JSON.stringify(target) === JSON.stringify(previewTarget))) return;
     try {
-      const next = store.placementDoc(target), nextId = snapshot.placing?.movingId || next.accessories[next.accessories.length - 1].id;
-      store.patch({ placementText: target.uprightId + ' · ' + target.face + ' · Hole ' + (target.hole + 1) + ' · Click to place' });
-      void renderPreview(resolveAssembly(next).filter(r => (r.ownerId || r.id) === nextId), serial);
-    } catch (error) { previewTarget = null; store.patch({ placementText: message(error) }); }
+      const proposal = proposalAt(snapshot.doc, snapshot.placing!.part, target, snapshot.paired, snapshot.placing!.movingId);
+      const collision = proposalCollision(snapshot.resolved, proposal);
+      store.patch({ proposal: collision ? null : proposal, placementText: collision || `${proposal.label} — Place or pick another spot` });
+    } catch(error) { store.patch({ proposal: null, placementText: message(error) }); }
   }
   function dropPlacement(event: { clientX: number; clientY: number }) {
-    const candidate = candidateAt(event);
-    if (candidate) {
-      if (!candidate.valid) { store.status("Won’t fit: " + candidate.reason, true); return; }
-      store.act(() => { store.commit(candidate.doc); store.select(candidate.ownerId); });
-      return;
-    }
-    if (!snapshot.placing) { store.status('Choose a highlighted frame region. Escape cancels.'); return; }
-    const target = nearestMount(event);
-    if (!target) { store.status('Choose a highlighted mounting hole. Escape cancels placement.'); return; }
-    store.act(() => {
-      const next = store.placementDoc(target), selected = snapshot.placing?.movingId || next.accessories[next.accessories.length - 1].id;
-      store.commit(next); store.select(selected);
-    });
+    if (!candidateAt(event) && !nearestMount(event)) return;
+    updatePreview(event);
+    store.acceptProposal();
   }
+  const marquee = document.createElement('div');
+  marquee.style.cssText = 'position:fixed;pointer-events:none;border:1px solid #c77c36;background:#c77c3622;z-index:100;display:none';
+  viewport.append(marquee);
+  let selecting = false;
   const onDown = (event: PointerEvent) => {
     pointerDown = [event.clientX, event.clientY];
-    if ((snapshot.placing || snapshot.structureChoice) && event.button === 0) controls.enabled = false;
+    selecting = snapshot.selectionTool && !snapshot.placing && !snapshot.structureChoice && event.button === 0;
+    if ((snapshot.placing || snapshot.structureChoice || selecting) && event.button === 0) controls.enabled = false;
+    if (selecting) renderer.domElement.setPointerCapture(event.pointerId);
   };
   const onMove = (event: PointerEvent) => {
+    if (selecting && pointerDown) {
+      Object.assign(marquee.style, { display: 'block', left: `${Math.min(pointerDown[0], event.clientX)}px`, top: `${Math.min(pointerDown[1], event.clientY)}px`, width: `${Math.abs(event.clientX - pointerDown[0])}px`, height: `${Math.abs(event.clientY - pointerDown[1])}px` });
+    }
     void updatePreview(event);
   };
   const onUp = (event: PointerEvent) => {
-    controls.enabled = true;
+    controls.enabled = !snapshot.selectionTool;
+    marquee.style.display = 'none';
+    if (selecting && pointerDown && Math.hypot(event.clientX - pointerDown[0], event.clientY - pointerDown[1]) > 6) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      const left = Math.min(pointerDown[0], event.clientX), right = Math.max(pointerDown[0], event.clientX);
+      const top = Math.min(pointerDown[1], event.clientY), bottom = Math.max(pointerDown[1], event.clientY);
+      const ids: string[] = [];
+      for (const g of instances.values()) {
+        const center = new THREE.Box3().setFromObject(g).getCenter(new THREE.Vector3()).project(camera);
+        const x = rect.left + (center.x + 1) * rect.width / 2, y = rect.top + (1 - center.y) * rect.height / 2;
+        if (center.z >= -1 && center.z <= 1 && x >= left && x <= right && y >= top && y <= bottom) ids.push(g.userData.id as string);
+      }
+      store.selectMany(ids, event.metaKey || event.ctrlKey); pointerDown = null; selecting = false; return;
+    }
+    selecting = false;
     if (
       event.button !== 0 ||
       !pointerDown ||
@@ -542,11 +528,13 @@ export function createBuilderScene(
       typeof object?.userData.id === "string"
         ? object.userData.id
         : null,
+      event,
     );
   };
   const onCancel = () => {
     pointerDown = null;
-    controls.enabled = true;
+    selecting = false; marquee.style.display = 'none';
+    controls.enabled = !snapshot.selectionTool;
   };
   const onDrag = (event: DragEvent) => {
     event.preventDefault();
@@ -556,7 +544,7 @@ export function createBuilderScene(
     event.preventDefault();
     dropPlacement(event);
   };
-  renderer.domElement.addEventListener("pointerdown", onDown);
+  renderer.domElement.addEventListener("pointerdown", onDown, true);
   renderer.domElement.addEventListener("pointermove", onMove);
   renderer.domElement.addEventListener("pointerup", onUp);
   renderer.domElement.addEventListener("pointercancel", onCancel);
@@ -633,7 +621,9 @@ export function createBuilderScene(
     snapshot = store.getSnapshot();
     if (disposed) return;
     if (snapshot.doc !== previous.doc) requestRebuild();
-    if (snapshot.selected !== previous.selected) refreshSelection();
+    if (snapshot.selection !== previous.selection) refreshSelection();
+    controls.enabled = !snapshot.selectionTool && !selecting && !(pointerDown && (snapshot.placing || snapshot.structureChoice));
+    if (previous.selectionTool && !snapshot.selectionTool) onCancel();
     if (
       snapshot.placing !== previous.placing ||
       snapshot.structureChoice !== previous.structureChoice ||
@@ -641,6 +631,10 @@ export function createBuilderScene(
       snapshot.doc !== previous.doc
     )
       refreshPlacement();
+    else if (snapshot.proposal !== previous.proposal) {
+      if (snapshot.proposal && (snapshot.placing || snapshot.structureChoice)) void renderProposal(snapshot.proposal);
+      else { previewTarget = null; previewSerial++; clearGhost(); }
+    }
   });
   requestRebuild();
   if (snapshot.placing || snapshot.structureChoice) refreshPlacement();
@@ -671,7 +665,8 @@ export function createBuilderScene(
       cancelAnimationFrame(frame);
       observer.disconnect();
       controls.dispose();
-      renderer.domElement.removeEventListener("pointerdown", onDown);
+      marquee.remove();
+      renderer.domElement.removeEventListener("pointerdown", onDown, true);
       renderer.domElement.removeEventListener("pointermove", onMove);
       renderer.domElement.removeEventListener("pointerup", onUp);
       renderer.domElement.removeEventListener("pointercancel", onCancel);
