@@ -1,3 +1,4 @@
+import { snapDimensions } from './grid.ts';
 import type { RackDoc, RackDimensions, Accessory, Target, Mount, ResolvedInstance, Vec3, NumericParams, PartId, Face, UprightId, StructureSlot, StructureVariant, PlacementInfo } from './types.ts';
 import { attachmentPartIds, getAttachmentDefaults, getAttachmentPlacementInfo, getAttachmentAnchor, getAttachmentCollisionBoxes } from './attachment-mounts.ts';
 
@@ -285,7 +286,7 @@ export function getAvailableStructure(input: RackDoc): { id: string; part: PartI
 export function resizeAssembly(input: RackDoc, patch: Partial<RackDimensions>): RackDoc {
   const doc = validateAssembly(input);
   if (!isRecord(patch) || Object.keys(patch).some(key => !(key in RACK_DEFAULTS))) fail('Unsupported rack dimension.');
-  doc.rack = { ...doc.rack, ...patch };
+  doc.rack = snapDimensions(doc.rack, patch);
   // Validate dimensions before using them in arithmetic; adapt placements only after.
   validateAssembly({ ...doc, accessories: [] });
   for (const a of doc.accessories) {

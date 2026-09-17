@@ -1,3 +1,4 @@
+import { snapDimensions } from '../../rack-generator/grid.ts';
 import { partIcon } from "../components/part-icon.ts";
 import {
   useEffect,
@@ -81,6 +82,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 function Inspector({ store }: { store: BuilderStore }) {
+  const [snapHint, setSnapHint] = useState("");
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot),
     { doc, resolved, selected, structureChoice, definitions } = state;
   const nameOf = (part: string) =>
@@ -161,6 +163,11 @@ function Inspector({ store }: { store: BuilderStore }) {
         </p>
         <form
           id="frame-form"
+          onChange={(event) => {
+            const data = new FormData(event.currentTarget);
+            const snapped = snapDimensions(doc.rack, { height: Number(data.get("heightIn")) * 25.4, width: Number(data.get("width")), depth: Number(data.get("depth")) });
+            setSnapHint(`Snapped target: ${snapped.height} mm high × ${snapped.width} mm wide × ${snapped.depth} mm deep`);
+          }}
           key={JSON.stringify(doc.rack)}
           onSubmit={(e) =>
             submit(e, (data) =>
@@ -214,6 +221,7 @@ function Inspector({ store }: { store: BuilderStore }) {
               <span>mm</span>
             </div>
           </Field>
+          <output aria-live="polite">{snapHint || `Grid: ${doc.rack.pitch} mm · spans 425 / 725 / 1075 mm`}</output>
           <button className="primary update-frame">Update frame ↗</button>
         </form>
       </>
