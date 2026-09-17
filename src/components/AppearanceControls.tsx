@@ -1,21 +1,23 @@
+import { physicalFinish } from '../../rack-generator/appearance-reset.ts';
 import { ResetButton } from './ResetButton.tsx';
 import { useSyncExternalStore } from 'react';
 import { DEFAULT_FRAME_COLOR, PAINT_SWATCHES, type Appearance, type FrameFinish, type HardwareFinish } from '../../rack-generator/appearance.ts';
 import type { BuilderStore } from '../state/builder-store.ts';
 import './appearance-controls.css';
 
-function PaintPicker({ label, color, finish, onColor, onFinish, colorChanged, finishChanged, onResetColor, onResetFinish }: {
-  label: string; color: string; finish: FrameFinish;
+function PaintPicker({ label, color, mixedColor = false, finish, onColor, onFinish, colorChanged, finishChanged, onResetColor, onResetFinish }: {
+  label: string; color: string; mixedColor?: boolean; finish: FrameFinish | '';
   onColor(color: string): void; onFinish(finish: FrameFinish): void;
   colorChanged: boolean; finishChanged: boolean; onResetColor(): void; onResetFinish(): void;
 }) {
   return <fieldset className="paint-picker"><legend>{label}</legend>
     <div className="paint-swatches">{PAINT_SWATCHES.map(([name, hex]) =>
-      <button key={name} type="button" title={name} aria-label={`${label}: ${name}`} aria-pressed={finish === 'paint' && color === hex} onClick={() => onColor(hex)}>
+      <button key={name} type="button" title={name} aria-label={`${label}: ${name}`} aria-pressed={!mixedColor && finish === 'paint' && color === hex} onClick={() => onColor(hex)}>
         <span style={{ background: hex }} />{name}
       </button>)}</div>
-    <label className="field"><span>Custom color</span><input aria-label={`${label} color`} type="color" value={color} onChange={e => onColor(e.target.value)} /><ResetButton label={`${label} color`} changed={colorChanged} onReset={onResetColor} /></label>
+    <label className="field"><span>Custom color{mixedColor ? ' · Mixed' : ''}</span><input aria-label={`${label} color`} type="color" value={color} onChange={e => onColor(e.target.value)} /><ResetButton label={`${label} color`} changed={colorChanged} onReset={onResetColor} /></label>
     <label className="field"><span>Steel finish</span><select aria-label={`${label} steel finish`} value={finish} onChange={e => onFinish(e.target.value as FrameFinish)}>
+      {finish === '' && <option value="" disabled>Mixed</option>}
       <option value="paint">Powder coat</option><option value="stainless">Stainless steel</option><option value="clear-grind">Clear grind</option>
     </select><ResetButton label={`${label} steel finish`} changed={finishChanged} onReset={onResetFinish} /></label>
   </fieldset>;
@@ -27,6 +29,8 @@ export function AppearanceControls({ store }: { store: BuilderStore }) {
   const update = (patch: Partial<Appearance>) => store.act(() => store.commit({ ...doc, appearance: { ...appearance, ...patch } }));
   const colors = selection.map(id => appearance.overrides?.[id] ?? appearance.frameColor ?? DEFAULT_FRAME_COLOR);
   const mixed = colors.some(value => value !== colors[0]);
+  const finishes = selection.map(id => physicalFinish(appearance, id));
+  const mixedFinish = finishes.some(value => value !== finishes[0]);
   const color = appearance.frameColor ?? DEFAULT_FRAME_COLOR;
   return <section aria-label="Rack appearance" className="appearance-controls">
     <h3>Appearance</h3>
@@ -41,9 +45,16 @@ export function AppearanceControls({ store }: { store: BuilderStore }) {
     </>}
     {physical && <>
       {selection.length > 1 ? <>
-        <label className="field"><span>Selected pieces color{mixed ? ' · Mixed' : ''}</span><input aria-label="Selected pieces color" type="color" value={mixed ? '#808080' : colors[0] ?? color} onChange={e => store.act(() => store.paintSelection(e.target.value))} /></label>
-        <p className="note">{selection.length} pieces</p>
-        <button type="button" disabled={!selection.some(id => appearance.overrides?.[id])} onClick={() => store.act(() => store.paintSelection())}>Use rack color</button>
+        <PaintPicker label="Selected pieces" color={mixed ? '#808080' : colors[0] ?? color} mixedColor={mixed}
+          finish={mixedFinish ? '' : finishes[0] ?? 'paint'}
+          onColor={value => store.act(() => store.paintSelection(value))}
+          onFinish={value => store.act(() => store.finishSelection(value))}
+          colorChanged={selection.some(id => !!appearance.overrides?.[id])}
+          onResetColor={() => store.act(() => store.paintSelection())}
+          finishChanged={finishes.some(finish => finish !== (appearance.frameFinish ?? 'paint'))}
+          onResetFinish={() => store.act(() => store.finishSelection())} />
+        <button type="button" disabled={!selection.some(id => appearance.overrides?.[id] || appearance.finishOverrides?.[id])}
+          onClick={() => store.act(store.resetSelectionAppearance)}>Use rack appearance</button>
       </> : <>
       <p className="note">{physical.id.replaceAll('-', ' ')}</p>
       <PaintPicker label="This piece" color={appearance.overrides?.[physical.id] ?? color}
