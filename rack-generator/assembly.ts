@@ -1,3 +1,4 @@
+import { validateFloorItems, resolveFloorItems } from './floor-items.ts';
 import { validateMountShaft } from './mount-shafts.ts';
 import { gridProfile } from './profiles.ts';
 import { legacyGraph, validateGraph, structureSlots } from './topology.ts';
@@ -261,7 +262,8 @@ export function validateAssembly(input: unknown): RackDoc {
   });
   if (typeof input.nextId !== 'number' || !Number.isSafeInteger(input.nextId) || input.nextId < 1 || input.nextId > 1000000) fail('Invalid next accessory ID.');
   const appearance = validateAppearance(input.appearance);
-  return { ...copy(input), ...(appearance ? { appearance } : {}), ...graph, version: ASSEMBLY_VERSION, rack, removed: [...removed], structure, accessories, nextId: input.nextId };
+  const floorItems = validateFloorItems(input.floorItems, [...Object.keys(graph.uprights), ...graph.connections.map(e=>e.id), ...accessories.map(a=>a.id)]);
+  return { ...copy(input), ...(input.floorItems !== undefined ? { floorItems } : {}), ...(appearance ? { appearance } : {}), ...graph, version: ASSEMBLY_VERSION, rack, removed: [...removed], structure, accessories, nextId: input.nextId };
 }
 export function getPartPlacementInfo(part: string, input?: RackDoc): PlacementInfo | null {
   if (isMountedAttachment(part)) {
@@ -344,6 +346,7 @@ export function unpairAccessory(input: RackDoc, id: string): RackDoc {
   return validateAssembly(doc);
 }
 export function removeInstance(input: RackDoc, id: string): RackDoc {
+  if (input.floorItems?.some(item => item.id === id)) return validateAssembly({ ...input, floorItems: input.floorItems.filter(item => item.id !== id) });
   const doc = validateAssembly(input), ownerId = id.split(':')[0];
   if (structureSlots(doc).some(slot => slot.id === ownerId)) {
     const removed = new Set(doc.removed); removed.add(ownerId);
@@ -403,7 +406,7 @@ export function getMounts(input: RackDoc, part?: string, params: NumericParams =
 }
 /** Resolve every connection against the current rack dimensions and source origins. */
 export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
-  const doc = validateAssembly(input), r = { ...doc.rack, uprights: doc.uprights }, result: ResolvedInstance[] = [];
+  const doc = validateAssembly(input), r = { ...doc.rack, uprights: doc.uprights }, result: ResolvedInstance[] = resolveFloorItems(doc.floorItems);
   const append = (id: string, part: PartId, params: NumericParams, position: Vec3, angle: number, mounts: Mount[], kind: ResolvedInstance['kind'], ownerId = id, paired = false, connectedTo: string[] = []) => {
     result.push({ id, part, params, position, rotation: [0, 0, angle], mount: mounts[0] ?? null, mounts, ownerId, kind, paired, connectedTo });
   };

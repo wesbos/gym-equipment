@@ -1,3 +1,4 @@
+import { addFloorItem, resolveFloorItems, floorWarnings } from '../../rack-generator/floor-items.ts';
 import { resetPart } from '../../rack-generator/reset.ts';
 import { removeSelection, selectionOwners, sharedFields, type PhysicalInstanceId, type SelectionGesture } from './selection.ts';
 import { structureProposalAt, proposalCollision, suggestPlacement, type PlacementProposal } from '../../rack-generator/placement-proposals.ts';
@@ -69,6 +70,8 @@ export class BuilderStore {
   private pendingDraft: RackDoc | null = null;
   private draftQueued = false;
   private gesture = false;
+  private gestureOriginal: RackDoc | null = null;
+  private gestureRedo: RackDoc[] = [];
   private gestureChanged = false;
   readonly ready: Promise<void>;
   constructor(storage?: StorageLike | ConfigStorage) {
@@ -291,10 +294,22 @@ export class BuilderStore {
     });
   }
   beginGesture = () => {
+    this.gestureOriginal = structuredClone(this.state.doc);
+    this.gestureRedo = [...this.redo];
     this.gesture = true;
     this.gestureChanged = false;
   };
+  cancelGesture = () => {
+    if (this.gestureOriginal && this.gestureChanged) {
+      this.undo.pop(); this.redo = this.gestureRedo;
+      const doc = this.gestureOriginal;
+      this.patch({ doc, resolved: resolveAssembly(doc), canUndo: !!this.undo.length, canRedo: !!this.redo.length });
+      this.autosave();
+    }
+    this.endGesture();
+  };
   endGesture = () => {
+    this.gestureOriginal = null;
     this.gesture = false;
     this.gestureChanged = false;
   };
@@ -356,7 +371,7 @@ export class BuilderStore {
     const valid = ids.filter(id => this.state.resolved.some(r => r.id === id));
     this.patch({ selection: [...new Set([...(additive ? this.state.selection : []), ...valid])] });
   };
-  escape = () => this.patch({ proposal: null, placing: null, structureChoice: null, selection: [], selectionAnchor: null, selectionTool: false });
+  escape = () => { this.cancelGesture(); this.patch({ proposal: null, placing: null, structureChoice: null, selection: [], selectionAnchor: null, selectionTool: false }); };
   paintSelection = (color?: string) => {
     const overrides = { ...this.state.doc.appearance?.overrides };
     for (const id of this.state.selection) { if (color) overrides[id] = color; else delete overrides[id]; }
@@ -409,6 +424,12 @@ export class BuilderStore {
       this.acceptProposal();
       return;
     }
+    if (part === 'rep-nighthawk') {
+      const doc = movingId ? structuredClone(this.state.doc) : addFloorItem(this.state.doc);
+      const item = movingId ? doc.floorItems!.find(i=>i.id===movingId)! : doc.floorItems!.at(-1)!;
+      this.patch({ selected:null, placing:{part,movingId}, structureChoice:null, proposal:{doc,entries:resolveFloorItems([item]),ownerId:item.id,label:'Floor placement'},placementText:'Click floor to place · R rotates · Alt disables snap' });
+      return;
+    }
     const paired = movingId ? this.state.doc.accessories.find(a => a.id === movingId)?.paired ?? false : this.state.paired;
     const result = suggestPlacement(this.state.doc, part, paired, movingId);
     const info = getPartPlacementInfo(part, this.state.doc);
@@ -416,6 +437,18 @@ export class BuilderStore {
     this.patch({ selected: null, placing: structural ? null : { part, movingId }, structureChoice: structural ? part : null,
       paired, proposal: result.proposal,
       placementText: result.proposal ? `Suggested: ${result.proposal.label} — Place or pick another spot` : `Doesn't fit: ${result.reason}` });
+  };
+  previewFloor = (position?: [number,number], rotationDelta = 0) => {
+    const proposal=this.state.proposal;
+    if(this.state.placing?.part !== 'rep-nighthawk' || !proposal) return;
+    const doc=structuredClone(proposal.doc), item=doc.floorItems!.find(i=>i.id===proposal.ownerId)!;
+    if(position) item.position=position;
+    item.rotation+=rotationDelta;
+    this.patch({proposal:{...proposal,doc,entries:resolveFloorItems([item])},placementText:floorWarnings(doc).some(w=>w.ids.includes(item.id)) ? 'Overlap warning · Click to place anyway' : 'Click floor to place · R rotates · Alt disables snap'});
+  };
+  updateFloor = (id:string, patch:Partial<import('../../rack-generator/types.ts').FloorItem>) => {
+    const doc=structuredClone(this.state.doc),item=doc.floorItems?.find(i=>i.id===id);
+    if(item) {Object.assign(item,patch);this.commit(doc);}
   };
   previewStructure = (slot: string) => this.act(() => {
     const part = this.state.structureChoice;

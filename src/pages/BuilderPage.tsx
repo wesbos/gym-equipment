@@ -1,3 +1,5 @@
+import { FloorInspector } from '../components/FloorInspector.tsx';
+import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { editableFields } from '../state/selection.ts';
 import { BulkInspector } from '../components/BulkInspector.tsx';
 import { PrintExport } from '../components/PrintExport.tsx';
@@ -45,6 +47,7 @@ import type {
 } from "../../rack-generator/types.ts";
 import "../../rack-generator/builder.css";
 const groups: [string, PartId[]][] = [
+  ["Floor items", ["rep-nighthawk"]],
   [
     "Frame",
     [
@@ -182,6 +185,7 @@ function Inspector({ store }: { store: BuilderStore }) {
         </form>
       </>
     );
+  if (physical.kind === 'floor-item') return <FloorInspector store={store} id={physical.id} />;
   const fields = editableFields(part, doc);
   const variants = allParts.filter((id) =>
     entry
@@ -419,7 +423,7 @@ export default function BuilderPage() {
       controller.current = null;
     };
   }, [store]);
-  const warnings = detectCollisions(state.resolved);
+  const warnings = [...detectCollisions(state.resolved), ...floorWarnings(state.doc)];
   const fit = (mode = view) => {
     setView(mode);
     controller.current?.fit(mode);

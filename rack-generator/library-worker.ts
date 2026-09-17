@@ -23,10 +23,10 @@ self.onmessage = async ({ data }: MessageEvent<LibraryWorkerRequest>) => {
     for (const [key, value] of Object.entries(params))
       if (
         !Number.isFinite(value) ||
-        value < 0 ||
+        (value < 0 && !(data.part === "rep-nighthawk" && key === "seatAngle" && value === -15)) ||
         value > 4000 ||
         (value === 0 &&
-          !["cornerRadius", "benchStart", "rise", "offset", "sag"].includes(
+          !["backrestAngle", "seatAngle", "cornerRadius", "benchStart", "rise", "offset", "sag"].includes(
             key
           ))
       )
