@@ -107,7 +107,7 @@ function pullup(kind: string, api: ManifoldAPI, p: NumericParams) {
         }
       }
     }
-    return [{name:'Welded bars, radiused mounting flanges and gussets',solid:union(body),color:steel},{name:'Four M16 bolts, washers and hex nuts',solid:union(bolts),color:zinc}];
+    return [{name:'Welded bars, radiused mounting flanges and gussets',solid:union(body),color:steel,role:'frame'},{name:'Four M16 bolts, washers and hex nuts',solid:union(bolts),color:zinc,role:'fastener'}];
   });
 }
 // Open rack saddles have an unequal pair of upright cheeks and a lower bridge.
@@ -144,7 +144,7 @@ function boxSafety(api: ManifoldAPI,p: NumericParams){
     for(const sign of [-1,1]){const s=saddle(h,sign*(p.length/2+40.5),sign,p.upright,162.5);bodies.push(...s.steel);liners.push(...s.liners);screws.push(...s.screws);}
     liners.push(rounded([p.length-10,p.width,5],4,[0,0,p.height+2.5]));
     for(let i=0;i<4;i++)screws.push(capScrew(-p.length/2+35+i*(p.length-70)/3,0,p.height+5));
-    return [{name:'Perforated box beam and asymmetric end cradles',solid:union(bodies),color:steel},{name:'Top strip and three-sided UHMW saddle liners',solid:union(liners),color:plastic},{name:'Recessed liner screws',solid:union(screws),color:zinc}];
+    return [{name:'Perforated box beam and asymmetric end cradles',solid:union(bodies),color:steel,role:'frame'},{name:'Top strip and three-sided UHMW saddle liners',solid:union(liners),color:plastic,role:'liner'},{name:'Recessed liner screws',solid:union(screws),color:zinc,role:'fastener'}];
   });
 }
 function pinPipe(api: ManifoldAPI,p: NumericParams){
@@ -156,7 +156,7 @@ function pinPipe(api: ManifoldAPI,p: NumericParams){
     const pts=[[end,0,z],[-half-75,0,z]];
     for(let i=1;i<=16;i++){const a=Math.PI/2+i*Math.PI/32;pts.push([-half-75+radius*Math.cos(a),0,84+radius*Math.sin(a)]);}
     pts.push([-half-91,0,0]);
-    return [{name:'Hollow 45 mm protective pipe',solid:pipe,color:steel},{name:'16 mm pin with swept 90 degree handle',solid:path(pts,p.pinDiameter),color:zinc}];
+    return [{name:'Hollow 45 mm protective pipe',solid:pipe,color:steel,role:'sleeve'},{name:'16 mm pin with swept 90 degree handle',solid:path(pts,p.pinDiameter),color:zinc,role:'rod'}];
   });
 }
 function webbing(api: ManifoldAPI,p: NumericParams){
@@ -193,7 +193,7 @@ function webbing(api: ManifoldAPI,p: NumericParams){
       const len=Math.hypot(b[0]-a[0],b[2]-a[2]);
       straps.push(move(rotate(box([len+.2,p.strapWidth,p.strapThickness]),[0,-Math.atan2(b[2]-a[2],b[0]-a[0])*180/Math.PI,0]),[(a[0]+b[0])/2,0,(a[2]+b[2])/2]));
     }
-    return [{name:'Shaped strap cradles and pivot lugs',solid:union(bodies),color:steel},{name:'UHMW upright liners',solid:union(liners),color:plastic},{name:'Pivot bolts and recessed screws',solid:union(hardware),color:zinc},{name:'40 mm doubled webbing with looped ends',solid:union(straps),color:'#292b2c'}];
+    return [{name:'Shaped strap cradles and pivot lugs',solid:union(bodies),color:steel,role:'frame'},{name:'UHMW upright liners',solid:union(liners),color:plastic,role:'liner'},{name:'Pivot bolts and recessed screws',solid:union(hardware),color:zinc,role:'fastener'},{name:'40 mm doubled webbing with looped ends',solid:union(straps),color:'#292b2c',role:'source'}];
   });
 }
 export const definitions: PartDefinition[]=[

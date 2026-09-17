@@ -43,7 +43,7 @@ test('invalid edits and imports preserve document, selection, persistence and hi
   assert.equal(storage.writes.length, writes);
   store.act(() => store.importJSON('{}'));
   assert.equal(store.getSnapshot().doc, before.doc);
-  assert.equal(store.getSnapshot().selected, 'jhooks-front');
+  assert.equal(store.getSnapshot().selected, 'jhooks-front:left');
   assert.equal(store.getSnapshot().error, true);
   assert.equal(store.getSnapshot().canUndo, false);
   assert.equal(store.getSnapshot().canRedo, true);
@@ -86,11 +86,11 @@ test('JSON import is undoable and clears selection and transient placement', () 
   assert.equal(store.getSnapshot().doc.accessories.length, 3);
 });
 
-test('selection resolves paired mesh IDs and structural composites to their owning group', () => {
+test('selection preserves physical side IDs and structural composite IDs', () => {
   const store = new BuilderStore();
   store.startPlacement('spotter-arm');
   store.select('jhooks-front:right');
-  assert.equal(store.getSnapshot().selected, 'jhooks-front');
+  assert.equal(store.getSnapshot().selected, 'jhooks-front:right');
   assert.equal(store.getSnapshot().placing, null);
   store.startPlacement('nameplate');
   assert.equal(store.getSnapshot().structureChoice, 'nameplate');

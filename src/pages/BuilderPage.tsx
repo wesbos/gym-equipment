@@ -1,4 +1,5 @@
 import { PartThumbnail } from "../components/PartThumbnail.tsx";
+import { AppearanceControls } from "../components/AppearanceControls.tsx";
 import {
   useEffect,
   useRef,
@@ -87,7 +88,7 @@ function Inspector({ store }: { store: BuilderStore }) {
     definitions
       .find((d) => d.id === part)
       ?.name.replace(/^BOS STRENGTH\s*/, "") || part;
-  const entry = doc.accessories.find((a) => a.id === selected),
+  const entry = doc.accessories.find((a) => a.id === selected?.split(":")[0]),
     physical =
       resolved.find((r) => r.id === selected) ||
       resolved.find((r) => r.ownerId === selected);
@@ -793,6 +794,7 @@ export default function BuilderPage() {
           >
             ← Rack settings
           </button>
+          <AppearanceControls store={store} />
           <Inspector store={store} />
           <div id="warnings">
             {warnings.map((warning, i) => (
