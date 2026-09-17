@@ -1,3 +1,4 @@
+import { PrintExport } from '../components/PrintExport.tsx';
 import { gridProfile } from '../../rack-generator/profiles.ts';
 import { RackPresets } from '../components/RackPresets.tsx';
 import { TopologyEditor } from '../components/TopologyEditor.tsx';
@@ -525,6 +526,7 @@ export default function BuilderPage() {
           </div>
           <div className="toolbar-actions">
             <ConfigManager store={store} />
+            <PrintExport store={store} />
             <div className="history-actions">
               <button
                 id="undo"
