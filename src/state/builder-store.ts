@@ -148,7 +148,7 @@ export class BuilderStore {
     if (patch.paired !== undefined && patch.paired !== this.state.paired && this.state.placing && !patch.placing) {
       const { part, movingId } = this.state.placing;
       const result = suggestPlacement(this.state.doc, part, patch.paired, movingId);
-      patch = { ...patch, proposal: result.proposal, placementText: result.proposal ? `Suggested: ${result.proposal.label} — Place or pick another spot` : `Doesn't fit: ${result.reason}` };
+      patch = { ...patch, proposal: result.proposal, placementText: result.proposal ? `Suggested: ${result.proposal.label}` : `Doesn't fit: ${result.reason}` };
     }
     if (patch.doc || patch.structureMode !== undefined && !("proposal" in patch) || patch.placing === null && patch.structureChoice === null) patch.proposal = null;
     this.state = { ...this.state, ...patch };
@@ -423,14 +423,14 @@ export class BuilderStore {
     const structural = part === 'upright' || !!info?.slots?.length;
     this.patch({ selected: null, placing: structural ? null : { part, movingId }, structureChoice: structural ? part : null,
       paired, structureMode: "swap", proposal: result.proposal,
-      placementText: result.proposal ? `Suggested: ${result.proposal.label} — Place or pick another spot` : `Doesn't fit: ${result.reason}` });
+      placementText: result.proposal ? `Suggested: ${result.proposal.label}` : `Doesn't fit: ${result.reason}` });
   };
   previewStructure = (slot: string) => this.act(() => {
     const part = this.state.structureChoice;
     if (!part) return;
     const proposal = structureProposalAt(this.state.doc, part, slot);
     const collision = proposalCollision(this.state.resolved, proposal);
-    this.patch({ proposal: collision ? null : proposal, placementText: collision || `${proposal.label} — Place or pick another slot` });
+    this.patch({ proposal: collision ? null : proposal, placementText: collision || `${proposal.label}` });
   });
   acceptProposal = () => this.act(() => {
     const proposal = this.state.proposal;
