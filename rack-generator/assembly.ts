@@ -1,3 +1,4 @@
+import { validateAppearance } from './appearance.ts';
 import type { RackDoc, RackDimensions, Accessory, Target, Mount, ResolvedInstance, Vec3, NumericParams, PartId, Face, UprightId, StructureSlot, StructureVariant, PlacementInfo } from './types.ts';
 import { attachmentPartIds, getAttachmentDefaults, getAttachmentPlacementInfo, getAttachmentAnchor, getAttachmentCollisionBoxes } from './attachment-mounts.ts';
 
@@ -196,7 +197,8 @@ export function validateAssembly(input: unknown): RackDoc {
     return clean;
   });
   if (typeof input.nextId !== 'number' || !Number.isSafeInteger(input.nextId) || input.nextId < 1 || input.nextId > 1000000) fail('Invalid next accessory ID.');
-  return { version: ASSEMBLY_VERSION, rack, removed: [...removed], structure, accessories, nextId: input.nextId };
+  const appearance = validateAppearance(input.appearance);
+  return { ...(appearance ? { appearance } : {}), version: ASSEMBLY_VERSION, rack, removed: [...removed], structure, accessories, nextId: input.nextId };
 }
 export function getPartPlacementInfo(part: string, input?: RackDoc): PlacementInfo | null {
   if (isMountedAttachment(part)) {
@@ -258,6 +260,14 @@ export function unpairAccessory(input: RackDoc, id: string): RackDoc {
   if (!a.paired) return doc;
   const other = targetsFor(a)[1]; let secondId: string;
   do { secondId = `accessory-${doc.nextId++}`; } while (doc.accessories.some(x => x.id === secondId));
+  const overrides = doc.appearance?.overrides;
+  if (overrides) {
+    const first = overrides[`${a.id}:${sideOf(a.target.uprightId)}`];
+    const second = overrides[`${a.id}:${sideOf(other.uprightId)}`];
+    if (first) overrides[a.id] = first;
+    if (second) overrides[secondId] = second;
+    delete overrides[`${a.id}:left`]; delete overrides[`${a.id}:right`];
+  }
   a.paired = false;
   doc.accessories.push({ ...a, id: secondId, target: { ...other }, params: { ...a.params } });
   return validateAssembly(doc);

@@ -1,3 +1,4 @@
+import { attachmentMaterialRole } from './attachment-materials.ts';
 import type { Manifold, CrossSection, Vec2, Vec3 } from 'manifold-3d';
 import type { ManifoldAPI, NumericParams, PartDefinition, SolidPart } from '../types.ts';
 type Owned = Manifold | CrossSection;
@@ -19,7 +20,7 @@ const names: Record<string,string> = {
  'landmine':'Landmine attachment', 'monolift':'Monolift', 'single-bar-holder':'Single bar holder',
  'storage-pin-short':'Short weight storage pin', 'storage-pin-long':'Long weight storage pin'
 };
-function buildPart(api: ManifoldAPI, data: AttachmentCAD, params: NumericParams): SolidPart[] {
+function buildPart(api: ManifoldAPI, id: string, data: AttachmentCAD, params: NumericParams): SolidPart[] {
  const {Manifold:M,CrossSection:C}=api, allocated: Owned[]=[], result: SolidPart[]=[];
  const keep=<T extends Owned>(x: T): T=>(allocated.push(x),x);
  // Rack interfaces use 25 mm bores by default. Small fixing screw sockets
@@ -37,7 +38,7 @@ function buildPart(api: ManifoldAPI, data: AttachmentCAD, params: NumericParams)
  const scale: Vec3=[params.width/data.size[0],params.depth/data.size[1],params.height/data.size[2]];
  if(scale.some(v=>!Number.isFinite(v)||v<.15||v>5))throw Error('Dimensions must remain between 15% and 500% of the original part.');
  try {
-  for(const component of data.components){
+  for(const [index, component] of data.components.entries()){
    let shape: Manifold;
    if(component.kind==='revolve'){
     shape=keep(keep(keep(new C(component.rings,'EvenOdd')).revolve(96)).translate(component.center));
@@ -71,10 +72,10 @@ function buildPart(api: ManifoldAPI, data: AttachmentCAD, params: NumericParams)
    const solid=keep(shape.scale(scale));
    if(solid.status()!=='NoError'||solid.isEmpty())throw Error(`Invalid feature: ${component.name}`);
    const rgb=Array.isArray(component.color)?component.color.slice(0,3):[.12,.13,.15];
-   const color='#'+rgb.map(v=>Math.round(Math.min(1,v<=.0031308?12.92*v:1.055*v**(1/2.4)-.055)*255).toString(16).padStart(2,'0')).join('');
+   const color=typeof component.color === 'string' ? component.color : '#'+rgb.map(v=>Math.round(Math.min(1,v<=.0031308?12.92*v:1.055*v**(1/2.4)-.055)*255).toString(16).padStart(2,'0')).join('');
    const bright=(rgb[0]+rgb[1]+rgb[2])/3>.4;
    const plastic=/uhmw|inner|pad|control|^arms$|^Arm\./i.test(component.name);
-   result.push({name:component.name,solid,color,metalness:component.metalness??(plastic?.05:bright?.8:.5),roughness:component.roughness??(plastic?.48:bright?.26:.4)});
+   result.push({name:component.name,solid,role:attachmentMaterialRole(id,component.name,index),color,metalness:component.metalness??(plastic?.05:bright?.8:.5),roughness:component.roughness??(plastic?.48:bright?.26:.4)});
   }
   return result;
  }catch(error){result.length=0;throw error;}finally{
@@ -85,5 +86,5 @@ export const definitions: PartDefinition[]=Object.entries(CAD).map(([id,data])=>
  const defaults={width:data.size[0],depth:data.size[1],height:data.size[2],holeDiameter:25};
  return {id,name:names[id],category:'Attachments',reference:data.reference,defaults,
   description:'Source-derived profiles with 25 mm rack mounting bores. Overall dimensions scale the complete part.',
-  build:(api,params)=>buildPart(api,data,{...defaults,...params})};
+  build:(api,params)=>buildPart(api,id,data,{...defaults,...params})};
 });

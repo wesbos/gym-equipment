@@ -128,7 +128,7 @@ export class BuilderStore {
   };
   select = (id: string | null) =>
     this.patch({
-      selected: this.state.resolved.find((r) => r.id === id)?.ownerId || id,
+      selected: id,
       placing: null,
       structureChoice: null,
     });
