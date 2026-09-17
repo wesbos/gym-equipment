@@ -5,7 +5,7 @@ merged in `12f180a` for final integration. The additive BuilderPage import confl
 was resolved preserving export, editor reset/swap controls and standard-size controls. No deployment or issue closure.
 
 - Isolated `npm ci`: passed, no shared node_modules.
-- `npm test`: **171 passed, 0 failed/skipped**, 63.0 seconds on the final integration.
+- `npm test`: **171 passed, 0 failed/skipped**, 96.5 seconds after the reset follow-up.
 - `npm run build`: typecheck and Vite production build passed. Vite reports its
   >500 kB bundle advisory (main bundle and CAD workers); no build errors.
 - 34 print-specific tests include all 28 catalog builders, Float32/Manifold/XML
@@ -42,3 +42,10 @@ contracts. The vendor stream must wire its helper as `catalog.attribution` when
 registering definitions. Actual unmerged logo/vendor CAD end-to-end coverage is
 pending those streams; their geometry/validation is not duplicated here. The
 export options screenshot reflects #30 concise copy and main's #28 size controls.
+
+Reset follow-up: fetched origin/main again (201374f; already integrated) before
+final checks. The export arrangement uses the shared ResetButton and a named
+`laid-out` default. Browser verification changed to assembly coordinates,
+confirmed reset enabled, reset to laid-out and confirmed reset disabled. The
+control is also disabled during export. No new numeric controls are introduced;
+main's NumericControl defaultValue and viewport swap pipeline are untouched.

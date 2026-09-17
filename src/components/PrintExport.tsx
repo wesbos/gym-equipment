@@ -1,10 +1,12 @@
 import './print-export.css';
+import { ResetButton } from './ResetButton.tsx';
 import { useEffect, useRef, useState } from 'react';
 import type { BuilderStore } from '../state/builder-store.ts';
 import type { PrintLayout } from '../exports/print-3mf.ts';
 import type { PrintRequest, PrintResponse } from '../exports/print-worker.ts';
+const DEFAULT_LAYOUT: PrintLayout = 'laid-out';
 export function PrintExport({store}: {store:BuilderStore}) {
-  const [open,setOpen]=useState(false), [layout,setLayout]=useState<PrintLayout>('laid-out'), [busy,setBusy]=useState(false);
+  const [open,setOpen]=useState(false), [layout,setLayout]=useState<PrintLayout>(DEFAULT_LAYOUT), [busy,setBusy]=useState(false);
   const worker = useRef<Worker|null>(null);
   useEffect(()=>()=>worker.current?.terminate(),[]);
   const cancel = () => { worker.current?.terminate(); worker.current=null; setBusy(false); store.status('Print export cancelled.'); };
@@ -35,6 +37,8 @@ export function PrintExport({store}: {store:BuilderStore}) {
       <label>Part arrangement <select aria-label="Print arrangement" disabled={busy} value={layout} onChange={e=>setLayout(e.target.value as PrintLayout)}>
         <option value="laid-out">Lay parts flat, spaced in a row</option><option value="assembled">Keep rack assembly coordinates (Z up)</option>
       </select></label>
+      <ResetButton label="print arrangement" value="laid out" changed={layout !== DEFAULT_LAYOUT}
+        disabled={busy} onReset={()=>setLayout(DEFAULT_LAYOUT)} />
       <dl className="print-export-facts">
         <dt>Colors</dt><dd>Solid colors; textures omitted</dd>
         <dt>Profile</dt><dd>Placeholder: 256 mm bed · 0.4 mm nozzle · PLA</dd>
