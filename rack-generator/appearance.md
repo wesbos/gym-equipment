@@ -92,3 +92,15 @@ for every selected physical frame piece. Bulk paint changes should also set that
 piece's finish to `paint`. Duplication must remap both `overrides` and
 `finishOverrides`; removing/resetting an override removes both. The multi-select
 follow-up owns that implementation and its mixed-selection UX/tests.
+
+## Independent reset fields
+
+`resetAppearanceField` resets global color and steel finish independently. Physical
+color resets remove only that physical color override and preserve its effective
+finish, including legacy color-only overrides that implied paint. Physical finish
+resets use the current rack finish while retaining the saved custom color; an
+explicit finish is stored when needed to counter the legacy color-implies-paint
+rule. This is the rack's finish at reset time, not a new persisted inheritance mode.
+Group “Use rack appearance” still clears both overrides for full inheritance.
+Every applied reset is a normal document commit and is undoable. Generic reset,
+swap, export material resolution and source/vendor branding are unchanged.
