@@ -1,3 +1,5 @@
+import { systemLowerCrossmemberStation } from "./cable-stations.ts";
+import { validateSystems, resolveSystems } from './systems.ts';
 import { validateFloorItems, resolveFloorItems } from './floor-items.ts';
 import { validateLogo, logoSite } from './logos/types.ts';
 import { pairSuffix } from './physical-identity.ts';
@@ -173,7 +175,8 @@ export function validateAssembly(input: unknown): RackDoc {
   if (input.profileId !== undefined && (typeof input.profileId !== 'string' || input.profileId.length > 100)) fail('Invalid rack profile identity.');
   const r = input.rack;
   finiteRange(r.height, 1000, 4000, 'Height'); finiteRange(r.width, 400, 2000, 'Clear width'); finiteRange(r.depth, 300, 1500, 'Clear depth');
-  if (r.tube !== 75) fail('These rack connections require 75 mm uprights.');
+  finiteRange(r.tube, 50, 100, 'Tube');
+  if (r.tube !== (gridProfile(typeof input.profileId === 'string' ? input.profileId : undefined).tube ?? 75)) fail('Tube size must match the named rack profile; generic connections require 75 mm uprights.');
   const profile = gridProfile(typeof input.profileId === 'string' ? input.profileId : undefined), manufacturer = profile.id !== 'generic-75';
   if (r.holeDiameter !== profile.holeDiameter) fail(`This profile uses ${profile.holeDiameter} mm mounting holes.`);
   if (manufacturer && r.pitch !== profile.pitch) fail('Manufacturer pitch must match its rack profile.');
@@ -234,6 +237,7 @@ export function validateAssembly(input: unknown): RackDoc {
     if (isWidePullup(a.part) && ['left-upper-crossmember', 'right-upper-crossmember'].some(id => structure[id]?.part === 'angled-crossmember')) fail('Wide pull-up plates require level upper side rails.');
     if (manufacturer && isFoot(a.part)) fail('BOS floor-foot bolt patterns are unavailable on this reconstructed profile.');
     if (isFoot(a.part) && rack.firstHole !== 65) fail('Floor-mounted feet require the first upright hole at 65 mm.');
+    if (rack.tube !== 75 && (isMountedAttachment(a.part) || isHook(a.part) || isFoot(a.part))) fail('Source attachment sleeves require 75 mm uprights; no true 3-inch adapter is available.');
     if (isMountedAttachment(a.part)) {
       const anchor = getAttachmentAnchor(a.part, params);
       if (anchor.requiredPitch && anchor.requiredPitch !== rack.pitch) fail('This attachment requires 50 mm upright hole spacing for its full bolt pattern.');
@@ -286,8 +290,10 @@ export function validateAssembly(input: unknown): RackDoc {
   if (typeof input.nextId !== 'number' || !Number.isSafeInteger(input.nextId) || input.nextId < 1 || input.nextId > 1000000) fail('Invalid next accessory ID.');
   const appearance = validateAppearance(input.appearance);
   const floorItems = validateFloorItems(input.floorItems, [...Object.keys(graph.uprights), ...graph.connections.map(e=>e.id), ...accessories.map(a=>a.id)]);
+  const systems = validateSystems({ ...input, ...graph, rack, removed, structure, accessories, floorItems } as RackDoc, input.systems);
   const logo = validateLogo(input.logo);
-  return { ...copy(input), ...(input.floorItems !== undefined ? { floorItems } : {}), ...(appearance ? { appearance } : {}), ...(logo ? { logo } : {}), ...graph, version: ASSEMBLY_VERSION, rack, removed: [...removed], structure, accessories, nextId: input.nextId };
+  return { ...copy(input), ...(input.floorItems !== undefined ? { floorItems } : {}), ...(logo ? { logo } : {}), ...(appearance ? { appearance } : {}), ...graph, ...(systems ? { systems } : {}), version: ASSEMBLY_VERSION, rack, removed: [...removed], structure, accessories, nextId: input.nextId };
+
 }
 export function getPartPlacementInfo(part: string, input?: RackDoc): PlacementInfo | null {
   if (isVendorPart(part)) return vendorPlacement(part);
@@ -381,6 +387,7 @@ export function removeInstance(input: RackDoc, id: string): RackDoc {
     doc.removed = [...removed];
     doc.accessories = doc.accessories.filter(a => dependencies(a).every(dep => !removed.has(dep)));
   } else doc.accessories = doc.accessories.filter(a => a.id !== ownerId);
+  if (doc.systems) doc.systems = doc.systems.filter(s => s.id !== ownerId && !structureSlots(doc).some(slot => slot.id === ownerId));
   return validateAssembly(doc);
 }
 export function restoreInstance(input: RackDoc, id: string): RackDoc {
@@ -454,7 +461,7 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
     const flangeHeight = framePart === 'branded-crossmember' ? 300 : r.pitch === 50.8 ? 50 + 2*r.pitch : 150;
     const rise = framePart === 'angled-crossmember' ? settings.rise : 0;
     const upper = Math.floor((r.height - 25 - r.firstHole) / r.pitch) - Math.round((flangeHeight - 50 + rise) / r.pitch);
-    const hole = high ? upper : 0;
+    const hole = high ? upper : systemLowerCrossmemberStation(doc,edge.from,edge.to);
     const side = slot.id.startsWith('right') ? 'right' : 'left';
     const x = (a[0] + b[0]) / 2, y = (a[1] + b[1]) / 2;
     const params: NumericParams = { length: span, width: r.tube, wall: 3, holeDiameter: r.holeDiameter, spacing: r.pitch, plateThickness: 6, plateHeight: flangeHeight };
@@ -549,5 +556,6 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
       append(a.id, a.part, { ...params, length: r.width }, [0, yy, zz], angle, mounts, 'accessory', a.id, false, dependencies(a));
     }
   }
+  result.push(...resolveSystems(doc));
   return result;
 }

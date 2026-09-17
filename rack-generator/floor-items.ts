@@ -43,7 +43,7 @@ export function floorWarnings(doc: RackDoc) {
 }
 export function addFloorItem(doc: RackDoc, position?: Vec2): RackDoc {
   const next=structuredClone(doc); next.floorItems ??= [];
-  let id:string; do {id=`floor-${next.nextId++}`;} while(next.floorItems.some(i=>i.id===id) || Object.hasOwn(next.uprights,id) || next.connections.some(i=>i.id===id) || next.accessories.some(i=>i.id===id));
+  let id:string; do {id=`floor-${next.nextId++}`;} while(next.floorItems.some(i=>i.id===id) || next.systems?.some(i=>i.id===id) || Object.hasOwn(next.uprights,id) || next.connections.some(i=>i.id===id) || next.accessories.some(i=>i.id===id));
   const x=Math.max(0,...Object.values(doc.uprights).map(p=>p.x))+doc.rack.tube/2+550;
   const item:FloorItem={id,part:'rep-nighthawk',position:position ?? [x,0],rotation:0,params:{...NIGHTHAWK_DEFAULTS}};
   if(!position) { while(next.floorItems.some(other=> {const a=floorBounds(item),b=floorBounds(other);return a.min.every((v,i)=>v<b.max[i]+100 && a.max[i]+100>b.min[i]);})) item.position[1]+=1400; }
