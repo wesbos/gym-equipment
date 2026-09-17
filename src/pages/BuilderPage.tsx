@@ -135,16 +135,7 @@ function Inspector({ store }: { store: BuilderStore }) {
           {slots.map((slot) => (
             <button
               key={slot.id}
-              onClick={() =>
-                store.act(() => {
-                  store.commit(
-                    structureChoice === "upright"
-                      ? restoreInstance(doc, slot.id)
-                      : replaceStructurePart(doc, slot.id, structureChoice),
-                  );
-                  store.select(slot.id);
-                })
-              }
+              onClick={() => store.previewStructure(slot.id)}
             >
               {resolved.some((r) => r.ownerId === slot.id) ? "Replace" : "Add"}{" "}
               {slot.id.replaceAll("-", " ")}
@@ -716,12 +707,13 @@ export default function BuilderPage() {
               Parts list ({state.resolved.length})
             </button>
           </div>
-          {state.placing && (
+          {(state.placing || state.structureChoice) && (
             <div className="placement-hint" id="placement-hint">
               <span id="placement-text">
                 {state.placementText ||
-                  `Place ${nameOf(state.placing.part)} · choose a highlighted connection`}
+                  `Place ${nameOf(state.placing?.part || state.structureChoice!)} · choose a highlighted connection`}
               </span>
+              <button id="accept-placement" disabled={!state.proposal} onClick={store.acceptProposal}>Place</button>
               <button id="cancel-placement" onClick={store.cancelPlacement}>
                 Cancel <kbd>ESC</kbd>
               </button>

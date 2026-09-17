@@ -1,3 +1,4 @@
+import { proposalAt, proposalCollision, type PlacementProposal } from '../../rack-generator/placement-proposals.ts';
 import { cloneInstanceMaterials } from './instance-materials.ts';
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -326,16 +327,7 @@ export function createBuilderScene(
   }
   function showMounts() {
     clearMounts();
-    mountPoints = getMounts(snapshot.doc, snapshot.placing?.part).filter(
-      (mount) => {
-        try {
-          store.placementDoc(mount);
-          return true;
-        } catch {
-          return false;
-        }
-      },
-    );
+    mountPoints = getMounts(snapshot.doc, snapshot.placing?.part);
     const geometry = new THREE.SphereGeometry(6, 8, 6),
       material = new THREE.MeshBasicMaterial({
         color: "#d28a40",
@@ -357,16 +349,29 @@ export function createBuilderScene(
   }
   function refreshPlacement() {
     resetPlacement();
-    const placing = snapshot.placing;
-    if (!placing) {
-      store.patch({ placementText: "" });
-      return;
-    }
-    showMounts();
+    if (!snapshot.placing && !snapshot.structureChoice) return;
+    if (snapshot.placing) showMounts();
     renderer.domElement.style.cursor = "crosshair";
-    store.patch({
-      placementText: `${placing.movingId ? "Move" : "Place"} ${nameOf(placing.part)} · choose a highlighted connection`,
-    });
+    if (snapshot.proposal) void renderProposal(snapshot.proposal);
+  }
+  async function renderProposal(proposal: PlacementProposal) {
+    previewTarget = proposal.target ?? null;
+    const serial = ++previewSerial;
+    clearGhost();
+    try {
+      const models = await Promise.all(proposal.entries.map(geometryFor));
+      if (disposed || serial !== previewSerial) return;
+      for (const [i, model] of models.entries()) {
+        const g = transformed(model, proposal.entries[i]);
+        g.traverse(o => {
+          if (o instanceof THREE.Mesh) {
+            disposeMaterial(o.material);
+            o.material = new THREE.MeshStandardMaterial({ color: '#c68b45', transparent: true, opacity: 0.48, depthWrite: false });
+          }
+        });
+        ghostRoot.add(g);
+      }
+    } catch(error) { if (!disposed && serial === previewSerial) store.patch({ proposal: null, placementText: message(error) }); }
   }
   const normals: Record<Mount["face"], Vec3> = {
     front: [0, -1, 0],
@@ -407,61 +412,19 @@ export function createBuilderScene(
     if (!snapshot.placing) return;
     const target = nearestMount(event);
     if (JSON.stringify(target) === JSON.stringify(previewTarget)) return;
-    previewTarget = target;
-    const serial = ++previewSerial;
-    clearGhost();
-    if (!target) return;
+    if (!target) return; // Keep the reviewed suggestion when leaving the dots.
     try {
-      const next = store.placementDoc(target),
-        all = resolveAssembly(next),
-        nextId =
-          snapshot.placing.movingId ||
-          next.accessories[next.accessories.length - 1].id,
-        entries = all.filter((r) => (r.ownerId || r.id) === nextId);
-      store.patch({
-        placementText: `${target.uprightId.replaceAll("-", " ")} · ${target.label || target.face + " · Hole " + (target.hole + 1)} · ${Math.round(target.position[2])} mm · Click to place`,
-      });
-      const models = await Promise.all(entries.map(geometryFor));
-      if (disposed || serial !== previewSerial || !snapshot.placing) return;
-      for (const [i, model] of models.entries()) {
-        const g = transformed(model, entries[i]);
-        g.traverse((o) => {
-          if (o instanceof THREE.Mesh) {
-            disposeMaterial(o.material);
-            o.material = new THREE.MeshStandardMaterial({
-              color: "#c68b45",
-              transparent: true,
-              opacity: 0.48,
-              depthWrite: false,
-            });
-          }
-        });
-        ghostRoot.add(g);
-      }
-    } catch (error) {
-      if (!disposed && serial === previewSerial) {
-        previewTarget = null;
-        store.patch({ placementText: message(error) });
-      }
-    }
+      const proposal = proposalAt(snapshot.doc, snapshot.placing.part, target, snapshot.paired, snapshot.placing.movingId);
+      const collision = proposalCollision(snapshot.resolved, proposal);
+      if (collision) { store.patch({ proposal: null, placementText: collision }); clearGhost(); return; }
+      store.patch({ proposal, placementText: `${proposal.label} — Place or pick another spot` });
+    } catch(error) { store.patch({ proposal: null, placementText: message(error) }); clearGhost(); }
   }
   function dropPlacement(event: { clientX: number; clientY: number }) {
     if (!snapshot.placing) return;
     const target = nearestMount(event);
-    if (!target) {
-      store.status(
-        "Choose a highlighted mounting hole. Escape cancels placement.",
-      );
-      return;
-    }
-    store.act(() => {
-      const next = store.placementDoc(target),
-        selected =
-          snapshot.placing?.movingId ||
-          next.accessories[next.accessories.length - 1].id;
-      store.commit(next);
-      store.select(selected);
-    });
+    if (!target) return;
+    void updatePreview(event).then(() => store.acceptProposal());
   }
   const onDown = (event: PointerEvent) => {
     pointerDown = [event.clientX, event.clientY];
@@ -593,10 +556,15 @@ export function createBuilderScene(
     if (snapshot.selected !== previous.selected) refreshSelection();
     if (
       snapshot.placing !== previous.placing ||
+      snapshot.structureChoice !== previous.structureChoice ||
       snapshot.paired !== previous.paired ||
       snapshot.doc !== previous.doc
     )
       refreshPlacement();
+    else if (snapshot.proposal !== previous.proposal) {
+      if (snapshot.proposal && (snapshot.placing || snapshot.structureChoice)) void renderProposal(snapshot.proposal);
+      else { previewTarget = null; previewSerial++; clearGhost(); }
+    }
   });
   requestRebuild();
   if (snapshot.placing) refreshPlacement();
