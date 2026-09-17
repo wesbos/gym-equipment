@@ -8,6 +8,8 @@ export interface Appearance {
   overrides?: Record<string, string>;
 }
 export interface MaterialSource {
+  /** Preserve a manufacturer fastener finish until the user selects a global override. */
+  authoredFastenerFinish?: boolean;
   role: MaterialRole;
   color?: string;
   metalness?: number;
@@ -21,7 +23,7 @@ export const HARDWARE_FINISHES = {
 } as const satisfies Record<HardwareFinish, { color: string; metalness: number; roughness: number }>;
 /** Shared by rendering and exports (including future 3MF). Returns detached PBR data. */
 export function resolveMaterial(source: MaterialSource, appearance?: Appearance, instanceId?: string) {
-  if (source.role === 'fastener') return appearance?.hardwareFinish ? { ...HARDWARE_FINISHES[appearance.hardwareFinish] } : { color: source.color ?? HARDWARE_FINISHES.chrome.color, metalness: source.metalness ?? 1, roughness: source.roughness ?? 0.16 };
+  if (source.role === 'fastener') return !appearance?.hardwareFinish && source.authoredFastenerFinish ? { color: source.color ?? '#343638', metalness: source.metalness ?? .85, roughness: source.roughness ?? .25 } : { ...HARDWARE_FINISHES[appearance?.hardwareFinish ?? 'chrome'] };
   return {
     color: source.role === 'frame'
       ? (instanceId ? appearance?.overrides?.[instanceId] : undefined) ?? appearance?.frameColor ?? (instanceId?.startsWith('floor-') ? source.color : undefined) ?? DEFAULT_FRAME_COLOR

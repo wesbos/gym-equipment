@@ -40,11 +40,11 @@ export function buildNighthawk(api: ManifoldAPI, p: NumericParams): SolidPart[] 
       plate=cut(plate,slots); ladders.push(plate,beam([x,-275,264],[x,485,264],12,12));
       for(const y of [-250,95,465])hardware.push(screw(x-5,y,198));
     }
-    const pivot:Vec3=[0,-283,366];
+    const pivot:Vec3=[0,-272,366];
     const articulate=(s:Manifold,angle:number)=>move(rot(move(s,[0,-pivot[1],-pivot[2]]),[angle,0,0]),pivot);
     // Rounded rectangular back pad, tapered molded seat, separate underside backing.
-    add('Back pad · CleanGrip vinyl',articulate(rounded(300,914,58,30,[0,174,366]),p.backrestAngle),'liner','#151719',0,.92);
-    const seatOutline=[[-112,-633],[112,-633],[150,-475],[150,-323],[-150,-323],[-150,-475]] as [number,number][];
+    add('Back pad · CleanGrip vinyl',articulate(rounded(300,914,58,30,[0,185,366]),p.backrestAngle),'liner','#151719',0,.92);
+    const seatOutline=[[-112,-642],[112,-642],[150,-475],[150,-312],[-150,-312],[-150,-475]] as [number,number][];
     const seatProfile=k(k(new C([seatOutline])).offset(-15,'Round',2,24));
     const seatRounded=k(seatProfile.offset(15,'Round',2,24));
     add('Seat pad · CleanGrip vinyl',articulate(move(k(seatRounded.extrude(58)),[0,0,366]),-p.seatAngle),'liner','#151719',0,.92);
@@ -86,6 +86,7 @@ export function buildNighthawk(api: ManifoldAPI, p: NumericParams): SolidPart[] 
     add('Closed ladder gauges',union(ladders),'source','#292b2e',.15,.5);
     add('Foot liners, wheels and storage bumper',union(rubber),'liner','#171819',0,.88);
     add('Black nickel fasteners',union(hardware),'fastener','#343638',.85,.25);
+    out[out.length-1].authoredFastenerFinish=true;
     for(const part of out)if(part.solid.isEmpty() || part.solid.status()!=='NoError')throw Error(`Invalid Nighthawk ${part.name}`);
     success=true;return out;
   }finally{const keep=new Set(success?out.map(p=>p.solid):[]);for(const s of owned.reverse())if(!keep.has(s as Manifold))s.delete();}

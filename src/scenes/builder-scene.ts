@@ -203,7 +203,7 @@ export function createBuilderScene(
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.name = m.name;
-        mesh.userData.materialSource = { role: m.role, color: m.color, metalness: m.metalness, roughness: m.roughness };
+        mesh.userData.materialSource = { authoredFastenerFinish: m.authoredFastenerFinish, role: m.role, color: m.color, metalness: m.metalness, roughness: m.roughness };
         model.add(mesh);
       }
       request.resolve(model);
@@ -403,7 +403,7 @@ export function createBuilderScene(
     previewSerial++;
     clearGhost();
     clearMounts();
-    controls.enabled = !snapshot.selectionTool;
+    controls.enabled = !floorDrag && !snapshot.selectionTool;
     renderer.domElement.style.cursor = "";
   }
   function showMounts() {
@@ -613,7 +613,7 @@ export function createBuilderScene(
   };
   const onUp = (event: PointerEvent) => {
     if(floorDrag) {floorDrag=null;pointerDown=null;store.endGesture();controls.enabled=true;return;}
-    controls.enabled = !snapshot.selectionTool;
+    controls.enabled = !floorDrag && !snapshot.selectionTool;
     marquee.style.display = 'none';
     if (selecting && pointerDown && Math.hypot(event.clientX - pointerDown[0], event.clientY - pointerDown[1]) > 6) {
       const rect = renderer.domElement.getBoundingClientRect();
@@ -668,7 +668,7 @@ export function createBuilderScene(
     if(floorDrag) {floorDrag=null;store.cancelGesture();}
     pointerDown = null;
     selecting = false; marquee.style.display = 'none';
-    controls.enabled = !snapshot.selectionTool;
+    controls.enabled = !floorDrag && !snapshot.selectionTool;
   };
   const onDrag = (event: DragEvent) => {
     event.preventDefault();
