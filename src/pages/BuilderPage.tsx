@@ -1,3 +1,4 @@
+import { LogoControls } from '../components/LogoControls.tsx';
 import { gridProfile } from '../../rack-generator/profiles.ts';
 import { RackPresets } from '../components/RackPresets.tsx';
 import { TopologyEditor } from '../components/TopologyEditor.tsx';
@@ -761,6 +762,7 @@ export default function BuilderPage() {
             ← Rack settings
           </button>
           <AppearanceControls store={store} />
+          <LogoControls store={store} />
           <Inspector key={state.inputRevision} store={store} />
           <div id="warnings">
             {warnings.map((warning, i) => (
