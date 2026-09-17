@@ -87,6 +87,12 @@ test('complete rack XML carries exact duplication, per-side overrides, dimension
   assert.deepEqual(palette,archive.materials.map(m=>m.displaycolor.slice(0,7)));
   const settings=new XMLParser({ignoreAttributes:false,attributeNamePrefix:''}).parse(strFromU8(archive.files['Metadata/model_settings.config']));
   assert.equal(settings.config.object.length,result.report.parts.length);
+  assert.deepEqual(settings.config.plate.map((p:{metadata:{key:string;value:string}[]})=>p.metadata.find(m=>m.key==='plater_name')?.value),['Parts','Hardware']);
+  for(const object of settings.config.object) {
+    const first=list<{id:string}>(object.part)[0];
+    const firstMaterial=Number(archive.byId.get(String(first.id))!.pindex)+1;
+    assert.equal(Number(object.metadata.find((m:{key:string})=>m.key==='extruder').value),firstMaterial,'parent filament preserves single-volume role color');
+  }
   for(const object of settings.config.object) for(const part of list<{id:string;metadata:{key:string;value:string}[]}>(object.part)) {
     const material=Number(archive.byId.get(String(part.id))!.pindex);
     assert.equal(Number(part.metadata.find(m=>m.key==='extruder')!.value),material+1);
