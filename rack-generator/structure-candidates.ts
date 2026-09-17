@@ -1,5 +1,5 @@
 import { connectUprights, extendUpright, type Direction } from './graph-edits.ts';
-import { replaceStructurePart, resolveAssembly } from './assembly.ts';
+import { replaceStructurePart, resolveAssembly, restoreInstance } from './assembly.ts';
 import type { RackDoc, PartId, ResolvedInstance, Vec3 } from './types.ts';
 
 export interface StructureCandidate {
@@ -31,8 +31,9 @@ export function structureCandidates(doc: RackDoc, part: PartId): StructureCandid
       if (a.x !== b.x && a.y !== b.y) continue;
       if (posts.some(([id,p]) => id !== from && id !== to && (a.x === b.x ? p.x === a.x && p.y > Math.min(a.y,b.y) && p.y < Math.max(a.y,b.y) : p.y === a.y && p.x > Math.min(a.x,b.x) && p.x < Math.max(a.x,b.x)))) continue;
       for (const level of ['upper','lower'] as const) offer(`${from}:${to}:${level}`, from, `+ Crossmember ${level}`, [(a.x+b.x)/2, (a.y+b.y)/2, level === 'upper' ? doc.rack.height-100 : 100], () => {
-        const next = connectUprights(doc, from, to, level);
-        return replaceStructurePart(next, next.connections.at(-1)!.id, part);
+        const removed = doc.connections.find(e => e.level === level && [e.from,e.to].includes(from) && [e.from,e.to].includes(to) && doc.removed.includes(e.id));
+        const next = removed ? restoreInstance(doc, removed.id) : connectUprights(doc, from, to, level);
+        return replaceStructurePart(next, removed?.id ?? next.connections.at(-1)!.id, part);
       });
     }
   }

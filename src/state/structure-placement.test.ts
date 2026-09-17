@@ -26,3 +26,23 @@ test('structural proposal is transient; commit, undo and redo are single complet
   store.history('undo');
   assert.deepEqual(store.getSnapshot().doc, proposal.doc);
 });
+
+test('add/swap changes and cancellation invalidate a shared structural proposal', async () => {
+  const store = new BuilderStore({ getItem: () => null, setItem: () => {} });
+  await store.ready;
+  store.startPlacement('upright');
+  const candidate = structureCandidates(store.getSnapshot().doc, 'upright')[0];
+  store.patch({ proposal: candidate });
+  store.patch({ structureMode: 'swap' });
+  assert.equal(store.getSnapshot().proposal, null);
+  store.patch({ structureMode: 'add' });
+  store.patch({ proposal: candidate });
+  store.cancelPlacement();
+  store.acceptProposal();
+  assert.equal(Object.keys(store.getSnapshot().doc.uprights).length, 4);
+  assert.equal(store.getSnapshot().canUndo, false);
+  store.startPlacement('upright');
+  store.patch({ proposal: candidate });
+  store.acceptProposal();
+  assert.equal(Object.keys(store.getSnapshot().doc.uprights).length, 5);
+});

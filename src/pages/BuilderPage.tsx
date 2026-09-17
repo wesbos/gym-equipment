@@ -710,7 +710,7 @@ export default function BuilderPage() {
                 {state.placementText ||
                   `Place ${nameOf(state.placing?.part ?? state.structureChoice!)} · choose a highlighted connection`}
               </span>
-              <button id="accept-placement" disabled={!state.proposal} onClick={store.acceptProposal}>Place</button>
+              {!(state.structureChoice && state.structureMode === "add") && <button id="accept-placement" disabled={!state.proposal} onClick={store.acceptProposal}>Place</button>}
               <button id="cancel-placement" onClick={store.cancelPlacement}>
                 Cancel <kbd>ESC</kbd>
               </button>

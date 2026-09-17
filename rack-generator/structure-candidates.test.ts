@@ -37,3 +37,24 @@ test('removed anchors, occupied cells and out of bounds positions are never offe
   for (const c of structureCandidates(shifted,'upright')) assert.ok(Object.values(c.doc.uprights).every(p => Math.abs(p.x) <= 15000));
   assert.deepEqual(structureCandidates(createAssembly(),'landmine'), []);
 });
+
+test('deleted connections can be restored in add mode without duplicate graph edges', () => {
+  const base = createAssembly(), doc = removeInstance(base, 'left-upper-crossmember');
+  const candidate = structureCandidates(doc, 'crossmember-725').find(c => c.ownerId === 'left-upper-crossmember')!;
+  assert.ok(candidate);
+  assert.equal(candidate.doc.connections.length, base.connections.length);
+  assert.ok(!candidate.doc.removed.includes(candidate.ownerId));
+});
+test('profile extensions preserve exact pitch, bore, height and clear span', async () => {
+  const { RACK_PRESETS, applyPreset } = await import('./presets.ts');
+  for (const preset of RACK_PRESETS) {
+    const doc = applyPreset(preset.id), candidates = structureCandidates(doc, 'upright');
+    assert.ok(candidates.length, preset.id);
+    for (const candidate of candidates) {
+      assert.deepEqual(candidate.doc.rack, doc.rack);
+      const upright = candidate.entries.find(e => e.part === 'upright')!;
+      assert.equal(upright.params.spacing, doc.rack.pitch);
+      assert.equal(upright.params.holeDiameter, doc.rack.holeDiameter);
+    }
+  }
+});

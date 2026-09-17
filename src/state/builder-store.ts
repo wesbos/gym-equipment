@@ -138,7 +138,7 @@ export class BuilderStore {
       const result = suggestPlacement(this.state.doc, part, patch.paired, movingId);
       patch = { ...patch, proposal: result.proposal, placementText: result.proposal ? `Suggested: ${result.proposal.label} — Place or pick another spot` : `Doesn't fit: ${result.reason}` };
     }
-    if (patch.doc || patch.structureMode !== undefined || patch.placing === null && patch.structureChoice === null) patch.proposal = null;
+    if (patch.doc || patch.structureMode !== undefined && !("proposal" in patch) || patch.placing === null && patch.structureChoice === null) patch.proposal = null;
     this.state = { ...this.state, ...patch };
     this.listeners.forEach((fn) => fn());
   };

@@ -608,7 +608,7 @@ export function createBuilderScene(
     );
   };
   const onLeave = (event: PointerEvent) => {
-    if (addingStructure() && !(event.relatedTarget instanceof Node && structureHandles.contains(event.relatedTarget))) {
+    if (addingStructure() && !(event.relatedTarget instanceof Node && viewport.contains(event.relatedTarget))) {
       showStructureHandles([]); previewStructure(null);
     }
   };
@@ -628,7 +628,7 @@ export function createBuilderScene(
   renderer.domElement.addEventListener("pointermove", onMove);
   renderer.domElement.addEventListener("pointerup", onUp);
   renderer.domElement.addEventListener("pointercancel", onCancel);
-  renderer.domElement.addEventListener("pointerleave", onLeave);
+  viewport.addEventListener("pointerleave", onLeave);
   viewport.addEventListener("dragover", onDrag);
   viewport.addEventListener("drop", onDrop);
   function fit(mode: BuilderView = view) {
@@ -752,7 +752,7 @@ export function createBuilderScene(
       renderer.domElement.removeEventListener("pointermove", onMove);
       renderer.domElement.removeEventListener("pointerup", onUp);
       renderer.domElement.removeEventListener("pointercancel", onCancel);
-      renderer.domElement.removeEventListener("pointerleave", onLeave);
+      viewport.removeEventListener("pointerleave", onLeave);
       viewport.removeEventListener("dragover", onDrag);
       viewport.removeEventListener("drop", onDrop);
       worker.onmessage = null;
