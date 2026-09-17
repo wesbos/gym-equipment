@@ -58,6 +58,7 @@ export function finalizeLogo(api: ManifoldAPI, source: LogoSource, raw: Vec2[][]
       const glyphPieces = original.decompose(); owned.push(...glyphPieces);
       for (const piece of glyphPieces) if (keep(piece.intersect(cut)).area() < piece.area() * .9) throw Error('Text is too fine at this size. Use fewer characters or the bold font.');
     }
+    const beforeBridges = cut;
     let bridges = 0;
     // Generalizes bos-lettering.py: a full-height steel strip through each counter.
     for (const hole of cut.toPolygons().filter(l => area(l) < 0)) {
@@ -66,6 +67,8 @@ export function finalizeLogo(api: ManifoldAPI, source: LogoSource, raw: Vec2[][]
       const strip = keep(keep(api.CrossSection.square([1.2, 28], true)).translate([x, 0]));
       cut = keep(cut.subtract(strip)); bridges++;
     }
+    const bridgedPieces = beforeBridges.decompose(); owned.push(...bridgedPieces);
+    for (const piece of bridgedPieces) if (keep(piece.intersect(cut)).isEmpty()) throw Error('A bridge would erase a small detail. Enlarge or remove that detail and preview again.');
     cut = keep(cut.simplify(.03));
     const loops = cut.toPolygons().map(l => [...l, [...l[0]] as Vec2]);
     budget(loops); checkCut(api, loops);

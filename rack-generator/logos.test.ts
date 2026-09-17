@@ -71,3 +71,8 @@ test('SVG nonuniformly transformed line strokes retain their true outline', () =
   assert.ok(Math.abs(Math.max(...xs)-Math.min(...xs)-60)<.001);
   assert.ok(Math.abs(Math.max(...ys)-Math.min(...ys)-8)<.001);
 });
+
+test('automatic bridges reject rather than silently erase tiny artwork', () => {
+  const data = '<svg><rect width="100" height="24"/><path fill-rule="evenodd" d="M105 0h.5v.5h-.5Z M105.1 .1h.3v.3h-.3Z"/></svg>';
+  assert.throws(() => finalizeLogo(api, { kind: 'svg', data }, svgContours(api, data), true), /erase a small detail/);
+});

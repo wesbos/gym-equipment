@@ -77,6 +77,8 @@ a 0.035 mm offset allowance and 0.4 mm² local corner-loss tolerance, so this is
 conservative modelling screen rather than a fabrication certificate. Curves are
 polygonal approximations (eight samples per curve; round offsets 16/24 segments).
 
+A bridge that would erase an entire small shape is rejected rather than silently dropping that detail.
+
 Counter bridges generalize the stock vertical-strip method: each counter gets a
 1.2 mm steel strip extending to the surrounding plate. Unbridged islands are
 rejected. The remaining reference plate must decompose into exactly one connected
