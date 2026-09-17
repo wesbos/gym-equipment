@@ -68,3 +68,29 @@ test('resizing the main REP bay preserves the rear 16-inch storage bay',()=>{
   const extension=changed.connections.find(e=>e.from==='rear-left' && e.to.startsWith('upright-'))!;
   assert.ok(Math.abs(changed.uprights[extension.to].y-rear.y-changed.rack.tube-406.4)<1e-8);
 });
+
+test('rack bore rejects oversized actual safety and source shafts without resizing hook pins', () => {
+  const doc = pick('rep-pr-4000');
+  const target = { uprightId: 'front-left', face: 'right' as const, hole: 12 };
+  for (const part of ['safety-pin-pipe', 'safety-box', 'safety-webbing', 'spotter-arm', 'dip-horn', 'monolift', 'storage-pin-short', 'storage-pin-long']) {
+    assert.throws(() => addAccessory(doc, part, target, false), /retaining pin\/bolt diameter .* exceeds the rack bore 15.875/);
+    assert.doesNotThrow(() => addAccessory(createAssembly(), part, target, false));
+  }
+  for (const part of ['j-hook-standard', 'j-hook-roller', 'j-hook-sandwich']) {
+    assert.doesNotThrow(() => addAccessory(doc, part, target, false));
+  }
+  const source = addAccessory(createAssembly(), 'safety-pin-pipe', target, false).accessories.find(a => a.part === 'safety-pin-pipe')!;
+  const fitted = validateAssembly({ ...doc, accessories: [{ ...source, params: { pinDiameter: 15.5 } }] });
+  const resolved = resolveAssembly(fitted).find(p => p.part === 'safety-pin-pipe')!;
+  assert.equal(resolved.params.pinDiameter, 15.5);
+  const geometry = bars.find(p => p.id === 'safety-pin-pipe')!.build(api, resolved.params);
+  try {
+    const pin = geometry.find(p => p.role === 'rod')!;
+    const bounds = pin.solid.boundingBox();
+    assert.ok(Math.abs(bounds.max[1] - bounds.min[1] - 15.5) < 0.001);
+  } finally { geometry.forEach(p => p.solid.delete()); }
+  for (const pinDiameter of [15.876, 16, 26]) {
+    assert.throws(() => validateAssembly({ ...fitted, accessories: [{ ...fitted.accessories[0], params: { pinDiameter } }] }), /exceeds the rack bore/);
+  }
+  assert.throws(() => validateAssembly({ ...createAssembly(), accessories: [{ ...source, params: { pinDiameter: 26 } }] }), /rack bore 25/);
+});

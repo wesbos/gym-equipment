@@ -157,7 +157,7 @@ function pinPipe(api: ManifoldAPI,p: NumericParams){
     const pts=[[end,0,z],[-half-75,0,z]];
     for(let i=1;i<=16;i++){const a=Math.PI/2+i*Math.PI/32;pts.push([-half-75+radius*Math.cos(a),0,84+radius*Math.sin(a)]);}
     pts.push([-half-91,0,0]);
-    return [{name:'Hollow 45 mm protective pipe',solid:pipe,color:steel,role:'sleeve'},{name:'16 mm pin with swept 90 degree handle',solid:path(pts,p.pinDiameter),color:zinc,role:'rod'}];
+    return [{name:'Hollow 45 mm protective pipe',solid:pipe,color:steel,role:'sleeve'},{name:`${p.pinDiameter} mm pin with swept 90 degree handle`,solid:path(pts,p.pinDiameter),color:zinc,role:'rod'}];
   });
 }
 function webbing(api: ManifoldAPI,p: NumericParams){

@@ -93,3 +93,12 @@ Top-view controls also expose stable-ID connection moves and cascade previews.
 Keyboard arrows use `stepDimension` to move between valid catalog values; the
 editor stream can reuse that adapter in its numeric controls. Move ties choose
 the smaller coordinate, matching dimension-catalog ties.
+
+Mounting shaft validation uses the generated retaining pins/studs, independently
+of plate holeDiameter. PR4000 rejects the fixed 16 mm safety saddle pins and
+oversized source attachment shafts; pin-and-pipe accepts an explicitly supplied
+smaller pinDiameter (e.g. 15.5 mm), with its generated rod using that diameter.
+The three source J-hook shafts are 15.766–15.7674 mm and pass the 15.875 mm bore
+check. Other source shaft envelopes are conservatively rounded up to 0.1 mm in
+mount-shafts.ts. Passing this geometric check does not certify physical fit.
+Generic 25 mm bores and default source geometry remain unchanged.

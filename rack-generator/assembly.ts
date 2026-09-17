@@ -1,3 +1,4 @@
+import { validateMountShaft } from './mount-shafts.ts';
 import { gridProfile } from './profiles.ts';
 import { legacyGraph, validateGraph, structureSlots } from './topology.ts';
 import { snapDimensions } from './grid.ts';
@@ -197,6 +198,7 @@ export function validateAssembly(input: unknown): RackDoc {
     const effective = { ...defaults, ...cleanParams };
     if (variant.part === 'angled-crossmember' && (effective.rise % r.pitch !== 0 || effective.rise + 190 > r.height)) fail('Angled crossmember rise must align with upright hole stations and fit the height.');
     if (variant.part === 'branded-crossmember' && 250 % r.pitch !== 0) fail('The full nameplate flange requires 50 mm upright stations.');
+    validateMountShaft(variant.part, cleanParams, rack.holeDiameter);
     structure[id] = { ...copy(variant), part: variant.part as PartId, params: cleanParams };
   }
   const ids = new Set(slots.map(slot => slot.id));
@@ -221,6 +223,7 @@ export function validateAssembly(input: unknown): RackDoc {
       if (anchor.requiredPitch && anchor.requiredPitch !== rack.pitch) fail('This attachment requires 50 mm upright hole spacing for its full bolt pattern.');
       if (anchor.boltStations.some(station => Math.abs(station.zOffset / rack.pitch - Math.round(station.zOffset / rack.pitch)) > 0.001)) fail('The attachment bolt pattern does not align with these upright stations.');
     }
+    validateMountShaft(a.part, params, rack.holeDiameter);
     const clean: Accessory = { ...copy(a), id: a.id, part: a.part as PartId, target: { ...copy(a.target), uprightId: a.target.uprightId as UprightId, face: a.target.face as Face, hole: a.target.hole }, paired: a.paired, params: { ...params } };
     if (clean.paired && !clean.pairTo && UPRIGHT_IDS.includes(clean.target.uprightId)) clean.pairTo = otherSide(clean.target.uprightId);
     if (!clean.spanTo && UPRIGHT_IDS.includes(clean.target.uprightId)) {
