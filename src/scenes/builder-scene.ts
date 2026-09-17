@@ -7,7 +7,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import { toCreasedNormals } from "three/addons/utils/BufferGeometryUtils.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-import { resolveAssembly, getMounts } from "../../rack-generator/assembly.ts";
+import { getMounts } from "../../rack-generator/assembly.ts";
 import { detectCollisions } from "../../rack-generator/assembly-collisions.ts";
 import type {
   Mount,

@@ -36,6 +36,7 @@ test('landmine measured studs and low outside paired proposal remain aligned', (
 test('six-post storage prefers graph rear row with opaque IDs and valid pair', () => {
   const doc = applyPreset('generic-six'), p = suggestPlacement(doc,'storage-pin-long').proposal!;
   assert.equal(p.entries.length,2);
+  assert.match(p.label,/^rear left/);
   assert.equal(doc.uprights[p.target!.uprightId].y,Math.max(...Object.values(doc.uprights).map(p=>p.y)));
   assert.equal(proposalCollision(resolveAssembly(doc),p),undefined);
 });

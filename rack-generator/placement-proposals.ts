@@ -19,6 +19,13 @@ export function scoreMount(doc: RackDoc, part: PartId, m: Mount): number {
     : part === 'monolift' ? 1415 : part.startsWith('pullup-') ? doc.rack.height - 200 : 1215;
   return Math.abs(p.y - row) * 4 + (m.face === face ? 0 : 500) + Math.abs(m.position[2] - height) + (p.x === left ? 0 : 1);
 }
+function locationLabel(doc: RackDoc, id: string): string {
+  const p = doc.uprights[id], posts = Object.values(doc.uprights);
+  const row = p.y === Math.min(...posts.map(p => p.y)) ? 'front' : p.y === Math.max(...posts.map(p => p.y)) ? 'rear' : 'middle';
+  const xs = posts.filter(q => q.y === p.y).map(q => q.x);
+  const side = p.x === Math.min(...xs) ? 'left' : p.x === Math.max(...xs) ? 'right' : 'center';
+  return `${row} ${side}`;
+}
 /** Pure preview document adapter, also usable by swap/hover callers. */
 export function proposalAt(doc: RackDoc, part: PartId, target: Mount, paired: boolean, movingId: string | null = null): PlacementProposal {
   const next = structuredClone(doc), info = getPartPlacementInfo(part, doc)!;
@@ -31,7 +38,7 @@ export function proposalAt(doc: RackDoc, part: PartId, target: Mount, paired: bo
   if (a.paired) a.pairTo = peer;
   next.accessories = [...next.accessories.filter(a => a.id !== movingId), a];
   const valid = validateAssembly(next), entries = resolveAssembly(valid).filter(r => (r.ownerId || r.id) === ownerId);
-  return { doc: valid, entries, ownerId, target, label: `${target.uprightId.replaceAll('-', ' ')} · ${target.face} · hole ${target.hole + 1}` };
+  return { doc: valid, entries, ownerId, target, label: `${locationLabel(doc, target.uprightId)} · ${target.face} · hole ${target.hole + 1}` };
 }
 export function proposalCollision(base: ResolvedInstance[], proposal: PlacementProposal): string | undefined {
   const ids = new Set(proposal.entries.map(r => r.id));
@@ -63,7 +70,7 @@ export function suggestPlacement(doc: RackDoc, part: PartId, paired = true, movi
   }
   if (!structural && !mounts.length) {
     // Preserve the actual adapter rejection instead of guessing at pitch/face.
-    const target = getMounts(doc).find(m => m.hole === 12) ?? getMounts(doc)[0];
+    const target = getMounts(doc).find(m => m.hole === 12 && m.face === (part.startsWith('pullup-') || part.startsWith('safety-') ? 'right' : 'front')) ?? getMounts(doc)[0];
     if (target) try { proposalAt(doc,part,target,paired,movingId); } catch(error) { reason = (error as Error).message; }
   }
   return { proposal: null, mounts, reason: `${evaluated === PROPOSAL_LIMIT ? 'Checked the 64 best positions. ' : ''}${reason}`, evaluated };
