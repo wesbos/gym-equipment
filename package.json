@@ -1,0 +1,24 @@
+{
+  "name": "bos-strength",
+  "version": "0.0.1",
+  "description": "BOS STRENGTH parametric rack and equipment models",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "node --test rack-generator/*.test.js"
+  },
+  "keywords": [],
+  "author": "Wes Bos (https://wesbos.com/)",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "manifold-3d": "^3.5.3",
+    "three": "^0.186.0",
+    "vite": "^8.3.0"
+  },
+  "devDependencies": {
+    "draco3dgltf": "^1.5.7"
+  }
+}

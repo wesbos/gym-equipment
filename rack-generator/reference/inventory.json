@@ -1,0 +1,3362 @@
+[
+  {
+    "file": "front",
+    "node": "Riot nameplate crossmember 2100.013",
+    "size": [
+      1252,
+      300,
+      75
+    ],
+    "center": [
+      0,
+      125,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot nameplate crossmember lite 2100.013",
+    "size": [
+      1252,
+      150,
+      75
+    ],
+    "center": [
+      0,
+      200,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Multi grip pull up bar 2100.013",
+    "size": [
+      1269,
+      96,
+      300
+    ],
+    "center": [
+      0,
+      18,
+      -125
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Spherical multi-grip pull up bar 2100.013",
+    "size": [
+      1254,
+      162,
+      442
+    ],
+    "center": [
+      0,
+      51,
+      -104
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Standard pull up bar 2100.013",
+    "size": [
+      1267,
+      250,
+      60
+    ],
+    "center": [
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 1075 crossmember left top 1800.002",
+    "size": [
+      75,
+      150,
+      1252
+    ],
+    "center": [
+      -575,
+      1665,
+      -575
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 1075 crossmember right top 1800.002",
+    "size": [
+      75,
+      150,
+      1252
+    ],
+    "center": [
+      575,
+      1665,
+      -575
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 1800 left front.006",
+    "size": [
+      105,
+      1800,
+      135
+    ],
+    "center": [
+      -590,
+      900,
+      -1150
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 1800 left.006",
+    "size": [
+      105,
+      1800,
+      135
+    ],
+    "center": [
+      -590,
+      900,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 1800 right .006",
+    "size": [
+      105,
+      1800,
+      135
+    ],
+    "center": [
+      590,
+      900,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 1800 right front.006",
+    "size": [
+      105,
+      1800,
+      135
+    ],
+    "center": [
+      590,
+      900,
+      -1150
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot nameplate crossmember 2100.012",
+    "size": [
+      1252,
+      300,
+      75
+    ],
+    "center": [
+      0,
+      125,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot nameplate crossmember lite 2100.012",
+    "size": [
+      1252,
+      150,
+      75
+    ],
+    "center": [
+      0,
+      200,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Multi grip pull up bar 2100.012",
+    "size": [
+      1269,
+      96,
+      300
+    ],
+    "center": [
+      0,
+      18,
+      -125
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Spherical multi-grip pull up bar 2100.012",
+    "size": [
+      1254,
+      162,
+      442
+    ],
+    "center": [
+      0,
+      51,
+      -104
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Standard pull up bar 2100.012",
+    "size": [
+      1267,
+      250,
+      60
+    ],
+    "center": [
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 1075 crossmember left top 2100.002",
+    "size": [
+      75,
+      150,
+      1252
+    ],
+    "center": [
+      -575,
+      1965,
+      -575
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 1075 crossmember right top 2100.002",
+    "size": [
+      75,
+      150,
+      1252
+    ],
+    "center": [
+      575,
+      1965,
+      -575
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2100 left front.006",
+    "size": [
+      105,
+      2100,
+      135
+    ],
+    "center": [
+      -590,
+      1050,
+      -1150
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2100 left.006",
+    "size": [
+      105,
+      2100,
+      135
+    ],
+    "center": [
+      -590,
+      1050,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2100 right front.006",
+    "size": [
+      105,
+      2100,
+      135
+    ],
+    "center": [
+      590,
+      1050,
+      -1150
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2100 right.006",
+    "size": [
+      105,
+      2100,
+      135
+    ],
+    "center": [
+      590,
+      1050,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot nameplate crossmember 2300.006",
+    "size": [
+      1252,
+      300,
+      75
+    ],
+    "center": [
+      0,
+      125,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot nameplate crossmember lite 2300.006",
+    "size": [
+      1252,
+      150,
+      75
+    ],
+    "center": [
+      0,
+      200,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Multi grip pull up bar 2300.006",
+    "size": [
+      1269,
+      96,
+      300
+    ],
+    "center": [
+      0,
+      18,
+      -125
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Spherical multi-grip pull up bar 2300.006",
+    "size": [
+      1254,
+      162,
+      442
+    ],
+    "center": [
+      0,
+      51,
+      -104
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Standard pull up bar 2300.006",
+    "size": [
+      1267,
+      250,
+      60
+    ],
+    "center": [
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 1075 crossmember left top 2300.002",
+    "size": [
+      75,
+      150,
+      1252
+    ],
+    "center": [
+      -575,
+      2165,
+      -575
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 1075 crossmember right top 2300.002",
+    "size": [
+      75,
+      150,
+      1252
+    ],
+    "center": [
+      575,
+      2165,
+      -575
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2300 left front.006",
+    "size": [
+      105,
+      2300,
+      135
+    ],
+    "center": [
+      -590,
+      1150,
+      -1150
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2300 left.006",
+    "size": [
+      105,
+      2300,
+      135
+    ],
+    "center": [
+      -590,
+      1150,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2300 right front.006",
+    "size": [
+      105,
+      2300,
+      135
+    ],
+    "center": [
+      590,
+      1150,
+      -1150
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2300 right.006",
+    "size": [
+      105,
+      2300,
+      135
+    ],
+    "center": [
+      590,
+      1150,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 1075 box safeties left base.002",
+    "size": [
+      85,
+      163,
+      1247
+    ],
+    "center": [
+      -580,
+      -56,
+      -576
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 1075 box safeties right base.002",
+    "size": [
+      85,
+      163,
+      1247
+    ],
+    "center": [
+      580,
+      -56,
+      -576
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 1075 pin and pipe safety left base.002",
+    "size": [
+      45,
+      122,
+      1273
+    ],
+    "center": [
+      -575,
+      -39,
+      496
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 1075 pin and pipe safety right base.002",
+    "size": [
+      45,
+      122,
+      1273
+    ],
+    "center": [
+      575,
+      -39,
+      496
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 1075 crossmember left bottom.008",
+    "size": [
+      75,
+      150,
+      1252
+    ],
+    "center": [
+      -575,
+      115,
+      -575
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 1075 crossmember right bottom.008",
+    "size": [
+      75,
+      150,
+      1252
+    ],
+    "center": [
+      575,
+      115,
+      -575
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot bar holders left.006",
+    "size": [
+      78,
+      200,
+      187
+    ],
+    "center": [
+      -584,
+      -50,
+      -7
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot bar holders right.006",
+    "size": [
+      78,
+      200,
+      187
+    ],
+    "center": [
+      584,
+      -50,
+      -7
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Roller j hooks left.006",
+    "size": [
+      80,
+      200,
+      182
+    ],
+    "center": [
+      -584,
+      -50,
+      -5
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Roller j hooks right.006",
+    "size": [
+      79,
+      200,
+      182
+    ],
+    "center": [
+      584,
+      -50,
+      -4
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Standard j hooks left.006",
+    "size": [
+      78,
+      200,
+      267
+    ],
+    "center": [
+      -584,
+      -50,
+      -48
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Standard j hooks right.006",
+    "size": [
+      78,
+      200,
+      267
+    ],
+    "center": [
+      584,
+      -50,
+      -48
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Dip bar left instanced.001",
+    "size": [
+      476,
+      316,
+      556
+    ],
+    "center": [
+      976,
+      133,
+      159
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Dip bar left.001",
+    "size": [
+      476,
+      316,
+      558
+    ],
+    "center": [
+      976,
+      133,
+      159
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Dip bar right.001",
+    "size": [
+      476,
+      316,
+      558
+    ],
+    "center": [
+      174,
+      133,
+      158
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot long foot left.002",
+    "size": [
+      95,
+      190,
+      821
+    ],
+    "center": [
+      -575,
+      95,
+      -315
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot long foot right.002",
+    "size": [
+      95,
+      190,
+      821
+    ],
+    "center": [
+      575,
+      95,
+      -315
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot short leg left.002",
+    "size": [
+      95,
+      190,
+      471
+    ],
+    "center": [
+      -575,
+      95,
+      -140
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot short leg right.002",
+    "size": [
+      95,
+      190,
+      471
+    ],
+    "center": [
+      575,
+      95,
+      -140
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Mrr landmine",
+    "size": [
+      400,
+      190,
+      92
+    ],
+    "center": [
+      723,
+      190,
+      41
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot spotter arms left.006",
+    "size": [
+      96,
+      385,
+      712
+    ],
+    "center": [
+      -575,
+      -163,
+      -281
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot spotter arms right.006",
+    "size": [
+      96,
+      385,
+      712
+    ],
+    "center": [
+      575,
+      -163,
+      -281
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 1075 webbing safety left base.002",
+    "size": [
+      95,
+      183,
+      1247
+    ],
+    "center": [
+      -575,
+      -71,
+      -575
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 1075 webbing safety right base.002",
+    "size": [
+      95,
+      183,
+      1247
+    ],
+    "center": [
+      575,
+      -71,
+      -575
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot nameplate crossmember 2100.017",
+    "size": [
+      1252,
+      300,
+      75
+    ],
+    "center": [
+      0,
+      125,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot nameplate crossmember lite 2100.017",
+    "size": [
+      1252,
+      150,
+      75
+    ],
+    "center": [
+      0,
+      200,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Multi grip pull up bar 2100.017",
+    "size": [
+      1269,
+      96,
+      300
+    ],
+    "center": [
+      0,
+      18,
+      -125
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Spherical multi-grip pull up bar 2100.017",
+    "size": [
+      1254,
+      162,
+      442
+    ],
+    "center": [
+      0,
+      51,
+      -104
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Standard pull up bar 2100.017",
+    "size": [
+      1267,
+      250,
+      60
+    ],
+    "center": [
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 425 crossmember left top.008",
+    "size": [
+      75,
+      150,
+      602
+    ],
+    "center": [
+      -575,
+      1665,
+      -250
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 425 crossmember right top.008",
+    "size": [
+      75,
+      150,
+      602
+    ],
+    "center": [
+      575,
+      1665,
+      -250
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 1800 left front.008",
+    "size": [
+      105,
+      1800,
+      135
+    ],
+    "center": [
+      -590,
+      900,
+      -500
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 1800 left.008",
+    "size": [
+      105,
+      1800,
+      135
+    ],
+    "center": [
+      -590,
+      900,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 1800 right .008",
+    "size": [
+      105,
+      1800,
+      135
+    ],
+    "center": [
+      590,
+      900,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 1800 right front.008",
+    "size": [
+      105,
+      1800,
+      135
+    ],
+    "center": [
+      590,
+      900,
+      -500
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot nameplate crossmember 2100.016",
+    "size": [
+      1252,
+      300,
+      75
+    ],
+    "center": [
+      0,
+      125,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot nameplate crossmember lite 2100.016",
+    "size": [
+      1252,
+      150,
+      75
+    ],
+    "center": [
+      0,
+      200,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Multi grip pull up bar 2100.016",
+    "size": [
+      1269,
+      96,
+      300
+    ],
+    "center": [
+      0,
+      18,
+      -125
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Spherical multi-grip pull up bar 2100.016",
+    "size": [
+      1254,
+      162,
+      442
+    ],
+    "center": [
+      0,
+      51,
+      -104
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Standard pull up bar 2100.016",
+    "size": [
+      1267,
+      250,
+      60
+    ],
+    "center": [
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 425 crossmember left top.007",
+    "size": [
+      75,
+      150,
+      602
+    ],
+    "center": [
+      -575,
+      1965,
+      -250
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 425 crossmember right top.007",
+    "size": [
+      75,
+      150,
+      602
+    ],
+    "center": [
+      575,
+      1965,
+      -250
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2100 left front.008",
+    "size": [
+      105,
+      2100,
+      135
+    ],
+    "center": [
+      -590,
+      1050,
+      -500
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2100 left.008",
+    "size": [
+      105,
+      2100,
+      135
+    ],
+    "center": [
+      -590,
+      1050,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2100 right front.008",
+    "size": [
+      105,
+      2100,
+      135
+    ],
+    "center": [
+      590,
+      1050,
+      -500
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2100 right.008",
+    "size": [
+      105,
+      2100,
+      135
+    ],
+    "center": [
+      590,
+      1050,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot nameplate crossmember 2300.008",
+    "size": [
+      1252,
+      300,
+      75
+    ],
+    "center": [
+      0,
+      125,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot nameplate crossmember lite 2300.008",
+    "size": [
+      1252,
+      150,
+      75
+    ],
+    "center": [
+      0,
+      200,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Multi grip pull up bar 2300.008",
+    "size": [
+      1269,
+      96,
+      300
+    ],
+    "center": [
+      0,
+      18,
+      -125
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Spherical multi-grip pull up bar 2300.008",
+    "size": [
+      1254,
+      162,
+      442
+    ],
+    "center": [
+      0,
+      51,
+      -104
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Standard pull up bar 2300.008",
+    "size": [
+      1267,
+      250,
+      60
+    ],
+    "center": [
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 425 crossmember left top.006",
+    "size": [
+      75,
+      150,
+      602
+    ],
+    "center": [
+      -575,
+      2165,
+      -250
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 425 crossmember right top.006",
+    "size": [
+      75,
+      150,
+      602
+    ],
+    "center": [
+      575,
+      2165,
+      -250
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2300 left front.008",
+    "size": [
+      105,
+      2300,
+      135
+    ],
+    "center": [
+      -590,
+      1150,
+      -500
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2300 left.008",
+    "size": [
+      105,
+      2300,
+      135
+    ],
+    "center": [
+      -590,
+      1150,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2300 right front.008",
+    "size": [
+      105,
+      2300,
+      135
+    ],
+    "center": [
+      590,
+      1150,
+      -500
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2300 right.008",
+    "size": [
+      105,
+      2300,
+      135
+    ],
+    "center": [
+      590,
+      1150,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 425 crossmember left bottom.006",
+    "size": [
+      75,
+      150,
+      602
+    ],
+    "center": [
+      -575,
+      115,
+      -250
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 425 crossmember right bottom.006",
+    "size": [
+      75,
+      150,
+      602
+    ],
+    "center": [
+      575,
+      115,
+      -250
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot bar holders left.008",
+    "size": [
+      78,
+      200,
+      187
+    ],
+    "center": [
+      -584,
+      -50,
+      -7
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot bar holders right.008",
+    "size": [
+      78,
+      200,
+      187
+    ],
+    "center": [
+      584,
+      -50,
+      -7
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Roller j hooks left.008",
+    "size": [
+      80,
+      200,
+      182
+    ],
+    "center": [
+      -584,
+      -50,
+      -5
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Roller j hooks right.008",
+    "size": [
+      79,
+      200,
+      182
+    ],
+    "center": [
+      584,
+      -50,
+      -4
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Standard j hooks left.008",
+    "size": [
+      78,
+      200,
+      267
+    ],
+    "center": [
+      -584,
+      -50,
+      -48
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Standard j hooks right.008",
+    "size": [
+      78,
+      200,
+      267
+    ],
+    "center": [
+      584,
+      -50,
+      -48
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Dip bar left instanced.003",
+    "size": [
+      476,
+      316,
+      556
+    ],
+    "center": [
+      976,
+      133,
+      159
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Dip bar left.003",
+    "size": [
+      476,
+      316,
+      558
+    ],
+    "center": [
+      976,
+      133,
+      159
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Dip bar right.003",
+    "size": [
+      476,
+      316,
+      558
+    ],
+    "center": [
+      174,
+      133,
+      158
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot long foot left 425.002",
+    "size": [
+      95,
+      190,
+      821
+    ],
+    "center": [
+      -575,
+      95,
+      -315
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot long foot right 425.002",
+    "size": [
+      95,
+      190,
+      821
+    ],
+    "center": [
+      575,
+      95,
+      -315
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot short leg left 425.002",
+    "size": [
+      95,
+      190,
+      471
+    ],
+    "center": [
+      -575,
+      95,
+      -140
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot short leg right 425.002",
+    "size": [
+      95,
+      190,
+      471
+    ],
+    "center": [
+      575,
+      95,
+      -140
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Mrr landmine.002",
+    "size": [
+      400,
+      190,
+      92
+    ],
+    "center": [
+      723,
+      190,
+      41
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot spotter arms left.008",
+    "size": [
+      96,
+      385,
+      712
+    ],
+    "center": [
+      -575,
+      -163,
+      -281
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot spotter arms right.008",
+    "size": [
+      96,
+      385,
+      712
+    ],
+    "center": [
+      575,
+      -163,
+      -281
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot nameplate crossmember 2100.015",
+    "size": [
+      1252,
+      300,
+      75
+    ],
+    "center": [
+      0,
+      125,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot nameplate crossmember lite 2100.015",
+    "size": [
+      1252,
+      150,
+      75
+    ],
+    "center": [
+      0,
+      200,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Multi grip pull up bar 2100.015",
+    "size": [
+      1269,
+      96,
+      300
+    ],
+    "center": [
+      0,
+      18,
+      -125
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Spherical multi-grip pull up bar 2100.015",
+    "size": [
+      1254,
+      162,
+      442
+    ],
+    "center": [
+      0,
+      51,
+      -104
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Standard pull up bar 2100.015",
+    "size": [
+      1267,
+      250,
+      60
+    ],
+    "center": [
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 725 crossmember left top.016",
+    "size": [
+      75,
+      150,
+      902
+    ],
+    "center": [
+      -575,
+      1665,
+      -400
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 725 crossmember right top.016",
+    "size": [
+      75,
+      150,
+      902
+    ],
+    "center": [
+      575,
+      1665,
+      -400
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 1800 left front.007",
+    "size": [
+      105,
+      1800,
+      135
+    ],
+    "center": [
+      -590,
+      900,
+      -800
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 1800 left.007",
+    "size": [
+      105,
+      1800,
+      135
+    ],
+    "center": [
+      -590,
+      900,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 1800 right .007",
+    "size": [
+      105,
+      1800,
+      135
+    ],
+    "center": [
+      590,
+      900,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 1800 right front.007",
+    "size": [
+      105,
+      1800,
+      135
+    ],
+    "center": [
+      590,
+      900,
+      -800
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot nameplate crossmember 2100.014",
+    "size": [
+      1252,
+      300,
+      75
+    ],
+    "center": [
+      0,
+      125,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot nameplate crossmember lite 2100.014",
+    "size": [
+      1252,
+      150,
+      75
+    ],
+    "center": [
+      0,
+      200,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Multi grip pull up bar 2100.014",
+    "size": [
+      1269,
+      96,
+      300
+    ],
+    "center": [
+      0,
+      18,
+      -125
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Spherical multi-grip pull up bar 2100.014",
+    "size": [
+      1254,
+      162,
+      442
+    ],
+    "center": [
+      0,
+      51,
+      -104
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Standard pull up bar 2100.014",
+    "size": [
+      1267,
+      250,
+      60
+    ],
+    "center": [
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 725 crossmember left top.015",
+    "size": [
+      75,
+      150,
+      902
+    ],
+    "center": [
+      -575,
+      1965,
+      -400
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 725 crossmember right top.015",
+    "size": [
+      75,
+      150,
+      902
+    ],
+    "center": [
+      575,
+      1965,
+      -400
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2100 left front.007",
+    "size": [
+      105,
+      2100,
+      135
+    ],
+    "center": [
+      -590,
+      1050,
+      -800
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2100 left.007",
+    "size": [
+      105,
+      2100,
+      135
+    ],
+    "center": [
+      -590,
+      1050,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2100 right front.007",
+    "size": [
+      105,
+      2100,
+      135
+    ],
+    "center": [
+      590,
+      1050,
+      -800
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2100 right.007",
+    "size": [
+      105,
+      2100,
+      135
+    ],
+    "center": [
+      590,
+      1050,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot nameplate crossmember 2300.007",
+    "size": [
+      1252,
+      300,
+      75
+    ],
+    "center": [
+      0,
+      125,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot nameplate crossmember lite 2300.007",
+    "size": [
+      1252,
+      150,
+      75
+    ],
+    "center": [
+      0,
+      200,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Multi grip pull up bar 2300.007",
+    "size": [
+      1269,
+      96,
+      300
+    ],
+    "center": [
+      0,
+      18,
+      -125
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Spherical multi-grip pull up bar 2300.007",
+    "size": [
+      1254,
+      162,
+      442
+    ],
+    "center": [
+      0,
+      51,
+      -104
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Standard pull up bar 2300.007",
+    "size": [
+      1267,
+      250,
+      60
+    ],
+    "center": [
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 725 crossmember left top.014",
+    "size": [
+      75,
+      150,
+      902
+    ],
+    "center": [
+      -575,
+      2165,
+      -400
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 725 crossmember right top.014",
+    "size": [
+      75,
+      150,
+      902
+    ],
+    "center": [
+      575,
+      2165,
+      -400
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2300 left front.007",
+    "size": [
+      105,
+      2300,
+      135
+    ],
+    "center": [
+      -590,
+      1150,
+      -800
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2300 left.007",
+    "size": [
+      105,
+      2300,
+      135
+    ],
+    "center": [
+      -590,
+      1150,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2300 right front.007",
+    "size": [
+      105,
+      2300,
+      135
+    ],
+    "center": [
+      590,
+      1150,
+      -800
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot upright 2300 right.007",
+    "size": [
+      105,
+      2300,
+      135
+    ],
+    "center": [
+      590,
+      1150,
+      0
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 725 box safety left.011",
+    "size": [
+      85,
+      163,
+      897
+    ],
+    "center": [
+      580,
+      -56,
+      -400
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 725 box safety left.012",
+    "size": [
+      85,
+      163,
+      897
+    ],
+    "center": [
+      -580,
+      -56,
+      -400
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 725 pin and pipe safety left base.004",
+    "size": [
+      45,
+      122,
+      923
+    ],
+    "center": [
+      -575,
+      -39,
+      321
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 725 pin and pipe safety left base.005",
+    "size": [
+      45,
+      122,
+      923
+    ],
+    "center": [
+      575,
+      -39,
+      321
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 725 crossmember left bottom.010",
+    "size": [
+      75,
+      150,
+      902
+    ],
+    "center": [
+      -575,
+      115,
+      -400
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 725 crossmember right bottom.011",
+    "size": [
+      75,
+      150,
+      902
+    ],
+    "center": [
+      575,
+      115,
+      -400
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot bar holders left.007",
+    "size": [
+      78,
+      200,
+      187
+    ],
+    "center": [
+      -584,
+      -50,
+      -7
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot bar holders right.007",
+    "size": [
+      78,
+      200,
+      187
+    ],
+    "center": [
+      584,
+      -50,
+      -7
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Roller j hooks left.007",
+    "size": [
+      80,
+      200,
+      182
+    ],
+    "center": [
+      -584,
+      -50,
+      -5
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Roller j hooks right.007",
+    "size": [
+      79,
+      200,
+      182
+    ],
+    "center": [
+      584,
+      -50,
+      -4
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Standard j hooks left.007",
+    "size": [
+      78,
+      200,
+      267
+    ],
+    "center": [
+      -584,
+      -50,
+      -48
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Standard j hooks right.007",
+    "size": [
+      78,
+      200,
+      267
+    ],
+    "center": [
+      584,
+      -50,
+      -48
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Dip bar left instanced.002",
+    "size": [
+      476,
+      316,
+      556
+    ],
+    "center": [
+      976,
+      133,
+      159
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Dip bar left.002",
+    "size": [
+      476,
+      316,
+      558
+    ],
+    "center": [
+      976,
+      133,
+      159
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Dip bar right.002",
+    "size": [
+      476,
+      316,
+      558
+    ],
+    "center": [
+      174,
+      133,
+      158
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot long foot left 725.002",
+    "size": [
+      95,
+      190,
+      821
+    ],
+    "center": [
+      -575,
+      95,
+      -315
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot long foot right 725.002",
+    "size": [
+      95,
+      190,
+      821
+    ],
+    "center": [
+      575,
+      95,
+      -315
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot short leg left 725.002",
+    "size": [
+      95,
+      190,
+      471
+    ],
+    "center": [
+      -575,
+      95,
+      -140
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot short leg right 725.002",
+    "size": [
+      95,
+      190,
+      471
+    ],
+    "center": [
+      575,
+      95,
+      -140
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Mrr landmine.001",
+    "size": [
+      400,
+      190,
+      92
+    ],
+    "center": [
+      723,
+      190,
+      41
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot spotter arms left.007",
+    "size": [
+      96,
+      385,
+      712
+    ],
+    "center": [
+      -575,
+      -163,
+      -281
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot spotter arms right.007",
+    "size": [
+      96,
+      385,
+      712
+    ],
+    "center": [
+      575,
+      -163,
+      -281
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 725 webbing safety left.009",
+    "size": [
+      95,
+      164,
+      897
+    ],
+    "center": [
+      -575,
+      -62,
+      -400
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot 725 webbing safety right.009",
+    "size": [
+      95,
+      164,
+      897
+    ],
+    "center": [
+      575,
+      -62,
+      -400
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Dip horn",
+    "size": [
+      689,
+      200,
+      613
+    ],
+    "center": [
+      -876,
+      1090,
+      -4
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Monolift left",
+    "size": [
+      153,
+      326,
+      557
+    ],
+    "center": [
+      -566,
+      -138,
+      -241
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Monolift right",
+    "size": [
+      153,
+      326,
+      557
+    ],
+    "center": [
+      566,
+      -138,
+      -241
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Riot offset crossmember.002",
+    "size": [
+      1225,
+      150,
+      327
+    ],
+    "center": [
+      0,
+      315,
+      105
+    ]
+  },
+  {
+    "file": "front",
+    "node": "Single bar holder",
+    "size": [
+      246,
+      140,
+      65
+    ],
+    "center": [
+      -647,
+      165,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot offset crossmember.001",
+    "size": [
+      1225,
+      150,
+      327
+    ],
+    "center": [
+      0,
+      315,
+      105
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Storage pin long level 1 left",
+    "size": [
+      455,
+      80,
+      80
+    ],
+    "center": [
+      -745,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Storage pin long level 1 right",
+    "size": [
+      455,
+      80,
+      80
+    ],
+    "center": [
+      745,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Storage pin short level 1 left",
+    "size": [
+      340,
+      80,
+      80
+    ],
+    "center": [
+      -688,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Storage pin short level 1 right",
+    "size": [
+      340,
+      80,
+      80
+    ],
+    "center": [
+      688,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Storage pin long level 2 left",
+    "size": [
+      455,
+      80,
+      80
+    ],
+    "center": [
+      -745,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Storage pin long level 2 right",
+    "size": [
+      455,
+      80,
+      80
+    ],
+    "center": [
+      745,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Storage pin short level 2 left",
+    "size": [
+      340,
+      80,
+      80
+    ],
+    "center": [
+      -688,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Storage pin short level 2 right",
+    "size": [
+      340,
+      80,
+      80
+    ],
+    "center": [
+      688,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Storage pin long level 3 left",
+    "size": [
+      455,
+      80,
+      80
+    ],
+    "center": [
+      -745,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Storage pin long level 3 right",
+    "size": [
+      455,
+      80,
+      80
+    ],
+    "center": [
+      745,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Storage pin short level 3 left",
+    "size": [
+      340,
+      80,
+      80
+    ],
+    "center": [
+      -688,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Storage pin short level 3 right",
+    "size": [
+      340,
+      80,
+      80
+    ],
+    "center": [
+      688,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Storage pin long level 4 left",
+    "size": [
+      455,
+      80,
+      80
+    ],
+    "center": [
+      -745,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Storage pin long level 4 right",
+    "size": [
+      455,
+      80,
+      80
+    ],
+    "center": [
+      745,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Storage pin short level 4 left",
+    "size": [
+      340,
+      80,
+      80
+    ],
+    "center": [
+      -688,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Storage pin short level 4 right",
+    "size": [
+      340,
+      80,
+      80
+    ],
+    "center": [
+      688,
+      0,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 1075 crossmember left bottom weight storage",
+    "size": [
+      75,
+      150,
+      1252
+    ],
+    "center": [
+      -575,
+      115,
+      -575
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 1075 crossmember right bottom weight storage",
+    "size": [
+      75,
+      150,
+      1252
+    ],
+    "center": [
+      575,
+      115,
+      -575
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot nameplate crossmember lite 1800",
+    "size": [
+      1252,
+      150,
+      75
+    ],
+    "center": [
+      0,
+      200,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 1075 crossmember left top weight storage 1800",
+    "size": [
+      75,
+      150,
+      1252
+    ],
+    "center": [
+      -575,
+      1665,
+      -575
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 1075 crossmember right top weight storage 1800",
+    "size": [
+      75,
+      150,
+      1252
+    ],
+    "center": [
+      575,
+      1665,
+      -575
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot upright 1800 left weight storage",
+    "size": [
+      105,
+      1800,
+      135
+    ],
+    "center": [
+      -590,
+      900,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot upright 1800 right weight storage.001",
+    "size": [
+      105,
+      1800,
+      135
+    ],
+    "center": [
+      590,
+      900,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot nameplate crossmember lite 2100",
+    "size": [
+      1252,
+      150,
+      75
+    ],
+    "center": [
+      0,
+      200,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 1075 crossmember left top weight storage 2100",
+    "size": [
+      75,
+      150,
+      1252
+    ],
+    "center": [
+      -575,
+      1965,
+      -575
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 1075 crossmember right top weight storage 2100",
+    "size": [
+      75,
+      150,
+      1252
+    ],
+    "center": [
+      575,
+      1965,
+      -575
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot upright 2100 left weight storage",
+    "size": [
+      105,
+      2100,
+      135
+    ],
+    "center": [
+      -590,
+      1050,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot upright 2100 right weight storage",
+    "size": [
+      105,
+      2100,
+      135
+    ],
+    "center": [
+      590,
+      1050,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot nameplate crossmember lite 2300",
+    "size": [
+      1252,
+      150,
+      75
+    ],
+    "center": [
+      0,
+      200,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 1075 crossmember left top weight storage",
+    "size": [
+      75,
+      150,
+      1252
+    ],
+    "center": [
+      -575,
+      2165,
+      -575
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 1075 crossmember right top weight storage",
+    "size": [
+      75,
+      150,
+      1252
+    ],
+    "center": [
+      575,
+      2165,
+      -575
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot upright 2300 left weight storage",
+    "size": [
+      105,
+      2300,
+      135
+    ],
+    "center": [
+      -590,
+      1150,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot upright 2300 right weight storage",
+    "size": [
+      105,
+      2300,
+      135
+    ],
+    "center": [
+      590,
+      1150,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 425 crossmember left bottom.002",
+    "size": [
+      75,
+      150,
+      602
+    ],
+    "center": [
+      -575,
+      115,
+      -250
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 425 crossmember right bottom",
+    "size": [
+      75,
+      150,
+      602
+    ],
+    "center": [
+      575,
+      115,
+      -250
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot nameplate crossmember lite 1800.002",
+    "size": [
+      1252,
+      150,
+      75
+    ],
+    "center": [
+      0,
+      200,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 425 crossmember left bottom.005",
+    "size": [
+      75,
+      150,
+      602
+    ],
+    "center": [
+      -575,
+      1665,
+      -250
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 425 crossmember right bottom.005",
+    "size": [
+      75,
+      150,
+      602
+    ],
+    "center": [
+      575,
+      1665,
+      -250
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot upright 1800 left weight storage.002",
+    "size": [
+      105,
+      1800,
+      135
+    ],
+    "center": [
+      -590,
+      900,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot upright 1800 right weight storage.003",
+    "size": [
+      105,
+      1800,
+      135
+    ],
+    "center": [
+      590,
+      900,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot nameplate crossmember lite 2100.002",
+    "size": [
+      1252,
+      150,
+      75
+    ],
+    "center": [
+      0,
+      200,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 425 angled crossmember.002",
+    "size": [
+      75,
+      349,
+      602
+    ],
+    "center": [
+      575,
+      2064,
+      -250
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 425 angled crossmember.004",
+    "size": [
+      75,
+      349,
+      602
+    ],
+    "center": [
+      -575,
+      2064,
+      -250
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 425 crossmember left bottom.004",
+    "size": [
+      75,
+      150,
+      602
+    ],
+    "center": [
+      -575,
+      1965,
+      -250
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 425 crossmember right bottom.004",
+    "size": [
+      75,
+      150,
+      602
+    ],
+    "center": [
+      575,
+      1965,
+      -250
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot upright 2100 left weight storage.002",
+    "size": [
+      105,
+      2100,
+      135
+    ],
+    "center": [
+      -590,
+      1050,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot upright 2100 right weight storage.002",
+    "size": [
+      105,
+      2100,
+      135
+    ],
+    "center": [
+      590,
+      1050,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot nameplate crossmember lite 2300.002",
+    "size": [
+      1252,
+      150,
+      75
+    ],
+    "center": [
+      0,
+      200,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 425 crossmember left bottom.003",
+    "size": [
+      75,
+      150,
+      602
+    ],
+    "center": [
+      -575,
+      2165,
+      -250
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 425 crossmember right bottom.003",
+    "size": [
+      75,
+      150,
+      602
+    ],
+    "center": [
+      575,
+      2165,
+      -250
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot upright 2300 right weight storage.002",
+    "size": [
+      105,
+      2300,
+      135
+    ],
+    "center": [
+      590,
+      1150,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot upright 2300 right weight storage.003",
+    "size": [
+      105,
+      2300,
+      135
+    ],
+    "center": [
+      -590,
+      1150,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 725 crossmember left bottom.002",
+    "size": [
+      75,
+      150,
+      902
+    ],
+    "center": [
+      -575,
+      115,
+      -400
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 725 crossmember right bottom.004",
+    "size": [
+      75,
+      150,
+      902
+    ],
+    "center": [
+      575,
+      115,
+      -400
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot nameplate crossmember lite 1800.001",
+    "size": [
+      1252,
+      150,
+      75
+    ],
+    "center": [
+      0,
+      200,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 725 crossmember left top weight storage.002",
+    "size": [
+      75,
+      150,
+      902
+    ],
+    "center": [
+      -575,
+      1665,
+      -400
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 725 crossmember right top weight storage.002",
+    "size": [
+      75,
+      150,
+      902
+    ],
+    "center": [
+      575,
+      1665,
+      -400
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot upright 1800 left weight storage.001",
+    "size": [
+      105,
+      1800,
+      135
+    ],
+    "center": [
+      -590,
+      900,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot upright 1800 right weight storage.002",
+    "size": [
+      105,
+      1800,
+      135
+    ],
+    "center": [
+      590,
+      900,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot nameplate crossmember lite 2100.001",
+    "size": [
+      1252,
+      150,
+      75
+    ],
+    "center": [
+      0,
+      200,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 725 crossmember left top weight storage.001",
+    "size": [
+      75,
+      150,
+      902
+    ],
+    "center": [
+      -575,
+      1965,
+      -400
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 725 crossmember right top weight storage.001",
+    "size": [
+      75,
+      150,
+      902
+    ],
+    "center": [
+      575,
+      1965,
+      -400
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot upright 2100 left weight storage.001",
+    "size": [
+      105,
+      2100,
+      135
+    ],
+    "center": [
+      -590,
+      1050,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot upright 2100 right weight storage.001",
+    "size": [
+      105,
+      2100,
+      135
+    ],
+    "center": [
+      590,
+      1050,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot nameplate crossmember lite 2300.001",
+    "size": [
+      1252,
+      150,
+      75
+    ],
+    "center": [
+      0,
+      200,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 725 crossmember left top weight storage",
+    "size": [
+      75,
+      150,
+      902
+    ],
+    "center": [
+      -575,
+      2165,
+      -400
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot 725 crossmember right top weight storage",
+    "size": [
+      75,
+      150,
+      902
+    ],
+    "center": [
+      575,
+      2165,
+      -400
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot upright 2300 left weight storage.001",
+    "size": [
+      105,
+      2300,
+      135
+    ],
+    "center": [
+      -590,
+      1150,
+      0
+    ]
+  },
+  {
+    "file": "storage",
+    "node": "Riot upright 2300 right weight storage.001",
+    "size": [
+      105,
+      2300,
+      135
+    ],
+    "center": [
+      590,
+      1150,
+      0
+    ]
+  }
+]

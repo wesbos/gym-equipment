@@ -1,0 +1,153 @@
+body {
+  grid-template-columns: 240px minmax(300px, 1fr) 280px;
+}
+aside {
+  padding: 24px 18px;
+}
+h1 {
+  margin-top: 25px;
+}
+.intro a,
+.source-link {
+  color: #517961;
+  font-size: 11px;
+}
+#search {
+  border: 1px solid #cbd6ca;
+  border-radius: 5px;
+  background: white;
+  padding: 11px;
+  width: 100%;
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+#catalog h3 {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #8b988b;
+  margin: 22px 8px 8px;
+}
+#catalog button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  font-size: 12px;
+  padding: 10px 9px;
+  margin: 2px 0;
+}
+#catalog button.active {
+  background: #dfe9de;
+  color: #254a32;
+  font-weight: 600;
+}
+#editor {
+  background: #f8f9f5;
+  padding: 20px;
+  overflow: auto;
+  border-left: 1px solid #cdd6ce;
+}
+#editor .section-title {
+  margin-top: 4px;
+}
+#editor .fields {
+  display: block;
+}
+#editor label {
+  margin-top: 13px;
+}
+#editor .input-wrap input {
+  padding: 9px;
+  font-size: 15px;
+}
+#reset {
+  font-size: 11px;
+  margin-top: 14px;
+  width: 100%;
+}
+#part-note {
+  margin-bottom: 20px;
+  color: #5e7564;
+}
+.model-caption {
+  bottom: 80px;
+  max-width: 80%;
+  background: #e9eeeadd;
+  padding: 8px 12px;
+  border-radius: 6px;
+  left: 15px;
+}
+h2 {
+  font-size: 22px;
+}
+.model-caption p {
+  margin-bottom: 0;
+}
+#compare-label {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 65px;
+  white-space: nowrap;
+  font-size: 9px;
+  color: #688171;
+  letter-spacing: 1px;
+}
+header {
+  padding: 17px 16px;
+}
+header button {
+  font-size: 10px;
+  padding: 8px;
+}
+.muted {
+  display: none;
+}
+footer {
+  padding: 12px 15px;
+}
+footer span:last-child {
+  display: none;
+}
+@media (max-width: 1050px) {
+  body {
+    grid-template-columns: 190px minmax(270px, 1fr) 240px;
+  }
+  .eyebrow span {
+    display: none;
+  }
+}
+@media (max-width: 750px) {
+  body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    height: auto;
+  }
+  main {
+    grid-column: 1/-1;
+    grid-row: 1;
+    height: 65dvh;
+    min-height: 440px;
+  }
+  aside {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  #editor {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .view-tools {
+    right: auto;
+  }
+  header button {
+    padding: 7px;
+  }
+  .model-caption {
+    bottom: 83px;
+  }
+  h1 {
+    font-size: 26px;
+  }
+}
