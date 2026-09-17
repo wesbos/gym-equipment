@@ -1,4 +1,5 @@
 import { validateFloorItems, resolveFloorItems } from './floor-items.ts';
+import { validateLogo, logoSite } from './logos/types.ts';
 import { pairSuffix } from './physical-identity.ts';
 import { darkoTopMounts, darkoTopMount, matchingDarkoTarget } from './darko-mounts.ts';
 import { isVendorPart, vendorDefaults, vendorPlacement, vendorLimits, validateVendorParams, validateVendorMount, resolveVendor } from './vendor-mounts.ts';
@@ -285,7 +286,8 @@ export function validateAssembly(input: unknown): RackDoc {
   if (typeof input.nextId !== 'number' || !Number.isSafeInteger(input.nextId) || input.nextId < 1 || input.nextId > 1000000) fail('Invalid next accessory ID.');
   const appearance = validateAppearance(input.appearance);
   const floorItems = validateFloorItems(input.floorItems, [...Object.keys(graph.uprights), ...graph.connections.map(e=>e.id), ...accessories.map(a=>a.id)]);
-  return { ...copy(input), ...(input.floorItems !== undefined ? { floorItems } : {}), ...(appearance ? { appearance } : {}), ...graph, version: ASSEMBLY_VERSION, rack, removed: [...removed], structure, accessories, nextId: input.nextId };
+  const logo = validateLogo(input.logo);
+  return { ...copy(input), ...(input.floorItems !== undefined ? { floorItems } : {}), ...(appearance ? { appearance } : {}), ...(logo ? { logo } : {}), ...graph, version: ASSEMBLY_VERSION, rack, removed: [...removed], structure, accessories, nextId: input.nextId };
 }
 export function getPartPlacementInfo(part: string, input?: RackDoc): PlacementInfo | null {
   if (isVendorPart(part)) return vendorPlacement(part);
@@ -434,7 +436,7 @@ export function getMounts(input: RackDoc, part?: string, params: NumericParams =
 export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
   const doc = validateAssembly(input), r = { ...doc.rack, uprights: doc.uprights }, result: ResolvedInstance[] = resolveFloorItems(doc.floorItems);
   const append = (id: string, part: PartId, params: NumericParams, position: Vec3, angle: number, mounts: Mount[], kind: ResolvedInstance['kind'], ownerId = id, paired = false, connectedTo: string[] = []) => {
-    result.push({ id, part, params, position, rotation: [0, 0, angle], mount: mounts[0] ?? null, mounts, ownerId, kind, paired, connectedTo });
+    result.push({ ...(doc.logo && logoSite(part) ? { logo: doc.logo } : {}), id, part, params, position, rotation: [0, 0, angle], mount: mounts[0] ?? null, mounts, ownerId, kind, paired, connectedTo });
   };
   for (const id of Object.keys(doc.uprights)) if (!doc.removed.includes(id)) {
     const angle = sideOf(id) === 'right' ? Math.PI : 0, center = postCenter(r, id), offset = rotateZ([15, 0, 0], angle);

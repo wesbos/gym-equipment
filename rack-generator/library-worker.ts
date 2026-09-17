@@ -1,3 +1,4 @@
+import { validateLogo } from './logos/types.ts';
 /// <reference lib="webworker" />
 declare const self: DedicatedWorkerGlobalScope;
 import type { LibraryWorkerRequest, SolidPart } from './types.ts';
@@ -41,7 +42,7 @@ self.onmessage = async ({ data }: MessageEvent<LibraryWorkerRequest>) => {
       (params.benchEnd - params.benchStart) / params.benchSpacing > 500
     )
       throw new Error("Too many bench holes: increase spacing.");
-    parts = def.build(await ready, params);
+    parts = def.build(await ready, params, validateLogo(data.logo));
     const meshes = parts.map(({ name, solid, role, color, metalness, roughness, authoredFastenerFinish }) => {
       if (solid.status() !== "NoError" || solid.isEmpty())
         throw new Error(`Invalid solid: ${name}`);
