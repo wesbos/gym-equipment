@@ -7,3 +7,8 @@
 .standard-size-control .standard-options [aria-checked="true"] { background: #dce9d5; color: #233b30; border-color: #648455; }
 .standard-size-control button:focus-visible { outline: 2px solid #648455; outline-offset: 2px; }
 .standard-size-control > .numeric-control { flex-basis: 100%; }
+.input-wrap:has(> .standard-size-control) { border: 0; background: transparent; overflow: visible; }
+.input-wrap > span.standard-size-control { padding: 0; flex-shrink: 1; color: var(--ink, #233b30); }
+.input-wrap .standard-size-control .standard-options { padding: 0; color: inherit; }
+#frame-form output { display: block; margin-top: 8px; font-size: 11px; }
+.input-wrap:has(> .standard-size-control):not(:has(.numeric-control)) > span:not(.standard-size-control) { display: none; }

@@ -599,8 +599,7 @@ export default function BuilderPage() {
         </header>
         <aside className="catalog-panel">
           <div className="panel-heading">
-            <span className="eyebrow">MAKE IT YOURS</span>
-            <h1>Build your rack.</h1>
+            <h1>Parts</h1>
 
           </div>
           <div className="search-wrap">
@@ -624,7 +623,7 @@ export default function BuilderPage() {
               onChange={(e) => store.patch({ paired: e.target.checked })}
             />
             <span>
-              Add matching pair<small>Place both sides together</small>
+              Add matching pair
             </span>
           </label>
           <div id="catalog">
@@ -750,7 +749,6 @@ export default function BuilderPage() {
           </button>
           <AppearanceControls store={store} />
           {state.placing && !state.placing.movingId && <details><summary>Swap an existing accessory</summary>
-            <p>Hover a highlighted accessory in 3D or choose its group here.</p>
             {state.doc.accessories.map(a => {
               const candidate = swapCandidate(state.doc, a.id, state.placing!.part);
               return candidate.valid ? <button key={a.id} onClick={() => store.act(() => { store.commit(candidate.doc); store.select(candidate.ownerId); })}>Swap {a.id}</button> : null;

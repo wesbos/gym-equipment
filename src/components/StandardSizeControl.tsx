@@ -13,7 +13,7 @@ export function StandardSizeControl({ label, name, value, options, disabled, onV
   return <span className="standard-size-control">
     <span className="standard-options" role="radiogroup" aria-label={label}>
       {options.map((option, index) => <button type="button" role="radio" key={option.value}
-        aria-checked={index === match} tabIndex={index === (match < 0 ? 0 : match) ? 0 : -1}
+        aria-label={option.label} aria-checked={index === match} tabIndex={index === (match < 0 ? 0 : match) ? 0 : -1}
         disabled={disabled} onClick={() => select(option.value)}
         onKeyDown={event => {
           const delta = ['ArrowRight', 'ArrowDown'].includes(event.key) ? 1 : ['ArrowLeft', 'ArrowUp'].includes(event.key) ? -1 : 0;
@@ -26,7 +26,7 @@ export function StandardSizeControl({ label, name, value, options, disabled, onV
     </span>
     <button type="button" className="custom-size" aria-label={`Custom ${label.toLowerCase()}`} aria-expanded={expanded}
       disabled={disabled} onClick={() => setCustom(!expanded)}>Custom {expanded ? '⌃' : '⌄'}</button>
-    {reset}
+    {!expanded && reset}
     {expanded ? children : <input type="hidden" name={name} value={value} />}
   </span>;
 }
