@@ -1,3 +1,4 @@
+import { vendorAttribution } from '../../rack-generator/vendor-metadata.ts';
 import { cloneInstanceMaterials } from './instance-materials.ts';
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -159,7 +160,7 @@ export function createBuilderScene(
     const g = cloneInstanceMaterials(model, snapshot.doc.appearance, entry.id);
     g.position.set(...entry.position);
     g.rotation.set(...entry.rotation);
-    g.userData = { id: entry.id, ownerId: entry.ownerId || entry.id };
+    g.userData = { id: entry.id, ownerId: entry.ownerId || entry.id, ...(vendorAttribution(entry.part) ? { vendorAttribution: vendorAttribution(entry.part) } : {}) };
     return g;
   }
   worker.onmessage = ({ data }: MessageEvent<LibraryWorkerResponse>) => {

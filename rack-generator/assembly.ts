@@ -1,3 +1,5 @@
+import { isVendorPart, vendorDefaults, vendorPlacement, vendorLimits, validateVendorParams, validateVendorMount, resolveVendor } from './vendor-mounts.ts';
+import { VOLTRA_IDS } from './vendor-metadata.ts';
 import { validateMountShaft } from './mount-shafts.ts';
 import { gridProfile } from './profiles.ts';
 import { legacyGraph, validateGraph, structureSlots } from './topology.ts';
@@ -14,7 +16,7 @@ export const ASSEMBLY_VERSION = 2;
 export const RACK_DEFAULTS: Readonly<RackDimensions> = Object.freeze({ height: 2032, width: 1075, depth: 725, tube: 75, holeDiameter: 25, pitch: 50, firstHole: 65 });
 export const UPRIGHT_IDS: readonly UprightId[] = Object.freeze(['front-left', 'front-right', 'rear-left', 'rear-right']);
 export const FACES: readonly Face[] = Object.freeze(['front', 'back', 'left', 'right']);
-export const ACCESSORY_PARTS = Object.freeze(['pullup-straight', 'pullup-multigrip', 'pullup-sphere', 'j-hook-standard', 'j-hook-roller', 'j-hook-sandwich', 'safety-box', 'safety-pin-pipe', 'safety-webbing', 'foot-400', 'foot-800', ...attachmentPartIds]);
+export const ACCESSORY_PARTS = Object.freeze(['pullup-straight', 'pullup-multigrip', 'pullup-sphere', 'j-hook-standard', 'j-hook-roller', 'j-hook-sandwich', 'safety-box', 'safety-pin-pipe', 'safety-webbing', 'foot-400', 'foot-800', ...attachmentPartIds, ...VOLTRA_IDS]);
 export const STRUCTURE_SLOTS: readonly StructureSlot[] = Object.freeze<StructureSlot[]>([
   ...UPRIGHT_IDS.map((id): StructureSlot => ({ id, part: 'upright', connectedTo: [] })),
   { id: 'left-upper-crossmember', part: 'crossmember-725', connectedTo: ['front-left', 'rear-left'] },
@@ -118,6 +120,7 @@ function dependencies(accessory: Accessory): string[] {
   return [...ids];
 }
 function accessoryLimits(rack: RackDimensions, accessory: Accessory): [number, number] {
+  if (isVendorPart(accessory.part)) return vendorLimits(accessory.part, accessory.params, rack);
   if (isFoot(accessory.part)) return [0, 0];
   if (isMountedAttachment(accessory.part)) {
     const anchor = getAttachmentAnchor(accessory.part, accessory.params);
@@ -135,6 +138,7 @@ function accessoryLimits(rack: RackDimensions, accessory: Accessory): [number, n
 }
 function validateParams(part: string, params: unknown): asserts params is NumericParams {
   if (!isRecord(params)) fail('Accessory parameters must be an object.');
+  if (isVendorPart(part)) { validateVendorParams(part, params as NumericParams); return; }
   const defaults = SOURCE_DEFAULTS[part];
 
   for (const [key, value] of Object.entries(params)) {
@@ -225,6 +229,7 @@ export function validateAssembly(input: unknown): RackDoc {
     }
     validateMountShaft(a.part, params, rack.holeDiameter);
     const clean: Accessory = { ...copy(a), id: a.id, part: a.part as PartId, target: { ...copy(a.target), uprightId: a.target.uprightId as UprightId, face: a.target.face as Face, hole: a.target.hole }, paired: a.paired, params: { ...params } };
+    if (isVendorPart(clean.part)) validateVendorMount({ rack, ...graph, removed, structure }, clean);
     if (clean.paired && !clean.pairTo && UPRIGHT_IDS.includes(clean.target.uprightId)) clean.pairTo = otherSide(clean.target.uprightId);
     if (!clean.spanTo && UPRIGHT_IDS.includes(clean.target.uprightId)) {
       if (clean.part === 'pullup-straight') clean.spanTo = otherSide(clean.target.uprightId);
@@ -260,6 +265,7 @@ export function validateAssembly(input: unknown): RackDoc {
   return { ...copy(input), ...(appearance ? { appearance } : {}), ...graph, version: ASSEMBLY_VERSION, rack, removed: [...removed], structure, accessories, nextId: input.nextId };
 }
 export function getPartPlacementInfo(part: string, input?: RackDoc): PlacementInfo | null {
+  if (isVendorPart(part)) return vendorPlacement(part);
   if (isMountedAttachment(part)) {
     const info = getAttachmentPlacementInfo(part);
     return { ...info, family: part.startsWith('storage-pin-') ? 'storage-pins' : part.startsWith('dip-') ? 'dips' : part };
@@ -441,8 +447,10 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
     }
   }
   for (const a of doc.accessories) {
-    const defaults = SOURCE_DEFAULTS[a.part], params = { ...defaults, ...a.params };
-    if (a.spanTo) {
+    const defaults = isVendorPart(a.part) ? vendorDefaults(a.part) : SOURCE_DEFAULTS[a.part], params = { ...defaults, ...a.params };
+    if (isVendorPart(a.part)) {
+      result.push(...resolveVendor(doc, a, targetsFor(a)));
+    } else if (a.spanTo) {
       for (const [index, t] of targetsFor(a).entries()) {
       const endpoint = index ? a.pairedSpanTo! : a.spanTo;
       const start = postCenter(r, t.uprightId), end = postCenter(r, endpoint);

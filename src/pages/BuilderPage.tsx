@@ -1,3 +1,5 @@
+import { VendorControls, VendorCredit } from '../components/VendorControls.tsx';
+import { VOLTRA_IDS } from '../../rack-generator/vendor-metadata.ts';
 import { gridProfile } from '../../rack-generator/profiles.ts';
 import { RackPresets } from '../components/RackPresets.tsx';
 import { TopologyEditor } from '../components/TopologyEditor.tsx';
@@ -37,6 +39,7 @@ import type {
 } from "../../rack-generator/types.ts";
 import "../../rack-generator/builder.css";
 const groups: [string, PartId[]][] = [
+  ["Digital resistance", VOLTRA_IDS],
   [
     "Frame",
     [
@@ -390,6 +393,8 @@ function Inspector({ store }: { store: BuilderStore }) {
               </p>
             </>
           )}
+          {entry && <VendorControls store={store} entry={entry} />}
+          <VendorCredit part={part} />
           {fields.map((field) => (
             <Field key={field.key} label={`${field.label} (mm)`}>
               <NumericControl name={field.key} label={field.label}
@@ -673,7 +678,7 @@ export default function BuilderPage() {
                         params={state.definitions.find((d) => d.id === id)?.defaults}
                         className="thumb"
                       />
-                      <span>{nameOf(id)}</span>
+                      <span>{nameOf(id)}<VendorCredit part={id} compact /></span>
                       <span className="part-plus">+</span>
                     </button>
                   ))}

@@ -8,7 +8,8 @@ import wasmUrl from "manifold-3d/manifold.wasm?url";
 import { definitions as structure } from "./parts/structure.ts";
 import { definitions as attachments } from "./parts/attachments.ts";
 import { definitions as bars } from "./parts/bars-safeties.ts";
-const definitions = [...structure, ...bars, ...attachments];
+import { definitions as voltra } from './parts/voltra.ts';
+const definitions = [...structure, ...bars, ...attachments, ...voltra];
 const ready = Module({ locateFile: () => wasmUrl }).then((api) => {
   api.setup();
   return api;

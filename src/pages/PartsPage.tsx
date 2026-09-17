@@ -1,3 +1,4 @@
+import { VendorCredit } from '../components/VendorControls.tsx';
 import { NumericControl } from "../components/NumericControl.tsx";
 import { LatestRequest } from "../geometry/latest-request.ts";
 import type { LibraryWorkerRequest } from "../../rack-generator/worker-types.ts";
@@ -324,6 +325,7 @@ export default function PartsPage() {
         <div className="model-caption">
           <h2 id="model-title">{selected?.name || "Loading parts…"}</h2>
           <p id="model-description">{description}</p>
+          {selected && <VendorCredit part={selected.id} />}
         </div>
         <footer>
           <span id="status" className={error ? "error" : ""} role="status">
