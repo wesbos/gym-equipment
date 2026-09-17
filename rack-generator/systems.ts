@@ -1,3 +1,4 @@
+import { SMITH_BAR_MIN, SMITH_SAFETY_MIN, SMITH_SAFETY_GAP } from "./smith-heights.ts";
 import { lockedTrolley, krakenBaseRise } from "./cable-stations.ts";
 import { smithLayout, cableMountTop } from "./system-mounts.ts";
 import type {
@@ -115,12 +116,12 @@ export function validateSystemParams(
     require([-5, 0, 5].includes(
       p.angle,
     ), "Smith install angle must be −5°, 0°, or +5°.");
-    require(p.barHeight >= 396 &&
+    require(p.barHeight >= SMITH_BAR_MIN &&
       p.barHeight <= 2029, "Smith bar height is outside its travel.");
-    require(p.safetyHeight >= 300 &&
+    require(p.safetyHeight >= SMITH_SAFETY_MIN &&
       p.safetyHeight <=
         p.barHeight -
-          100, "Smith safeties must remain at least 100 mm below the bar.");
+          SMITH_SAFETY_GAP, "Smith safeties must remain at least 150 mm below the bar.");
     require(!p.outside || p.angle === 0, "Front Smith currently supports vertical installation only; angled front mounting is not yet verified.");
   }
   return p;

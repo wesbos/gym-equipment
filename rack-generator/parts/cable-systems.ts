@@ -500,7 +500,8 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
           "Trolley output pivot",
           g.cylinder(100, 8, "z", [
             wheel.center[0],
-            wheel.center[1] + 45,
+            // Sheave rim + cable radius + pivot radius + 4.6 mm clearance.
+            wheel.center[1] + wheel.radius + 2.4 + 8 + 4.6,
             wheel.center[2],
           ]),
           "rod",

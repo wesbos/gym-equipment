@@ -398,3 +398,21 @@ test("mixed system multiselection has no accessory-only fields and removes owner
   assert.equal(removed.systems?.length ?? 0, 0);
   assert.equal(d.systems?.length, 2);
 });
+
+test("systems and floor items share a collision-free identity namespace", async () => {
+  const { addFloorItem } = await import("./floor-items.ts");
+  const doc = validateAssembly(withSystem(preset(), "cable-ares2"));
+  doc.systems![0].id = `floor-${doc.nextId}`;
+  const added = validateAssembly(addFloorItem(doc));
+  assert.notEqual(added.floorItems![0].id, added.systems![0].id);
+  const resolved = resolveAssembly(added);
+  assert.equal(new Set(resolved.map((r) => r.id)).size, resolved.length);
+  const invalid = structuredClone(added);
+  invalid.systems![0].id = invalid.floorItems![0].id;
+  assert.throws(() => validateAssembly(invalid), /System IDs must be unique/);
+  const roundTrip = validateAssembly(JSON.parse(JSON.stringify(added)));
+  assert.deepEqual(roundTrip.floorItems, added.floorItems);
+  assert.deepEqual(roundTrip.systems, added.systems);
+  assert.equal(removeInstance(added, added.floorItems![0].id).systems!.length, 1);
+  assert.equal(removeInstance(added, added.systems![0].id).floorItems!.length, 1);
+});

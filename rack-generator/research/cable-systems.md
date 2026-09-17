@@ -178,3 +178,15 @@ angle signs and rack heights; and the108-inch raised kit. A passing static check
 is not a swept-motion, cable-tension, load-capacity or certified physical-fit
 claim. Exact historical envelopes and undimensioned manufacturer details remain
 estimated; no manufacturer CAD or physical measurement was supplied.
+
+Smith lower-travel controls share `smith-heights.ts`: bar396 mm minimum, safety
+246 mm minimum, with a reconstructed150 mm carriage/pad separation. The former
+100 mm separation did not account for the90 mm carriage plate below its datum,
+45 mm safety pad above its datum and tilted bar offset. Actual minimum-position
+solids clear at0/±5 degrees for both rack heights. Contextual resets preserve the
+other height and use these same bounds; no invalid reset is silently committed.
+
+Cable tube surfaces use a single closed indexed sweep along the tangent samples.
+This avoids the tiny Boolean cylinder/sphere seam triangles that collapsed when
+exported as Float32 meshes. Production3MF tests still exercise overlap partition,
+not just source-solid watertightness; exporter mesh checks remain unchanged.

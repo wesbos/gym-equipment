@@ -1,3 +1,4 @@
+import { cableTube } from "./cable-tube.ts";
 import {
   routeCables,
   type CableRoute,
@@ -172,7 +173,7 @@ export function buildCableRoutes(
       part.solid = g.move(g.rotate(part.solid, rotation), pulley.center);
   }
   for (const cable of plan.cables) {
-    g.add(cable.name, g.path(cable.points, 2.4), "liner");
+    g.add(cable.name, cableTube(g, cable.points), "liner");
     for (const [name, p] of [
       [cable.start, cable.points[0]],
       [cable.end, cable.points.at(-1)!],

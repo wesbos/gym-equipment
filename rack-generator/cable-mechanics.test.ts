@@ -44,7 +44,7 @@ for (const def of definitions)
     try {
       const cables = cableParts(parts),
         wheels = parts.filter((p) =>
-          /wheel|cheek|axle|hanger web|mounting deck|Polished stack guide rod|Trolley.*bridge|ARES transverse stack support/.test(
+          /wheel|cheek|axle|hanger web|mounting deck|Polished stack guide rod|Trolley.*bridge|Trolley output pivot|ARES transverse stack support/.test(
             p.name,
           ),
         );
@@ -325,7 +325,7 @@ for (const def of definitions)
       try {
         for (const c of cableParts(parts))
           for (const w of parts.filter((p) =>
-            /wheel|cheek|axle|hanger web|mounting deck|Polished stack guide rod|Trolley.*bridge|ARES transverse stack support/.test(
+            /wheel|cheek|axle|hanger web|mounting deck|Polished stack guide rod|Trolley.*bridge|Trolley output pivot|ARES transverse stack support/.test(
               p.name,
             ),
           ))

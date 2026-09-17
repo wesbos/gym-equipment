@@ -1,3 +1,4 @@
+import { smithHeightControls } from "../../rack-generator/smith-heights.ts";
 import {
   lockedTrolley,
   trolleyStations,
@@ -39,10 +40,11 @@ function Options({
   const smith = part === "smith-rep",
     ares = part.includes("ares"),
     defaults = { ...SYSTEM_DEFAULTS[part] };
+  const heights = smithHeightControls(p, height);
   if (smith) {
     // Reset one field while preserving the other valid installed setting.
-    defaults.barHeight = Math.max(defaults.barHeight, p.safetyHeight + 100);
-    defaults.safetyHeight = Math.min(defaults.safetyHeight, p.barHeight - 100);
+    defaults.barHeight = heights.barDefault;
+    defaults.safetyHeight = heights.safetyDefault;
   } else {
     const mountParams = { ...rack, bore: rack.holeDiameter };
     defaults.trolley = lockedTrolley(
@@ -120,8 +122,8 @@ function Options({
               onGestureStart={onGestureStart}
               onGestureEnd={onGestureEnd}
               value={p.barHeight}
-              min={Math.max(396, p.safetyHeight + 100)}
-              max={height < 2200 ? 1721 : 2029}
+              min={heights.barMin}
+              max={heights.barMax}
               step={5}
               onValue={(v) => onChange({ barHeight: v })}
             />
@@ -134,8 +136,8 @@ function Options({
               onGestureStart={onGestureStart}
               onGestureEnd={onGestureEnd}
               value={p.safetyHeight}
-              min={300}
-              max={p.barHeight - 100}
+              min={heights.safetyMin}
+              max={heights.safetyMax}
               step={5}
               onValue={(v) => onChange({ safetyHeight: v })}
             />
