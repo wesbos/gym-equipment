@@ -1,5 +1,6 @@
 import { VendorControls, VendorCredit } from '../components/VendorControls.tsx';
 import { VOLTRA_IDS, DARKO_IDS } from '../../rack-generator/vendor-metadata.ts';
+import { dimensionOptions } from '../../rack-generator/standards.ts';
 import { swapCandidates, swapCandidate } from '../../rack-generator/swap.ts';
 import { ResetButton } from '../components/ResetButton.tsx';
 import { dimensionDefaults, resetDimensions, partDefaults, resetPart, placementDefaults, defaultVariant } from '../../rack-generator/reset.ts';
@@ -127,9 +128,6 @@ function Inspector({ store }: { store: BuilderStore }) {
       <>
         <h2 id="selection-title">{nameOf(structureChoice)}</h2>
         <div id="inspector" className="inspector-fields">
-          <p>
-            Hover a highlighted region in the 3D view, then click to swap. Or choose a connection below. Its span follows the rack dimensions.
-          </p>
           {slots.map((slot) => (
             <button
               key={slot.ownerId}
@@ -149,8 +147,8 @@ function Inspector({ store }: { store: BuilderStore }) {
           {!slots.length && (
             <p>
               {structureChoice === "upright"
-                ? "Use Uprights & connections to extend the rack."
-                : "Restore the supporting uprights to use this member."}
+                ? "No upright slots"
+                : "Missing supporting uprights"}
             </p>
           )}
         </div>
@@ -162,19 +160,15 @@ function Inspector({ store }: { store: BuilderStore }) {
       <>
         <h2 id="selection-title">Rack settings</h2>
         <RackPresets store={store} />
-        {gridProfile(doc.profileId).reconstructionNote && <p className="note">{gridProfile(doc.profileId).label}: {gridProfile(doc.profileId).reconstructionNote}</p>}
         <TopologyEditor key={JSON.stringify(doc)} doc={doc} store={store} selected={ownerId} />
-        <p className="settings-intro">
-          Build your frame, then add parts at highlighted connections.
-        </p>
         <form id="frame-form" onSubmit={e => { e.preventDefault(); store.endGesture(); }}>
           {(['height', 'width', 'depth'] as const).map(key => {
-            const factor = key === 'height' ? 25.4 : 1;
+            const factor = 1;
             const label = key === 'height' ? 'Upright height' : `Clear rack ${key}`;
             return <Field key={key} label={label}><div className="input-wrap">
-              <NumericControl name={key === 'height' ? 'heightIn' : key} label={label}
-                defaultValue={dimensionDefaults(doc)[key] / factor} value={doc.rack[key] / factor} min={key === 'height' ? 40 : key === 'width' ? 400 : 300}
-                max={key === 'height' ? 157 : key === 'width' ? 2000 : 1500} step={doc.rack.pitch / factor}
+              <NumericControl defaultValue={dimensionDefaults(doc)[key] / factor} standardOptions={dimensionOptions(doc.rack, key, doc.profileId)} name={key === 'height' ? 'heightIn' : key} label={label}
+                value={doc.rack[key] / factor} min={key === 'height' ? 1000 : key === 'width' ? 400 : 300}
+                max={key === 'height' ? 4000 : key === 'width' ? 2000 : 1500} step={doc.rack.pitch / factor}
                 normalize={value => {
                   const current = store.getSnapshot().doc;
                   const target = snapDimensions(current.rack, { [key]: value * factor }, current.profileId)[key];
@@ -187,11 +181,10 @@ function Inspector({ store }: { store: BuilderStore }) {
                 }}
                 onGestureStart={store.beginGesture} onGestureEnd={store.endGesture}
                 onValue={value => store.act(() => store.commit(resizeAssembly(store.getSnapshot().doc, { [key]: value * factor })))} />
-              <span>{key === 'height' ? 'in' : 'mm'}</span>
+              <span>mm</span>
             </div></Field>;
           })}
           <button type="button" onClick={() => store.act(() => { store.endGesture(); store.commit(resetDimensions(doc)); })}>Reset dimensions</button>
-          <p className="note">Resizing moves connected posts; frame-mounted pull-up bars follow rack height. Defaults use the active manufacturer grid.</p>
           <output aria-live="polite">{snapHint || `Grid: ${doc.rack.pitch} mm · depths ${gridProfile(doc.profileId).depths.join(' / ')} mm`}</output>
         </form>
       </>
@@ -389,7 +382,7 @@ function Inspector({ store }: { store: BuilderStore }) {
               </Field>
               <p className="note">
                 {fixedHole
-                  ? "Mount follows the frame."
+                  ? "Frame mount"
                   : `Mount height ${doc.rack.firstHole + entry.target.hole * doc.rack.pitch} mm`}
               </p>
             </>
@@ -398,8 +391,8 @@ function Inspector({ store }: { store: BuilderStore }) {
           <VendorCredit part={part} />
           {fields.map((field) => (
             <Field key={field.key} label={`${field.label} (mm)`}>
-              <NumericControl name={field.key} label={field.label}
-                defaultValue={partDefaults(doc, part)[field.key]} value={entry?.params[field.key] ?? (ownerId ? doc.structure[ownerId]?.params[field.key] : undefined) ?? physical.params[field.key] ?? definitions.find(d => d.id === part)?.defaults[field.key] ?? 0}
+              <NumericControl defaultValue={partDefaults(doc, part)[field.key]} standardOptions={definitions.find(d => d.id === part)?.standardOptions?.[field.key]} name={field.key} label={field.label}
+                value={entry?.params[field.key] ?? (ownerId ? doc.structure[ownerId]?.params[field.key] : undefined) ?? physical.params[field.key] ?? definitions.find(d => d.id === part)?.defaults[field.key] ?? 0}
                 min={field.min} max={field.max} step={field.step}
                 onGestureStart={store.beginGesture} onGestureEnd={store.endGesture}
                 onValue={value => store.act(() => {
@@ -410,7 +403,6 @@ function Inspector({ store }: { store: BuilderStore }) {
             </Field>
           ))}
           <button type="button" onClick={() => store.act(() => { store.endGesture(); store.commit(resetPart(doc, physical.id)); })}>Reset this part</button>
-          <p className="note">Reset this part restores parameter defaults, preserving placement, variant and piece colors.</p>
           {part !== "upright" && (
             <button className="primary">
               {entry ? "Apply placement" : "Replace frame member"}
@@ -423,12 +415,6 @@ function Inspector({ store }: { store: BuilderStore }) {
             >
               Move in 3D ↗
             </button>
-          )}
-          {!entry && (
-            <p className="note">
-              Connected frame member. Change rack dimensions to resize the
-              frame. Removing an upright also removes attached accessories.
-            </p>
           )}
           {entry?.paired && (
             <button
@@ -619,9 +605,8 @@ export default function BuilderPage() {
         </header>
         <aside className="catalog-panel">
           <div className="panel-heading">
-            <span className="eyebrow">MAKE IT YOURS</span>
-            <h1>Build your rack.</h1>
-            <p>Select a part, then choose a connection.</p>
+            <h1>Parts</h1>
+
           </div>
           <div className="search-wrap">
             <input
@@ -644,7 +629,7 @@ export default function BuilderPage() {
               onChange={(e) => store.patch({ paired: e.target.checked })}
             />
             <span>
-              Add matching pair<small>Place both sides together</small>
+              Add matching pair
             </span>
           </label>
           <div id="catalog">
@@ -709,7 +694,7 @@ export default function BuilderPage() {
             ))}
           </div>
           <div className="stage-caption">
-            <span className="eyebrow">YOUR BOS STRENGTH RACK</span>
+            <span className="eyebrow">Your rack</span>
             <div id="dimensions">{state.dimensions}</div>
           </div>
           <div className="stage-actions">
@@ -771,7 +756,6 @@ export default function BuilderPage() {
           </button>
           <AppearanceControls store={store} />
           {state.placing && !state.placing.movingId && <details><summary>Swap an existing accessory</summary>
-            <p>Hover a highlighted accessory in 3D or choose its group here.</p>
             {state.doc.accessories.map(a => {
               const candidate = swapCandidate(state.doc, a.id, state.placing!.part);
               return candidate.valid ? <button key={a.id} onClick={() => store.act(() => { store.commit(candidate.doc); store.select(candidate.ownerId); })}>Swap {a.id}</button> : null;
@@ -790,11 +774,6 @@ export default function BuilderPage() {
             ))}
           </div>
           <div className="inspector-bottom">
-            <div className="help-card">
-              <p>
-                Click a part on your rack to adjust its position and dimensions.
-              </p>
-            </div>
             <button
               id="reset-design"
               className="new-rack-button"
@@ -817,10 +796,6 @@ export default function BuilderPage() {
           >
             {state.status}
           </span>
-          <span className="navigation-help">
-            DRAG TO ORBIT · SCROLL TO ZOOM · RIGHT-DRAG TO PAN
-          </span>
-          <span>BOS / STRENGTH</span>
         </footer>
       </div>
     </div>
