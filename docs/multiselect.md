@@ -61,10 +61,8 @@ domain resets remain separate from the editing gesture. Browser validation typed
 35 then 36 into a mixed 32/40 mm selection without blurring: both live values became
 36, focus stayed on the input, and one Undo restored 32/40 and blank Mixed.
 
-Pending visuals integration before #31 closure: frameFinish/finishOverrides bulk
-editing and finish override preservation during duplication must be connected once
-#25 reaches main. The visuals stream has been notified; current paint overrides and
-export resolver behavior are covered, but this does not yet cover unmerged finishes.
+The steel finish integration after #25 is described below; both appearance maps
+now participate in bulk editing, resets and duplication.
 
 Shared-standard regression: NumericControl forwards mixed explicitly and
 StandardSizeControl treats the first value only as a scrub seed, never a selected
@@ -78,7 +76,9 @@ then selected 40 for both parts and undid back to blank Mixed.
 `finishSelection(finish?)` writes or independently resets `finishOverrides` for
 selected physical IDs in one commit. `paintSelection(color)` sets both color and
 explicit paint finish, so steel cannot hide a chosen color. `paintSelection()`
-resets only color. `resetSelectionAppearance()` clears both maps in one commit.
+resets only effective color. Both per-field resets reuse `resetAppearanceField`
+from the UI integration contract, including legacy color-implies-paint behavior.
+`resetSelectionAppearance()` clears both maps in one commit.
 Bulk appearance shares PaintPicker with single-piece controls: mixed colors have
 no active swatch, mixed steel finishes use a disabled Mixed option. Each field has
 its own ResetButton. Global appearance and unselected pieces are preserved.

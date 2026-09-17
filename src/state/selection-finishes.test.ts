@@ -26,8 +26,8 @@ test('bulk steel finish and paint target physical IDs with one undo and independ
   store.paintSelection(); // color reset must not switch steel to paint
   for (const id of ids) { assert.equal(appearance(store).overrides?.[id], undefined); assert.equal(appearance(store).finishOverrides?.[id], 'stainless'); }
   store.history('undo'); assert.deepEqual(store.getSnapshot().doc, steel);
-  store.finishSelection(); // finish reset keeps the remembered color; legacy color implies paint
-  for (const id of ids) { assert.equal(appearance(store).finishOverrides?.[id], undefined); assert.equal(appearance(store).overrides?.[id], '#ff0000'); }
+  store.finishSelection(); // finish reset keeps the remembered color while restoring rack steel
+  for (const id of ids) { assert.equal(appearance(store).finishOverrides?.[id], 'stainless'); assert.equal(appearance(store).overrides?.[id], '#ff0000'); }
   store.history('undo'); assert.deepEqual(store.getSnapshot().doc, steel);
   store.resetSelectionAppearance();
   for (const id of ids) {
@@ -81,4 +81,25 @@ test('bulk finishes serialize on explicit Save and selection stays transient', a
   assert.deepEqual(saved.getSnapshot().selection, []);
   for (const id of ids) assert.equal(resolveMaterial({ role: 'frame' }, appearance(saved), id).color, '#aaa59a');
   assert.deepEqual(appearance(saved), appearance(store));
+});
+
+
+test('color-only legacy overrides preserve paint on color reset and inherit rack steel on finish reset', () => {
+  const store = new BuilderStore();
+  store.commit({ ...store.getSnapshot().doc, appearance: { frameFinish: 'clear-grind',
+    overrides: { 'front-left': '#123456', 'front-right': '#abcdef' } } });
+  store.selectMany(ids); const before = store.getSnapshot().doc;
+  store.paintSelection();
+  for (const id of ids) {
+    assert.equal(appearance(store).overrides?.[id], undefined);
+    assert.equal(appearance(store).finishOverrides?.[id], 'paint');
+    assert.equal(resolveMaterial({ role: 'frame' }, appearance(store), id).finish, undefined);
+  }
+  store.history('undo'); assert.deepEqual(store.getSnapshot().doc, before);
+  store.finishSelection();
+  for (const id of ids) {
+    assert.equal(appearance(store).overrides?.[id], before.appearance!.overrides?.[id]);
+    assert.equal(resolveMaterial({ role: 'frame' }, appearance(store), id).finish, 'clear-grind');
+  }
+  store.history('undo'); assert.deepEqual(store.getSnapshot().doc, before);
 });

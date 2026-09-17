@@ -1,6 +1,7 @@
+import { physicalFinish } from '../../rack-generator/appearance-reset.ts';
 import { ResetButton } from './ResetButton.tsx';
 import { useSyncExternalStore } from 'react';
-import { DEFAULT_FRAME_COLOR, PAINT_SWATCHES, resolveMaterial, type Appearance, type FrameFinish, type HardwareFinish } from '../../rack-generator/appearance.ts';
+import { DEFAULT_FRAME_COLOR, PAINT_SWATCHES, type Appearance, type FrameFinish, type HardwareFinish } from '../../rack-generator/appearance.ts';
 import type { BuilderStore } from '../state/builder-store.ts';
 import './appearance-controls.css';
 
@@ -28,7 +29,7 @@ export function AppearanceControls({ store }: { store: BuilderStore }) {
   const update = (patch: Partial<Appearance>) => store.act(() => store.commit({ ...doc, appearance: { ...appearance, ...patch } }));
   const colors = selection.map(id => appearance.overrides?.[id] ?? appearance.frameColor ?? DEFAULT_FRAME_COLOR);
   const mixed = colors.some(value => value !== colors[0]);
-  const finishes = selection.map(id => resolveMaterial({ role: 'frame' }, appearance, id).finish ?? 'paint');
+  const finishes = selection.map(id => physicalFinish(appearance, id));
   const mixedFinish = finishes.some(value => value !== finishes[0]);
   const color = appearance.frameColor ?? DEFAULT_FRAME_COLOR;
   return <section aria-label="Rack appearance" className="appearance-controls">
@@ -50,7 +51,7 @@ export function AppearanceControls({ store }: { store: BuilderStore }) {
           onFinish={value => store.act(() => store.finishSelection(value))}
           colorChanged={selection.some(id => !!appearance.overrides?.[id])}
           onResetColor={() => store.act(() => store.paintSelection())}
-          finishChanged={selection.some(id => !!appearance.finishOverrides?.[id])}
+          finishChanged={finishes.some(finish => finish !== (appearance.frameFinish ?? 'paint'))}
           onResetFinish={() => store.act(() => store.finishSelection())} />
         <button type="button" disabled={!selection.some(id => appearance.overrides?.[id] || appearance.finishOverrides?.[id])}
           onClick={() => store.act(store.resetSelectionAppearance)}>Use rack appearance</button>
