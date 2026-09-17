@@ -6,3 +6,6 @@ dist/
 .env
 .env.*
 !.env.example
+
+# Local print/slicer verification artifacts
+.verification/
