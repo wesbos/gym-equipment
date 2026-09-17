@@ -1,3 +1,4 @@
+import { PrintExport } from '../components/PrintExport.tsx';
 import { dimensionOptions } from '../../rack-generator/standards.ts';
 import { swapCandidates, swapCandidate } from '../../rack-generator/swap.ts';
 import { ResetButton } from '../components/ResetButton.tsx';
@@ -506,6 +507,7 @@ export default function BuilderPage() {
           </div>
           <div className="toolbar-actions">
             <ConfigManager store={store} />
+            <PrintExport store={store} />
             <div className="history-actions">
               <button
                 id="undo"
