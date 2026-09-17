@@ -5,7 +5,7 @@ test('gym-wave2-floor_items: ghost, plane drag, snap, rotate, Escape, undo, insp
   test.setTimeout(120000);
   if (!process.env.GYM_FLOOR_CDP_URL) throw Error('Use isolated gym-wave2-floor_items session, port 5316, and set GYM_FLOOR_CDP_URL.');
   const browser = await chromium.connectOverCDP(process.env.GYM_FLOOR_CDP_URL, {timeout:15000});
-  console.log('CDP connected');
+  try {
   const page = browser.contexts()[0].pages().find(p => p.url().includes(':5316/builder'))!;
   await page.setViewportSize({width:1280,height:633});
   await page.evaluate(() => localStorage.removeItem('bos-strength-configurations-v1'));
@@ -58,7 +58,7 @@ test('gym-wave2-floor_items: ghost, plane drag, snap, rotate, Escape, undo, insp
   expect(sources.find((s:{role:string})=>s.role==='fastener').authoredFastenerFinish).toBe(true);
   await page.getByRole('button',{name:/Parts list \(/}).click();
   await page.locator('[data-instance-id="floor-1"]').click();
-  await page.locator('[data-instance-id="front-left"]').click({modifiers:['Control']});
+  await page.locator('[data-instance-id="front-left"]').click({modifiers:['Meta']});
   await expect(page.getByRole('heading',{name:'2 parts',exact:true})).toBeVisible();
   await expect(page.getByLabel('Backrest angle',{exact:true})).toHaveCount(0);
   await page.getByRole('button',{name:'Close ×',exact:true}).click();
@@ -69,5 +69,8 @@ test('gym-wave2-floor_items: ghost, plane drag, snap, rotate, Escape, undo, insp
   await page.mouse.click(550,320);await ready();expect(await floor()).toHaveLength(2);
   await expect(page.getByText('Bench overlaps the rack footprint.',{exact:false})).toBeVisible();
   await page.getByRole('button',{name:'Undo',exact:true}).click();await ready();expect(await floor()).toEqual(saved);
-  // Keep the shared browser lifetime intact; this test only disconnects on process exit.
+  } finally {
+    // connectOverCDP close disconnects this transport; it does not terminate Chrome.
+    await browser.close();
+  }
 });
