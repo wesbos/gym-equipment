@@ -172,3 +172,9 @@ test('3MF exports dominant steel finish colors while retaining legacy paint and 
     assert.match(result.report.textureLimitation, /Dominant solid colors only/);
   }
 });
+test('bed guard uses actual diagonal extents, not the unrotated beam length',()=>{
+  const diagonal=(length:number)=>({...cubeDef,build:()=>[{name:'diagonal beam',role:'frame' as const,solid:api.Manifold.cube([length,10,10]).rotate([0,0,45])}]});
+  const fits=exportPrint3MF(api,single(),[diagonal(3000)],{layout:'laid-out'});
+  assert.ok(fits.report.parts[0].size[0]>210&&fits.report.parts[0].size[0]<214);
+  assert.throws(()=>exportPrint3MF(api,single(),[diagonal(4000)],{layout:'laid-out'}),/bbox.*256.*1:20/);
+});
