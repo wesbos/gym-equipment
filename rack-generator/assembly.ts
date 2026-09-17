@@ -273,13 +273,14 @@ export function validateAssembly(input: unknown): RackDoc {
     if (clean.spanTo) {
       if (!(isSafety(clean.part) || clean.part === 'pullup-straight')) fail('Explicit spans require a safety or straight pull-up bar.');
       if (clean.paired && !clean.pairedSpanTo) fail('Paired spans require explicit second endpoints.');
-      const p = graph.uprights[clean.target.uprightId], q = graph.uprights[clean.spanTo];
-      if ((p.x !== q.x && p.y !== q.y) || Math.hypot(q.x-p.x, q.y-p.y) < rack.tube + 300 || Math.hypot(q.x-p.x, q.y-p.y) > rack.tube + 3000) fail('Spanning endpoints must be axis aligned and at least 300 mm apart.');
-    }
-    if (clean.spanTo) {
-      const p = graph.uprights[clean.target.uprightId], q = graph.uprights[clean.spanTo];
-      const spanFace: Face = p.x === q.x ? 'front' : 'left';
-      if (!validHole(rack,clean.target.hole,spanFace)) fail('The span requires real holes on its mounting faces.');
+      const spans = [[clean.target.uprightId, clean.spanTo]];
+      if (clean.paired) spans.push([clean.pairTo!, clean.pairedSpanTo!]);
+      for (const [from, to] of spans) {
+        const p = graph.uprights[from], q = graph.uprights[to];
+        if ((p.x !== q.x && p.y !== q.y) || Math.hypot(q.x-p.x, q.y-p.y) < rack.tube + 300 || Math.hypot(q.x-p.x, q.y-p.y) > rack.tube + 3000) fail('Spanning endpoints must be axis aligned and at least 300 mm apart.');
+        const spanFace: Face = p.x === q.x ? 'front' : 'left';
+        if (!validHole(rack,clean.target.hole,spanFace)) fail('The span requires real holes on its mounting faces.');
+      }
     }
     const [min, max] = accessoryLimits(rack, clean);
     if (!isWidePullup(clean.part) && (clean.target.hole < min || clean.target.hole > max)) fail(`${a.part} fits hole numbers ${min + 1}–${max + 1} at this rack height.`);
@@ -387,7 +388,12 @@ export function removeInstance(input: RackDoc, id: string): RackDoc {
     doc.removed = [...removed];
     doc.accessories = doc.accessories.filter(a => dependencies(a).every(dep => !removed.has(dep)));
   } else doc.accessories = doc.accessories.filter(a => a.id !== ownerId);
-  if (doc.systems) doc.systems = doc.systems.filter(s => s.id !== ownerId && !structureSlots(doc).some(slot => slot.id === ownerId));
+  if (doc.systems) doc.systems = doc.systems.filter(system => {
+    if (system.id === ownerId) return false;
+    if (!structureSlots(doc).some(slot => slot.id === ownerId)) return true;
+    // Keep independent systems whose supported topology survives this removal.
+    try { validateSystems(doc, [system]); return true; } catch { return false; }
+  });
   return validateAssembly(doc);
 }
 export function restoreInstance(input: RackDoc, id: string): RackDoc {

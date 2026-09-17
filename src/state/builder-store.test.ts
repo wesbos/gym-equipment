@@ -383,3 +383,55 @@ test('structural catalog previews a compatible slot before accept', async () => 
   assert.equal(store.getSnapshot().doc.structure['rear-crossmember'].part,'nameplate');
   store.history('undo'); assert.deepEqual(store.getSnapshot().doc,original);
 });
+
+test('save preserves later edits coalesced into a draft queued before the save', async () => {
+  let persisted: import('./config-storage.ts').ConfigCollection = { configs: [], activeId: null, draft: null };
+  let release!: () => void, started!: () => void, count = 0;
+  const blocked = new Promise<void>(resolve => { release = resolve; });
+  const writing = new Promise<void>(resolve => { started = resolve; });
+  const repository = {
+    async read() { return structuredClone(persisted); },
+    async write(value: typeof persisted) {
+      if (++count === 2) { started(); await blocked; }
+      persisted = structuredClone(value);
+    },
+  };
+  const store = new BuilderStore(repository);
+  await store.ready; await store.save('Original');
+  const rename = store.rename(store.getSnapshot().activeId!, 'Renamed');
+  await writing;
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 725 }));
+  const saving = store.save('Saved');
+  await Promise.resolve();
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 425 }));
+  release(); await rename; await saving; await store.flushStorage();
+  assert.equal(persisted.configs[0].doc.rack.width, 725);
+  assert.equal(persisted.draft?.rack.width, 425);
+  const reopened = new BuilderStore(repository); await reopened.ready;
+  assert.equal(reopened.getSnapshot().doc.rack.width, 725);
+  assert.equal(reopened.getSnapshot().draftAvailable, true);
+  reopened.recoverDraft();
+  assert.equal(reopened.getSnapshot().doc.rack.width, 425);
+});
+
+test('undo during a gesture preserves earlier history and later edits are independent', async () => {
+  const store = new BuilderStore(new MemoryStorage()); await store.ready;
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 725 }));
+  store.beginGesture();
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 425 }));
+  store.history('undo');
+  store.cancelGesture();
+  assert.equal(store.getSnapshot().doc.rack.width, 725);
+  assert.equal(store.getSnapshot().canUndo, true);
+  assert.equal(store.getSnapshot().canRedo, true);
+  store.history('undo');
+  assert.equal(store.getSnapshot().doc.rack.width, 1075);
+  store.history('redo'); store.history('redo');
+  assert.equal(store.getSnapshot().doc.rack.width, 425);
+  store.beginGesture();
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 725 }));
+  store.history('undo');
+  store.commit(resizeAssembly(store.getSnapshot().doc, { width: 1075 }));
+  store.endGesture(); store.history('undo');
+  assert.equal(store.getSnapshot().doc.rack.width, 425);
+});

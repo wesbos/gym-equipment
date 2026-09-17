@@ -237,6 +237,9 @@ export class BuilderStore {
       dirty: JSON.stringify(this.state.doc) !== JSON.stringify(doc),
       draftAvailable: false,
     });
+    // A draft queued before this save may have absorbed edits made after the
+    // save-time snapshot. Restore the latest working copy after clearing it.
+    if (this.state.dirty) this.autosave();
   };
   load = async (id: string) => {
     await this.ready;
@@ -339,6 +342,7 @@ export class BuilderStore {
     this.autosave();
   };
   history = (direction: "undo" | "redo") => {
+    this.endGesture();
     const source = direction === "undo" ? this.undo : this.redo,
       target = direction === "undo" ? this.redo : this.undo;
     const doc = source.pop();
