@@ -48,11 +48,7 @@ export default function LibraryPage() {
       <header>
         <div>
           <p className="eyebrow">BOS STRENGTH / LIBRARY</p>
-          <h1>Every piece, ready to build.</h1>
-          <p>
-            Explore the parametric parts, inspect their source models, and
-            choose the dimensions for your rack.
-          </p>
+          <h1>Parts library</h1>
         </div>
         <Link to="/builder">Build a rack ↗</Link>
       </header>
@@ -93,11 +89,6 @@ export default function LibraryPage() {
             <PartThumbnail part={part.id} params={part.defaults} />
             <span className="gallery-category">{part.category}</span>
             <h2>{part.name}</h2>
-            <p>
-              {part.description ||
-                part.note ||
-                "Editable Manifold reconstruction with source comparison."}
-            </p>
             <span className="gallery-specs">
               {Object.entries(part.defaults)
                 .filter(([key]) =>
