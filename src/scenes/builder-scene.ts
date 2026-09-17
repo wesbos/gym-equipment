@@ -1,3 +1,4 @@
+import { vendorAttribution } from '../../rack-generator/vendor-metadata.ts';
 import { placementMounts, proposalAt, proposalCollision, type PlacementProposal } from '../../rack-generator/placement-proposals.ts';
 import { swapCandidate, swapCandidates, type SwapCandidate } from '../../rack-generator/swap.ts';
 import { createSwapRegions } from './swap-regions.ts';
@@ -163,7 +164,7 @@ export function createBuilderScene(
     const g = cloneInstanceMaterials(model, snapshot.doc.appearance, entry.id);
     g.position.set(...entry.position);
     g.rotation.set(...entry.rotation);
-    g.userData = { id: entry.id, ownerId: entry.ownerId || entry.id };
+    g.userData = { id: entry.id, ownerId: entry.ownerId || entry.id, ...(vendorAttribution(entry.part) ? { vendorAttribution: vendorAttribution(entry.part) } : {}) };
     return g;
   }
   worker.onmessage = ({ data }: MessageEvent<LibraryWorkerResponse>) => {

@@ -1,3 +1,6 @@
+import { hasVendorParameter, VendorParameter } from '../components/VendorParameter.tsx';
+import { vendorAttribution } from '../../rack-generator/vendor-metadata.ts';
+import { VendorCredit } from '../components/VendorControls.tsx';
 import { NumericControl } from "../components/NumericControl.tsx";
 import { LatestRequest } from "../geometry/latest-request.ts";
 import type { LibraryWorkerRequest } from "../../rack-generator/worker-types.ts";
@@ -223,7 +226,8 @@ export default function PartsPage() {
                       [
                         JSON.stringify(
                           {
-                            brand: "BOS STRENGTH",
+                            brand: vendorAttribution(selected.id)?.vendor ?? "BOS STRENGTH",
+                            vendorAttribution: vendorAttribution(selected.id),
                             part: selected.id,
                             params: currentParams.current,
                             units: "mm",
@@ -334,6 +338,7 @@ export default function PartsPage() {
           03 <span>Part parameters</span>
           <small>MILLIMETRES / DEGREES</small>
         </div>
+        {selected && <VendorCredit part={selected.id} />}
         <form
           id="parameters"
           ref={form}
@@ -347,8 +352,9 @@ export default function PartsPage() {
             {Object.entries(params).map(([key, value]) => (
               <label key={key}>
                 {labelOf(key)}
-                <div className="input-wrap">
+                {selected && hasVendorParameter(selected.id,key) ? <VendorParameter name={key} label={labelOf(key)} value={value} defaultValue={selected.defaults[key]} onValue={next=>changeParam(key,next)}/> : <div className="input-wrap">
                   <NumericControl defaultValue={selected?.defaults[key]} standardOptions={selected?.standardOptions?.[key]} key={`${selected?.id}:${key}`} name={key} label={labelOf(key)} value={value} step="any"
+
                     onInvalid={() => { ++sequence.current; setValid(false); setStatus("Enter a valid parameter."); }}
                     onValue={next => changeParam(key, next)} />
                   <span>
@@ -358,7 +364,7 @@ export default function PartsPage() {
                       ? ""
                       : "mm"}
                   </span>
-                </div>
+                </div>}
               </label>
             ))}
           </div>
@@ -377,7 +383,7 @@ export default function PartsPage() {
         </button>
         <a
           className="source-link"
-          href="https://strengthshop.eu/products/3d-rack-builder-riot-mrr-75"
+          href={(selected && vendorAttribution(selected.id)?.url) || "https://strengthshop.eu/products/3d-rack-builder-riot-mrr-75"}
           target="_blank"
           rel="noreferrer"
         >
