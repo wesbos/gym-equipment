@@ -406,7 +406,7 @@ export function resizeAssembly(input: RackDoc, patch: Partial<RackDimensions>): 
   }
   return validateAssembly(doc);
 }
-export function getMounts(input: RackDoc, part?: string): Mount[] {
+export function getMounts(input: RackDoc, part?: string, params: NumericParams = {}): Mount[] {
   const doc = validateAssembly(input), result: Mount[] = [];
   if (part && isDarkoTop(part)) return darkoTopMounts(doc);
   if (part !== undefined && !ACCESSORY_PARTS.includes(part)) return result;
@@ -423,7 +423,7 @@ export function getMounts(input: RackDoc, part?: string): Mount[] {
   for (const id of Object.keys(doc.uprights)) if (!doc.removed.includes(id)) for (let hole = 0; hole <= maxHole(doc.rack); hole += doc.rack.benchSpacing ? 0.5 : 1) for (const face of FACES) if (validHole(doc.rack, hole, face)) result.push(mount({ ...doc.rack, uprights: doc.uprights }, id, hole, face));
   if (!part) return result;
   return result.filter(m => {
-    const candidate = { id: 'mount-preview', part, target: { uprightId: m.uprightId, face: m.face, hole: m.hole }, paired: false, params: {} };
+    const candidate = { id: 'mount-preview', part, target: { uprightId: m.uprightId, face: m.face, hole: m.hole }, paired: false, params };
     try { validateAssembly({ ...doc, accessories: [candidate] }); return true; } catch { return false; }
   });
 }

@@ -347,3 +347,39 @@ test('real v1 saved rack migrates paint and physical IDs while graph edits remai
   assert.equal(Object.keys(reopened.getSnapshot().doc.uprights).length, 5);
   assert.deepEqual(reopened.getSnapshot().doc.appearance, original.appearance);
 });
+
+test('catalog suggestion is transient, second click commits once and undo restores', async () => {
+  const store = new BuilderStore(new MemoryStorage()); await store.ready;
+  const original = store.getSnapshot().doc;
+  store.startPlacement('landmine');
+  assert.equal(store.getSnapshot().doc,original);
+  assert.equal(store.getSnapshot().canUndo,false);
+  assert.ok(store.getSnapshot().proposal);
+  assert.match(store.getSnapshot().placementText,/Suggested:/);
+  store.startPlacement('landmine');
+  assert.equal(store.getSnapshot().doc.accessories.length,original.accessories.length+1);
+  assert.equal(store.getSnapshot().placing,null);
+  store.history('undo');
+  assert.deepEqual(store.getSnapshot().doc,original);
+  assert.equal(store.getSnapshot().canUndo,false);
+});
+test('pair toggle recomputes transient preview and cancel cannot commit stale proposal', async () => {
+  const store = new BuilderStore(new MemoryStorage()); await store.ready;
+  store.startPlacement('landmine');
+  assert.equal(store.getSnapshot().proposal?.entries.length,2);
+  store.patch({paired:false});
+  assert.equal(store.getSnapshot().proposal?.entries.length,1);
+  const original = store.getSnapshot().doc;
+  store.cancelPlacement(); store.acceptProposal();
+  assert.equal(store.getSnapshot().doc,original);
+});
+test('structural catalog previews a compatible slot before accept', async () => {
+  const store = new BuilderStore(new MemoryStorage()); await store.ready;
+  const original = store.getSnapshot().doc;
+  store.startPlacement('nameplate');
+  assert.equal(store.getSnapshot().doc,original);
+  assert.equal(store.getSnapshot().proposal?.ownerId,'rear-crossmember');
+  store.acceptProposal();
+  assert.equal(store.getSnapshot().doc.structure['rear-crossmember'].part,'nameplate');
+  store.history('undo'); assert.deepEqual(store.getSnapshot().doc,original);
+});

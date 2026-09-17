@@ -1,3 +1,4 @@
+import { structureProposalAt, proposalCollision, suggestPlacement, type PlacementProposal } from '../../rack-generator/placement-proposals.ts';
 import {
   LocalConfigStorage,
   type ConfigStorage,
@@ -42,6 +43,7 @@ export interface BuilderSnapshot {
   loading: boolean;
   dimensions: string;
   placementText: string;
+  proposal: PlacementProposal | null;
   canUndo: boolean;
   canRedo: boolean;
 }
@@ -89,6 +91,7 @@ export class BuilderStore {
       loading: true,
       dimensions: "",
       placementText: "",
+      proposal: null,
       canUndo: false,
       canRedo: false,
     };
@@ -127,6 +130,11 @@ export class BuilderStore {
   };
   getSnapshot = () => this.state;
   patch = (patch: Partial<BuilderSnapshot>) => {
+    if (patch.paired !== undefined && patch.paired !== this.state.paired && this.state.placing && !patch.placing) {
+      const { part, movingId } = this.state.placing;
+      const result = suggestPlacement(this.state.doc, part, patch.paired, movingId);
+      patch = { ...patch, proposal: result.proposal, placementText: result.proposal ? `Suggested: ${result.proposal.label} — Place or pick another spot` : `Doesn't fit: ${result.reason}` };
+    }
     this.state = { ...this.state, ...patch };
     this.listeners.forEach((fn) => fn());
   };
@@ -322,20 +330,31 @@ export class BuilderStore {
     });
   cancelPlacement = () => this.patch({ placing: null, structureChoice: null });
   startPlacement = (part: PartId, movingId: string | null = null) => {
-    const info = getPartPlacementInfo(part, this.state.doc);
-    if (part === "upright" || info?.slots?.length) {
-      this.patch({ selected: null, placing: null, structureChoice: part });
+    if (!movingId && (this.state.placing?.part === part || this.state.structureChoice === part) && this.state.proposal) {
+      this.acceptProposal();
       return;
     }
-    this.patch({
-      placing: { part, movingId },
-      structureChoice: null,
-      paired: movingId
-        ? (this.state.doc.accessories.find((a) => a.id === movingId)?.paired ??
-          false)
-        : this.state.paired,
-    });
+    const paired = movingId ? this.state.doc.accessories.find(a => a.id === movingId)?.paired ?? false : this.state.paired;
+    const result = suggestPlacement(this.state.doc, part, paired, movingId);
+    const info = getPartPlacementInfo(part, this.state.doc);
+    const structural = part === 'upright' || !!info?.slots?.length;
+    this.patch({ selected: null, placing: structural ? null : { part, movingId }, structureChoice: structural ? part : null,
+      paired, proposal: result.proposal,
+      placementText: result.proposal ? `Suggested: ${result.proposal.label} — Place or pick another spot` : `Doesn't fit: ${result.reason}` });
   };
+  previewStructure = (slot: string) => this.act(() => {
+    const part = this.state.structureChoice;
+    if (!part) return;
+    const proposal = structureProposalAt(this.state.doc, part, slot);
+    const collision = proposalCollision(this.state.resolved, proposal);
+    this.patch({ proposal: collision ? null : proposal, placementText: collision || `${proposal.label} — Place or pick another slot` });
+  });
+  acceptProposal = () => this.act(() => {
+    const proposal = this.state.proposal;
+    if (!proposal || (!this.state.placing && !this.state.structureChoice)) return;
+    this.commit(proposal.doc);
+    this.select(proposal.ownerId);
+  });
   placementDoc = (target: Target) => {
     const { placing, doc, paired } = this.state;
     if (!placing) throw new Error("Select a part first.");

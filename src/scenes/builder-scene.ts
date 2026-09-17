@@ -1,4 +1,5 @@
 import { vendorAttribution } from '../../rack-generator/vendor-metadata.ts';
+import { placementMounts, proposalAt, proposalCollision, type PlacementProposal } from '../../rack-generator/placement-proposals.ts';
 import { swapCandidate, swapCandidates, type SwapCandidate } from '../../rack-generator/swap.ts';
 import { createSwapRegions } from './swap-regions.ts';
 import { cloneInstanceMaterials } from './instance-materials.ts';
@@ -7,7 +8,6 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import { toCreasedNormals } from "three/addons/utils/BufferGeometryUtils.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-import { resolveAssembly, getMounts } from "../../rack-generator/assembly.ts";
 import { detectCollisions } from "../../rack-generator/assembly-collisions.ts";
 import type {
   Mount,
@@ -337,16 +337,7 @@ export function createBuilderScene(
   }
   function showMounts() {
     clearMounts();
-    mountPoints = getMounts(snapshot.doc, snapshot.placing?.part).filter(
-      (mount) => {
-        try {
-          store.placementDoc(mount);
-          return true;
-        } catch {
-          return false;
-        }
-      },
-    );
+    mountPoints = snapshot.placing ? placementMounts(snapshot.doc, snapshot.placing.part, snapshot.placing.movingId) : [];
     const geometry = new THREE.SphereGeometry(6, 8, 6),
       material = new THREE.MeshBasicMaterial({
         color: "#d28a40",
@@ -373,20 +364,16 @@ export function createBuilderScene(
       swapRegions = createSwapRegions(swapCandidates(snapshot.doc, part), instances, snapshot.doc);
       scene.add(swapRegions.root);
     }
-    if (snapshot.structureChoice) {
-      renderer.domElement.style.cursor = 'crosshair';
-      store.patch({ placementText: 'Hover a highlighted frame region to preview · click to swap · ESC cancels' });
-      return;
-    }
-    if (!placing) {
-      store.patch({ placementText: "" });
-      return;
-    }
-    showMounts();
+    if (!placing && !snapshot.structureChoice) return;
+    if (placing) showMounts();
     renderer.domElement.style.cursor = "crosshair";
-    store.patch({
-      placementText: `${placing.movingId ? "Move" : "Place"} ${nameOf(placing.part)} · choose a highlighted connection`,
-    });
+    if (snapshot.proposal) void renderProposal(snapshot.proposal);
+  }
+  function renderProposal(proposal: PlacementProposal) {
+    previewTarget = proposal.target ?? null;
+    const serial = ++previewSerial;
+    clearGhost();
+    void renderPreview(proposal.entries, serial);
   }
   const normals: Record<Mount["face"], Vec3> = {
     front: [0, -1, 0],
@@ -450,7 +437,7 @@ export function createBuilderScene(
         ghostRoot.add(g);
       }
     } catch (error) {
-      if (!disposed && serial === previewSerial) store.patch({ placementText: message(error) });
+      if (!disposed && serial === previewSerial) store.patch({ proposal: null, placementText: message(error) });
     } finally {
       previewBusy = false;
       if (!disposed) trimCache();
@@ -470,41 +457,28 @@ export function createBuilderScene(
     const candidate = candidateAt(event);
     if (candidate) {
       if (hoveredSwap?.ownerId === candidate.ownerId) return;
-      hoveredSwap = candidate; previewTarget = null; queuedPreview = null;
-      const serial = ++previewSerial; clearGhost(); swapRegions?.hover(candidate.valid ? candidate.ownerId : null);
-      renderer.domElement.style.cursor = candidate.valid ? 'copy' : 'not-allowed';
-      store.patch({ placementText: candidate.valid ? 'Swap ' + candidate.ownerId + ' · Click to replace · Undo restores the previous part' : "Won’t fit: " + candidate.reason });
-      if (candidate.valid) void renderPreview(candidate.entries, serial);
+      hoveredSwap = candidate; previewTarget = null;
+      swapRegions?.hover(candidate.valid ? candidate.ownerId : null);
+      if (!candidate.valid) { store.patch({ proposal: null, placementText: "Won’t fit: " + candidate.reason }); return; }
+      const proposal = { ...candidate, label: 'Swap ' + candidate.ownerId };
+      const collision = proposalCollision(snapshot.resolved, proposal);
+      store.patch({ proposal: collision ? null : proposal, placementText: collision || proposal.label + ' · Click to replace · Undo restores the previous part' });
       return;
     }
     const hadSwap = !!hoveredSwap;
     hoveredSwap = null; swapRegions?.hover(null);
     const target = snapshot.placing ? nearestMount(event) : null;
-    if (!hadSwap && JSON.stringify(target) === JSON.stringify(previewTarget)) return;
-    previewTarget = target; queuedPreview = null;
-    const serial = ++previewSerial; clearGhost();
-    renderer.domElement.style.cursor = target ? 'crosshair' : 'not-allowed';
-    if (!target) { store.patch({ placementText: 'Choose a highlighted compatible region or mounting hole · ESC cancels' }); return; }
+    if (!target || (!hadSwap && JSON.stringify(target) === JSON.stringify(previewTarget))) return;
     try {
-      const next = store.placementDoc(target), nextId = snapshot.placing?.movingId || next.accessories[next.accessories.length - 1].id;
-      store.patch({ placementText: target.uprightId + ' · ' + target.face + ' · Hole ' + (target.hole + 1) + ' · Click to place' });
-      void renderPreview(resolveAssembly(next).filter(r => (r.ownerId || r.id) === nextId), serial);
-    } catch (error) { previewTarget = null; store.patch({ placementText: message(error) }); }
+      const proposal = proposalAt(snapshot.doc, snapshot.placing!.part, target, snapshot.paired, snapshot.placing!.movingId);
+      const collision = proposalCollision(snapshot.resolved, proposal);
+      store.patch({ proposal: collision ? null : proposal, placementText: collision || `${proposal.label} — Place or pick another spot` });
+    } catch(error) { store.patch({ proposal: null, placementText: message(error) }); }
   }
   function dropPlacement(event: { clientX: number; clientY: number }) {
-    const candidate = candidateAt(event);
-    if (candidate) {
-      if (!candidate.valid) { store.status("Won’t fit: " + candidate.reason, true); return; }
-      store.act(() => { store.commit(candidate.doc); store.select(candidate.ownerId); });
-      return;
-    }
-    if (!snapshot.placing) { store.status('Choose a highlighted frame region. Escape cancels.'); return; }
-    const target = nearestMount(event);
-    if (!target) { store.status('Choose a highlighted mounting hole. Escape cancels placement.'); return; }
-    store.act(() => {
-      const next = store.placementDoc(target), selected = snapshot.placing?.movingId || next.accessories[next.accessories.length - 1].id;
-      store.commit(next); store.select(selected);
-    });
+    if (!candidateAt(event) && !nearestMount(event)) return;
+    updatePreview(event);
+    store.acceptProposal();
   }
   const onDown = (event: PointerEvent) => {
     pointerDown = [event.clientX, event.clientY];
@@ -641,6 +615,10 @@ export function createBuilderScene(
       snapshot.doc !== previous.doc
     )
       refreshPlacement();
+    else if (snapshot.proposal !== previous.proposal) {
+      if (snapshot.proposal && (snapshot.placing || snapshot.structureChoice)) void renderProposal(snapshot.proposal);
+      else { previewTarget = null; previewSerial++; clearGhost(); }
+    }
   });
   requestRebuild();
   if (snapshot.placing || snapshot.structureChoice) refreshPlacement();
