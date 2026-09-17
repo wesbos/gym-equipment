@@ -1,6 +1,6 @@
 # Printable 3MF export
 
-The builder's **Export 3MF** menu downloads a full-size millimetre model of the
+The builder's **Export → 3MF** menu downloads a full-size millimetre model of the
 current document snapshot. Existing JSON and GLB exports remain available.
 Choose **Open project** in Bambu Studio / OrcaSlicer to keep the color slots.
 Select your real printer and filament profiles before slicing. The package has

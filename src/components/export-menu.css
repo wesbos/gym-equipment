@@ -1,0 +1,28 @@
+.export-menu-options {
+  position: absolute;
+  right: 16px;
+  top: 70px;
+  z-index: 30;
+  width: min(360px, calc(100vw - 32px));
+  max-height: calc(100dvh - 90px);
+  overflow: auto;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px #0003;
+  line-height: 1.5;
+}
+.export-menu-options [role="menu"] { display: grid; gap: 6px; }
+.export-menu-options [role="menuitemradio"] { text-align: left; }
+.export-menu-options [aria-checked="true"] { border-color: var(--accent, #c54828); }
+.export-menu-options [aria-disabled="true"] { opacity: .6; cursor: wait; }
+.export-menu-options :focus-visible { outline: 2px solid var(--accent, #c54828); outline-offset: 2px; }
+.export-print-options { margin-top: 16px; }
+.export-print-options p { margin: 12px 0; font-size: 13px; }
+.export-print-options label { display: grid; gap: 6px; }
+.export-print-options select { width: 100%; }
+.export-print-options a { font-size: 13px; }
+.export-print-facts { font-size: 13px; margin: 12px 0; }
+.export-print-facts dt { font-weight: 600; margin-top: 8px; }
+.export-print-facts dd { margin: 0; }
+.export-menu-actions { display: flex; gap: 8px; margin-top: 16px; }

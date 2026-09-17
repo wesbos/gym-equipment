@@ -1,6 +1,6 @@
 import { editableFields } from '../state/selection.ts';
 import { BulkInspector } from '../components/BulkInspector.tsx';
-import { PrintExport } from '../components/PrintExport.tsx';
+import { ExportMenu } from '../components/ExportMenu.tsx';
 import { dimensionOptions } from '../../rack-generator/standards.ts';
 import { swapCandidates, swapCandidate } from '../../rack-generator/swap.ts';
 import { ResetButton } from '../components/ResetButton.tsx';
@@ -436,7 +436,6 @@ export default function BuilderPage() {
           </div>
           <div className="toolbar-actions">
             <ConfigManager store={store} />
-            <PrintExport store={store} />
             <div className="history-actions">
               <button
                 id="undo"
@@ -471,30 +470,11 @@ export default function BuilderPage() {
             >
               Save JSON
             </button>
-            <button
-              id="export"
-              className="primary"
-              disabled={state.loading || !state.resolved.length}
-              onClick={async () => {
-                try {
-                  const data = await controller.current?.exportGLB();
-                  if (data) {
-                    download(
-                      new Blob([data], { type: "model/gltf-binary" }),
-                      "bos-strength-rack.glb",
-                    );
-                    store.status("Rack exported as GLB.");
-                  }
-                } catch (error) {
-                  store.status(
-                    `Export failed: ${error instanceof Error ? error.message : String(error)}`,
-                    true,
-                  );
-                }
-              }}
-            >
-              Export GLB ↗
-            </button>
+            <ExportMenu store={store} loading={state.loading} empty={!state.resolved.length}
+              exportGLB={() => {
+                if (!controller.current) return Promise.reject(new Error('Rack scene is not ready.'));
+                return controller.current.exportGLB();
+              }} />
             <input
               hidden
               ref={importFile}
