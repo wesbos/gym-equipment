@@ -10,9 +10,7 @@ export function RackPresets({store}:{store:BuilderStore}) {
     <label>Rack profile<select aria-label="Rack profile" value={choice} onChange={e=>setChoice(e.target.value)} style={{width:'100%'}}>
       {GRID_PROFILES.filter(p=>p.id.startsWith('rep-') || p.id.startsWith('bos-')).map(profile=><optgroup key={profile.id} label={profile.label}>{RACK_PRESETS.filter(p=>p.profileId===profile.id).map(p=><option key={p.id} value={p.id}>{p.label}</option>)}</optgroup>)}
     </select></label>
-    <p>{GRID_PROFILES.find(p => p.id === RACK_PRESETS.find(p=>p.id===choice)?.profileId)?.reconstructionNote}</p>
     <button type="button" onClick={()=>apply(choice)}>Apply rack profile</button>
-    <p>Published dimensions and hole spacing; estimated mounting details. No verified physical fit.</p>
     {GRID_PROFILES.filter(p=>p.source).map(p=><p key={p.id}><a href={p.source} target="_blank" rel="noreferrer">{p.label} vendor specs</a></p>)}
   </details>;
 }

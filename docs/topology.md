@@ -156,3 +156,12 @@ The shared `catalog.ts` now registers these builders for scene, thumbnail and
 3MF workers. Its `systemAttribution` resolver supplies manufacturer/reconstruction
 credits. Additional vendor resolvers should compose with this resolver rather
 than replace it. No material finish or source nameplate is changed by attribution.
+
+Wave 2 integration audit: system and vendor attribution are composed in the
+shared registry. Its explicitly typed `PartDefinition[]` keeps the logo stream's
+future third build argument; `buildPrintInstance` already forwards resolved logos
+and has a forwarding regression test. System multi-selection uses BulkInspector
+and shared removal helpers; system-only fields stay in CableSmithControls with
+ResetButton/gesture defaults. Standard size controls are retained. Reconstruction
+notes live in research/profile data rather than repetitive editor prose; product
+credits and actual incompatibility errors remain visible.

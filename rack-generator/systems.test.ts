@@ -1,3 +1,5 @@
+import { catalog } from "./catalog.ts";
+import { removeSelection, sharedFields } from "../src/state/selection.ts";
 import { systemAttribution } from "./system-attribution.ts";
 import { test } from "node:test";
 import type { NumericParams } from "./types.ts";
@@ -377,4 +379,22 @@ test("system export attribution identifies vendors without claiming source CAD",
   assert.equal(systemAttribution("smith-rep")?.vendor, "REP Fitness");
   assert.match(systemAttribution("cable-ares1")!.credit, /reconstruction/);
   assert.equal(systemAttribution("upright"), undefined);
+});
+
+test("shared catalog composes system and vendor credits without dropping builders", () => {
+  for (const part of ["cable-kraken", "cable-ares2", "cable-athena", "cable-ares1", "smith-rep", "voltra-fixed", "darko-dock"])
+    assert.ok(catalog.definitions.some(d => d.id === part), part);
+  assert.equal(catalog.attribution?.("smith-rep")?.vendor, "REP Fitness");
+  assert.ok(catalog.attribution?.("voltra-fixed")?.vendor);
+  assert.ok(catalog.attribution?.("darko-dock")?.vendor);
+  assert.equal(catalog.attribution?.("upright"), undefined);
+});
+test("mixed system multiselection has no accessory-only fields and removes owners atomically", () => {
+  const d = validateAssembly(withSystem(withSystem(preset(), "cable-ares2"), "smith-rep"));
+  const instances = resolveAssembly(d).filter(r => r.part === "cable-ares2" || r.part === "smith-rep");
+  assert.equal(instances.length, 2);
+  assert.deepEqual(sharedFields(d, instances), []);
+  const removed = removeSelection(d, resolveAssembly(d), instances.map(r => r.id));
+  assert.equal(removed.systems?.length ?? 0, 0);
+  assert.equal(d.systems?.length, 2);
 });
