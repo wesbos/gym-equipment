@@ -73,8 +73,9 @@ export function addSteelUVs(geometry: THREE.BufferGeometry) {
   const uv = new Float32Array(p.count * 2);
   for (let i = 0; i < p.count; i++) {
     const nx = Math.abs(n.getX(i)), ny = Math.abs(n.getY(i)), nz = Math.abs(n.getZ(i));
-    uv[2 * i] = (nz > nx && nz > ny ? p.getX(i) : p.getZ(i)) / 180;
-    uv[2 * i + 1] = (nx > ny ? p.getY(i) : p.getX(i)) / 40;
+    const zDominant = nz >= nx && nz >= ny;
+    uv[2 * i] = (zDominant ? p.getX(i) : p.getZ(i)) / 180;
+    uv[2 * i + 1] = (zDominant || nx >= ny ? p.getY(i) : p.getX(i)) / 40;
   }
   geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
 }
