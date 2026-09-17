@@ -12,4 +12,6 @@ Screenshots: `upright-preview.png`, `fifth-upright.png`, `crossmember-preview.pn
 
 Pure/store tests additionally cover removed anchors, out-of-bounds cells, intermediate posts, duplicate/existing edges, restoration of removed connections, exact profile pitch/bore/dimensions, immutable proposals, cancellation, mode changes, and atomic history. No private browser store hooks or programmatic document mutation were used for these browser placements; localStorage was read only to verify graph results.
 
-Integration: shares PR39's `PlacementProposal` and ghost renderer. PR37 physical-selection and PR36 vendor-target branches were inspected read-only; neither incomplete branch was cherry-picked. Those branches were not yet on main for this validation. Structural proposals do not introduce or alter attachment Target types.
+Integration: shares PR39's `PlacementProposal` and ghost renderer. PR37 physical selection was subsequently merged from main: entering add mode exits the Select tool, dragging a live proposal still orbits without placing, and the full fifth-post/crossmember/undo/redo/ESC browser flow was repeated successfully. PR36 vendor targets were inspected read-only and were not yet on main; no incomplete branch was cherry-picked. Structural proposals do not introduce or alter attachment Target types.
+
+Final validation after merging PR37: `npm test` 197/197 passing, `npm run build` passing (existing bundle-size warning), `git diff --check` clean.
