@@ -1,3 +1,4 @@
+import { lockedTrolley, krakenBaseRise } from "./cable-stations.ts";
 import { smithLayout, cableMountTop } from "./system-mounts.ts";
 import type {
   RackDoc,
@@ -109,7 +110,7 @@ export function validateSystemParams(
         0, "Plate-loaded systems cannot use stack upgrades or stack shrouds.");
   if ("trolley" in p)
     require(p.trolley >= 250 &&
-      p.trolley <= 2200, "Trolley height must be 250–2200 mm.");
+      p.trolley <= 3000, "Trolley height must be 250–3000 mm.");
   if (part === "smith-rep") {
     require([-5, 0, 5].includes(
       p.angle,
@@ -171,7 +172,7 @@ export function validateSystems(
       : ["rep-pr-4000", "rep-pr-5000"].includes(
           profile ?? "",
         ), `${SYSTEM_NAMES[s.part]} requires its named manufacturer rack profile.`);
-    require((kraken ? [2133.6, 2286] : [2032, 2362.2]).some((h) =>
+    require((kraken ? [2133.6, 2286, 2743.2] : [2032, 2362.2]).some((h) =>
       close(h, doc.rack.height),
     ), `${SYSTEM_NAMES[s.part]} requires a supported tower/rack height.`);
     require(close(
@@ -202,9 +203,10 @@ export function validateSystems(
     if (s.part === "cable-athena" && profile === "rep-pr-4000")
       require(layout.rows.length ===
         3, "PR-4000 Athena requires six posts and updated 16-inch crossmembers.");
-    if ("trolley" in p)
-      require(p.trolley <=
-        doc.rack.height - 250, "Trolley must clear the top pulley brackets.");
+    if ("trolley" in p) {
+      require(p.trolley <= doc.rack.height - 250, "Trolley must clear the top pulley brackets.");
+      p.trolley = lockedTrolley({ ...doc.rack, bore:doc.rack.holeDiameter, ...p }, kraken);
+    }
     if (s.part === "smith-rep") {
       require(!p.outside || profile === "rep-pr-5000", "Front Smith currently requires PR-5000 with the modeled FFE 2.0 pair.");
       require(!(p.outside && cable.length), "Front Smith cannot share a rack with ARES or Athena: trolley interference.");
@@ -247,7 +249,7 @@ export function systemWarnings(doc: RackDoc): string[] {
     ...(s.some((x) => x.part === "smith-rep") &&
     s.some((x) => x.part.startsWith("cable-"))
       ? [
-          "Smith/cable clearance: park cable trolleys outside the loaded bar travel. Static geometry does not simulate exercise motion.",
+          "Smith/cable clearance: park cable trolleys outside the loaded bar travel.",
         ]
       : []),
   ];
@@ -269,10 +271,8 @@ export function systemCollisionBoxes(
     max: [x + w / 2, y + d / 2, z + h / 2],
   });
   if (part === "smith-rep") {
-    const y = smithLayout(p).at(0, p.barHeight)[1] - 60;
     return [
-      box(0, y, p.barHeight, 1280, 35, 35),
-      ...[-1, 1].map((s) => box(s * 795, y, p.barHeight, 289.5, 50, 50)),
+      ...smithLayout(p).barCollisionBoxes(),
       ...(p.outside ? [-1, 1].flatMap(s => smithLayout(p).stations.map(station => {
         const length = station.index ? 176.5 : 658.35;
         return box(s * p.rackWidth / 2, -p.tube / 2 - length / 2, station.beamZ, 75, length, 75);
@@ -290,12 +290,16 @@ export function systemCollisionBoxes(
       box(
         stackX,
         stackY,
-        620,
+        620 + (part === "cable-kraken" ? krakenBaseRise(p.height) : 0),
         lengthwise ? 130 : 330,
         lengthwise ? 330 : 130,
         770,
       ),
-      box(post, -p.tube / 2 - 90, p.trolley, 140, 100, 180),
+      box(post, 0, p.trolley, p.tube+20, p.tube+20, 175),
+      ...(part === "cable-kraken" ? [post-s*70,post+s*70] : [post+(part === "cable-ares2"?s*75:ares?-s*10:-s*70)]).flatMap(x=>[
+        box(x,-p.tube/2-150,p.trolley,46,96,96),
+        box(x,-p.tube/2-250,p.trolley+(ares?40:-40)-55,150,20,100),
+      ]),
     ];
   });
 }
@@ -314,6 +318,7 @@ export function resolveSystems(doc: RackDoc): ResolvedInstance[] {
       bore: r.holeDiameter,
       pitch: r.pitch,
       firstHole: r.firstHole,
+      benchSpacing: r.benchSpacing ?? r.pitch, benchStart:r.benchStart ?? 0, benchEnd:r.benchEnd ?? 0,
     };
     const mounts: Mount[] = [];
     const add = (
@@ -370,7 +375,7 @@ export function resolveSystems(doc: RackDoc): ResolvedInstance[] {
         ? [0, 1]
         : [s.params.sides === 1 ? 0 : 1])
         for (const row of [l.rows[0], l.rows.at(-1)!])
-          for (const z of [r.firstHole, cableMountTop(params)])
+          for (const z of [r.firstHole + (s.part === "cable-kraken" ? krakenBaseRise(r.height) : 0), cableMountTop(params)])
             for (const n of [0, 2]) {
               const zz = z + n * r.pitch;
               add(

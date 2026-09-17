@@ -1,3 +1,9 @@
+import { krakenBaseRise, lockedTrolley } from "../cable-stations.ts";
+import {
+  cableRoutePlan,
+  buildCableRoutes,
+  cableClearances,
+} from "./cable-routes.ts";
 import { cableMountTop } from "../system-mounts.ts";
 import type {
   ManifoldAPI,
@@ -24,6 +30,9 @@ const defaults = {
   firstHole: 65,
 };
 function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
+  const rise = id === "cable-kraken" ? krakenBaseRise(p.height) : 0;
+  const trolley = lockedTrolley(p, id === "cable-kraken");
+  p = { ...p, height: p.height - rise, trolley: trolley - rise };
   validateSystemParams(
     id,
     Object.fromEntries(Object.keys(SYSTEM_DEFAULTS[id]).map((k) => [k, p[k]])),
@@ -37,7 +46,7 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
     p.rackWidth > 1400
   )
     throw Error("Unsupported cable assembly envelope.");
-  return mechanical(api, (g) => {
+  const result = mechanical(api, (g) => {
     const kraken = id === "cable-kraken",
       ares = id.includes("ares"),
       v2 = id === "cable-ares2";
@@ -70,7 +79,7 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
       ];
       const plateW = lengthwise ? 130 : 330,
         plateD = lengthwise ? 330 : 130;
-      const guideTop = top + 45;
+      const guideTop = height + addedHeight - 20;
       for (const n of [-1, 1]) {
         g.add(
           "Polished stack guide rod",
@@ -84,7 +93,7 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
             "liner",
           );
       }
-      for (const z of [115, top + 60]) {
+      for (const z of [115, height + addedHeight - 12]) {
         const base = g.rounded(plateW + 45, plateD + 35, 10, [
           stackX,
           stackY,
@@ -108,7 +117,8 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
             ? 30
             : 25;
       const plateThickness = ares ? 22 : 24,
-        headZ = 165 + count * (plateThickness + 1.5);
+        headZ = 165 + count * (plateThickness + 1.5),
+        selectorZ = 165 + 4 * (plateThickness + 1.5);
       if (p.loading) {
         for (let i = 0; i < count; i++) {
           const z = 165 + i * (plateThickness + 1.5),
@@ -146,7 +156,11 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
         );
         g.add(
           "Magnetic selector pin handle",
-          g.cylinder(28, 12, "y", [stackX, stackY - plateD / 2 - 18, 270]),
+          g.cylinder(28, 12, "y", [
+            stackX,
+            stackY - plateD / 2 - 18,
+            selectorZ,
+          ]),
           "liner",
         );
         g.add(
@@ -154,7 +168,7 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
           g.cylinder(plateD / 2 + 35, 4, "y", [
             stackX,
             stackY - plateD / 4,
-            270,
+            selectorZ,
           ]),
           "fastener",
         );
@@ -176,6 +190,13 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
                 ],
               ),
             );
+            if (sideY === -1)
+              slots.push(
+                g.box(
+                  [30, 6, headZ - 100],
+                  [stackX, stackY - plateD / 2 - 18, (headZ + 165) / 2],
+                ),
+              );
             g.add(
               "Vented folded stack shroud",
               g.union([
@@ -197,7 +218,10 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
           );
         g.add(
           "Plate loaded carriage web",
-          g.box([plateW, plateD - 45, 10], [stackX, stackY, 300]),
+          g.cut(
+            g.box([plateW, plateD - 45, 10], [stackX, stackY, 300]),
+            [-1, 1].map((n) => g.cylinder(14, 13, "z", guide(n, 300))),
+          ),
         );
         for (const n of [-1, 1]) {
           g.add(
@@ -220,15 +244,40 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
           );
         }
       }
-      const movingZ = p.loading ? headZ + 40 : 330;
+      const movingZ = p.loading ? headZ + 70 : 370;
+      const plan = cableRoutePlan(p, id, side, stackX, stackY, movingZ);
+      const stackWheel = plan.pulleys.find(
+        (w) => w.id === "Moving stack pulley",
+      )!;
       g.add(
         "Stack headplate",
         g.cut(
-          g.rounded(plateW + 8, plateD + 8, 22, [stackX, stackY, movingZ - 30]),
-          [-1, 1].map((n) => g.cylinder(26, 13, "z", guide(n, movingZ - 30))),
+          g.rounded(plateW + 8, plateD + 8, 22, [stackX, stackY, movingZ - 60]),
+          [-1, 1].map((n) => g.cylinder(26, 13, "z", guide(n, movingZ - 60))),
         ),
       );
-      g.pulley("Moving stack pulley", [stackX, stackY, movingZ], 40);
+      g.add(
+        "Stack sheave saddle base",
+        g.box(
+          [Math.abs(stackX - stackWheel.center[0]) + 44, 50, 8],
+          [(stackX + stackWheel.center[0]) / 2, stackY, movingZ - 53],
+        ),
+      );
+      // Raised axle clevis meets the headplate; the cable's lower tangent clears it.
+      for (const n of [-1, 1]) {
+        const x = stackWheel.center[0] + n * 17;
+        g.add(
+          "Raised stack sheave clevis",
+          g.cut(g.box([4, 24, 65], [x, stackY, movingZ - 24]), [
+            g.cylinder(8, 5.5, "x", [x, stackY, movingZ]),
+          ]),
+        );
+      }
+      g.add(
+        "Selector stem headplate attachment",
+        g.cylinder(24, 9, "z", [stackX, stackY, movingZ - 66]),
+        "rod",
+      );
       if (v2) {
         g.add(
           "Incremental weight support",
@@ -267,11 +316,14 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
               p.tube + 38,
             );
         }
-      for (const z of [p.firstHole + 40, top + 35]) {
+      for (const z of [p.firstHole + 40, height + addedHeight - 12]) {
         const beam = g.box([70, p.depth, 6], [postX, p.depth / 2, z]);
         const folded = g.union([
           beam,
-          g.box([6, p.depth, 45], [postX + side * 32, p.depth / 2, z + 20]),
+          g.box(
+            [6, p.depth, 45],
+            [postX + side * 32, p.depth / 2, z + (z > 1000 ? -20 : 20)],
+          ),
         ]);
         const holes = Array.from(
           { length: Math.floor((p.depth - 50) / p.pitch) },
@@ -280,17 +332,29 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
         g.add("Folded perforated pulley rail", g.cut(folded, holes));
       }
       const trolleyX = postX + (v2 ? side * 75 : ares ? -side * 10 : 0),
-        ty = -p.tube / 2 - 70,
+        ty = plan.ty,
         tz = p.trolley;
       const housing = g.box([p.tube + 20, p.tube + 20, 175], [postX, 0, tz]);
       g.add(
         "Sliding trolley steel sleeve",
-        g.cut(housing, [g.box([p.tube + 9, p.tube + 9, 180], [postX, 0, tz])]),
+        g.cut(housing, [
+          g.box([p.tube + 9, p.tube + 9, 180], [postX, 0, tz]),
+          g.cylinder(p.tube + 24, Math.min(14, p.bore - 0.8) / 2 + 0.5, "y", [
+            postX,
+            0,
+            tz,
+          ]),
+        ]),
       );
       g.add(
         "Trolley UHMW lining",
         g.cut(g.box([p.tube + 9, p.tube + 9, 169], [postX, 0, tz]), [
           g.box([p.tube + 1, p.tube + 1, 175], [postX, 0, tz]),
+          g.cylinder(p.tube + 24, Math.min(14, p.bore - 0.8) / 2 + 0.5, "y", [
+            postX,
+            0,
+            tz,
+          ]),
         ]),
         "liner",
       );
@@ -326,145 +390,183 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
           [(trolleyX + postX) / 2, -p.tube / 2 - 25, tz - 50],
         ),
       );
-      const outputs = kraken ? [-30, 30] : [0];
-      for (const [i, dx] of outputs.entries()) {
-        const dz = 0,
-          outputX = trolleyX + dx;
-        const wheel: Vec3 = [outputX, ty, tz];
-        g.pulley(`Swivel cable output ${i + 1}`, wheel, 40);
+      buildCableRoutes(g, plan);
+      for (const wheel of plan.pulleys.filter(
+        (w) => !/Moving|Floating|Swivel cable/.test(w.id),
+      )) {
+        const railZ =
+          wheel.center[2] > height / 2
+            ? height + addedHeight - 12
+            : p.firstHole + 40;
+        const anchor: Vec3 = [
+          postX,
+          Math.max(
+            0,
+            Math.min(
+              p.depth,
+              wheel.center[1] + (wheel.center[1] > p.depth / 2 ? -120 : 120),
+            ),
+          ),
+          railZ,
+        ];
+        const sign = /Low row swivel|Lat pulldown swivel/.test(wheel.id)
+          ? -side * Math.sign(wheel.normal[0])
+          : wheel.normal.reduce(
+                (sum, n, i) => sum + n * (anchor[i] - wheel.center[i]),
+                0,
+              ) >= 0
+            ? 1
+            : -1;
+        const n = wheel.normal.map((v) => v * sign) as Vec3;
+        const at = wheel.center.map((v, i) => v + n[i] * 19) as Vec3;
+        const angle = (Math.atan2(n[1], n[0]) * 180) / Math.PI;
+        const h = Math.abs(railZ - at[2]) + 18;
+        const web = g.move(g.rotate(g.box([6, 24, h]), [0, 0, angle]), [
+          at[0],
+          at[1],
+          (railZ + at[2]) / 2,
+        ]);
+        const hole = g.move(
+          g.rotate(g.cylinder(10, 5.5, "x", [0, 0, 0]), [0, 0, angle]),
+          at,
+        );
+        g.add(wheel.id + " hanger web", g.cut(web, [hole]));
+        const dx = anchor[0] - at[0],
+          dy = anchor[1] - at[1];
+        const deck = g.move(
+          g.rotate(g.box([Math.hypot(dx, dy) + 12, 18, 6]), [
+            0,
+            0,
+            (Math.atan2(dy, dx) * 180) / Math.PI,
+          ]),
+          [(anchor[0] + at[0]) / 2, (anchor[1] + at[1]) / 2, railZ],
+        );
+        const bounds = deck.boundingBox(),
+          clearances = [];
+        for (const cable of plan.cables)
+          for (let i = 1; i < cable.points.length; i++) {
+            const a = cable.points[i - 1],
+              b = cable.points[i],
+              delta = b.map((v, k) => v - a[k]) as Vec3;
+            if (Math.abs(delta[2]) < 1e-6) continue;
+            const t = (railZ - a[2]) / delta[2];
+            if (t < 0 || t > 1) continue;
+            const c = a.map((v, k) => v + t * delta[k]) as Vec3;
+            if (
+              c[0] < bounds.min[0] - 5 ||
+              c[0] > bounds.max[0] + 5 ||
+              c[1] < bounds.min[1] - 5 ||
+              c[1] > bounds.max[1] + 5
+            )
+              continue;
+            const scale = 15 / Math.hypot(...delta);
+            clearances.push(
+              g.rod(
+                c.map((v, k) => v - delta[k] * scale) as Vec3,
+                c.map((v, k) => v + delta[k] * scale) as Vec3,
+                5,
+              ),
+            );
+          }
         g.add(
-          "Swivel vertical pivot",
-          g.cylinder(90, 10, "z", [outputX, ty + 40, tz + dz]),
+          wheel.id + " cable-clearance mounting deck",
+          clearances.length ? g.cut(deck, clearances) : deck,
+        );
+      }
+      // Physical bridges support the swivels and cable eyes at the trolley sleeve.
+      for (const wheel of plan.pulleys.filter((w) =>
+        w.id.startsWith("Swivel cable output"),
+      )) {
+        g.add(
+          "Trolley output clevis bridge",
+          cableClearances(
+            g,
+            g.box(
+              [
+                Math.abs(wheel.center[0] - postX) + 35,
+                Math.abs(wheel.center[1]) + 20,
+                6,
+              ],
+              [
+                (wheel.center[0] + postX) / 2,
+                wheel.center[1] / 2,
+                wheel.center[2] - 52,
+              ],
+            ),
+            plan,
+          ),
+        );
+        g.add(
+          "Trolley output pivot",
+          g.cylinder(100, 8, "z", [
+            wheel.center[0],
+            wheel.center[1] + 45,
+            wheel.center[2],
+          ]),
           "rod",
         );
-        const upper: Vec3 = [postX, p.depth - 55, top + 60],
-          front: Vec3 = [outputX, ty, top + 60];
-        g.pulley(
-          `Upper rear redirect ${i + 1}`,
-          [upper[0] + i * 45, upper[1], upper[2]],
-          45,
-        );
-        g.pulley(`Upper front redirect ${i + 1}`, front, 45);
-        // Piecewise tangent runs and sampled wraps are true watertight cable solids.
-        const path: Vec3[] = [
-          [stackX, stackY + 40, movingZ],
-          [stackX, stackY + 40, top + 60],
-        ];
-        for (let j = 0; j <= 12; j++) {
-          const a = Math.PI - (j * Math.PI) / 12;
-          path.push([
-            outputX,
-            ty + 45 * Math.cos(a),
-            top + 60 + 45 * Math.sin(a),
-          ]);
-        }
-        path.push([outputX, ty + 40, tz + dz]);
-        for (let j = 0; j <= 12; j++) {
-          const a = (-j * Math.PI) / 12;
-          path.push([
-            outputX,
-            ty + 40 * Math.cos(a),
-            tz + dz + 40 * Math.sin(a),
-          ]);
-        }
-        path.push([outputX, ty - 60, tz + dz - 70]);
-        g.add(`Static cable output ${i + 1}`, g.path(path, 2.4), "liner");
-        g.handle(`Cable handle ${i + 1}`, [outputX, ty - 60, tz + dz - 90]);
       }
-      // Return circuit, lower redirect and floating equalizer documented in manuals.
-      const lowZ = p.firstHole + 90,
-        returnX = postX - side * 55;
-      g.pulley("Lower front return", [returnX, ty, lowZ], 40);
-      g.pulley("Lower stack return", [stackX, stackY, lowZ], 40);
-      g.pulley(
-        "Floating equalizer upper",
-        [stackX - side * 65, stackY, 1100],
-        35,
-      );
-      g.pulley(
-        "Floating equalizer lower",
-        [stackX - side * 65, stackY, 1005],
-        35,
-      );
-      g.add(
-        "Floating equalizer link",
-        g.box([6, 35, 160], [stackX - side * 65 - 20, stackY, 1052]),
-      );
-      g.add(
-        "Lower return static cable",
-        g.path(
-          [
-            [returnX, ty + 40, tz],
-            [returnX, ty + 40, lowZ],
-            [returnX, ty, lowZ - 40],
-            [stackX, stackY, lowZ - 40],
-            [stackX, stackY + 40, lowZ],
-            [stackX, stackY + 40, movingZ],
-          ],
-          2.4,
-        ),
-        "liner",
-      );
-      g.add(
-        "Stack sheave returning cable",
-        g.path(
-          [
-            [stackX, stackY - 40, top + 55],
-            [stackX, stackY - 40, movingZ],
-            [stackX, stackY, movingZ - 40],
-            [stackX, stackY + 40, movingZ],
-          ],
-          2.4,
-        ),
-        "liner",
-      );
-      if (kraken && p.adapter)
+      const floating = plan.pulleys.filter((w) => w.id.startsWith("Floating"));
+      if (floating.length) {
+        const lo = Math.min(...floating.map((w) => w.center[2])) - 65,
+          hi = Math.max(...floating.map((w) => w.center[2])) + 45;
+        const xs = [...new Set(floating.map((w) => w.center[0]))];
+        if (xs.length > 1)
+          for (const z of [lo + 10, hi - 10])
+            g.add(
+              "Floating equalizer frame cross-tie",
+              g.box(
+                [Math.max(...xs) - Math.min(...xs) + 38, 14, 8],
+                [
+                  (Math.max(...xs) + Math.min(...xs)) / 2,
+                  floating[0].center[1],
+                  z,
+                ],
+              ),
+            );
+        for (const x of xs)
+          for (const n of [-1, 1])
+            g.add(
+              "Floating equalizer support link",
+              g.box(
+                [4, 20, hi - lo],
+                [x + n * 17, floating[0].center[1], (hi + lo) / 2],
+              ),
+            );
+      }
+      for (const c of plan.cables)
+        for (const [name, q] of [
+          [c.start, c.points[0]],
+          [c.end, c.points.at(-1)!],
+        ] as [string, Vec3][]) {
+          if (name.startsWith("Trolley"))
+            g.add(
+              "Trolley cable anchor bridge",
+              cableClearances(
+                g,
+                g.box(
+                  [Math.abs(q[0] - postX) + 25, Math.abs(q[1]) + 20, 6],
+                  [(q[0] + postX) / 2, q[1] / 2, q[2] - 18],
+                ),
+                plan,
+              ),
+            );
+        }
+      if (kraken && p.adapter) {
+        const long = plan.cables[0],
+          a = long.points[0],
+          b = long.points.at(-1)!;
         g.add(
           "1:1 dual-output combiner",
-          g.profile(
+          g.path(
             [
-              [-65, 0],
-              [-40, -35],
-              [40, -35],
-              [65, 0],
+              [a[0], a[1], a[2] - 12],
+              [postX, a[1] - 60, a[2] - 75],
+              [b[0], b[1], b[2] - 12],
             ],
             6,
-            [trolleyX, ty - 65, tz - 150],
-            "y",
           ),
           "handle",
-        );
-      if (ares) {
-        const z = v2 ? 375 : 150,
-          y = p.depth - (p.rearBay || p.depth) + 40;
-        g.pulley("Low row swivel", [side * 90, y, z], 40, "y");
-        g.pulley("Lat pulldown swivel", [side * 90, y, top + 65], 40, "y");
-        g.add(
-          "Lat and row cable circuit",
-          g.path(
-            [
-              [stackX, stackY, movingZ + 45],
-              [stackX, stackY, top + 105],
-              [side * 90, y, top + 105],
-              [side * 90, y, top - 70],
-            ],
-            2.4,
-          ),
-          "liner",
-        );
-        g.add(
-          "Low row cable return",
-          g.path(
-            [
-              [stackX, stackY, 165],
-              [stackX, y, 165],
-              [side * 90, y, 165],
-              [side * 90, y - 45, z],
-              [side * 90, y - 90, z],
-            ],
-            2.4,
-          ),
-          "liner",
         );
       }
     }
@@ -475,7 +577,7 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
         const hollow = g.box([p.rackWidth + 2, 69, 69], [0, y, z]);
         g.add("ARES transverse stack support", g.cut(rail, [hollow]));
       }
-      const y = p.depth - (p.rearBay || p.depth) + 25,
+      const y = p.depth - (p.rearBay || p.depth) + 40,
         z = v2 ? 320 : 130;
       for (const side of [-1, 1]) {
         const plate = g.box([220, 10, 240], [side * 200, y, z]);
@@ -501,23 +603,56 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
         );
       }
       if (p.handles) {
+        const latZ = p.height - 330,
+          rowZ = v2 ? 375 : 150;
+        for (const side of [-1, 1])
+          g.add(
+            "Lat output bar connector",
+            g.path(
+              [
+                [side * 90, y, latZ + 30],
+                [side * 90, y, latZ],
+              ],
+              4,
+            ),
+            "rod",
+          );
+        g.add(
+          "Low row twin-output connector",
+          g.path(
+            [
+              [-90, y - 100, rowZ],
+              [0, y - 140, rowZ],
+              [90, y - 100, rowZ],
+            ],
+            5,
+          ),
+          "rod",
+        );
         g.add(
           "Bent lat bar",
           g.path(
             [
-              [-570, y, top - 170],
-              [-440, y, top - 90],
-              [440, y, top - 90],
-              [570, y, top - 170],
+              [-570, y, latZ - 80],
+              [-440, y, latZ],
+              [440, y, latZ],
+              [570, y, latZ - 80],
             ],
             14,
           ),
           "handle",
         );
-        g.handle("Low row handle", [0, y - 110, z + 40]);
+        g.handle("Low row handle", [0, y - 140, rowZ]);
       }
     }
   });
+  if (rise)
+    for (const part of result) {
+      const original = part.solid;
+      part.solid = original.translate([0, 0, rise]);
+      original.delete();
+    }
+  return result;
 }
 export const definitions: PartDefinition[] = (
   ["cable-kraken", "cable-ares2", "cable-athena", "cable-ares1"] as const
@@ -528,6 +663,10 @@ export const definitions: PartDefinition[] = (
   defaults: {
     ...defaults,
     ...SYSTEM_DEFAULTS[id],
+    trolley: lockedTrolley(
+      { ...defaults, ...SYSTEM_DEFAULTS[id] },
+      id === "cable-kraken",
+    ),
     ...(id === "cable-kraken"
       ? {
           height: 2133.6,

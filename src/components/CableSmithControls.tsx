@@ -1,3 +1,7 @@
+import {
+  lockedTrolley,
+  trolleyStations,
+} from "../../rack-generator/cable-stations.ts";
 import { ResetButton } from "./ResetButton.tsx";
 import { useState, useSyncExternalStore } from "react";
 import type { BuilderStore } from "../state/builder-store.ts";
@@ -19,21 +23,46 @@ import type { NumericParams } from "../../rack-generator/types.ts";
 function Options({
   part,
   p,
-  height,
+  rack,
   onChange,
   onGestureStart,
   onGestureEnd,
 }: {
   part: SystemPartId;
   p: NumericParams;
-  height: number;
+  rack: import("../../rack-generator/types.ts").RackDimensions;
   onChange: (patch: NumericParams) => void;
   onGestureStart?: () => void;
   onGestureEnd?: () => void;
 }) {
+  const height = rack.height;
   const smith = part === "smith-rep",
     ares = part.includes("ares"),
-    defaults = SYSTEM_DEFAULTS[part];
+    defaults = { ...SYSTEM_DEFAULTS[part] };
+  if (smith) {
+    // Reset one field while preserving the other valid installed setting.
+    defaults.barHeight = Math.max(defaults.barHeight, p.safetyHeight + 100);
+    defaults.safetyHeight = Math.min(defaults.safetyHeight, p.barHeight - 100);
+  } else {
+    const mountParams = { ...rack, bore: rack.holeDiameter };
+    defaults.trolley = lockedTrolley(
+      { ...mountParams, trolley: defaults.trolley },
+      part === "cable-kraken",
+    );
+    p = {
+      ...p,
+      trolley: lockedTrolley(
+        { ...mountParams, trolley: p.trolley },
+        part === "cable-kraken",
+      ),
+    };
+  }
+  const stations = smith
+    ? []
+    : trolleyStations(
+        { ...rack, bore: rack.holeDiameter },
+        part === "cable-kraken",
+      );
   const reset = (key: string, label: string) => (
     <ResetButton
       label={label}
@@ -74,7 +103,10 @@ function Options({
     <>
       {smith ? (
         <>
-          {select("outside", "Smith mounting", [[0, "Inside rack"], [1, "Front — PR-5000, full FFE 2.0 pair"]])}
+          {select("outside", "Smith mounting", [
+            [0, "Inside rack"],
+            [1, "Front — PR-5000, full FFE 2.0 pair"],
+          ])}
           {select("angle", "Smith install angle", [
             [-5, "−5°"],
             [0, "Vertical (0°)"],
@@ -88,7 +120,7 @@ function Options({
               onGestureStart={onGestureStart}
               onGestureEnd={onGestureEnd}
               value={p.barHeight}
-              min={396}
+              min={Math.max(396, p.safetyHeight + 100)}
               max={height < 2200 ? 1721 : 2029}
               step={5}
               onValue={(v) => onChange({ barHeight: v })}
@@ -108,7 +140,6 @@ function Options({
               onValue={(v) => onChange({ safetyHeight: v })}
             />
           </label>
-
         </>
       ) : (
         <>
@@ -164,10 +195,29 @@ function Options({
               onGestureStart={onGestureStart}
               onGestureEnd={onGestureEnd}
               value={p.trolley}
-              min={250}
-              max={Math.min(height - 250, 2200)}
-              step={10}
-              onValue={(v) => onChange({ trolley: v })}
+              min={stations[0]}
+              max={stations.at(-1)}
+              step={rack.benchSpacing ?? rack.pitch}
+              normalize={(v) =>
+                lockedTrolley(
+                  { ...rack, bore: rack.holeDiameter, trolley: v },
+                  part === "cable-kraken",
+                )
+              }
+              advance={(v, d) =>
+                d === 1
+                  ? (stations.find((z) => z > v + 1e-6) ?? stations.at(-1)!)
+                  : ([...stations].reverse().find((z) => z < v - 1e-6) ??
+                    stations[0])
+              }
+              onValue={(v) =>
+                onChange({
+                  trolley: lockedTrolley(
+                    { ...rack, bore: rack.holeDiameter, trolley: v },
+                    part === "cable-kraken",
+                  ),
+                })
+              }
             />
           </label>
         </>
@@ -189,7 +239,7 @@ function Installed({
       <Options
         part={system.part}
         p={system.params}
-        height={doc.rack.height}
+        rack={doc.rack}
         onGestureStart={store.beginGesture}
         onGestureEnd={store.endGesture}
         onChange={(patch) =>
@@ -263,7 +313,7 @@ export function CableSmithControls({ store }: { store: BuilderStore }) {
       <Options
         part={part}
         p={params}
-        height={doc.rack.height}
+        rack={doc.rack}
         onChange={(patch) => setParams({ ...params, ...patch })}
       />
       {reason && <p role="status">{reason}</p>}

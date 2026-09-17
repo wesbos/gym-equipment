@@ -1,3 +1,4 @@
+import { systemLowerCrossmemberStation } from "./cable-stations.ts";
 import { validateSystems, resolveSystems } from './systems.ts';
 import { validateLogo, logoSite } from './logos/types.ts';
 import { pairSuffix } from './physical-identity.ts';
@@ -457,7 +458,7 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
     const flangeHeight = framePart === 'branded-crossmember' ? 300 : r.pitch === 50.8 ? 50 + 2*r.pitch : 150;
     const rise = framePart === 'angled-crossmember' ? settings.rise : 0;
     const upper = Math.floor((r.height - 25 - r.firstHole) / r.pitch) - Math.round((flangeHeight - 50 + rise) / r.pitch);
-    const hole = high ? upper : 0;
+    const hole = high ? upper : systemLowerCrossmemberStation(doc,edge.from,edge.to);
     const side = slot.id.startsWith('right') ? 'right' : 'left';
     const x = (a[0] + b[0]) / 2, y = (a[1] + b[1]) / 2;
     const params: NumericParams = { length: span, width: r.tube, wall: 3, holeDiameter: r.holeDiameter, spacing: r.pitch, plateThickness: 6, plateHeight: flangeHeight };

@@ -165,3 +165,14 @@ and shared removal helpers; system-only fields stay in CableSmithControls with
 ResetButton/gesture defaults. Standard size controls are retained. Reconstruction
 notes live in research/profile data rather than repetitive editor prose; product
 credits and actual incompatibility errors remain visible.
+
+
+Cable route plans are family adapters in `parts/cable-routes.ts`; the pure
+`cable-routing.ts` tangent solver supplies shared cable samples and sheave frames.
+Structural fairlead windows use these actual samples. `cable-stations.ts` supplies
+profile-specific trolley stations and the108-inch Kraken lower-crossmember hook;
+only resolved lower side beams move, without mutating the saved rack graph.
+Smith carriage, shaft, sleeves and collision boxes share `smithLayout` transforms,
+including the local bar offset for either5-degree installation sign. Numeric
+Smith reset defaults respect the other installed height rather than creating an
+invalid safety/bar combination.

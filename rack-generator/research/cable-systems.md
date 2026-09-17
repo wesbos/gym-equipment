@@ -83,9 +83,10 @@ Manuals inspected (local PDFs were downloaded and relevant diagram pages rendere
   flip-down/strap safeties are blocked; shallow bays also block internal safety
   pipes/spotter arms. Front/outside mounting is explicitly unavailable pending
   the front extension bracket and feet adapter. Both angle signs and vertical
-  installation share one tilted guide/carriage reference.
+  installation share one tilted guide/carriage reference. The later front adapter
+  follow-up below supersedes the initial unavailable-front limitation.
 
-Published anchors: 80/93-inch REP uprights; 84/90-inch Kraken; exact 50.8 mm
+Published anchors: 80/93-inch REP uprights; 84/90/108-inch Kraken; exact 50.8 mm
 profile pitch and 15.875/25.4 mm bores; ARES 260/310 lb, Athena 170/220 lb and
 Kraken 210 lb options; Smith 1880 mm total width, 35 mm shaft, 289.5 mm sleeves,
 396–1721/2029 mm bar travel and 16/19 racking positions. Smith shaft, guides,
@@ -102,8 +103,7 @@ invented; vendor credits are in catalog descriptions/UI and user BOS branding
 is left intact.
 
 Remaining scope, do not close parent issues solely on this stage:
-- Kraken 108-inch/raised-crossmember installation adapter.
-- Front/outside Smith extension bracket + front feet (optional accessory in #12).
+- PR-4000, angled or mini/original-feet front Smith variants remain unavailable.
 - Manufacturer-detail audit of estimated internal cable routes, mount/stack
   clearances and historical ARES1 envelopes; physical measurements/CAD have not
   been supplied. Static collision boxes cover working stack/trolley/bar bodies;
@@ -135,3 +135,46 @@ PR-4000 front mounting, original/mini feet and angled front mounting remain
 unavailable pending verified geometry. Inside PR-4000/5000 still supports the
 existing 0/±5° configurations and compatibility rules. No additional rack
 families are introduced (issue #8 was cancelled by the user).
+
+
+### Mechanical acceptance corrections — September 17, 2026
+
+Official manual diagrams were checked again: Kraken printed pp.8–9 and12–13
+(PDF11–12 and15–16), Athena step8 A–I (PDF21), ARES2 RevK upper A–J
+(PDF62) and lower A–I (PDF70). `parts/cable-routes.ts` now specifies ordered
+circuits; `cable-routing.ts` derives both the actual sheaves and sampled tangent
+wraps from those same circuits. Kraken has one continuous output-to-output long
+cable through the stack and floating block, plus the separate floating-to-trolley
+short cable. Athena has one output/stack/lower-return/trolley circuit. Each ARES
+side has distinct upper functional/lat and lower functional/row circuits threading
+the paired floating blocks. Historical ARES1 uses the analogous topology with
+its original lengthwise stack and lower row outlet. Every end has an eye/pin,
+anchor or handle; static geometry does not simulate exercise motion.
+
+The raised stack saddle and clevis meet the headplate while the wheel clears it.
+Selector pin and handle share plate5's drilled stem/plate station. Locked trolleys
+snap to actual profile front-face holes, including the modeled PR4000 bench
+half-pitch stations. Athena's moving sheave lane sits45 mm inward of the guide
+centerline; its raised saddle bridges this estimated offset. ARES upper returns
+run below the transverse support. Trolley bridges and fixed-sheave mounting decks
+have route-derived cable windows. These offsets, support outlines and fairlead
+windows are reconstructed clearance details, not dimensions documented by REP.
+
+The [Kraken6-post product](https://bellsofsteel.com/products/kraken-6-post-hydra)
+and [4-post product](https://bellsofsteel.us/products/kraken-4-post-hydra-manticore)
+specify support for108-inch racks by raising lower crossmembers. The adapter
+uses the90-inch kit translated457.2 mm (18 inches / nine50.8 mm stations), with
+both lower side-crossmember bays raised through a focused assembly hook. This
+preserves the90-inch guide/pulley span. The exact nine-station offset is our
+reconstruction choice, not a certified manufacturer mounting instruction.
+The existing Hydra/Manticore profiles expose108-inch heights; no new rack family
+is introduced. Removing the system restores normal lower beam stations.
+
+Mechanical regressions use real Manifold intersections (0.05 mm³ tolerance),
+including sheave cores/hubs/cheeks, guide rods, transverse supports, trolley
+bridges and mounting decks; headplate/wheel and selector pin/plate/stem checks;
+actual upright bores at low/default/high and PR4000 half stations; both Smith
+angle signs and rack heights; and the108-inch raised kit. A passing static check
+is not a swept-motion, cable-tension, load-capacity or certified physical-fit
+claim. Exact historical envelopes and undimensioned manufacturer details remain
+estimated; no manufacturer CAD or physical measurement was supplied.
