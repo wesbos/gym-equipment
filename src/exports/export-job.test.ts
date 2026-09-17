@@ -133,3 +133,23 @@ test('session preference validates old values and tolerates denied storage', () 
   assert.equal(readExportFormat(blocked), 'glb');
   assert.doesNotThrow(() => rememberExportFormat(blocked, '3mf'));
 });
+
+test('worker construction and postMessage failures clear busy for another attempt', async () => {
+  let attempt = 0;
+  const states: (ExportFormat | null)[] = [], errors: string[] = [];
+  const worker = new FakeWorker();
+  const job = new ExportJob({
+    createWorker: () => {
+      if (!attempt++) throw Error('Worker unavailable');
+      worker.postMessage = () => { throw Error('Could not clone'); };
+      return worker as unknown as Worker;
+    },
+    exportGLB: async () => new ArrayBuffer(0), download: () => {}, complete: () => {},
+    busy: value => states.push(value), status: (text, error) => { if (error) errors.push(text); },
+  });
+  await job.start('3mf', doc, 'laid-out');
+  await job.start('3mf', doc, 'laid-out');
+  assert.equal(errors.length, 2);
+  assert.deepEqual(states, ['3mf', null, '3mf', null]);
+  assert.equal(worker.terminated, true);
+});

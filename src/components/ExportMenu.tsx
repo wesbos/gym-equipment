@@ -15,6 +15,7 @@ export function ExportMenu({ store, exportGLB, loading, empty }: {
   const [format, setFormat] = useState<ExportFormat>(() => {
     try { return readExportFormat(sessionStorage); } catch { return 'glb'; }
   });
+  const [focusedFormat, setFocusedFormat] = useState<ExportFormat>(format);
   const [layout, setLayout] = useState<PrintLayout>(DEFAULT_LAYOUT);
   const [busy, setBusy] = useState<ExportFormat | null>(null);
   const root = useRef<HTMLDivElement>(null);
@@ -55,6 +56,8 @@ export function ExportMenu({ store, exportGLB, loading, empty }: {
   const start = () => {
     if (busy || empty || (format === 'glb' && loading)) return;
     try { rememberExportFormat(sessionStorage, format); } catch { /* Storage may be unavailable. */ }
+    // Keep focus inside the popover before disabling its download button.
+    items.current[formats.indexOf(format)]?.focus();
     void job.start(format, store.getSnapshot().doc, layout);
   };
   return <div className="export-menu" ref={root}
@@ -84,7 +87,8 @@ export function ExportMenu({ store, exportGLB, loading, empty }: {
         {formats.map((value, index) => <button key={value} type="button" role="menuitemradio"
           ref={element => { items.current[index] = element; }}
           aria-checked={format === value} aria-disabled={!!busy}
-          tabIndex={format === value ? 0 : -1}
+          tabIndex={focusedFormat === value ? 0 : -1}
+          onFocus={() => setFocusedFormat(value)}
           onClick={() => { if (!busy) setFormat(value); }}>
           <span aria-hidden="true">{format === value ? '●' : '○'}</span> {value === 'glb' ? 'GLB — rack scene' : '3MF — print ready'}
         </button>)}
