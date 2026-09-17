@@ -27,7 +27,6 @@ export function AppearanceControls({ store }: { store: BuilderStore }) {
   return <section aria-label="Rack appearance" className="appearance-controls">
     <h3>Appearance</h3>
     <PaintPicker label="Rack" color={color} finish={appearance.frameFinish ?? 'paint'} onColor={frameColor => update({ frameColor, frameFinish: 'paint' })} onFinish={frameFinish => update({ frameFinish })} />
-    <p className="note">Swatches approximate paint colors; custom colors are welcome.</p>
     <label className="field"><span>Hardware finish</span><select aria-label="Hardware finish" value={appearance.hardwareFinish ?? 'chrome'} onChange={e => update({ hardwareFinish: e.target.value as HardwareFinish })}>
       <option value="chrome">Chrome</option><option value="gold">Gold</option><option value="oxide">Oxide (black)</option>
     </select></label>
@@ -36,12 +35,10 @@ export function AppearanceControls({ store }: { store: BuilderStore }) {
         finish={appearance.finishOverrides?.[physical.id] ?? (appearance.overrides?.[physical.id] ? 'paint' : appearance.frameFinish ?? 'paint')}
         onColor={value => update({ overrides: { ...appearance.overrides, [physical.id]: value }, finishOverrides: { ...appearance.finishOverrides, [physical.id]: 'paint' } })}
         onFinish={value => update({ finishOverrides: { ...appearance.finishOverrides, [physical.id]: value } })} />
-      <p className="note">{physical.id.replaceAll('-', ' ')} · frame surfaces only. Handles, liners and rods keep their original finish.</p>
       <button type="button" disabled={!appearance.overrides?.[physical.id] && !appearance.finishOverrides?.[physical.id]} onClick={() => {
         const overrides = { ...appearance.overrides }, finishOverrides = { ...appearance.finishOverrides };
         delete overrides[physical.id]; delete finishOverrides[physical.id]; update({ overrides, finishOverrides });
       }}>Use rack appearance</button>
     </>}
-    <p className="note">Hardware finish applies to bolts and fasteners only. GLB retains brushed materials; 3MF uses their flat dominant color without texture or reflections.</p>
   </section>;
 }

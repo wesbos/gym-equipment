@@ -61,3 +61,14 @@ test('steel finishes retain legacy paint, physical side overrides and flat expor
     assert.throws(() => validateAssembly({ ...doc, appearance: invalid }));
   }
 });
+
+test('powder coat is dielectric even when source CAD assigns metallic PBR', () => {
+  for (const color of ['#ffffff', '#ffff00', '#17191a']) {
+    const material = resolveMaterial({ role: 'frame', metalness: 0.9, roughness: 0.1 }, { frameColor: color });
+    assert.equal(material.color, color);
+    assert.equal(material.metalness, 0);
+    assert.equal(material.roughness, 0.55);
+  }
+  assert.equal(resolveMaterial({ role: 'frame' }, { frameFinish: 'stainless' }).metalness, 1);
+  assert.equal(resolveMaterial({ role: 'frame' }, { frameFinish: 'clear-grind' }).metalness, 1);
+});

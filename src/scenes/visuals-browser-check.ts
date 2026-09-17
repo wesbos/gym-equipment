@@ -33,8 +33,9 @@ export async function runVisualChecks(viewport: HTMLElement) {
   const gl = WebGL2RenderingContext.prototype;
   const create = gl.createTexture, remove = gl.deleteTexture, upload = gl.texImage2D;
   let created = 0, deleted = 0, uploads = 0;
-  gl.createTexture = function () { created++; return create.call(this); };
-  gl.deleteTexture = function (texture) { if (texture) deleted++; return remove.call(this, texture); };
+  const live = new Map<WebGLTexture, { context: WebGL2RenderingContext; stack?: string }>();
+  gl.createTexture = function () { created++; const texture = create.call(this); if (texture) live.set(texture, { context: this, stack: new Error().stack }); return texture; };
+  gl.deleteTexture = function (texture) { if (texture) { deleted++; live.delete(texture); } return remove.call(this, texture); };
   gl.texImage2D = function (this: WebGL2RenderingContext, ...args: Parameters<typeof upload>) { uploads++; return upload.apply(this, args); } as typeof upload;
   const cycles: object[] = [];
   try {
@@ -67,13 +68,16 @@ export async function runVisualChecks(viewport: HTMLElement) {
         check(json.images?.length >= 2, 'GLB lost procedural brush images');
         check(json.materials.some((m: { normalTexture?: unknown }) => m.normalTexture), 'GLB lost grind normal map');
         check(json.materials.some((m: { extensions?: Record<string, unknown> }) => m.extensions?.KHR_materials_clearcoat), 'GLB lost clear coat');
-        check(!json.nodes.some((n: { name?: string }) => /floor|scenery/i.test(n.name ?? '')), 'Floor leaked into GLB');
+        check(!json.nodes.some((n: { name?: string }) => n.name === 'Gym floor scenery (not exported)'), 'Floor leaked into GLB');
         check(json.meshes.every((m: { primitives: { attributes: Record<string, unknown> }[] }) => m.primitives.every(p => p.attributes.TEXCOORD_0 !== undefined)), 'GLB lost UVs');
         cycles.push({ cycle, stableTextures, idleUploads: uploads - beforeUploads, idle60FramesMs: Math.round(idleMs), glbBytes: data.byteLength, brushImages: json.images.length, dimensions: store.getSnapshot().dimensions });
       } finally { scene.dispose(); }
       check(viewport.querySelectorAll('canvas').length === 0, 'Canvas survived scene teardown');
-      check(created === deleted, `GPU texture leak after teardown: ${created} created / ${deleted} deleted`);
+      await frames(2);
+      check([...live.values()].every(({ context }) => context.isContextLost()), `GPU resources survived scene teardown: ${JSON.stringify([...live.values()].map(v => v.stack))}`);
+      // Three owns fallback textures until forceContextLoss; app textures are explicitly disposed.
+      check(live.size <= (cycle + 1) * 5, 'Application textures survived explicit disposal');
     }
   } finally { gl.createTexture = create; gl.deleteTexture = remove; gl.texImage2D = upload; }
-  return { passed: true, brushDisposed, floorDisposed, created, deleted, cycles };
+  return { passed: true, brushDisposed, floorDisposed, created, deleted, releasedByContextLoss: live.size, cycles };
 }

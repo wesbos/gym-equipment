@@ -3,9 +3,9 @@ export type MaterialRole = 'frame' | 'fastener' | 'handle' | 'rod' | 'sleeve' | 
 export type HardwareFinish = 'chrome' | 'gold' | 'oxide';
 export type FrameFinish = 'paint' | 'stainless' | 'clear-grind';
 export const FRAME_FINISHES = {
-  paint: { color: '#283e32', metalness: 0.55, roughness: 0.4 },
+  paint: { color: '#283e32', metalness: 0, roughness: 0.55 },
   stainless: { color: '#c5c9cc', metalness: 1, roughness: 0.24 },
-  'clear-grind': { color: '#aaa59a', metalness: 0.92, roughness: 0.38 },
+  'clear-grind': { color: '#aaa59a', metalness: 1, roughness: 0.38 },
 } as const;
 export const PAINT_SWATCHES = [
   ['Black', '#17191a'], ['Matte Black', '#242526'], ['Metallic Black', '#353739'],
@@ -45,8 +45,8 @@ export function resolveMaterial(source: MaterialSource, appearance?: Appearance,
     color: source.role === 'frame'
       ? (instanceId ? appearance?.overrides?.[instanceId] : undefined) ?? appearance?.frameColor ?? DEFAULT_FRAME_COLOR
       : source.color ?? DEFAULT_FRAME_COLOR,
-    metalness: source.metalness ?? 0.55,
-    roughness: source.roughness ?? 0.4,
+    metalness: source.role === 'frame' ? 0 : source.metalness ?? 0.55,
+    roughness: source.role === 'frame' ? 0.55 : source.roughness ?? 0.4,
   };
 }
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);

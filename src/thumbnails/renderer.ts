@@ -1,3 +1,5 @@
+import { createStudioLighting } from '../scenes/studio-lighting.ts';
+import { resolveMaterial } from '../../rack-generator/appearance.ts';
 import * as THREE from 'three';
 import type { LibraryMesh } from '../../rack-generator/worker-types.ts';
 
@@ -8,10 +10,7 @@ export function createThumbnailRenderer() {
   renderer.setPixelRatio(1);
   renderer.setClearColor(0x000000, 0);
   const scene = new THREE.Scene();
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x496454, 3));
-  const light = new THREE.DirectionalLight(0xffffff, 3);
-  light.position.set(1, 2, 3);
-  scene.add(light);
+  const lighting = createStudioLighting(scene, renderer);
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100000);
   const group = new THREE.Group();
   // Manifold parts are Z-up; match the part viewer's Y-up presentation.
@@ -30,7 +29,7 @@ export function createThumbnailRenderer() {
       try {
         for (const mesh of meshes) {
           const geometry = new THREE.BufferGeometry();
-          const material = new THREE.MeshStandardMaterial({ color: mesh.color || '#496454', roughness: 0.75, metalness: 0.1, flatShading: true });
+          const material = new THREE.MeshStandardMaterial({ ...resolveMaterial(mesh, { frameColor: mesh.color ?? '#496454' }), flatShading: true });
           group.add(new THREE.Mesh(geometry, material));
           geometry.setAttribute('position', new THREE.InterleavedBufferAttribute(new THREE.InterleavedBuffer(mesh.positions, mesh.stride), 3, 0));
           geometry.setIndex(new THREE.BufferAttribute(mesh.indices, 1));
@@ -59,6 +58,6 @@ export function createThumbnailRenderer() {
         return renderer.domElement.toDataURL('image/png');
       } finally { clear(); }
     },
-    dispose() { clear(); scene.clear(); renderer.dispose(); renderer.forceContextLoss(); renderer.domElement.remove(); },
+    dispose() { clear(); lighting.dispose(); scene.clear(); renderer.dispose(); renderer.forceContextLoss(); renderer.domElement.remove(); },
   };
 }

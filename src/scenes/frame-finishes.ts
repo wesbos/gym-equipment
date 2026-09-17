@@ -50,6 +50,7 @@ export class FrameFinishResources {
   material(source: MaterialSource, appearance?: Appearance, instanceId?: string) {
     const resolved = resolveMaterial(source, appearance, instanceId);
     const { finish, ...pbr } = resolved;
+    if (!finish) return new THREE.MeshStandardMaterial(pbr);
     const material = new THREE.MeshPhysicalMaterial(pbr);
     if (finish) {
       material.roughnessMap = this.brushMap();

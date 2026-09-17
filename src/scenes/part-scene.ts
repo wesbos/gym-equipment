@@ -5,7 +5,9 @@ import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { toCreasedNormals } from "three/addons/utils/BufferGeometryUtils.js";
-import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { createStudioLighting } from './studio-lighting.ts';
+import { fitRackShadow } from './gym-floor.ts';
+import { resolveMaterial } from '../../rack-generator/appearance.ts';
 export type View = "iso" | "front" | "top" | "side" | "detail";
 export type { LibraryMesh as MeshData } from "../../rack-generator/worker-types.ts";
 import type { LibraryMesh as MeshData } from "../../rack-generator/worker-types.ts";
@@ -72,21 +74,12 @@ export function createPartScene(
   viewport.append(renderer.domElement);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x7a9280, 3));
-  for (const pos of [
-    [2000, 3000, 1800],
-    [-2000, 1200, -1000],
-  ]) {
-    const l = new THREE.DirectionalLight(0xffffff, 2.5);
-    l.position.set(pos[0], pos[1], pos[2]);
-    scene.add(l);
-  }
-  const pmrem = new THREE.PMREMGenerator(renderer),
-    room = new RoomEnvironment();
-  const environment = pmrem.fromScene(room, 0.04);
-  scene.environment = environment.texture;
-  room.dispose();
-  pmrem.dispose();
+  const lighting = createStudioLighting(scene, renderer, true);
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(40000, 40000), new THREE.ShadowMaterial({ opacity: 0.22 }));
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -0.6;
+  ground.receiveShadow = true;
+  scene.add(ground);
   const group = new THREE.Group(),
     comparison = new THREE.Group();
   scene.add(group, comparison);
@@ -117,6 +110,7 @@ export function createPartScene(
     if (comparison.children.length)
       box.union(new THREE.Box3().setFromObject(comparison));
     if (box.isEmpty()) return;
+    fitRackShadow(lighting.key, box);
     const size = box.getSize(new THREE.Vector3()),
       center = box.getCenter(new THREE.Vector3());
     const direction = new THREE.Vector3(0.9, 0.6, 1).normalize();
@@ -173,19 +167,14 @@ export function createPartScene(
       indexed.setIndex(new THREE.BufferAttribute(data.indices, 1));
       const geometry = toCreasedNormals(indexed, Math.PI / 5);
       if (geometry !== indexed) indexed.dispose();
-      const plastic = /liner|plastic|UHMW|rubber|webbing|strap$|pad/i.test(
-          data.name
-        ),
-        hardware = /bolt|washer|nut|axle|roller|pin/i.test(data.name);
       const material = new THREE.MeshStandardMaterial({
-        color: data.color || "#425f50",
-        metalness: data.metalness ?? (plastic ? 0 : hardware ? 0.85 : 0.55),
-        roughness: data.roughness ?? (plastic ? 0.65 : hardware ? 0.24 : 0.42),
+        ...resolveMaterial(data, { frameColor: data.color ?? '#425f50' }),
         wireframe,
       });
       for (const x of paired ? [-387.5, 387.5] : [0]) {
         const mesh = new THREE.Mesh(geometry, material);
         mesh.name = data.name;
+        mesh.castShadow = mesh.receiveShadow = true;
         mesh.position.x = x;
         group.add(mesh);
       }
@@ -342,7 +331,7 @@ export function createPartScene(
       });
       cache.clear();
       draco.dispose();
-      environment.dispose();
+      lighting.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
       renderer.domElement.remove();

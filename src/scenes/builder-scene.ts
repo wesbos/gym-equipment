@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import { toCreasedNormals } from "three/addons/utils/BufferGeometryUtils.js";
-import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { createStudioLighting } from './studio-lighting.ts';
 import { resolveAssembly, getMounts } from "../../rack-generator/assembly.ts";
 import { detectCollisions } from "../../rack-generator/assembly-collisions.ts";
 import type {
@@ -57,34 +57,12 @@ export function createBuilderScene(
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#e9ede7");
   scene.fog = new THREE.Fog("#e9ede7", 10000, 18000);
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x899383, 2.6));
-  let shadowLight: THREE.DirectionalLight | undefined;
-  for (const p of [
-    [2500, 4500, 2200],
-    [-2500, 1800, -2000],
-  ]) {
-    const l = new THREE.DirectionalLight(0xffffff, 3);
-    l.position.set(p[0], p[1], p[2]);
-    scene.add(l);
-    if (!shadowLight) {
-      shadowLight = l;
-      l.castShadow = true;
-      l.shadow.mapSize.set(2048, 2048);
-      l.shadow.normalBias = 0.5;
-      l.shadow.bias = -0.00005;
-      l.shadow.autoUpdate = false;
-      scene.add(l.target);
-    }
-  }
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     preserveDrawingBuffer: true,
   });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFShadowMap;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  const lighting = createStudioLighting(scene, renderer, true);
   const finishes = new FrameFinishResources(renderer.capabilities.getMaxAnisotropy());
   viewport.append(renderer.domElement);
   renderer.domElement.setAttribute(
@@ -94,12 +72,6 @@ export function createBuilderScene(
   const camera = new THREE.PerspectiveCamera(35, 1, 1, 40000),
     controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  const pmrem = new THREE.PMREMGenerator(renderer),
-    room = new RoomEnvironment(),
-    environment = pmrem.fromScene(room, 0.04);
-  scene.environment = environment.texture;
-  room.dispose();
-  pmrem.dispose();
   const assemblyRoot = new THREE.Group(),
     ghostRoot = new THREE.Group(),
     mountsRoot = new THREE.Group();
@@ -304,7 +276,7 @@ export function createBuilderScene(
         instances.set(String(g.userData.id), g);
       }
       scene.updateMatrixWorld(true);
-      if (shadowLight) fitRackShadow(shadowLight, new THREE.Box3().setFromObject(assemblyRoot));
+      fitRackShadow(lighting.key, new THREE.Box3().setFromObject(assemblyRoot));
       refreshSelection();
       trimCache();
       const warnings = detectCollisions(entries);
@@ -674,10 +646,9 @@ export function createBuilderScene(
         );
       cache.clear();
       floor.dispose();
-      shadowLight?.shadow.dispose();
+
       finishes.dispose();
-      environment.dispose();
-      scene.environment = null;
+      lighting.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
       renderer.domElement.remove();
