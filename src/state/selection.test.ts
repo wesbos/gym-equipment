@@ -16,9 +16,10 @@ test('physical selection toggles, replaces, ranges, and yields to placement; Esc
   assert.deepEqual(store.getSnapshot().selection, ids);
   store.select(ids[1]); assert.deepEqual(store.getSnapshot().selection, [ids[1]]);
   store.startPlacement('j-hook-standard'); store.select(ids[0], {}); store.selectMany(ids);
-  assert.deepEqual(store.getSnapshot().selection, [ids[1]]);
+  assert.deepEqual(store.getSnapshot().selection, []);
   assert.ok(store.getSnapshot().placing);
   store.escape(); assert.deepEqual(store.getSnapshot().selection, []); assert.equal(store.getSnapshot().placing, null);
+  assert.equal(store.getSnapshot().proposal, null);
 });
 
 test('four upright paint is one undo step, persists only on explicit Save, exports through material resolver', async () => {
