@@ -232,3 +232,39 @@ test('metadata covers all twenty-eight library parts with valid placement or fra
   assert.equal(getPartPlacementInfo('storage-pin-short')!.family, getPartPlacementInfo('storage-pin-long')!.family);
   assert.notEqual(getPartPlacementInfo('monolift')!.family, getPartPlacementInfo('landmine')!.family);
 });
+
+test('every paired safety span validates its own endpoints before import', () => {
+  const original = createAssembly();
+  for (const endpoint of ['front-right', 'rear-left']) {
+    const doc = structuredClone(original);
+    doc.accessories.find(a => a.id === 'safeties')!.pairedSpanTo = endpoint;
+    assert.throws(() => validateAssembly(JSON.parse(JSON.stringify(doc))), /Spanning endpoints/);
+  }
+  for (const distance of [300, 3200]) {
+    const doc = structuredClone(original);
+    doc.connections = [];
+    doc.accessories = doc.accessories.filter(a => a.id === 'safeties');
+    doc.uprights['rear-right'].y = doc.uprights['front-right'].y + distance;
+    assert.throws(() => validateAssembly(doc), /Spanning endpoints/);
+  }
+  assert.deepEqual(validateAssembly(original), original);
+  const pair = resolveAssembly(original).filter(r => r.ownerId === 'safeties');
+  assert.equal(pair.length, 2);
+  assert.ok(pair.every(r => r.params.length > 0));
+});
+
+test('paired spans check actual mounting-face holes on the second side', async () => {
+  const { applyPreset } = await import('./presets.ts');
+  const doc = applyPreset('rep-pr-4000-four-2032-762');
+  doc.accessories = [{
+    id: 'paired-safety', part: 'safety-pin-pipe', paired: true,
+    target: { uprightId: 'front-left', face: 'front', hole: 8.5 },
+    spanTo: 'rear-left', pairTo: 'front-right', pairedSpanTo: 'rear-right',
+    params: { pinDiameter: 12 },
+  }];
+  assert.doesNotThrow(() => validateAssembly(doc));
+  // PR-4000 half stations exist on front/back faces only. The second span
+  // now crosses the width, where the same station has no left/right holes.
+  doc.accessories[0].pairTo = 'rear-left';
+  assert.throws(() => validateAssembly(doc), /real holes/);
+});

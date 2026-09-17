@@ -416,3 +416,16 @@ test("systems and floor items share a collision-free identity namespace", async 
   assert.equal(removeInstance(added, added.floorItems![0].id).systems!.length, 1);
   assert.equal(removeInstance(added, added.systems![0].id).floorItems!.length, 1);
 });
+
+test('unrelated beam deletion retains configured systems while support deletion cascades', () => {
+  const doc = validateAssembly(withSystem(withSystem(preset(), 'cable-athena', { trolley: 1200 }), 'smith-rep'));
+  const beamRemoved = removeInstance(doc, 'rear-crossmember');
+  assert.deepEqual(beamRemoved.systems, doc.systems);
+  assert.ok(beamRemoved.removed.includes('rear-crossmember'));
+  const smith = doc.systems!.find(s => s.part === 'smith-rep')!;
+  const smithRemoved = removeInstance(beamRemoved, smith.id);
+  assert.deepEqual(smithRemoved.systems, doc.systems!.filter(s => s.id !== smith.id));
+  for (const support of ['front-left', 'left-upper-crossmember', 'left-lower-crossmember']) {
+    assert.equal(removeInstance(doc, support).systems?.length, 0);
+  }
+});
