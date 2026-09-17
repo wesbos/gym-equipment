@@ -8,7 +8,7 @@ export function validateVoltra(params: NumericParams) {
 }
 export const definitions: PartDefinition[] = VOLTRA_IDS.map(id => ({
  id, name: `Beyond Power VOLTRA I · ${id.slice(7)} mount`, category: 'Digital resistance', defaults: voltraDefaults,
- description: vendorAttribution(id)!.reconstruction,
+ description: 'VOLTRA I · 323 × 139 × 100 mm · 5–200 lb · 2.6 m cable',
  build: (api, params) => {
   validateVoltra(params);
   const p = {...voltraDefaults,...params}, tube = params.upright ?? 75, pitch = params.mountSpacing ?? 50;

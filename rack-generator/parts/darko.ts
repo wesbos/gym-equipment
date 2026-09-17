@@ -14,7 +14,7 @@ export const anchorOutline: Vec2[] = [
 ];
 const lowerTier:Vec2[]=[[-29,-175],[-29,-253],[-39,-267],[-50,-269],[-84,-251],[-86,-234],[-97,-230],[-105.5,-238],[-105.5,-280],[-94,-294],[0,-324.9],[94,-294],[105.5,-280],[105.5,-238],[97,-230],[86,-234],[84,-251],[50,-269],[39,-267],[29,-253],[29,-175]];
 const jOutline:Vec2[]=[[-27,8],[-27,-30],[-42,-43],[-83,-25],[-86,-9],[-99,-4],[-110,-12],[-110,-53],[-99,-63],[-20,-95],[25,-95],[25,8]];
-export const definitions:PartDefinition[]=DARKO_IDS.map(id=>({id,name:({'darko-anchor':'Darko Barbell Anchor','darko-dock':'Darko Dock · bare gusset','darko-j':'Darko Dock + J-Anchor','darko-double-j':'Darko Dock + Double J-Anchor','darko-double-decker':'Darko Double Decker Anchor'} as Record<string,string>)[id],category:'Darko Lifting',defaults:darkoDefaults,description:vendorAttribution(id)!.reconstruction,
+export const definitions:PartDefinition[]=DARKO_IDS.map(id=>({id,name:({'darko-anchor':'Darko Barbell Anchor','darko-dock':'Darko Dock · bare gusset','darko-j':'Darko Dock + J-Anchor','darko-double-j':'Darko Dock + Double J-Anchor','darko-double-decker':'Darko Double Decker Anchor'} as Record<string,string>)[id],category:'Darko Lifting',defaults:darkoDefaults,description:isDarkoTop(id)?`3/16-inch steel · ${id==='darko-anchor'?'9':'13.5'} × 8.3 inches · paired barbell storage`:'3/16-inch steel · 8-inch gusset · modular J-Anchor interface',
  build:(api,params)=>{validateDarko(params);const p={...darkoDefaults,...params},top=isDarkoTop(id),tube=params.upright??75,face=tube/2,steel=p.finish===2?'#a6adb3':'#242529',liner=['#15191c','#c34130','#43769f','#ddd9ca'][p.linerColor-1];
  return vendorSolid(api,s=>{
   const {keep:k,add,plate,box,cylinder,bolt,C}=s;

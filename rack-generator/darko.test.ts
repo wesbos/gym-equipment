@@ -31,7 +31,7 @@ test('top anchors follow actual rail stations, paired topology and removal',()=>
  assert.throws(()=>addAccessory(doc,'voltra-adaptive',target,false),/upright/);
  assert.throws(()=>addAccessory(doc,'darko-anchor',{...target,station:100},false),/station/);
  const changed=structuredClone(a);changed.structure[target.connectionId]={part:'angled-crossmember',params:{rise:200}};assert.throws(()=>validateAssembly(changed),/straight/);
- assert.match(darkoGuidance(a)!,/fewer than 6/);
+ assert.match(darkoGuidance(a)!,/Active posts: 4/);
 });
 test('Darko and VOLTRA match manufacturer bores and 50.8 mm rails',()=>{
  for(const profileId of ['rep-pr-4000','rep-pr-5000']){

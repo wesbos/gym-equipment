@@ -1,3 +1,4 @@
+import { hasVendorParameter, VendorParameter } from '../components/VendorParameter.tsx';
 import { vendorAttribution } from '../../rack-generator/vendor-metadata.ts';
 import { VendorCredit } from '../components/VendorControls.tsx';
 import { NumericControl } from "../components/NumericControl.tsx";
@@ -359,7 +360,7 @@ export default function PartsPage() {
             {Object.entries(params).map(([key, value]) => (
               <label key={key}>
                 {labelOf(key)}
-                <div className="input-wrap">
+                {selected && hasVendorParameter(selected.id,key) ? <VendorParameter name={key} label={labelOf(key)} value={value} defaultValue={selected.defaults[key]} onValue={next=>changeParam(key,next)}/> : <div className="input-wrap">
                   <NumericControl key={`${selected?.id}:${key}`} name={key} label={labelOf(key)} defaultValue={selected?.defaults[key]} value={value} step="any"
                     onInvalid={() => { ++sequence.current; setValid(false); setStatus("Enter a valid parameter."); }}
                     onValue={next => changeParam(key, next)} />
@@ -370,7 +371,7 @@ export default function PartsPage() {
                       ? ""
                       : "mm"}
                   </span>
-                </div>
+                </div>}
               </label>
             ))}
           </div>

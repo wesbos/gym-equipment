@@ -34,3 +34,13 @@ Integration: `vendorAttribution(partId)` is the common UI/export credit contract
 Vendor geometry uses the normal library worker and returns ordinary closed
 `SolidPart[]`; therefore thumbnails, cache limits, disposal and exports follow
 the existing paths. No v2 document migration or appearance changes are required.
+
+2026-09-17 integration follow-up: all definitions now register in the shared
+`rack-generator/catalog.ts`, used by the library worker and the print stream.
+Vendor builders accept the shared PartDefinition contract; an optional third
+user-logo argument is ignored by vendor builds. User logo contours must still
+be passed by print workers to the structural builders and included in their
+cache keys. Vendor credits remain provided by vendorAttribution.
+UI follows #28/#30: named parameter choices and ResetButton, concise product
+specifications and required credits; reconstruction details stay in these docs
+and export metadata. Runtime mounting errors remain visible.

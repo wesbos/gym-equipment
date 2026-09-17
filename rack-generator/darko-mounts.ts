@@ -48,5 +48,5 @@ export function resolveDarkoTop(doc:RackDoc,a:Accessory,targets:Target[]):Resolv
 export function darkoGuidance(doc:RackDoc):string|undefined {
  if(!doc.accessories.some(a=>a.part.startsWith('darko-')))return;
  const count=Object.keys(doc.uprights).filter(id=>!doc.removed.includes(id)).length;
- return count<6?'Darko Lifting recommends 6-post racks or racks bolted to the ground. This model has fewer than 6 active posts and does not model verified floor anchoring.':'Darko Lifting recommends 6-post racks or racks bolted to the ground. Six or more posts are modeled; this is not a structural or load-bearing certification.';
+ return `Darko recommends 6-post or floor-bolted racks. Active posts: ${count}. Floor anchoring: unspecified.`;
 }
