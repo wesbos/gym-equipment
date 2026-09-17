@@ -1,4 +1,6 @@
 import { proposalAt, proposalCollision, type PlacementProposal } from '../../rack-generator/placement-proposals.ts';
+import { swapCandidate, swapCandidates, type SwapCandidate } from '../../rack-generator/swap.ts';
+import { createSwapRegions } from './swap-regions.ts';
 import { cloneInstanceMaterials } from './instance-materials.ts';
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -146,7 +148,8 @@ export function createBuilderScene(
       if (cache.size <= 32) break;
       if (
         active.has(key) ||
-        (snapshot.placing && key.startsWith(snapshot.placing.part + ":"))
+        (snapshot.placing && key.startsWith(snapshot.placing.part + ":")) ||
+        (snapshot.structureChoice && key.startsWith(snapshot.structureChoice + ":"))
       )
         continue;
       cache.delete(key);
@@ -286,6 +289,7 @@ export function createBuilderScene(
       }
       scene.updateMatrixWorld(true);
       refreshSelection();
+      refreshPlacement();
       trimCache();
       const warnings = detectCollisions(entries);
       store.patch({
@@ -317,7 +321,13 @@ export function createBuilderScene(
     mountsRoot.clear();
     mountPoints = [];
   }
+  let swapRegions: ReturnType<typeof createSwapRegions> | null = null;
+  let hoveredSwap: SwapCandidate | null = null;
+  let previewBusy = false;
+  let queuedPreview: { entries: ResolvedInstance[]; serial: number } | null = null;
+  const swapPart = () => snapshot.structureChoice ?? (!snapshot.placing?.movingId ? snapshot.placing?.part : null);
   function resetPlacement() {
+    swapRegions?.dispose(); swapRegions = null; hoveredSwap = null; queuedPreview = null;
     previewTarget = null;
     previewSerial++;
     clearGhost();
@@ -349,29 +359,21 @@ export function createBuilderScene(
   }
   function refreshPlacement() {
     resetPlacement();
-    if (!snapshot.placing && !snapshot.structureChoice) return;
-    if (snapshot.placing) showMounts();
+    const placing = snapshot.placing, part = swapPart();
+    if (part) {
+      swapRegions = createSwapRegions(swapCandidates(snapshot.doc, part), instances, snapshot.doc);
+      scene.add(swapRegions.root);
+    }
+    if (!placing && !snapshot.structureChoice) return;
+    if (placing) showMounts();
     renderer.domElement.style.cursor = "crosshair";
     if (snapshot.proposal) void renderProposal(snapshot.proposal);
   }
-  async function renderProposal(proposal: PlacementProposal) {
+  function renderProposal(proposal: PlacementProposal) {
     previewTarget = proposal.target ?? null;
     const serial = ++previewSerial;
     clearGhost();
-    try {
-      const models = await Promise.all(proposal.entries.map(geometryFor));
-      if (disposed || serial !== previewSerial) return;
-      for (const [i, model] of models.entries()) {
-        const g = transformed(model, proposal.entries[i]);
-        g.traverse(o => {
-          if (o instanceof THREE.Mesh) {
-            disposeMaterial(o.material);
-            o.material = new THREE.MeshStandardMaterial({ color: '#c68b45', transparent: true, opacity: 0.48, depthWrite: false });
-          }
-        });
-        ghostRoot.add(g);
-      }
-    } catch(error) { if (!disposed && serial === previewSerial) store.patch({ proposal: null, placementText: message(error) }); }
+    void renderPreview(proposal.entries, serial);
   }
   const normals: Record<Mount["face"], Vec3> = {
     front: [0, -1, 0],
@@ -408,27 +410,79 @@ export function createBuilderScene(
     }
     return best;
   }
-  async function updatePreview(event: { clientX: number; clientY: number }) {
-    if (!snapshot.placing) return;
-    const target = nearestMount(event);
-    if (JSON.stringify(target) === JSON.stringify(previewTarget)) return;
-    if (!target) return; // Keep the reviewed suggestion when leaving the dots.
+  function pickOwner(event: { clientX: number; clientY: number }): { id: string; ownerId: string } | null {
+    const rect = renderer.domElement.getBoundingClientRect();
+    pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1);
+    scene.updateMatrixWorld(true); raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects([assemblyRoot, ...(swapRegions ? [swapRegions.root] : [])], true)
+      .filter(hit => hit.object instanceof THREE.Mesh);
+    let object: THREE.Object3D | null = hits[0]?.object ?? null;
+    while (object && !object.userData.ownerId) object = object.parent;
+    return object ? { id: object.userData.id ?? object.userData.ownerId, ownerId: object.userData.ownerId } : null;
+  }
+  /** One ghost batch in flight, one latest pending hover; rapid pointer movement cannot flood the worker. */
+  async function renderPreview(entries: ResolvedInstance[], serial: number) {
+    if (previewBusy) { queuedPreview = { entries, serial }; return; }
+    previewBusy = true;
     try {
-      const proposal = proposalAt(snapshot.doc, snapshot.placing.part, target, snapshot.paired, snapshot.placing.movingId);
+      const models = await Promise.all(entries.map(geometryFor));
+      if (disposed || serial !== previewSerial) return;
+      for (const [i, model] of models.entries()) {
+        const g = transformed(model, entries[i]);
+        g.traverse(o => { if (o instanceof THREE.Mesh) {
+          disposeMaterial(o.material);
+          o.material = new THREE.MeshStandardMaterial({ color: '#e2a248', transparent: true, opacity: 0.55, depthWrite: false, depthTest: false });
+          o.renderOrder = 10;
+        } });
+        ghostRoot.add(g);
+      }
+    } catch (error) {
+      if (!disposed && serial === previewSerial) store.patch({ proposal: null, placementText: message(error) });
+    } finally {
+      previewBusy = false;
+      if (!disposed) trimCache();
+      const next = queuedPreview; queuedPreview = null;
+      if (next && !disposed && next.serial === previewSerial) void renderPreview(next.entries, next.serial);
+    }
+  }
+  function candidateAt(event: { clientX: number; clientY: number }): SwapCandidate | null {
+    const part = swapPart(), hit = pickOwner(event);
+    if (!part || !hit) return null;
+    // A bare post is still a mounting surface when placing accessories.
+    if (snapshot.placing && !snapshot.doc.accessories.some(a => a.id === hit.ownerId)) return null;
+    return swapCandidate(snapshot.doc, hit.id, part);
+  }
+  function updatePreview(event: { clientX: number; clientY: number }) {
+    if (!snapshot.placing && !snapshot.structureChoice) return;
+    const candidate = candidateAt(event);
+    if (candidate) {
+      if (hoveredSwap?.ownerId === candidate.ownerId) return;
+      hoveredSwap = candidate; previewTarget = null;
+      swapRegions?.hover(candidate.valid ? candidate.ownerId : null);
+      if (!candidate.valid) { store.patch({ proposal: null, placementText: "Won’t fit: " + candidate.reason }); return; }
+      const proposal = { ...candidate, label: 'Swap ' + candidate.ownerId };
       const collision = proposalCollision(snapshot.resolved, proposal);
-      if (collision) { store.patch({ proposal: null, placementText: collision }); clearGhost(); return; }
-      store.patch({ proposal, placementText: `${proposal.label} — Place or pick another spot` });
-    } catch(error) { store.patch({ proposal: null, placementText: message(error) }); clearGhost(); }
+      store.patch({ proposal: collision ? null : proposal, placementText: collision || proposal.label + ' · Click to replace · Undo restores the previous part' });
+      return;
+    }
+    const hadSwap = !!hoveredSwap;
+    hoveredSwap = null; swapRegions?.hover(null);
+    const target = snapshot.placing ? nearestMount(event) : null;
+    if (!target || (!hadSwap && JSON.stringify(target) === JSON.stringify(previewTarget))) return;
+    try {
+      const proposal = proposalAt(snapshot.doc, snapshot.placing!.part, target, snapshot.paired, snapshot.placing!.movingId);
+      const collision = proposalCollision(snapshot.resolved, proposal);
+      store.patch({ proposal: collision ? null : proposal, placementText: collision || `${proposal.label} — Place or pick another spot` });
+    } catch(error) { store.patch({ proposal: null, placementText: message(error) }); }
   }
   function dropPlacement(event: { clientX: number; clientY: number }) {
-    if (!snapshot.placing) return;
-    const target = nearestMount(event);
-    if (!target) return;
-    void updatePreview(event).then(() => store.acceptProposal());
+    if (!candidateAt(event) && !nearestMount(event)) return;
+    updatePreview(event);
+    store.acceptProposal();
   }
   const onDown = (event: PointerEvent) => {
     pointerDown = [event.clientX, event.clientY];
-    if (snapshot.placing && event.button === 0) controls.enabled = false;
+    if ((snapshot.placing || snapshot.structureChoice) && event.button === 0) controls.enabled = false;
   };
   const onMove = (event: PointerEvent) => {
     void updatePreview(event);
@@ -445,7 +499,7 @@ export function createBuilderScene(
     )
       return;
     pointerDown = null;
-    if (snapshot.placing) {
+    if (snapshot.placing || snapshot.structureChoice) {
       dropPlacement(event);
       return;
     }
@@ -470,7 +524,7 @@ export function createBuilderScene(
   };
   const onDrag = (event: DragEvent) => {
     event.preventDefault();
-    if (snapshot.placing) void updatePreview(event);
+    if (snapshot.placing || snapshot.structureChoice) void updatePreview(event);
   };
   const onDrop = (event: DragEvent) => {
     event.preventDefault();
@@ -567,7 +621,7 @@ export function createBuilderScene(
     }
   });
   requestRebuild();
-  if (snapshot.placing) refreshPlacement();
+  if (snapshot.placing || snapshot.structureChoice) refreshPlacement();
   return {
     fit,
     refitOnNextBuild() {
@@ -607,6 +661,7 @@ export function createBuilderScene(
       for (const request of pending.values())
         request.reject(new Error("Scene disposed"));
       pending.clear();
+      swapRegions?.dispose(); queuedPreview = null;
       clearGhost();
       clearMounts();
       clearSelection();
