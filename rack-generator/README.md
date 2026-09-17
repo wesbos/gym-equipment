@@ -1,8 +1,8 @@
 # BOS STRENGTH
 
-Run `npm run dev` from the project root and open the URL Vite prints. `/` is the original configurable upright builder; `/parts.html` is the detailed 28-entry parts library. `npm run build` builds both pages, `npm run preview` serves that build, and `npm test` checks geometry.
+Run `npm run dev` from the project root and open the URL Vite prints. `/` is the original configurable upright builder; `/parts` is the detailed 28-entry parts library. `/builder` is the rack editor and `/library` is the catalog gallery. `npm run build` typechecks and builds the React SPA, `npm run preview` serves it through Wrangler, and `npm test` checks geometry and state.
 
-The library covers uprights; 425/725/1075 mm crossmembers; angled and offset members; a nameplate panel and full/lite branded members; short/long stabilizer feet; three pull-up bars; three safety styles; three J-hook styles; spotter arm; dip horn; adjustable dip bar; landmine; monolift; single bar holder; and short/long weight-storage pins. Repeated left/right instances and rack-height variants share builders. This is a parts library, not a complete rack assembly configurator.
+The library covers uprights; 425/725/1075 mm crossmembers; angled and offset members; a nameplate panel and full/lite branded members; short/long stabilizer feet; three pull-up bars; three safety styles; three J-hook styles; spotter arm; dip horn; adjustable dip bar; landmine; monolift; single bar holder; and short/long weight-storage pins. Repeated left/right instances and rack-height variants share builders. All parts are also available in the rack assembly editor.
 
 ## Geometry and controls
 
@@ -20,17 +20,17 @@ The viewer uses creased normals, environment lighting, and adaptive camera depth
 
 ## Validation and limits
 
-All 28 default entries have finite, positive-volume closed solids and pass the mesh-edge checks, alongside the original upright tests (32 tests total). Each family was visually compared with its source. `node rack-generator/reference/fidelity-report.mjs` records a dimensional comparison; the upright is built at the source's 1800 mm for that comparison. An envelope match measures overall size, not exact surface equivalence.
+All 28 default entries have finite, positive-volume closed solids and pass the mesh-edge checks, alongside the original upright tests (32 tests total). Each family was visually compared with its source. `node --import tsx rack-generator/reference/fidelity-report.ts` records a dimensional comparison; the upright is built at the source's 1800 mm for that comparison. An envelope match measures overall size, not exact surface equivalence.
 
 The rebuilt silhouettes and component layouts closely follow the reference. Some microbevels, bolt recesses, screw seating, local gusset curvature, grip textures, and powder-coat normal maps still differ. These are reconstructed CAD models, not original manufacturer design files. BOS STRENGTH lettering intentionally differs from the reference branding.
 
 ## Files and provenance
 
-- `parts/structure.js`, `parts/bars-safeties.js`, `parts/attachments.js`: Manifold builders and recovered fabrication profiles.
-- `library-worker.js`, `library.js`: background construction, viewing, comparison, and export.
+- `parts/structure.ts`, `parts/bars-safeties.ts`, `parts/attachments.ts`: Manifold builders and recovered fabrication profiles.
+- `library-worker.ts`, `../src/scenes/part-scene.ts`: background construction, viewing, comparison, and export.
 - `reference/front.glb`, `reference/storage.glb`: original assemblies from https://strengthshop.eu/products/3d-rack-builder-riot-mrr-75 .
 - `reference/panel.glb`: the original nameplate panel isolated from its assembly for comparison.
-- `reference/decode.mjs`, `components.mjs`, `extract-panel.mjs`, `decoded/`: source measurement and geometry-analysis tools/data.
+- `reference/decode.ts`, `components.ts`, `extract-panel.ts`, `decoded/`: source measurement and geometry-analysis tools/data.
 - `reference/derivation/`: profile-analysis scripts and BOS STRENGTH lettering contours.
 
 The Manifold builders do not load the original triangle meshes at runtime. The reference GLBs are loaded only for comparison. Original source assets retain their ownership and attribution.
@@ -38,3 +38,29 @@ The Manifold builders do not load the original triangle meshes at runtime. The r
 Manifold API: https://manifoldcad.org/docs/jsapi/
 
 Rack mounting holes default to 25 mm throughout the library. Upright bench-zone spacing defaults to 50 mm to accommodate the larger holes.
+
+## Rack assembly editor
+
+Open `/builder` for the BOS STRENGTH rack builder. It starts with an 80-inch four-post frame, 1,075 mm clear width and 725 mm clear depth. Frame dimensions move the connected components together; the caption measures the overall assembled bounds, including feet and attachments.
+
+Choose a J-hook, pull-up bar, or safety from the catalog, then click a highlighted mounting hole. Dragging a catalog card into the viewport also previews a snapped placement. Matching pairs are enabled initially. Select an installed part in the scene or parts list to change its variant, upright, mounting face, or hole number. Escape cancels placement; Command/Ctrl-Z undoes; Shift-Command/Ctrl-Z redoes; Delete removes the selection. Deleted frame slots can be restored from the frame catalog.
+
+Designs autosave in this browser. Save design downloads an editable versioned JSON assembly, Open imports one, and Export GLB downloads the assembled geometry in metres. The export excludes the grid, mounting markers, selection outline, and placement previews. New rack is undoable.
+
+The editor uses connection records and per-part mounting adapters rather than independent free-position coordinates. Repeated geometry is shared and generated through the existing Manifold worker; moving a component changes its transform without regenerating the solid. All 28 existing library parts are available in the rack builder: uprights and straight/angled/offset frame members, both branded crossmembers, the separate nameplate panel, two stabilizer feet, three pull-up bars, three J-hooks, three safeties, spotter arms, both dip attachments, a landmine, monolifts, a bar holder and both storage pins. Collision warnings use simplified working-body volumes, excluding intended mounting contact; they are placement aids and do not calculate load capacity.
+
+### Additional part placement
+
+Single-upright accessories snap to their retaining-pin or mounting-bolt locations. Matching pairs can be split for independent placement. Stabilizer feet attach at the base and stay seated on the floor. Select a frame catalog entry to choose a compatible frame slot; select an installed member to change its variant or supported dimensions. Straight-member names identify their library variants; their actual span follows the connected rack dimensions. The separate nameplate retains its supporting rail. Frame variants that cannot support an installed rail-mounted pull-up assembly are rejected.
+
+Existing version-1 designs remain readable. Optional `structure` records store frame-member overrides; accessory records retain their existing connection format. Cable systems are a separate future assembly family; manufacturer manuals and implementation notes are collected in `research/cable-systems.md`.
+
+## TypeScript SPA and Cloudflare
+
+Use Node 22 or newer, then `npm ci`. `npm run dev` starts Vite. React renders the forms and panels, TanStack Router handles `/`, `/builder`, `/parts`, and `/library`, and imperative Three controllers own their canvases. Every scene stops its animation loop and disposes listeners, observers, workers, geometry, materials, controls, and renderers when its route unmounts. The builder uses an external subscribing store (`src/state/builder-store.ts`); document validation, mounting, resolution, and collision logic stay framework independent.
+
+`npm test` runs the TypeScript Node tests through tsx. `npm run typecheck` checks the domain, workers, React UI, scene controllers, tests, and reference tools under strict TypeScript. Vendor Draco JavaScript remains distributed vendor code. Run reference tools with `node --import tsx rack-generator/reference/<tool>.ts`.
+
+`npm run build` creates `dist`. `npm run preview` starts Wrangler's local Workers static-assets server. `npm run deploy` builds and deploys the static-assets-only Worker configured in `wrangler.jsonc`; SPA fallback supports direct navigation and refresh at every route. No Pages project or application server is required. Named saved-design management remains tracked in issue #2; `/library` is a part gallery.
+
+The GitHub Actions workflow verifies PRs and deploys pushes to `main`. Repository secrets `CLOUDFLARE_API_TOKEN` (Workers deployment permissions) and `CLOUDFLARE_ACCOUNT_ID` must be configured. Local deployment can use `npx wrangler login`. Never commit credentials.
