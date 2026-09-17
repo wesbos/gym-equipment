@@ -1,7 +1,15 @@
-import { test } from 'node:test';
+import { test, type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import { ThumbnailQueue, thumbnailKey, type ThumbnailRequest } from './queue.ts';
-const tick = () => new Promise((resolve) => setTimeout(resolve, 45));
+function clock(t: TestContext) {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  return async () => {
+    // Settle the deferred renderer before advancing the next queued job.
+    await Promise.resolve();
+    t.mock.timers.tick(32);
+    await Promise.resolve();
+  };
+}
 const request = (part: string): ThumbnailRequest => ({ part, params: {} });
 function harness(capacity = 96, limit = 32) {
   const builds: string[] = [];
@@ -19,7 +27,8 @@ test('parameter keys are order independent and distinguish geometry variants', (
   assert.notEqual(thumbnailKey({ part: 'bar', params: { diameter: 25 } }), thumbnailKey({ part: 'bar', params: { diameter: 50 } }));
   assert.notEqual(thumbnailKey(request('j-hook-standard')), thumbnailKey(request('j-hook-roller')));
 });
-test('lazy serialized builds deduplicate listeners and reuse cached images', async () => {
+test('lazy serialized builds deduplicate listeners and reuse cached images', async (t) => {
+  const tick = clock(t);
   const h = harness(); const results: (string | null)[] = [];
   h.queue.request(request('a'), (v) => results.push(v));
   h.queue.request(request('a'), (v) => results.push(v));
@@ -32,14 +41,16 @@ test('lazy serialized builds deduplicate listeners and reuse cached images', asy
   h.queue.request(request('a'), (v) => results.push(v));
   assert.equal(results.at(-1), 'image-a'); h.queue.release();
 });
-test('scroll cancellation removes queued work and suppresses stale callbacks', async () => {
+test('scroll cancellation removes queued work and suppresses stale callbacks', async (t) => {
+  const tick = clock(t);
   const h = harness(); let calls = 0;
   const cancel = h.queue.request(request('a'), () => calls++);
   const cancelQueued = h.queue.request(request('b'), () => calls++);
   await tick(); cancel(); cancelQueued(); h.finish('a'); await tick();
   assert.deepEqual(h.builds, ['a']); assert.equal(calls, 0); h.queue.release();
 });
-test('queue and LRU stay bounded, cache hits update recency', async () => {
+test('queue and LRU stay bounded, cache hits update recency', async (t) => {
+  const tick = clock(t);
   const h = harness(2, 2); let overflow: string | null | undefined;
   h.queue.request(request('a'), () => {}); h.queue.request(request('b'), () => {});
   h.queue.request(request('overflow'), (v) => overflow = v);
@@ -50,7 +61,8 @@ test('queue and LRU stay bounded, cache hits update recency', async () => {
   h.queue.request(request('a'), () => {}); h.queue.request(request('b'), () => {}); await tick();
   assert.deepEqual(h.builds, ['a', 'b', 'c', 'b']); h.queue.release();
 });
-test('failures retain fallback without repeated builds and queue continues', async () => {
+test('failures retain fallback without repeated builds and queue continues', async (t) => {
+  const tick = clock(t);
   const h = harness(); const results: (string | null)[] = [];
   h.queue.request(request('bad'), (v) => results.push(v));
   h.queue.request(request('good'), () => {});
@@ -58,7 +70,8 @@ test('failures retain fallback without repeated builds and queue continues', asy
   h.queue.request(request('bad'), (v) => results.push(v));
   assert.deepEqual(results, [null, null]); assert.deepEqual(h.builds, ['bad', 'good']); h.queue.release();
 });
-test('route release disposes resources, ignores late results and allows re-entry', async () => {
+test('route release disposes resources, ignores late results and allows re-entry', async (t) => {
+  const tick = clock(t);
   const h = harness(); let calls = 0;
   h.queue.request(request('a'), () => calls++); await tick();
   h.queue.release(); h.finish('stale'); await tick();

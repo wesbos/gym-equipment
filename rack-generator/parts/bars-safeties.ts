@@ -1,3 +1,4 @@
+import { GENERIC_SPAN_OPTIONS } from '../standards.ts';
 import type { Manifold, CrossSection, Vec2, Vec3 } from 'manifold-3d';
 import type { ManifoldAPI, NumericParams, PartDefinition, SolidPart } from '../types.ts';
 type Owned = Manifold | CrossSection;
@@ -198,10 +199,10 @@ function webbing(api: ManifoldAPI,p: NumericParams){
   });
 }
 export const definitions: PartDefinition[]=[
-  {id:'pullup-straight',name:'Standard pull-up bar',category:'Bars & safeties',reference:{file:'front',node:'Standard pull up bar 2100.013'},defaults:{length:1075,diameter:32},build:(a,p)=>pullup('straight',a,p)},
+  {id:'pullup-straight',standardOptions:{length:GENERIC_SPAN_OPTIONS},name:'Standard pull-up bar',category:'Bars & safeties',reference:{file:'front',node:'Standard pull up bar 2100.013'},defaults:{length:1075,diameter:32},build:(a,p)=>pullup('straight',a,p)},
   {id:'pullup-multigrip',name:'Multi-grip pull-up bar',category:'Bars & safeties',reference:{file:'front',node:'Multi grip pull up bar 2100.013'},defaults:{length:1075,diameter:32,projection:170},build:(a,p)=>pullup('multi',a,p)},
   {id:'pullup-sphere',name:'Spherical multi-grip pull-up bar',category:'Bars & safeties',reference:{file:'front',node:'Spherical multi-grip pull up bar 2100.013'},defaults:{length:1075,diameter:32,projection:190,sphereDiameter:125},build:(a,p)=>pullup('sphere',a,p)},
-  {id:'safety-box',name:'Box safety',category:'Bars & safeties',reference:{file:'front',node:'Riot 1075 box safeties left base.002'},defaults:{length:1075,width:75,height:75,wall:3,upright:75},build:boxSafety},
-  {id:'safety-pin-pipe',name:'Pin-and-pipe safety',category:'Bars & safeties',reference:{file:'front',node:'Riot 1075 pin and pipe safety left base.002'},defaults:{length:1075,pipeDiameter:45,wall:3,pinDiameter:16,upright:75},build:pinPipe},
-  {id:'safety-webbing',name:'Webbing strap safety',category:'Bars & safeties',reference:{file:'front',node:'Riot 1075 webbing safety left base.002'},defaults:{length:1075,strapWidth:40,strapThickness:3,sag:50,upright:75},build:webbing},
+  {id:'safety-box',standardOptions:{length:GENERIC_SPAN_OPTIONS},name:'Box safety',category:'Bars & safeties',reference:{file:'front',node:'Riot 1075 box safeties left base.002'},defaults:{length:1075,width:75,height:75,wall:3,upright:75},build:boxSafety},
+  {id:'safety-pin-pipe',standardOptions:{length:GENERIC_SPAN_OPTIONS},name:'Pin-and-pipe safety',category:'Bars & safeties',reference:{file:'front',node:'Riot 1075 pin and pipe safety left base.002'},defaults:{length:1075,pipeDiameter:45,wall:3,pinDiameter:16,upright:75},build:pinPipe},
+  {id:'safety-webbing',standardOptions:{length:GENERIC_SPAN_OPTIONS},name:'Webbing strap safety',category:'Bars & safeties',reference:{file:'front',node:'Riot 1075 webbing safety left base.002'},defaults:{length:1075,strapWidth:40,strapThickness:3,sag:50,upright:75},build:webbing},
 ];

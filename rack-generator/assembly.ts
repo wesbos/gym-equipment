@@ -50,6 +50,10 @@ const FRAME_PARTS: Record<string, { slots: string[]; label: string; defaults: Nu
   'branded-crossmember-lite': { slots: ['rear-crossmember'], label: 'BOS STRENGTH nameplate crossmember lite', defaults: {} },
   nameplate: { slots: ['rear-crossmember'], label: 'Nameplate panel and supporting rail', defaults: {} },
 };
+/** Detached defaults for editors; keep geometry and UI on one source of truth. */
+export function getPartDefaults(part: string): NumericParams {
+  return { ...(FRAME_PARTS[part]?.defaults ?? SOURCE_DEFAULTS[part] ?? {}) };
+}
 // Midpoints of the actual retaining-pin cylinders in the generated part coordinates.
 const HOOK_ANCHORS: Record<string, Vec3> = {
   'j-hook-standard': [8.753024654290442, -85.08286, 150.00177048395147],
@@ -303,13 +307,17 @@ export function createAssembly(overrides: Partial<RackDimensions> & { rack?: Par
   ];
   return validateAssembly(result);
 }
+export function defaultAccessoryTarget(doc: RackDoc, part: string, uprightId = 'front-left'): Target {
+  const defaultHole = isFoot(part) ? 0 : isPullup(part) ? pullupHole(doc.rack) : isSafety(part) ? 12 : 24;
+  return { uprightId, face: isPullup(part) || isSafety(part) ? (sideOf(uprightId) === 'left' ? 'right' : 'left') : 'front', hole: Math.min(defaultHole, maxHole(doc.rack) - 2) };
+}
 export function addAccessory(input: RackDoc, part: string, target: Partial<Target> = {}, paired = true, params: NumericParams = {}): RackDoc {
   const doc = validateAssembly(input);
   if (!ACCESSORY_PARTS.includes(part)) fail(`No rack connection adapter for ${part}.`);
   const uprightId = target.uprightId ?? 'front-left';
-  const defaultHole = isFoot(part) ? 0 : isPullup(part) ? pullupHole(doc.rack) : isSafety(part) ? 12 : 24;
+  const defaultTarget = defaultAccessoryTarget(doc, part, uprightId);
   let id: string; do { id = `accessory-${doc.nextId++}`; } while (doc.accessories.some(a => a.id === id) || Object.hasOwn(doc.uprights, id) || doc.connections.some(e => e.id === id));
-  doc.accessories.push({ id, part: part as PartId, target: { uprightId, face: target.face ?? (isPullup(part) || isSafety(part) ? (sideOf(uprightId) === 'left' ? 'right' : 'left') : 'front'), hole: target.hole ?? Math.min(defaultHole, maxHole(doc.rack) - 2) }, paired: supportsPair(part) ? paired : false, params: copy(params) });
+  doc.accessories.push({ id, part: part as PartId, target: { uprightId, face: target.face ?? defaultTarget.face, hole: target.hole ?? defaultTarget.hole }, paired: supportsPair(part) ? paired : false, params: copy(params) });
   return validateAssembly(doc);
 }
 export function moveAccessory(input: RackDoc, id: string, target: Partial<Target>, paired?: boolean): RackDoc {
@@ -490,23 +498,27 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
     } else {
       const row = rowOf(a.target.uprightId), y = postCenter(r, `${row}-left`)[1];
       let mounts = (['left', 'right'] as const).map((side, i) => mount(r, `${row}-${side}`, a.target.hole, i ? 'left' : 'right', [(i ? 1 : -1) * r.width / 2, 0, a.part === 'pullup-straight' ? 25 : 30]));
+      // Source sphere grips extend along +Y. Turn front mounts around the
+      // asymmetric plate center so grips face the user without moving rail holes.
+      const angle = a.part === 'pullup-sphere' && row === 'front' ? Math.PI : 0;
+      const direction = angle ? -1 : 1;
       let yy = y, zz = holeZ(r, a.target.hole) - 25;
       if (a.part !== 'pullup-straight') {
         // These wide plates bolt to the upper depth rails, not one upright hole.
         // Their four bolts follow the rail's 50 mm stations across a 250/300 mm span.
         const sy = a.part === 'pullup-sphere' ? (params.projection / 190) : (params.projection / 170);
         yy = (row === 'front' ? -1 : 1) * (r.depth / 2 - 62.5 - (a.part === 'pullup-sphere' ? 150 : 125) * sy);
-        if (a.part === 'pullup-sphere') yy += 46.194 * sy;
+        if (a.part === 'pullup-sphere') yy += direction * 46.194 * sy;
         zz = holeZ(r, upperHole(r)) + 50 - 30;
         const stations = a.part === 'pullup-sphere' ? [-196.194 * sy, 103.806 * sy] : [-125 * sy, 125 * sy];
         mounts = (['left', 'right'] as const).flatMap((side, i) => stations.map(yStation => {
-          const localAnchor: Vec3 = [(i ? 1 : -1) * r.width / 2, yStation, 30];
+          const localAnchor: Vec3 = [direction * (i ? 1 : -1) * r.width / 2, yStation, 30];
           const m = mount(r, `${row}-${side}`, a.target.hole, i ? 'left' : 'right', localAnchor);
-          m.center[1] = m.position[1] = yy + yStation;
+          m.center[1] = m.position[1] = yy + direction * yStation;
           return { ...m, label: 'Upper side rails', connectorId: `${side}-upper-crossmember` };
         }));
       }
-      append(a.id, a.part, { ...params, length: r.width }, [0, yy, zz], 0, mounts, 'accessory', a.id, false, dependencies(a));
+      append(a.id, a.part, { ...params, length: r.width }, [0, yy, zz], angle, mounts, 'accessory', a.id, false, dependencies(a));
     }
   }
   result.push(...resolveSystems(doc));
