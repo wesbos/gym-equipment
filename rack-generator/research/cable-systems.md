@@ -45,3 +45,74 @@ Kraken uses Hydra/Manticore true 3-inch (76.2 mm) tubing and the relevant 5/8-in
 4. Store trolley stations, selected stack weight and optional handle extension as system state. Move connected subassemblies through transforms; preserve cable length and pulley ratio when adding motion.
 5. Reserve the system's footprint and trolley travel envelopes and validate interference with braces, storage, safeties, pull-up bars and benches.
 6. Retain source and measurement confidence for each dimension. Manuals establish topology but do not fully dimension pulley centres, plate profiles, guide-rod spacing, cable lengths or shrouds. Obtain measurements or manufacturer CAD before claiming a dimension-exact reconstruction. No public manufacturer CAD/GLB was found during this pass.
+
+## Implementation verification — wave 2, September 17, 2026
+
+The static reconstruction now lives in `parts/cable-systems.ts`, `parts/smith.ts`
+and the scoped `parts/system-geometry.ts` Manifold helpers. `systems.ts` owns
+compatibility; it derives rows and bays from coordinates and graph edges, never
+from IDs such as `rear-left`. This is reconstruction work, not manufacturer CAD.
+
+Manuals inspected (local PDFs were downloaded and relevant diagram pages rendered):
+- Kraken 4 Post Weight Stack, 2025-12-15: pages 1–4 hardware/parts, 8 guide
+  sockets and stack, 11 return/floating pulleys, cover for twin adjacent outputs.
+  The source is the official manual linked above. Hydra/Manticore use true
+  76.2 mm tubing. Nominal M16 hardware in a nominal 5/8-inch bore is represented
+  with estimated diametral clearance; generated shaft diameter is bore minus
+  0.8 mm and is never allowed to exceed the rack bore.
+- ARES2 Rev K: hardware/parts pages 2–4 and 4-/6-post assembly. Reoriented stacks,
+  outer trolleys, incremental plates, low-row footplates and lat routing differ
+  from historical ARES1. Current [4-post product](https://repfitness.com/products/ares-2-0-cable-attachment-4-post-series)
+  documents PR-5000 16-inch; enabled with explicit anchoring. PR-4000 four-post
+  remains blocked (manual has older bracket instructions but current availability
+  is inconsistent). Six-post PR-4000/5000 use a 16-inch rear bay.
+- ARES1 6-post instructions, 45-0105-V2, and original product documentation:
+  lengthwise rear stacks, inward trolley position, lower row outlet; historical
+  envelope and fabrication details remain estimated.
+- Athena 4-post assembly, parts page 3: plate-loaded bearing carriage/horns and
+  selectorized headplate/stem/guide-hole topology. Current
+  [Athena FAQ](https://repfitness.com/products/athena-builder) restricts PR-4000
+  to 6-post with updated vertically drilled 16-inch crossmembers. PR-5000
+  requires the modern uniform-hole rack (the profile represents this version).
+- [Smith assembly Rev B](https://newrepcustomerfiles.blob.core.windows.net/publicfiles/Product/Assembly%20Instructions/Smith%20Machine%20Assembly%20Instructions%20(RevB).pdf),
+  parts pages 2–3 and crossmember L-bracket steps 2–5. Lower L-brackets have two
+  through holes; mounts are on side crossmembers, not upright faces.
+- [Smith configuration guide](https://newrepcustomerfiles.blob.core.windows.net/publicfiles/Product/Assembly%20Instructions/Smith%20Machine%20Configuration%20Guide%20(with%20summit).pdf)
+  plus the [official Smith FAQ](https://ca.repfitness.com/products/smith-machine-rack-attachment).
+  Six-post cable compatibility and PR-4000 angle exclusion are enforced. Inside
+  flip-down/strap safeties are blocked; shallow bays also block internal safety
+  pipes/spotter arms. Front/outside mounting is explicitly unavailable pending
+  the front extension bracket and feet adapter. Both angle signs and vertical
+  installation share one tilted guide/carriage reference.
+
+Published anchors: 80/93-inch REP uprights; 84/90-inch Kraken; exact 50.8 mm
+profile pitch and 15.875/25.4 mm bores; ARES 260/310 lb, Athena 170/220 lb and
+Kraken 210 lb options; Smith 1880 mm total width, 35 mm shaft, 289.5 mm sleeves,
+396–1721/2029 mm bar travel and 16/19 racking positions. Smith shaft, guides,
+sleeves and handles are polished semantic materials, never hardware finish.
+ARES2 published added height (2.1/0.9 inches) and Athena 1.8 inches are used.
+
+Estimated: first-hole datum; all plate outlines/thicknesses; pulley sizes and
+centers; stack plate dimensions/guide spacing; bearing housings; shrouds; detailed
+cable lengths and routes; Smith guide/catch offsets and intermediate catch pitch.
+The paths are static solids with sampled wraps/return paths, not a cable-length
+or tension simulation. Weight labels describe manufacturer options, not mass
+computed from the approximate steel volumes. No manufacturer logo geometry is
+invented; vendor credits are in catalog descriptions/UI and user BOS branding
+is left intact.
+
+Remaining scope, do not close parent issues solely on this stage:
+- Kraken 108-inch/raised-crossmember installation adapter.
+- Front/outside Smith extension bracket + front feet (optional accessory in #12).
+- Manufacturer-detail audit of estimated internal cable routes, mount/stack
+  clearances and historical ARES1 envelopes; physical measurements/CAD have not
+  been supplied. Static collision boxes cover working stack/trolley/bar bodies;
+  they are not a swept-motion or manufacturing-clearance guarantee.
+
+System documents are additive v2 data: `systems?: {id, part, params}[]`. Validated
+system edits use ordinary store commits/undo and explicit named Save. `resolveAssembly`
+returns them alongside other instances, so current GLB and worker-driven exports,
+library views and thumbnails share the same solids. System fields never enter
+legacy single-hole accessory validation. Removing dependent frame structure
+removes systems conservatively; undo restores both. Changing a supported frame
+span re-resolves system geometry; unsupported topology edits are rejected.

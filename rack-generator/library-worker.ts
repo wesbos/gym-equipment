@@ -8,7 +8,10 @@ import wasmUrl from "manifold-3d/manifold.wasm?url";
 import { definitions as structure } from "./parts/structure.ts";
 import { definitions as attachments } from "./parts/attachments.ts";
 import { definitions as bars } from "./parts/bars-safeties.ts";
-const definitions = [...structure, ...bars, ...attachments];
+import { definitions as cables } from './parts/cable-systems.ts';
+import { definitions as smith } from './parts/smith.ts';
+import { isSystemPart } from './system-types.ts';
+const definitions = [...structure, ...bars, ...attachments, ...cables, ...smith];
 const ready = Module({ locateFile: () => wasmUrl }).then((api) => {
   api.setup();
   return api;
@@ -26,10 +29,10 @@ self.onmessage = async ({ data }: MessageEvent<LibraryWorkerRequest>) => {
     for (const [key, value] of Object.entries(params))
       if (
         !Number.isFinite(value) ||
-        value < 0 ||
+        (value < 0 && !(isSystemPart(data.part) && key === "angle" && value === -5)) ||
         value > 4000 ||
         (value === 0 &&
-          !["cornerRadius", "benchStart", "rise", "offset", "sag"].includes(
+          !isSystemPart(data.part) && !["cornerRadius", "benchStart", "rise", "offset", "sag"].includes(
             key
           ))
       )

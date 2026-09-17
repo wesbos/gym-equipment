@@ -1,3 +1,5 @@
+import { CableSmithControls } from '../components/CableSmithControls.tsx';
+import { isSystemPart } from '../../rack-generator/system-types.ts';
 import { gridProfile } from '../../rack-generator/profiles.ts';
 import { RackPresets } from '../components/RackPresets.tsx';
 import { TopologyEditor } from '../components/TopologyEditor.tsx';
@@ -113,6 +115,7 @@ function Inspector({ store }: { store: BuilderStore }) {
     const data = new FormData(event.currentTarget);
     store.act(() => action(data));
   };
+  if (part && isSystemPart(part)) return <><h2>{nameOf(part)}</h2><p>Edit or remove this assembly in Cable systems &amp; Smith.</p></>;
   if (structureChoice) {
     const available = getAvailableStructure(doc),
       placement = getPartPlacementInfo(structureChoice, doc);
@@ -761,6 +764,7 @@ export default function BuilderPage() {
             ← Rack settings
           </button>
           <AppearanceControls store={store} />
+          <CableSmithControls store={store} />
           <Inspector key={state.inputRevision} store={store} />
           <div id="warnings">
             {warnings.map((warning, i) => (

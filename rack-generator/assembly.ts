@@ -1,3 +1,4 @@
+import { validateSystems, resolveSystems } from './systems.ts';
 import { validateMountShaft } from './mount-shafts.ts';
 import { gridProfile } from './profiles.ts';
 import { legacyGraph, validateGraph, structureSlots } from './topology.ts';
@@ -159,7 +160,8 @@ export function validateAssembly(input: unknown): RackDoc {
   if (input.profileId !== undefined && (typeof input.profileId !== 'string' || input.profileId.length > 100)) fail('Invalid rack profile identity.');
   const r = input.rack;
   finiteRange(r.height, 1000, 4000, 'Height'); finiteRange(r.width, 400, 2000, 'Clear width'); finiteRange(r.depth, 300, 1500, 'Clear depth');
-  if (r.tube !== 75) fail('These rack connections require 75 mm uprights.');
+  finiteRange(r.tube, 50, 100, 'Tube');
+  if (r.tube !== (gridProfile(typeof input.profileId === 'string' ? input.profileId : undefined).tube ?? 75)) fail('Tube size must match the named rack profile; generic connections require 75 mm uprights.');
   const profile = gridProfile(typeof input.profileId === 'string' ? input.profileId : undefined), manufacturer = profile.id !== 'generic-75';
   if (r.holeDiameter !== profile.holeDiameter) fail(`This profile uses ${profile.holeDiameter} mm mounting holes.`);
   if (manufacturer && r.pitch !== profile.pitch) fail('Manufacturer pitch must match its rack profile.');
@@ -218,6 +220,7 @@ export function validateAssembly(input: unknown): RackDoc {
     if (isWidePullup(a.part) && ['left-upper-crossmember', 'right-upper-crossmember'].some(id => structure[id]?.part === 'angled-crossmember')) fail('Wide pull-up plates require level upper side rails.');
     if (manufacturer && isFoot(a.part)) fail('BOS floor-foot bolt patterns are unavailable on this reconstructed profile.');
     if (isFoot(a.part) && rack.firstHole !== 65) fail('Floor-mounted feet require the first upright hole at 65 mm.');
+    if (rack.tube !== 75 && (isMountedAttachment(a.part) || isHook(a.part) || isFoot(a.part))) fail('Source attachment sleeves require 75 mm uprights; no true 3-inch adapter is available.');
     if (isMountedAttachment(a.part)) {
       const anchor = getAttachmentAnchor(a.part, params);
       if (anchor.requiredPitch && anchor.requiredPitch !== rack.pitch) fail('This attachment requires 50 mm upright hole spacing for its full bolt pattern.');
@@ -257,7 +260,8 @@ export function validateAssembly(input: unknown): RackDoc {
   });
   if (typeof input.nextId !== 'number' || !Number.isSafeInteger(input.nextId) || input.nextId < 1 || input.nextId > 1000000) fail('Invalid next accessory ID.');
   const appearance = validateAppearance(input.appearance);
-  return { ...copy(input), ...(appearance ? { appearance } : {}), ...graph, version: ASSEMBLY_VERSION, rack, removed: [...removed], structure, accessories, nextId: input.nextId };
+  const systems = validateSystems({ ...input, ...graph, rack, removed, structure, accessories } as RackDoc, input.systems);
+  return { ...copy(input), ...(appearance ? { appearance } : {}), ...graph, ...(systems ? { systems } : {}), version: ASSEMBLY_VERSION, rack, removed: [...removed], structure, accessories, nextId: input.nextId };
 }
 export function getPartPlacementInfo(part: string, input?: RackDoc): PlacementInfo | null {
   if (isMountedAttachment(part)) {
@@ -343,6 +347,7 @@ export function removeInstance(input: RackDoc, id: string): RackDoc {
     doc.removed = [...removed];
     doc.accessories = doc.accessories.filter(a => dependencies(a).every(dep => !removed.has(dep)));
   } else doc.accessories = doc.accessories.filter(a => a.id !== ownerId);
+  if (doc.systems) doc.systems = doc.systems.filter(s => s.id !== ownerId && !structureSlots(doc).some(slot => slot.id === ownerId));
   return validateAssembly(doc);
 }
 export function restoreInstance(input: RackDoc, id: string): RackDoc {
@@ -504,5 +509,6 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
       append(a.id, a.part, { ...params, length: r.width }, [0, yy, zz], 0, mounts, 'accessory', a.id, false, dependencies(a));
     }
   }
+  result.push(...resolveSystems(doc));
   return result;
 }
