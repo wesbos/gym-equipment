@@ -157,3 +157,7 @@ The export panel follows #30's concise-copy contract: scale, color limitation an
 placeholder-profile data remain visible; explanatory prose lives in this document.
 The #28 standard size controls and existing reset/swap helpers are preserved from
 main; print export neither replaces them nor adds independent dimension controls.
+
+The export arrangement's shared `ResetButton` restores the `laid-out` default.
+It is disabled at the default and while a print worker is active. This transient
+export preference does not mutate the rack document, save state or edit history.
