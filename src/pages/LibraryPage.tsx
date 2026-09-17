@@ -1,3 +1,4 @@
+import { VendorCredit } from '../components/VendorControls.tsx';
 import { useEffect, useState } from "react";
 import { PartThumbnail } from "../components/PartThumbnail.tsx";
 import { Link } from "@tanstack/react-router";
@@ -89,6 +90,7 @@ export default function LibraryPage() {
             <PartThumbnail part={part.id} params={part.defaults} />
             <span className="gallery-category">{part.category}</span>
             <h2>{part.name}</h2>
+            <VendorCredit part={part.id} />
             <span className="gallery-specs">
               {Object.entries(part.defaults)
                 .filter(([key]) =>

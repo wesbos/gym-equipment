@@ -1,3 +1,4 @@
+import { vendorAttribution } from '../../rack-generator/vendor-metadata.ts';
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
@@ -306,6 +307,7 @@ export function createPartScene(
     async exportGLB(name: string) {
       const output = group.clone();
       output.name = name;
+      if (vendorAttribution(name.replace(/^bos-strength-/, ''))) output.userData.vendorAttribution = vendorAttribution(name.replace(/^bos-strength-/, ''));
       output.position.set(0, 0, 0);
       output.scale.setScalar(0.001);
       const result = await new GLTFExporter().parseAsync(output, {
