@@ -28,18 +28,30 @@ test('gym-wave2-cable_smith-final: raised Kraken, combined systems, contextual r
   await load(combined);
   await page.locator('.system-controls > summary').click();
   const safety=page.getByRole('spinbutton',{name:'Smith safety height',exact:true}),bar=page.getByRole('spinbutton',{name:'Smith bar height',exact:true});
+  const heightsAgree=async()=>{
+    for(const [label,input] of [['Smith safety height',safety],['Smith bar height',bar]] as const) {
+      expect(await input.evaluate((element:HTMLInputElement)=>element.validity.valid)).toBe(true);
+      await expect(page.getByRole('slider',{name:label+' slider',exact:true})).toHaveValue(await input.inputValue());
+    }
+  };
+  await heightsAgree();
   await page.getByRole('button',{name:'Reset Smith safety height',exact:true}).click();
   await expect(safety).toHaveValue('450');await expect(bar).toHaveValue('600');
+  await heightsAgree();
   await expect(page.getByRole('button',{name:'Reset Smith safety height',exact:true})).toBeDisabled();
   await page.getByRole('button',{name:'Undo',exact:true}).click();await expect(safety).toHaveValue('400');
   await safety.fill('246');await safety.press('Enter');await bar.fill('396');await bar.press('Enter');
   await expect(bar).toHaveValue('396');await expect(safety).toHaveValue('246');
+  await heightsAgree();
   await expect(page.getByRole('button',{name:'Reset Smith safety height',exact:true})).toBeDisabled();
   await page.getByRole('button',{name:'Reset Smith bar height',exact:true}).click();await expect(bar).toHaveValue('1100');
   await bar.fill('1600');await bar.press('Enter');await safety.fill('1400');await safety.press('Enter');
   await page.getByRole('button',{name:'Reset Smith bar height',exact:true}).click();
   await expect(bar).toHaveValue('1550');await expect(safety).toHaveValue('1400');
   await expect(page.getByRole('button',{name:'Reset Smith bar height',exact:true})).toBeDisabled();
+  await heightsAgree();
+  await safety.fill('650.5');await safety.press('Enter');await heightsAgree();
+  await safety.press('ArrowUp');await expect(safety).toHaveValue('655.5');await heightsAgree();
   await ready();await page.getByRole('button',{name:'Fit view',exact:true}).click();
   await page.screenshot({path:'/tmp/gym-cable-browser-ares-smith.png'});
   await page.locator('#export').click();const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Download GLB',exact:true}).click();
