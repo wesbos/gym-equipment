@@ -94,7 +94,11 @@ are disposed. A failed preview leaves the existing rack untouched.
 `rack-generator/logos.test.ts` covers fonts/counters, fill rules, transformed
 filled and stroked paths, hostile SVG, threshold tracing, malformed/overbudget
 metadata, small cuts and gaps, island rejection, persistence/site isolation,
-and actual manifold builds for all three sites. `logos/fixtures` contains small
+and actual manifold builds for all three sites. The 3MF regression also exports
+all three sites through the shared catalog/print adapter, reconstructs the
+actual XML meshes, checks connected watertight topology, and compares volume
+with custom CAD after the documented flange-overlap removal. Volume tolerance
+is max(0.1 mm³, one part per million), accounting for Float32 print transforms. `logos/fixtures` contains small
 SVG/PNG/JPEG uploads and a deliberately rejected script fixture for browser QA.
 
 Repeat the browser test against a production build served at `127.0.0.1:5305`:
