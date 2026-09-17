@@ -1,4 +1,5 @@
 /** Manual browser integration checks: open /scripts/visuals-check.html on the dev server. */
+import { boundedWait, boundedFrame } from './visual-check-timing.ts';
 import * as THREE from 'three';
 import { createBuilderScene } from './builder-scene.ts';
 import { FrameFinishResources } from './frame-finishes.ts';
@@ -8,8 +9,12 @@ import { BuilderStore } from '../state/builder-store.ts';
 function check(condition: unknown, message: string): asserts condition {
   if (!condition) throw Error(message);
 }
-const frames = async (count: number) => { for (let i = 0; i < count; i++) await new Promise(requestAnimationFrame); };
-export async function runVisualChecks(viewport: HTMLElement) {
+export async function runVisualChecks(viewport: HTMLElement, onProgress: (stage: string) => void = () => {}) {
+  const deadline = performance.now() + 45000;
+  let stage = 'resource ownership';
+  const progress = (value: string) => { stage = value; onProgress(stage); };
+  const frames = async (count: number) => { for (let i = 0; i < count; i++) await boundedFrame(deadline, stage); };
+  progress(stage);
   const pool = new FrameFinishResources(8);
   const first = pool.material({ role: 'frame' }, { frameFinish: 'clear-grind' });
   const second = pool.material({ role: 'frame' }, { frameFinish: 'stainless' });
@@ -42,7 +47,8 @@ export async function runVisualChecks(viewport: HTMLElement) {
     for (let cycle = 0; cycle < 3; cycle++) {
       const releasedBefore = live.size;
       const storage = { getItem: () => null, setItem: () => {} };
-      const store = new BuilderStore(storage); await store.ready;
+      progress(`cycle ${cycle + 1} / storage`);
+      const store = new BuilderStore(storage); await boundedWait(store.ready, deadline, stage);
       store.commit({ ...store.getSnapshot().doc, appearance: { frameFinish: 'clear-grind', finishOverrides: { 'front-left': 'stainless' } } });
       const scene = createBuilderScene(viewport, store);
       try {
@@ -52,18 +58,22 @@ export async function runVisualChecks(viewport: HTMLElement) {
           check(!store.getSnapshot().error, store.getSnapshot().status);
           await frames(3);
         };
+        progress(`cycle ${cycle + 1} / initial build`);
         await waitBuilt();
         const stableTextures = created - deleted - releasedBefore;
         for (let i = 0; i < 12; i++) {
+          progress(`cycle ${cycle + 1} / finish edit ${i + 1}`);
           store.commit({ ...store.getSnapshot().doc, appearance: { frameFinish: i % 2 ? 'clear-grind' : 'stainless' } });
           await waitBuilt();
         }
         check(created - deleted - releasedBefore === stableTextures, 'Repeated finish edits leaked GPU textures');
+        progress(`cycle ${cycle + 1} / 60 idle frames`);
         const beforeUploads = uploads, start = performance.now();
         await frames(60);
         const idleMs = performance.now() - start;
         check(uploads === beforeUploads, 'Idle render loop uploaded new textures');
-        const data = await scene.exportGLB();
+        progress(`cycle ${cycle + 1} / GLB export`);
+        const data = await boundedWait(scene.exportGLB(), deadline, stage, 15000);
         const view = new DataView(data);
         const json = JSON.parse(new TextDecoder().decode(new Uint8Array(data, 20, view.getUint32(12, true))));
         check(json.images?.length >= 2, 'GLB lost procedural brush images');
@@ -73,12 +83,15 @@ export async function runVisualChecks(viewport: HTMLElement) {
         check(json.meshes.every((m: { primitives: { attributes: Record<string, unknown> }[] }) => m.primitives.every(p => p.attributes.TEXCOORD_0 !== undefined)), 'GLB lost UVs');
         cycles.push({ cycle, stableTextures, idleUploads: uploads - beforeUploads, idle60FramesMs: Math.round(idleMs), glbBytes: data.byteLength, brushImages: json.images.length, dimensions: store.getSnapshot().dimensions });
       } finally { scene.dispose(); }
+      progress(`cycle ${cycle + 1} / teardown`);
       check(viewport.querySelectorAll('canvas').length === 0, 'Canvas survived scene teardown');
       await frames(2);
       check([...live.values()].every(({ context }) => context.isContextLost()), `GPU resources survived scene teardown: ${JSON.stringify([...live.values()].map(v => v.stack))}`);
       // Three owns fallback textures until forceContextLoss; app textures are explicitly disposed.
 
     }
+  } catch (error) {
+    throw Error(`${stage}: ${error instanceof Error ? error.message : String(error)}`);
   } finally { gl.createTexture = create; gl.deleteTexture = remove; gl.texImage2D = upload; }
   return { passed: true, brushDisposed, floorDisposed, created, deleted, releasedByContextLoss: live.size, cycles };
 }

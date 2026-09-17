@@ -82,3 +82,13 @@ implementation; deprecated PCFSoftShadowMap is not used.
 
 Material behavior follows the official [MeshPhysicalMaterial docs](https://threejs.org/docs/pages/MeshPhysicalMaterial.html)
 and [GLTFExporter extension support](https://threejs.org/docs/pages/GLTFExporter.html).
+
+## Multi-select integration (#31 / PR #37)
+
+The current main used here still exposes a single selected physical ID. Preserve the
+multi-select stream's `PhysicalInstanceId[]` when integrating its controls; do not
+collapse it to an owner ID. Bulk finish changes should write `finishOverrides[id]`
+for every selected physical frame piece. Bulk paint changes should also set that
+piece's finish to `paint`. Duplication must remap both `overrides` and
+`finishOverrides`; removing/resetting an override removes both. The multi-select
+follow-up owns that implementation and its mixed-selection UX/tests.

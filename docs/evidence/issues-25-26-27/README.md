@@ -25,3 +25,11 @@ The floor adds one draw call; shadow maps update on rebuild, not while orbiting.
 3MF receives only the dominant flat color from `resolveMaterial(...).color`; brush
 texture, reflection and clear-coat behavior are GLB/viewer features. Paint swatches
 are approximate, not calibrated vendor samples. These notes intentionally stay in docs.
+
+The recorded successful run is in `lifecycle.json`. Later retries in hidden/background
+tabs exposed an unbounded RAF wait in the harness, not evidence of an application
+resource leak. The harness now has a 3-second frame timeout, a 45-second overall
+async deadline, bounded storage/export waits, and exact cycle/stage progress. Unit
+tests simulate suspended RAF and stalled export promises. Already verified lifecycle
+checks were not repeated after this harness-only fix. Final main integration is
+covered by the repository tests/build and shared-exporter tests.
