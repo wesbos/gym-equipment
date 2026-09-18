@@ -81,9 +81,10 @@ export const definitions:PartDefinition[]=DARKO_IDS.map(id=>({id,name:({'darko-a
    bolt('Dock upper rack bolt',[0,0,0],p.pinDiameter,tube+25);
    bolt('Dock lower rack bolt',[0,0,-2*pitch],p.pinDiameter,tube+25);
    if(id!=='darko-dock')for(const shift of id==='darko-double-j'?[0,-92]:[-55]){
-    const outline=jOutline.map(([x,z]):Vec2=>[x,z+shift]);
+    // Resolved-only `mirror:1` mirrors the reversible J-Anchor so side-face pairs face each other (coaxial bar cradles).
+    const hand=params.mirror===1?-1:1,outline=(hand<0?[...jOutline].reverse():jOutline).map(([x,z]):Vec2=>[x*hand,z+shift]);
     let arm=profile(outline,4.7625,steelY+5);
-    const screws=[[-23,shift-20],[-23,shift-63],[-96,shift-33]];
+    const screws=[[-23*hand,shift-20],[-23*hand,shift-63],[-96*hand,shift-33]];
     for(const [x,z]of screws)arm=k(arm.subtract(cylinder(2.2,25,[x,face+8,z],[90,0,0])));
     coat('Removable J-Anchor steel',arm);
     add('J-Anchor protective liner',profile(outline,5.94,steelY+11),'liner',liner,0,.65);

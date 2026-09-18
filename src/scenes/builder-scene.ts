@@ -5,6 +5,7 @@ import { createGymBackdrop } from './gym-backdrop.ts';
 import { PointerGesture } from './pointer-gesture.ts';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { isFloorPart } from '../../rack-generator/floor-registry.ts';
+import { freeCradles, parkedPose, parksInCradles, type BarCradle } from '../../rack-generator/barbell-cradles.ts';
 import { createGymFloor, fitRackShadow } from './gym-floor.ts';
 import { FrameFinishResources, addSteelUVs } from './frame-finishes.ts';
 import { structureCandidates, type StructureCandidate } from '../../rack-generator/structure-candidates.ts';
@@ -89,8 +90,9 @@ export function createBuilderScene(
   controls.enableDamping = true;
   const assemblyRoot = new THREE.Group(),
     ghostRoot = new THREE.Group(),
-    mountsRoot = new THREE.Group();
-  for (const root of [assemblyRoot, ghostRoot, mountsRoot]) {
+    mountsRoot = new THREE.Group(),
+    cradleRoot = new THREE.Group();
+  for (const root of [assemblyRoot, ghostRoot, mountsRoot, cradleRoot]) {
     root.rotation.x = -Math.PI / 2;
     scene.add(root);
   }
@@ -296,6 +298,44 @@ export function createBuilderScene(
     mountsRoot.clear();
     mountPoints = [];
   }
+  // Barbell parking (#83): every free cradle shows a faint bar ghost; hover picks the nearest, else the floor.
+  let cradles: BarCradle[] = [], cradleSerial = 0, releaseCradles = () => {};
+  function clearCradles() {
+    cradleSerial++; cradles = [];
+    disposeMeshes(cradleRoot, false); cradleRoot.clear();
+    releaseCradles(); releaseCradles = () => {};
+  }
+  async function showCradles() {
+    const base = snapshot.proposal?.entries[0], serial = ++cradleSerial;
+    cradles = freeCradles(snapshot.resolved, snapshot.doc.floorItems, snapshot.placing?.movingId);
+    if (!base || !cradles.length) return;
+    const release = cache.pin([geometryKey(base)]);
+    try {
+      const model = await geometryFor(base);
+      if (disposed || serial !== cradleSerial) return;
+      releaseCradles = release;
+      for (const cradle of cradles) {
+        const g = transformed(model, { ...base, ...parkedPose(cradle) });
+        g.traverse(o => { if (o instanceof THREE.Mesh) { o.castShadow = o.receiveShadow = false; disposeMaterial(o.material); o.material = new THREE.MeshBasicMaterial({ color: '#e2a248', transparent: true, opacity: 0.24, depthWrite: false }); o.renderOrder = 9; } });
+        g.userData = {}; cradleRoot.add(g);
+      }
+    } catch { /* The proposal ghost reports geometry errors. */ }
+    finally { if (releaseCradles !== release) release(); }
+  }
+  /** Nearest free cradle to the pointer, measured to the projected bar segment. */
+  function cradleAt(event: { clientX: number; clientY: number }): BarCradle | null {
+    const rect = renderer.domElement.getBoundingClientRect();
+    let best: BarCradle | null = null, distance = 36;
+    for (const cradle of cradles) {
+      const axis = [Math.cos(cradle.yaw), Math.sin(cradle.yaw), 0], [a, b] = [-1, 1].map(side => screenPoint(cradle.center.map((v, i) => v + side * 1100 * axis[i]) as Vec3));
+      if (!a.visible || !b.visible) continue;
+      const px = event.clientX - rect.left, py = event.clientY - rect.top, dx = b.x - a.x, dy = b.y - a.y;
+      const t = Math.max(0, Math.min(1, ((px - a.x) * dx + (py - a.y) * dy) / (dx * dx + dy * dy || 1)));
+      const d = Math.hypot(px - a.x - t * dx, py - a.y - t * dy);
+      if (d < distance) { distance = d; best = cradle; }
+    }
+    return best;
+  }
   let swapRegions: ReturnType<typeof createSwapRegions> | null = null;
   let hoveredSwap: SwapCandidate | null = null;
   let previewBusy = false;
@@ -387,6 +427,7 @@ export function createBuilderScene(
     previewSerial++;
     clearGhost();
     clearMounts();
+    clearCradles();
     controls.enabled = !floorDrag && !snapshot.selectionTool;
     renderer.domElement.style.cursor = "";
   }
@@ -431,6 +472,7 @@ export function createBuilderScene(
     }
     if (!placing && !snapshot.structureChoice && !snapshot.systemChoice) return;
     if (placing && !isFloorPart(placing.part)) showMounts();
+    if (placing && parksInCradles(placing.part)) void showCradles();
     renderer.domElement.style.cursor = "crosshair";
     if (snapshot.proposal) void renderProposal(snapshot.proposal);
   }
@@ -529,6 +571,7 @@ export function createBuilderScene(
   }
   function updatePreview(event: { clientX: number; clientY: number }) {
     if (!snapshot.placing && !snapshot.structureChoice || snapshot.placing?.rotationOnly) return;
+    if (parksInCradles(snapshot.placing?.part)) { const cradle = cradleAt(event); if (cradle) { store.previewCradle(cradle.key); return; } }
     if(isFloorPart(snapshot.placing?.part)) { const point=floorPoint(event); if(point) store.previewFloor(point); return; }
     if (addingStructure()) { updateStructure(event); return; }
     const candidate = candidateAt(event);
@@ -584,7 +627,7 @@ export function createBuilderScene(
     const mounted = rotationTarget();
     if (mounted && store.rotateMounted(mounted, event.shiftKey ? -1 : 1)) { event.preventDefault(); return; }
     const id=floorDrag?.id ?? (snapshot.selection.length===1?snapshot.selected:null);
-    const item=store.getAppliedDoc().floorItems?.find(i=>i.id===id);
+    const item=store.getAppliedDoc().floorItems?.find(i=>i.id===id && !i.cradle);
     if(item) {event.preventDefault();if(floorDrag)floorDrag.moved=true;store.updateFloor(item.id,{rotation:item.rotation+delta});}
   };
   document.addEventListener('keydown',floorKey);
@@ -603,7 +646,7 @@ export function createBuilderScene(
   const onWheel = (event: WheelEvent) => {
     if (snapshot.systemChoice) return;
     const floorId = floorDrag?.id ?? hoveredId ?? (snapshot.selection.length === 1 ? snapshot.selected : null);
-    const floorItem = store.getAppliedDoc().floorItems?.find(i => i.id === floorId);
+    const floorItem = store.getAppliedDoc().floorItems?.find(i => i.id === floorId && !i.cradle);
     const mounted = rotationTarget();
     if (!isFloorPart(snapshot.placing?.part) && !floorItem && !mounted) return;
     event.preventDefault(); event.stopImmediatePropagation();
@@ -622,7 +665,7 @@ export function createBuilderScene(
   const onDown = (event: PointerEvent) => {
     pointerGesture.begin(event);
     if(event.button===0 && !snapshot.systemChoice && !snapshot.placing && !snapshot.structureChoice && !snapshot.selectionTool && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
-      const hit=pickOwner(event),item=store.getAppliedDoc().floorItems?.find(i=>i.id===hit?.id),point=floorPoint(event,false);
+      const hit=pickOwner(event),item=store.getAppliedDoc().floorItems?.find(i=>i.id===hit?.id && !i.cradle),point=floorPoint(event,false);
       if(item && point && (snapshot.selection.length<=1 || !snapshot.selection.includes(item.id))) {
         if (snapshot.timeline.viewing) { store.latestHistory(); pointerGesture.begin(event); }
         store.select(item.id);store.beginGesture();floorDrag={id:item.id,start:point,position:[...item.position],moved:false};
@@ -931,6 +974,7 @@ export function createBuilderScene(
       swapRegions?.dispose(); queuedPreview = null;
       clearGhost();
       clearMounts();
+      clearCradles();
       clearSelection();
       disposeMeshes(assemblyRoot, false);
       assemblyRoot.clear();

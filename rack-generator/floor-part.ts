@@ -13,6 +13,7 @@ export interface FloorPartSpec<Id extends string = string> {
   placement?: { side?: 'right' | 'left' | 'front' | 'back'; gap?: number };
   /** Pairable: "Add matching pair" places a second unit `gap` mm beside the first along local X. */ pair?: { gap: number };
   colors?: readonly (readonly [string, string])[]; colorLabel?: string; vendor?: VendorAttribution;
+  /** Parks in rack bar cradles (barbell-cradles.ts); floor placement is the fallback. */ parks?: boolean;
 }
 export interface FloorPart<Id extends string = string> extends FloorPartSpec<Id> { defaults: NumericParams }
 export function defineFloorPart<const Id extends string>(spec: FloorPartSpec<Id>): FloorPart<Id> {

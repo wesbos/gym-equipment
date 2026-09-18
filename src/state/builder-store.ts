@@ -3,6 +3,7 @@ import { systemProposal } from '../../rack-generator/system-proposal.ts';
 import { isSystemPart, SYSTEM_DEFAULTS, type SystemPartId } from '../../rack-generator/system-types.ts';
 import { addFloorItem, resolveFloorItems, floorWarnings, moveFloorGroup } from '../../rack-generator/floor-items.ts';
 import { floorPart, isFloorPart } from '../../rack-generator/floor-registry.ts';
+import { freeCradles, parkedPose, parksInCradles, settleBarbells, suggestCradle, type BarCradle } from '../../rack-generator/barbell-cradles.ts';
 import { resetAppearanceField } from '../../rack-generator/appearance-reset.ts';
 import type { FrameFinish } from '../../rack-generator/appearance.ts';
 import { addsStructure } from '../../rack-generator/structure-candidates.ts';
@@ -38,6 +39,7 @@ import type {
   PartDefinition,
   Target,
   Mount,
+  FloorItem,
 } from "../../rack-generator/types.ts";
 export type CatalogPart = Omit<PartDefinition, "build">;
 export interface BuilderSnapshot {
@@ -369,9 +371,11 @@ export class BuilderStore {
     const candidate = cleanDocument(input);
     // Diff BEFORE returning to applied state: UI closures may contain an old view.
     // Owner-keyed paths preserve additions and reject edits to owners removed later.
-    const doc = this.state.timeline.viewing && !metadata.replacement
+    let doc = this.state.timeline.viewing && !metadata.replacement
       ? applyOps(this.appliedDoc, diffDocuments(this.state.doc, candidate), false, false, true) : candidate;
-    resolveAssembly(doc);
+    // Bars whose cradle went away (removed, moved apart, unpaired) drop to the floor in the same undo step.
+    const settled = settleBarbells(doc, resolveAssembly(doc), this.state.resolved);
+    doc = settled.doc;
     if (JSON.stringify(doc) === JSON.stringify(this.appliedDoc)) {
       if (this.state.timeline.viewing) this.publishApplied(true);
       return;
@@ -385,6 +389,7 @@ export class BuilderStore {
     this.journal.append(doc, metadata);
     this.appliedDoc = doc; this.gestureChanged = this.gesture;
     this.publishApplied(wasViewing); this.autosave();
+    if (settled.dropped.length) this.status(`${settled.dropped.length === 1 ? 'A barbell' : `${settled.dropped.length} barbells`} lost ${settled.dropped.length === 1 ? 'its cradle and was' : 'their cradles and were'} set on the floor.`, true);
   };
   seekHistory = (step: number) => {
     // Validate before touching gesture or visible state.
@@ -612,16 +617,37 @@ export class BuilderStore {
       this.patch({ proposal: { doc: this.state.doc, entries, ownerId: movingId, target, label: 'Move attachment' }, placementText: 'Choose a mount · Click to place · ESC cancels' });
     }
   };
-  /** Staged floor ghost: the moving item, or a fresh unit (plus its pair for pairable parts). */
+  /** Staged floor ghost: the moving item, or a fresh unit (plus its pair for pairable parts). Parking parts
+   * (barbells) start in the suggested free cradle and fall back to the floor. */
   private floorProposal(part: PartId, movingId: string | null, paired = this.state.paired) {
     const doc = movingId ? structuredClone(this.state.doc) : addFloorItem(this.state.doc, part, undefined, paired);
     const items = movingId ? doc.floorItems!.filter(i=>i.id===movingId) : doc.floorItems!.slice(this.state.doc.floorItems?.length ?? 0);
-    return { proposal:{doc,entries:resolveFloorItems(items),ownerId:items[0].id,label:'Floor placement'}, placementText:'Click floor to place · R rotates · Alt disables snap' };
+    const parks = parksInCradles(part), cradle = parks && !movingId ? suggestCradle(freeCradles(this.state.resolved, doc.floorItems, items[0].id)) : null;
+    if (cradle) this.parkItem(items[0], cradle);
+    const ids = items.map(i => i.id), entries = items.some(i => i.cradle) ? resolveAssembly(doc).filter(e => ids.includes(e.id)) : resolveFloorItems(items);
+    return { proposal:{doc,entries,ownerId:items[0].id,label:parks ? 'Park barbell' : 'Floor placement'}, placementText:parks ? `${cradle ? `Suggested: ${cradle.label} · ` : ''}Click a highlighted cradle or the floor · ESC cancels` : 'Click floor to place · R rotates · Alt disables snap' };
   }
+  private parkItem(item: FloorItem, cradle: BarCradle) {
+    const { position } = parkedPose(cradle);
+    Object.assign(item, { cradle: cradle.key, position: [position[0], -position[1]], rotation: cradle.yaw });
+  }
+  /** Parking parts: stage the bar in a free cradle (one bar per cradle; the moving bar's own cradle counts as free). */
+  previewCradle = (key: string) => {
+    const proposal = this.state.proposal;
+    if (!parksInCradles(this.state.placing?.part) || !proposal) return;
+    const doc = structuredClone(proposal.doc), item = doc.floorItems!.find(i => i.id === proposal.ownerId)!;
+    const cradle = freeCradles(this.state.resolved, doc.floorItems, item.id).find(c => c.key === key);
+    if (!cradle || item.cradle === key) return;
+    this.parkItem(item, cradle);
+    const [entry] = resolveFloorItems([item]);
+    this.patch({ proposal: { ...proposal, doc, entries: [{ ...entry, ...parkedPose(cradle) }] }, placementText: `${cradle.label} · Click to park · ESC cancels` });
+  };
   previewFloor = (position?: [number,number], rotationDelta = 0) => {
     const proposal=this.state.proposal;
     if(!isFloorPart(this.state.placing?.part) || !proposal) return;
     const doc=structuredClone(proposal.doc), ids=proposal.entries.map(e=>e.id), items=doc.floorItems!.filter(i=>ids.includes(i.id));
+    if (!position && items.some(i=>i.cradle)) return;
+    for (const item of items) delete item.cradle;
     moveFloorGroup(items, position, rotationDelta);
     this.patch({proposal:{...proposal,doc,entries:resolveFloorItems(items)},placementText:floorWarnings(doc).some(w=>w.ids.some(id=>ids.includes(id))) ? 'Overlap warning · Click to place anyway' : 'Click floor to place · R rotates · Alt disables snap'});
   };

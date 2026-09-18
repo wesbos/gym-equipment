@@ -12,3 +12,10 @@ test('both print scales exclude persisted floor items before CAD and plate/XML m
  const definitions:PartDefinition[]=[...new Set(resolveAssembly(doc).map(e=>e.part))].map(id=>({id,name:id,category:'test',defaults:{},build:()=>{if(id==='rep-nighthawk'){benchBuilds++;throw Error('Bench must not build for printing');}return [{name:id,role:'frame',solid:api.Manifold.cube([10,10,10])}];}}));
  for(const scale of [10,20] as const){const {bytes,report}=exportPrint3MF(api,doc,definitions,{layout:'laid-out',scale});assert.equal(benchBuilds,0);assert.deepEqual(report.excludedInstances,['floor-1']);assert.equal(report.instances,14);assert.ok(report.parts.every(p=>p.part!=='rep-nighthawk'));for(const [name,data]of Object.entries(unzipSync(bytes)))if(name.endsWith('.model')||name.endsWith('.config'))assert.ok(!strFromU8(data).includes('rep-nighthawk'));}
 });
+test('parked barbells stay floor-kind scenery: excluded from 3MF like any floor item',()=>{
+ const doc=addFloorItem(createAssembly(),'olympic-barbell');doc.floorItems![0].cradle='jhooks-front:left#0+jhooks-front:right#0';
+ const bar=resolveAssembly(doc).find(e=>e.part==='olympic-barbell')!;assert.equal(bar.kind,'floor-item');assert.ok(bar.position[2]>1000,'parked on the J-cups');
+ const definitions:PartDefinition[]=[...new Set(resolveAssembly(doc).map(e=>e.part))].map(id=>({id,name:id,category:'test',defaults:{},build:()=>{if(id==='olympic-barbell')throw Error('Barbell must not build for printing');return [{name:id,role:'frame',solid:api.Manifold.cube([10,10,10])}];}}));
+ const {bytes,report}=exportPrint3MF(api,doc,definitions,{layout:'laid-out',scale:10});assert.deepEqual(report.excludedInstances,['floor-1']);
+ for(const [name,data]of Object.entries(unzipSync(bytes)))if(name.endsWith('.model'))assert.ok(!strFromU8(data).includes('olympic-barbell'));
+});
