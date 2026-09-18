@@ -3,6 +3,8 @@
 .builder-page .status-bar{grid-row:4}
 .timeline-controls{display:flex;align-items:center;gap:6px;min-height:29px;white-space:nowrap}
 .builder-page .timeline-controls button{font-size:10px;padding:5px 9px;min-height:26px}
+.builder-page .timeline-controls .timeline-build{font-weight:600;letter-spacing:.02em}
+.builder-page .timeline-controls .timeline-build[aria-pressed=true]{background:#b77935;border-color:#945d22;color:#fff}
 .timeline-position{font-size:11px;color:#60735c;display:flex;gap:12px;align-items:center;margin:0 10px}
 .timeline-position span{font-variant-numeric:tabular-nums;color:#88917e;font-size:10px}
 .timeline-position.viewing{color:#975b18;font-weight:600}
