@@ -9,6 +9,7 @@
     "preview": "wrangler dev",
     "deploy": "npm run build && wrangler deploy",
     "test": "tsx --test rack-generator/*.test.ts src/**/*.test.ts",
+    "test:e2e": "node scripts/e2e-runner.mjs",
     "test:logos:browser": "playwright test e2e/logos.spec.ts --workers=1"
   },
   "keywords": [],
