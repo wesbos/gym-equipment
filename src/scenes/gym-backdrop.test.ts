@@ -30,7 +30,12 @@ test('backdrop teardown releases shared buffers and materials exactly once', () 
     if (o instanceof THREE.InstancedMesh) resources.add(o);
   });
   let disposed = 0;
-  for (const resource of resources) resource.addEventListener('dispose', () => disposed++);
+  const onDispose = () => disposed++;
+  for (const resource of resources) {
+    if (resource instanceof THREE.BufferGeometry) resource.addEventListener('dispose', onDispose);
+    else if (resource instanceof THREE.Material) resource.addEventListener('dispose', onDispose);
+    else resource.addEventListener('dispose', onDispose);
+  }
   backdrop.dispose(); backdrop.dispose();
   assert.equal(disposed, resources.size);
   assert.equal(backdrop.group.parent, null);
