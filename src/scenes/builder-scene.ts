@@ -4,6 +4,7 @@ import { GeometryCache, geometryKey } from '../geometry/geometry-cache.ts';
 import { createGymBackdrop } from './gym-backdrop.ts';
 import { PointerGesture } from './pointer-gesture.ts';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
+import { isFloorPart } from '../../rack-generator/floor-registry.ts';
 import { createGymFloor, fitRackShadow } from './gym-floor.ts';
 import { FrameFinishResources, addSteelUVs } from './frame-finishes.ts';
 import { structureCandidates, type StructureCandidate } from '../../rack-generator/structure-candidates.ts';
@@ -424,12 +425,12 @@ export function createBuilderScene(
       store.patch({ proposal: null, placementText: structuralCandidates.length ? 'Hover a post or gap · ESC cancels' : 'No valid adjacent positions · ESC cancels' });
       return;
     }
-    if (part && part !== 'rep-nighthawk') {
+    if (part && !isFloorPart(part)) {
       swapRegions = createSwapRegions(swapCandidates(snapshot.doc, part), instances, snapshot.doc);
       scene.add(swapRegions.root);
     }
     if (!placing && !snapshot.structureChoice && !snapshot.systemChoice) return;
-    if (placing && placing.part !== 'rep-nighthawk') showMounts();
+    if (placing && !isFloorPart(placing.part)) showMounts();
     renderer.domElement.style.cursor = "crosshair";
     if (snapshot.proposal) void renderProposal(snapshot.proposal);
   }
@@ -528,7 +529,7 @@ export function createBuilderScene(
   }
   function updatePreview(event: { clientX: number; clientY: number }) {
     if (!snapshot.placing && !snapshot.structureChoice || snapshot.placing?.rotationOnly) return;
-    if(snapshot.placing?.part === 'rep-nighthawk') { const point=floorPoint(event); if(point) store.previewFloor(point); return; }
+    if(isFloorPart(snapshot.placing?.part)) { const point=floorPoint(event); if(point) store.previewFloor(point); return; }
     if (addingStructure()) { updateStructure(event); return; }
     const candidate = candidateAt(event);
     if (candidate) {
@@ -551,7 +552,7 @@ export function createBuilderScene(
   }
   function dropPlacement(event: { clientX: number; clientY: number }) {
     if (snapshot.placing?.rotationOnly) { store.acceptProposal(); return; }
-    if(snapshot.placing?.part === 'rep-nighthawk') { updatePreview(event); store.acceptProposal(); return; }
+    if(isFloorPart(snapshot.placing?.part)) { updatePreview(event); store.acceptProposal(); return; }
     if (addingStructure()) { commitStructure(); return; }
     if (!candidateAt(event) && !nearestMount(event)) return;
     updatePreview(event);
@@ -579,7 +580,7 @@ export function createBuilderScene(
     if(event.key.toLowerCase()!=='r' || event.ctrlKey || event.metaKey || (event.target instanceof HTMLElement && (/INPUT|SELECT|TEXTAREA/.test(event.target.tagName) || event.target.isContentEditable))) return;
     if (snapshot.systemChoice) return;
     const delta=(event.shiftKey?-1:1)*Math.PI/12;
-    if(snapshot.placing?.part==='rep-nighthawk') {event.preventDefault();store.previewFloor(undefined,delta);return;}
+    if(isFloorPart(snapshot.placing?.part)) {event.preventDefault();store.previewFloor(undefined,delta);return;}
     const mounted = rotationTarget();
     if (mounted && store.rotateMounted(mounted, event.shiftKey ? -1 : 1)) { event.preventDefault(); return; }
     const id=floorDrag?.id ?? (snapshot.selection.length===1?snapshot.selected:null);
@@ -604,11 +605,11 @@ export function createBuilderScene(
     const floorId = floorDrag?.id ?? hoveredId ?? (snapshot.selection.length === 1 ? snapshot.selected : null);
     const floorItem = store.getAppliedDoc().floorItems?.find(i => i.id === floorId);
     const mounted = rotationTarget();
-    if (snapshot.placing?.part !== 'rep-nighthawk' && !floorItem && !mounted) return;
+    if (!isFloorPart(snapshot.placing?.part) && !floorItem && !mounted) return;
     event.preventDefault(); event.stopImmediatePropagation();
     if (!event.deltaY) return;
     const direction = Math.sign(event.deltaY) * (event.shiftKey ? -1 : 1);
-    if (snapshot.placing?.part === 'rep-nighthawk') store.previewFloor(undefined, direction * Math.PI / 12);
+    if (isFloorPart(snapshot.placing?.part)) store.previewFloor(undefined, direction * Math.PI / 12);
     else if (mounted) store.rotateMounted(mounted, direction);
     else if (floorItem) { if (floorDrag) floorDrag.moved = true; store.updateFloor(floorItem.id, { rotation: floorItem.rotation + direction * Math.PI / 12 }); }
   };

@@ -1,4 +1,5 @@
 import type { RackSystem, SystemPartId } from './system-types.ts';
+import type { FloorPartId } from './floor-registry.ts';
 import type { ValidatedLogo } from './logos/types.ts';
 import type { Appearance, MaterialSource } from './appearance.ts';
 import type { Manifold, ManifoldToplevel } from 'manifold-3d';
@@ -10,7 +11,7 @@ export type Vec2 = [number, number];
 export type Vec3 = [number, number, number];
 export type NumericParams = Record<string, number>;
 export type PartParams = NumericParams;
-export type PartId = SystemPartId | 'rep-nighthawk' | 'darko-anchor' | 'darko-dock' | 'darko-j' | 'darko-double-j' | 'darko-double-decker' | 'voltra-sliding' | 'voltra-adaptive' | 'voltra-fixed' | 'upright' | 'crossmember-425' | 'crossmember-725' | 'crossmember-1075' | 'angled-crossmember' | 'offset-crossmember' | 'nameplate' | 'branded-crossmember' | 'branded-crossmember-lite' | 'foot-400' | 'foot-800' | 'pullup-straight' | 'pullup-multigrip' | 'pullup-sphere' | 'safety-box' | 'safety-pin-pipe' | 'safety-webbing' | 'j-hook-standard' | 'j-hook-roller' | 'j-hook-sandwich' | 'spotter-arm' | 'dip-horn' | 'dip-bar-adjustable' | 'landmine' | 'monolift' | 'single-bar-holder' | 'storage-pin-short' | 'storage-pin-long';
+export type PartId = SystemPartId | FloorPartId | 'darko-anchor' | 'darko-dock' | 'darko-j' | 'darko-double-j' | 'darko-double-decker' | 'voltra-sliding' | 'voltra-adaptive' | 'voltra-fixed' | 'upright' | 'crossmember-425' | 'crossmember-725' | 'crossmember-1075' | 'angled-crossmember' | 'offset-crossmember' | 'nameplate' | 'branded-crossmember' | 'branded-crossmember-lite' | 'foot-400' | 'foot-800' | 'pullup-straight' | 'pullup-multigrip' | 'pullup-sphere' | 'safety-box' | 'safety-pin-pipe' | 'safety-webbing' | 'j-hook-standard' | 'j-hook-roller' | 'j-hook-sandwich' | 'spotter-arm' | 'dip-horn' | 'dip-bar-adjustable' | 'landmine' | 'monolift' | 'single-bar-holder' | 'storage-pin-short' | 'storage-pin-long';
 export interface SolidPart extends MaterialSource { name: string; solid: Manifold; color?: string; metalness?: number; roughness?: number }
 export interface StandardOption { value: number; label: string }
 export interface PartDefinition { standardOptions?: Record<string, readonly StandardOption[]>; id: string; name: string; category: string; defaults: NumericParams; build: (api: ManifoldAPI, params: NumericParams, logo?: ValidatedLogo) => SolidPart[]; reference?: { file: string; node: string }; description?: string; /** Laid-out 3MF: keep the builder's Z-up frame (base end down) instead of the smallest-height heuristic. */ printOrientation?: 'standing' }
@@ -28,7 +29,7 @@ export interface CrossmemberTopTarget { orientation?: number; kind: 'crossmember
 export type Target = UprightTarget | CrossmemberTopTarget;
 export interface Accessory { /** Radians about the adapter-defined axis; omitted means zero. */ rotation?: number; id: string; part: PartId; target: Target; paired: boolean; params: NumericParams; spanTo?: string; pairTo?: string; pairedSpanTo?: string; pairTarget?: CrossmemberTopTarget; /** Storage-pin plate stack, root outward; each side of a pair carries it. */ plates?: PlateId[] }
 export interface StructureVariant { part: PartId; params: NumericParams }
-export interface FloorItem { id: string; part: 'rep-nighthawk'; position: Vec2; rotation: number; params: NumericParams }
+export interface FloorItem { id: string; part: FloorPartId; position: Vec2; rotation: number; params: NumericParams }
 export interface RackDoc { floorItems?: FloorItem[]; systems?: RackSystem[]; logo?: ValidatedLogo; appearance?: Appearance; version: 2; uprights: Record<string, UprightNode>; connections: ConnectionEdge[]; profileId?: string; rack: RackDimensions; removed: string[]; structure: Record<string, StructureVariant>; accessories: Accessory[]; nextId: number }
 
 export interface StructureSlot { id: string; part: PartId; connectedTo: UprightId[] }

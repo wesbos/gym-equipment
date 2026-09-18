@@ -1,12 +1,13 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import Module from 'manifold-3d';
-import {addFloorItem, resolveFloorItems, validateFloorItems, floorWarnings, BACKREST_ANGLES, SEAT_ANGLES} from './floor-items.ts';
+import {addFloorItem, resolveFloorItems, validateFloorItems, floorWarnings} from './floor-items.ts';
+import {BACKREST_ANGLES, SEAT_ANGLES} from './floor-parts/nighthawk.ts';
 import {createAssembly,validateAssembly,resizeAssembly,removeInstance,resolveAssembly} from './assembly.ts';
 import {buildNighthawk, nighthawkContacts} from './parts/nighthawk.ts';
 import {resolveMaterial,HARDWARE_FINISHES} from './appearance.ts';
 test('floor items validate, persist independently of graph, and use explicit coordinate conversion',()=>{
- const doc=addFloorItem(createAssembly(),[1300,-900]);doc.floorItems![0].rotation=Math.PI/2;
+ const doc=addFloorItem(createAssembly(),'rep-nighthawk',[1300,-900]);doc.floorItems![0].rotation=Math.PI/2;
  const restored=validateAssembly(JSON.parse(JSON.stringify(doc)));
  assert.deepEqual(restored.floorItems,doc.floorItems);
  assert.deepEqual(resizeAssembly(restored,{width:1200}).floorItems,doc.floorItems);
@@ -19,7 +20,7 @@ test('floor items validate, persist independently of graph, and use explicit coo
  assert.throws(()=>validateFloorItems([doc.floorItems![0],doc.floorItems![0]]));
 });
 test('suggestions find room and collisions warn without blocking edits',()=>{
- let doc=addFloorItem(createAssembly());doc=addFloorItem(doc);assert.equal(floorWarnings(doc).length,0);
+ let doc=addFloorItem(createAssembly(),'rep-nighthawk');doc=addFloorItem(doc,'rep-nighthawk');assert.equal(floorWarnings(doc).length,0);
  doc.floorItems![1].position=[...doc.floorItems![0].position];assert.equal(floorWarnings(doc).length,1);
  doc.floorItems![0].position=[0,0];assert.ok(floorWarnings(validateAssembly(doc)).some(w=>w.ids.includes('rack')));
 });

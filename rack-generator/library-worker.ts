@@ -8,6 +8,7 @@ import Module from "manifold-3d";
 import wasmUrl from "manifold-3d/manifold.wasm?url";
 import { definitions } from './catalog.ts';
 import { isSystemPart } from './system-types.ts';
+import { floorPart, validateFloorParams } from './floor-registry.ts';
 const ready = Module({ locateFile: () => wasmUrl }).then((api) => {
   api.setup();
   return api;
@@ -21,14 +22,16 @@ self.onmessage = async ({ data }: MessageEvent<LibraryWorkerRequest>) => {
   try {
     const def = definitions.find((d) => d.id === data.part);
     if (!def) throw new Error("Unknown part");
-    const params = { ...def.defaults, ...data.params };
-    for (const [key, value] of Object.entries(params))
+    const params = { ...def.defaults, ...data.params }, floor = floorPart(data.part);
+    // Floor parts carry their own option lists (negative/zero values allowed where listed).
+    if (floor) validateFloorParams(floor, data.params);
+    else for (const [key, value] of Object.entries(params))
       if (
         !Number.isFinite(value) ||
-        (value < 0 && !((isSystemPart(data.part) && key === "angle" && value === -5) || (data.part === "rep-nighthawk" && key === "seatAngle" && value === -15))) ||
+        (value < 0 && !(isSystemPart(data.part) && key === "angle" && value === -5)) ||
         value > 4000 ||
         (value === 0 &&
-          !isSystemPart(data.part) && !["backrestAngle", "seatAngle", "cornerRadius", "benchStart", "rise", "offset", "sag"].includes(
+          !isSystemPart(data.part) && !["cornerRadius", "benchStart", "rise", "offset", "sag"].includes(
             key
           ))
       )

@@ -1,7 +1,8 @@
 import { DocumentHistory, cleanDocument, diffDocuments, applyOps, parseSession, type TimelineData, type TimelineSnapshot, type HistoryMetadata, type SessionDocument } from './history.ts';
 import { systemProposal } from '../../rack-generator/system-proposal.ts';
 import { isSystemPart, SYSTEM_DEFAULTS, type SystemPartId } from '../../rack-generator/system-types.ts';
-import { addFloorItem, resolveFloorItems, floorWarnings } from '../../rack-generator/floor-items.ts';
+import { addFloorItem, resolveFloorItems, floorWarnings, moveFloorGroup } from '../../rack-generator/floor-items.ts';
+import { floorPart, isFloorPart } from '../../rack-generator/floor-registry.ts';
 import { resetAppearanceField } from '../../rack-generator/appearance-reset.ts';
 import type { FrameFinish } from '../../rack-generator/appearance.ts';
 import { addsStructure } from '../../rack-generator/structure-candidates.ts';
@@ -172,7 +173,9 @@ export class BuilderStore {
     if (patch.selected !== undefined && patch.selection === undefined) patch.selection = patch.selected ? [patch.selected] : [];
     if (patch.resolved && !patch.selection) patch.selection = this.state.selection.filter(id => patch.resolved!.some(r => r.id === id));
     if (patch.selection) patch.selected = patch.selection.at(-1) ?? null;
-    if (patch.paired !== undefined && patch.paired !== this.state.paired && this.state.placing && !patch.placing) {
+    const pairToggle = patch.paired !== undefined && patch.paired !== this.state.paired && this.state.placing && !patch.placing;
+    if (pairToggle && isFloorPart(this.state.placing!.part)) { if (!this.state.placing!.movingId) patch = { ...patch, ...this.floorProposal(this.state.placing!.part, null, patch.paired) }; }
+    else if (pairToggle && this.state.placing) {
       const { part } = this.state.placing;
       const { doc, movingId } = this.placementContext(patch.paired);
       let target = this.state.proposal?.target;
@@ -542,7 +545,7 @@ export class BuilderStore {
       this.patch({ placing: { ...placing, rotationOnly: true } });
     }
     const proposal = this.state.proposal;
-    if (!proposal || this.state.placing?.part === 'rep-nighthawk') return false;
+    if (!proposal || isFloorPart(this.state.placing?.part)) return false;
     this.act(() => {
       const mode = rotationMode(proposal.doc, proposal.ownerId);
       const doc = rotateAccessory(proposal.doc, proposal.ownerId, direction * mode.step);
@@ -589,10 +592,9 @@ export class BuilderStore {
       this.acceptProposal();
       return;
     }
-    if (part === 'rep-nighthawk') {
-      const doc = movingId ? structuredClone(this.state.doc) : addFloorItem(this.state.doc);
-      const item = movingId ? doc.floorItems!.find(i=>i.id===movingId)! : doc.floorItems!.at(-1)!;
-      this.patch({ selected:null, placing:{part,movingId}, structureChoice:null, proposal:{doc,entries:resolveFloorItems([item]),ownerId:item.id,label:'Floor placement'},placementText:'Click floor to place · R rotates · Alt disables snap' });
+    if (isFloorPart(part)) {
+      const paired = !movingId && !!floorPart(part)?.pair;
+      this.patch({ selected:null, placing:{part,movingId}, structureChoice:null, paired, ...this.floorProposal(part, movingId, paired) });
       return;
     }
     // Each new placement starts from the part's own default, not the last choice.
@@ -610,13 +612,18 @@ export class BuilderStore {
       this.patch({ proposal: { doc: this.state.doc, entries, ownerId: movingId, target, label: 'Move attachment' }, placementText: 'Choose a mount · Click to place · ESC cancels' });
     }
   };
+  /** Staged floor ghost: the moving item, or a fresh unit (plus its pair for pairable parts). */
+  private floorProposal(part: PartId, movingId: string | null, paired = this.state.paired) {
+    const doc = movingId ? structuredClone(this.state.doc) : addFloorItem(this.state.doc, part, undefined, paired);
+    const items = movingId ? doc.floorItems!.filter(i=>i.id===movingId) : doc.floorItems!.slice(this.state.doc.floorItems?.length ?? 0);
+    return { proposal:{doc,entries:resolveFloorItems(items),ownerId:items[0].id,label:'Floor placement'}, placementText:'Click floor to place · R rotates · Alt disables snap' };
+  }
   previewFloor = (position?: [number,number], rotationDelta = 0) => {
     const proposal=this.state.proposal;
-    if(this.state.placing?.part !== 'rep-nighthawk' || !proposal) return;
-    const doc=structuredClone(proposal.doc), item=doc.floorItems!.find(i=>i.id===proposal.ownerId)!;
-    if(position) item.position=position;
-    item.rotation+=rotationDelta;
-    this.patch({proposal:{...proposal,doc,entries:resolveFloorItems([item])},placementText:floorWarnings(doc).some(w=>w.ids.includes(item.id)) ? 'Overlap warning · Click to place anyway' : 'Click floor to place · R rotates · Alt disables snap'});
+    if(!isFloorPart(this.state.placing?.part) || !proposal) return;
+    const doc=structuredClone(proposal.doc), ids=proposal.entries.map(e=>e.id), items=doc.floorItems!.filter(i=>ids.includes(i.id));
+    moveFloorGroup(items, position, rotationDelta);
+    this.patch({proposal:{...proposal,doc,entries:resolveFloorItems(items)},placementText:floorWarnings(doc).some(w=>w.ids.some(id=>ids.includes(id))) ? 'Overlap warning · Click to place anyway' : 'Click floor to place · R rotates · Alt disables snap'});
   };
   updateFloor = (id:string, patch:Partial<import('../../rack-generator/types.ts').FloorItem>) => {
     const doc=structuredClone(this.state.doc),item=doc.floorItems?.find(i=>i.id===id);

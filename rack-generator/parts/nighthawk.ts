@@ -1,5 +1,6 @@
 import type { CrossSection, Manifold, ManifoldAPI, NumericParams, PartDefinition, SolidPart, Vec3 } from '../types.ts';
-import { BACKREST_ANGLES, SEAT_ANGLES, NIGHTHAWK_DEFAULTS } from '../floor-items.ts';
+import { BACKREST_ANGLES, SEAT_ANGLES, NIGHTHAWK } from '../floor-parts/nighthawk.ts';
+import { floorDefinition } from '../floor-part.ts';
 export const NIGHTHAWK_PIVOT: Vec3 = [0, -272, 366];
 /** Identical pivot/rotation to the pad and its steel rail, including local Z offset. */
 export function articulateBenchPoint(point: Vec3, degrees: number): Vec3 {
@@ -107,4 +108,4 @@ export function buildNighthawk(api: ManifoldAPI, p: NumericParams): SolidPart[] 
     success=true;return out;
   }finally{const keep=new Set(success?out.map(p=>p.solid):[]);for(const s of owned.reverse())if(!keep.has(s as Manifold))s.delete();}
 }
-export const definitions:PartDefinition[]=[{id:'rep-nighthawk',name:'REP Nighthawk adjustable bench',category:'Floor items',defaults:NIGHTHAWK_DEFAULTS,build:buildNighthawk,standardOptions:{backrestAngle:BACKREST_ANGLES.map(value=>({value,label:`${value}°`})),seatAngle:SEAT_ANGLES.map(value=>({value,label:`${value}°`}))},description:'REP Fitness Nighthawk (AB-4102). Independent reconstruction from published dimensions; REP trademarks belong to REP Fitness.'}];
+export const definitions:PartDefinition[]=[floorDefinition(NIGHTHAWK,buildNighthawk)];
