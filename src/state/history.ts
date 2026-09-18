@@ -38,7 +38,14 @@ export function diffDocuments(before: unknown, after: unknown, path: Segment[] =
   if (record(before) && record(after)) return [...new Set([...Object.keys(before), ...Object.keys(after)])].flatMap(key => diffDocuments(before[key], after[key], [...path, key]));
   return [{ path, ...(before !== undefined ? { before: structuredClone(before) } : {}), ...(after !== undefined ? { after: structuredClone(after) } : {}) }];
 }
-export function applyOps(input: RackDoc, ops: readonly HistoryOp[], reverse = false, strict = false): RackDoc {
+/** Merge newly introduced optional containers only for a view-origin edit, never replay. */
+function mergeIntroduced(current: unknown, intended: unknown): unknown {
+  if (!record(current) || !record(intended)) return structuredClone(intended);
+  const result = structuredClone(current);
+  for (const [key, value] of Object.entries(intended)) result[key] = mergeIntroduced(result[key], value);
+  return result;
+}
+export function applyOps(input: RackDoc, ops: readonly HistoryOp[], reverse = false, strict = false, rebase = false): RackDoc {
   const doc = structuredClone(input);
   for (const op of reverse ? [...ops].reverse() : ops) {
     let node: any = doc;
@@ -48,7 +55,10 @@ export function applyOps(input: RackDoc, ops: readonly HistoryOp[], reverse = fa
     }
     const last = op.path.at(-1)!;
     const key = typeof last === 'string' ? last : Array.isArray(node) ? node.findIndex(x => x.id === last.id) : -1;
-    const previous = reverse ? op.after : op.before, value = reverse ? op.before : op.after;
+    const previous = reverse ? op.after : op.before;
+    let value = reverse ? op.before : op.after;
+    if (rebase && previous === undefined && value !== undefined) value = mergeIntroduced(node[key], value);
+    if (rebase && typeof last !== 'string' && Number(key) < 0 && previous !== undefined && value !== undefined) throw Error('History edit target no longer exists.');
     if (strict && !equal(node[key], previous)) throw Error('Invalid timeline operation precondition.');
     if (typeof last !== 'string') {
       if (!Array.isArray(node)) throw Error('Invalid timeline owner path.');

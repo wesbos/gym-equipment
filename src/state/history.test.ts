@@ -139,3 +139,17 @@ test('malformed timeline input fails atomically; legacy embedded history never r
   assert.equal('history' in store.getSnapshot().doc, false);
   assert.ok(!JSON.stringify(JSON.parse(store.exportJSON()).timeline.events).includes('bos-strength-session'));
 });
+
+test('old-view optional appearance creation preserves later finish fields in that container', async () => {
+  const store = new BuilderStore(new MemoryStorage()); await store.ready;
+  assert.equal(store.getSnapshot().doc.appearance, undefined);
+  store.edit(doc => ({ ...doc, appearance: { frameFinish: 'stainless', hardwareFinish: 'gold' } }));
+  const latest = store.getAppliedDoc();
+  store.seekHistory(0);
+  store.commit({ ...store.getSnapshot().doc, appearance: { frameColor: '#2244aa' } });
+  assert.deepEqual(store.getAppliedDoc().appearance, { ...latest.appearance, frameColor: '#2244aa' });
+  store.history('undo'); assert.deepEqual(store.getAppliedDoc(), latest);
+  store.history('redo');
+  const roundtrip = parseSession(JSON.parse(store.exportJSON()));
+  assert.deepEqual(roundtrip.doc, store.getAppliedDoc());
+});
