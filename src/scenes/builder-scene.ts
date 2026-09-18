@@ -1,4 +1,5 @@
 import { GeometryCache, geometryKey } from '../geometry/geometry-cache.ts';
+import { createGymBackdrop } from './gym-backdrop.ts';
 import { PointerGesture } from './pointer-gesture.ts';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { createGymFloor, fitRackShadow } from './gym-floor.ts';
@@ -62,8 +63,8 @@ export function createBuilderScene(
     selectionBoxes: THREE.Box3Helper[] = [];
   let mountPoints: Mount[] = [];
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color("#e9ede7");
-  scene.fog = new THREE.Fog("#e9ede7", 10000, 18000);
+  scene.background = new THREE.Color("#343b38");
+  scene.fog = new THREE.Fog("#343b38", 18000, 42000);
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     preserveDrawingBuffer: true,
@@ -88,6 +89,8 @@ export function createBuilderScene(
   }
   const floor = createGymFloor(renderer.capabilities.getMaxAnisotropy());
   scene.add(floor.mesh);
+  const backdrop = createGymBackdrop();
+  scene.add(backdrop.group);
   const raycaster = new THREE.Raycaster(),
     pointer = new THREE.Vector2(),
     instances = new Map<string, THREE.Group>();
@@ -735,6 +738,8 @@ export function createBuilderScene(
     if (disposed) return;
     frame = requestAnimationFrame(animate);
     controls.update();
+    backdrop.follow(camera, controls.target);
+    camera.far = Math.max(40000, camera.position.distanceTo(controls.target) * 4);
     camera.near = Math.max(
       0.5,
       camera.position.distanceTo(controls.target) / 200,
@@ -825,6 +830,7 @@ export function createBuilderScene(
       releaseAssembly();
       cache.dispose();
       floor.dispose();
+      backdrop.dispose();
 
       finishes.dispose();
       lighting.dispose();
