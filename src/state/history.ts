@@ -45,6 +45,17 @@ function mergeIntroduced(current: unknown, intended: unknown): unknown {
   for (const [key, value] of Object.entries(intended)) result[key] = mergeIntroduced(result[key], value);
   return result;
 }
+/** Removing an old optional map removes its known fields, not newer siblings. */
+function removeViewedFields(current: unknown, viewed: unknown): unknown {
+  if (!record(current) || !record(viewed)) return undefined;
+  const result = structuredClone(current);
+  for (const [key, value] of Object.entries(viewed)) {
+    const remaining = removeViewedFields(result[key], value);
+    if (remaining === undefined) delete result[key];
+    else result[key] = remaining;
+  }
+  return Object.keys(result).length ? result : undefined;
+}
 export function applyOps(input: RackDoc, ops: readonly HistoryOp[], reverse = false, strict = false, rebase = false): RackDoc {
   const doc = structuredClone(input);
   for (const op of reverse ? [...ops].reverse() : ops) {
@@ -57,6 +68,7 @@ export function applyOps(input: RackDoc, ops: readonly HistoryOp[], reverse = fa
     const key = typeof last === 'string' ? last : Array.isArray(node) ? node.findIndex(x => x.id === last.id) : -1;
     const previous = reverse ? op.after : op.before;
     let value = reverse ? op.before : op.after;
+    if (rebase && typeof last === 'string' && value === undefined && record(previous)) value = removeViewedFields(node[key], previous);
     if (rebase && previous === undefined && value !== undefined) value = mergeIntroduced(node[key], value);
     if (rebase && typeof last !== 'string' && Number(key) < 0 && previous !== undefined && value !== undefined) throw Error('History edit target no longer exists.');
     if (strict && !equal(node[key], previous)) throw Error('Invalid timeline operation precondition.');

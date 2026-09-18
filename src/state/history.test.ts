@@ -153,3 +153,26 @@ test('old-view optional appearance creation preserves later finish fields in tha
   const roundtrip = parseSession(JSON.parse(store.exportJSON()));
   assert.deepEqual(roundtrip.doc, store.getAppliedDoc());
 });
+
+test('old-view optional container removal preserves later finish and nested override fields', async () => {
+  for (const removeWholeAppearance of [true, false]) {
+    const store = new BuilderStore(new MemoryStorage()); await store.ready;
+    store.edit(doc => ({ ...doc, appearance: { frameColor: '#aa2222', overrides: { 'front-left': '#aa2222' } } }));
+    store.edit(doc => ({ ...doc, appearance: { ...doc.appearance, hardwareFinish: 'oxide',
+      overrides: { ...doc.appearance?.overrides, 'front-right': '#2244aa' } } }));
+    const latest = store.getAppliedDoc();
+    store.seekHistory(1);
+    const oldView = structuredClone(store.getSnapshot().doc);
+    if (removeWholeAppearance) delete oldView.appearance;
+    else delete oldView.appearance!.overrides;
+    store.commit(oldView);
+    assert.deepEqual(store.getAppliedDoc().appearance, {
+      ...(removeWholeAppearance ? {} : { frameColor: '#aa2222' }),
+      overrides: { 'front-right': '#2244aa' }, hardwareFinish: 'oxide',
+    });
+    const edited = store.getAppliedDoc();
+    store.history('undo'); assert.deepEqual(store.getAppliedDoc(), latest);
+    store.history('redo'); assert.deepEqual(store.getAppliedDoc(), edited);
+    assert.deepEqual(parseSession(JSON.parse(store.exportJSON())).doc, edited);
+  }
+});
