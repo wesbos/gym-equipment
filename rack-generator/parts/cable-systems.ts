@@ -431,7 +431,7 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
         const at = wheel.center.map((v, i) => v + n[i] * 19) as Vec3;
         const angle = (Math.atan2(n[1], n[0]) * 180) / Math.PI;
         const h = Math.abs(railZ - at[2]) + 18;
-        const horizontal = Math.abs(n[2]) > 0.99;
+        const horizontal = v2 && Math.abs(n[2]) > 0.99;
         const web = horizontal
           ? g.box([24, 24, h], [at[0], at[1], (railZ + at[2]) / 2])
           : g.move(g.rotate(g.box([6, 24, h]), [0, 0, angle]), [
