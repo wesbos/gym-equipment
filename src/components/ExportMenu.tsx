@@ -118,7 +118,8 @@ export function ExportMenu({ store, exportGLB, loading, empty }: {
         <p>One file · Separate named objects · Millimetres · 1:{scale} scale</p>
         <dl className="export-print-facts">
           <dt>Colors</dt><dd>Solid colors; textures omitted</dd>
-          <dt>Profile</dt><dd>Placeholder: 256 mm bed · 0.4 mm nozzle · PLA</dd>
+          <dt>Profile</dt><dd>Placeholder 256 mm bed · 0.4 mm nozzle 0.20 mm Standard process · PLA</dd>
+          <dt>Detail</dt><dd>Station numbers and sub-nozzle stencil cuts omitted</dd>
         </dl>
         <p>Select printer and filaments.</p>
         <a href="https://github.com/wesbos/gym-equipment/blob/main/docs/print-export.md" target="_blank" rel="noreferrer">Export details ↗</a>

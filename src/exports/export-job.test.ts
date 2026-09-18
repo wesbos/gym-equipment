@@ -29,7 +29,7 @@ function setup(exportGLB = async () => new Uint8Array([1, 2, 3]).buffer) {
   return { job, workers, downloads, statuses, busy, completed: () => completed };
 }
 const complete = (bytes = new Uint8Array([8, 4, 2]), scale: PrintScale = 10) => ({
-  type: 'complete', bytes, report: { scale, scaleFactor: 1 / scale, plates: [], excludedInstances: [], unit: 'millimeter', layout: 'laid-out', instances: 4, volumes: 8, triangles: 12, occludedComponents: [], overlapPolicy: '', textureLimitation: '', vendorCredits: [], parts: [] },
+  type: 'complete', bytes, report: { scale, scaleFactor: 1 / scale, plates: [], excludedInstances: [], unit: 'millimeter', layout: 'laid-out', instances: 4, volumes: 8, triangles: 12, occludedComponents: [], overlapPolicy: '', printDetail: '', textureLimitation: '', vendorCredits: [], parts: [] },
 }) as Extract<PrintResponse, { type: 'complete' }>;
 
 test('cancel terminates worker; queued callbacks cannot download or disrupt a retry', async () => {
