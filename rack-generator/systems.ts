@@ -277,10 +277,15 @@ export function systemCollisionBoxes(
         lengthwise ? 330 : 130,
         770,
       ),
-      box(post, 0, p.trolley, p.tube+20, p.tube+20, 175),
+      box(post, 0, p.trolley, p.tube+20, p.tube+20, part === "cable-ares2" ? 220 : 175),
       ...(part === "cable-kraken" ? [post-s*70,post+s*70] : [post+(part === "cable-ares2"?s*75:ares?-s*10:-s*70)]).flatMap(x=>[
-        box(x,-p.tube/2-150,p.trolley,46,96,96),
-        box(x,-p.tube/2-250,p.trolley+(ares?40:-40)-55,150,20,100),
+        ...(part === "cable-ares2" ? [
+          box(x,-20,p.trolley-5,56,136,200),
+          box(x,-80,p.trolley-160,156,32,124),
+        ] : [
+          box(x,-p.tube/2-150,p.trolley,46,96,96),
+          box(x,-p.tube/2-250,p.trolley+(ares?40:-40)-55,150,20,100),
+        ]),
       ]),
     ];
   });
