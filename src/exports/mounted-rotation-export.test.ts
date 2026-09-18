@@ -1,0 +1,27 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import Module from 'manifold-3d';
+import {Euler,Vector3} from 'three';
+import {strFromU8,unzipSync} from 'fflate';
+import {XMLParser} from 'fast-xml-parser';
+import {createAssembly,addAccessory,setAccessoryRotation,resolveAssembly} from '../../rack-generator/assembly.ts';
+import {exportPrint3MF} from './print-3mf.ts';
+import type {PartDefinition} from '../../rack-generator/types.ts';
+const api=await Module();api.setup();
+test('assembled 3MF bakes shaft roll and mount yaw into persisted mesh coordinates',()=>{
+ const base=addAccessory(createAssembly({emptyAccessories:true}),'storage-pin-short',{hole:8,face:'back'},false);
+ const id=base.accessories[0].id,doc=JSON.parse(JSON.stringify(setAccessoryRotation(base,id,1.1)));
+ const entry=resolveAssembly(doc).find(i=>i.id===id)!;
+ const definitions:PartDefinition[]=[...new Set(resolveAssembly(doc).map(i=>i.part))].map(part=>({id:part,name:part,category:'test',defaults:{},build:()=>[{name:part,role:'frame',solid:api.Manifold.cube(part==='storage-pin-short'?[12,24,60]:[1,1,1])}]}));
+ const result=exportPrint3MF(api,doc,definitions,{layout:'assembled',scale:20});
+ const xml=strFromU8(unzipSync(result.bytes)['3D/3dmodel.model']);
+ const parsed=new XMLParser({ignoreAttributes:false,attributeNamePrefix:''}).parse(xml);
+ const object=parsed.model.resources.object.find((o:{name:string;mesh?:unknown})=>o.name==='storage-pin-short'&&o.mesh);
+ assert.ok(object,'shaft mesh retained in archive');
+ const points=object.mesh.vertices.vertex.map((v:{x:string;y:string;z:string})=>[+v.x,+v.y,+v.z]);
+ const dimensions=[0,1,2].map(i=>Math.max(...points.map((p:number[])=>p[i]))-Math.min(...points.map((p:number[])=>p[i])));
+ const corners=[0,12].flatMap(x=>[0,24].flatMap(y=>[0,60].map(z=>new Vector3(x,y,z).applyEuler(new Euler(...entry.rotation)).toArray())));
+ const expected=[0,1,2].map(i=>(Math.max(...corners.map(p=>p[i]))-Math.min(...corners.map(p=>p[i])))/20);
+ expected.forEach((v,i)=>assert.ok(Math.abs(v-dimensions[i])<1e-6));
+ assert.ok(Math.abs(dimensions[2]-3)>.1,'roll must change vertical extent');
+});

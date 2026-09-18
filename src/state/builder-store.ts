@@ -4,7 +4,7 @@ import type { FrameFinish } from '../../rack-generator/appearance.ts';
 import { addsStructure } from '../../rack-generator/structure-candidates.ts';
 import { resetPart } from '../../rack-generator/reset.ts';
 import { removeSelection, selectionOwners, sharedFields, type PhysicalInstanceId, type SelectionGesture } from './selection.ts';
-import { structureProposalAt, proposalCollision, suggestPlacement, type PlacementProposal } from '../../rack-generator/placement-proposals.ts';
+import { structureProposalAt, proposalAt, proposalCollision, suggestPlacement, type PlacementProposal } from '../../rack-generator/placement-proposals.ts';
 import {
   LocalConfigStorage,
   type ConfigStorage,
@@ -20,6 +20,10 @@ import {
   getPartPlacementInfo,
   addAccessory,
   moveAccessory,
+  unpairAccessory,
+  rotationMode,
+  rotateAccessory,
+  setAccessoryRotation,
 } from "../../rack-generator/assembly.ts";
 import type {
   RackDoc,
@@ -27,6 +31,7 @@ import type {
   PartId,
   PartDefinition,
   Target,
+  Mount,
 } from "../../rack-generator/types.ts";
 export type CatalogPart = Omit<PartDefinition, "build">;
 export interface BuilderSnapshot {
@@ -45,7 +50,8 @@ export interface BuilderSnapshot {
   /** Last physical ID, for single-inspector compatibility. */
   selected: string | null;
   definitions: CatalogPart[];
-  placing: { part: PartId; movingId: string | null } | null;
+  placing: { part: PartId; movingId: string | null; physicalId?: string; rotationOnly?: boolean; rotation?: number } | null;
+  structureMoveId: string | null;
   structureChoice: PartId | null;
   structureMode: "add" | "swap";
   paired: boolean;
@@ -101,6 +107,7 @@ export class BuilderStore {
       definitions: [],
       placing: null,
       structureChoice: null,
+      structureMoveId: null,
       structureMode: "add",
       paired: true,
       status,
@@ -151,8 +158,15 @@ export class BuilderStore {
     if (patch.resolved && !patch.selection) patch.selection = this.state.selection.filter(id => patch.resolved!.some(r => r.id === id));
     if (patch.selection) patch.selected = patch.selection.at(-1) ?? null;
     if (patch.paired !== undefined && patch.paired !== this.state.paired && this.state.placing && !patch.placing) {
-      const { part, movingId } = this.state.placing;
-      const result = suggestPlacement(this.state.doc, part, patch.paired, movingId);
+      const { part } = this.state.placing;
+      const { doc, movingId } = this.placementContext(patch.paired);
+      let target = this.state.proposal?.target;
+      if (!patch.paired && this.state.proposal?.label === 'Move attachment') {
+        const item = doc.accessories.find(a => a.id === movingId);
+        const piece = this.state.resolved.find(r => r.id === this.state.placing!.physicalId);
+        if (item && piece?.mount) target = { ...piece.mount, ...item.target } as Mount;
+      }
+      const result = target ? this.mountProposal(target, patch.paired) : suggestPlacement(doc, part, patch.paired, movingId);
       patch = { ...patch, proposal: result.proposal, placementText: result.proposal ? `Suggested: ${result.proposal.label}` : `Doesn't fit: ${result.reason}` };
     }
     if (patch.doc || patch.structureMode !== undefined && !("proposal" in patch) || patch.placing === null && patch.structureChoice === null) patch.proposal = null;
@@ -374,7 +388,7 @@ export class BuilderStore {
       if (toggle) selection = [...new Set([...this.state.selection, ...selection])];
     } else if (physicalId && toggle) selection = this.state.selection.includes(physicalId)
       ? this.state.selection.filter(item => item !== physicalId) : [...this.state.selection, physicalId];
-    this.patch({ placing: null, proposal: null, structureChoice: null, selection, selectionAnchor: gesture.shiftKey ? this.state.selectionAnchor : physicalId });
+    this.patch({ placing: null, proposal: null, structureChoice: null, structureMoveId: null, selection, selectionAnchor: gesture.shiftKey ? this.state.selectionAnchor : physicalId });
   };
   selectMany = (ids: readonly PhysicalInstanceId[], additive = false) => {
     if (this.state.placing || this.state.structureChoice) return;
@@ -457,8 +471,63 @@ export class BuilderStore {
     this.selectMany(this.state.resolved.filter(r => newOwners.includes(r.ownerId)).map(r => r.id));
     this.status('Copies added at original mounts. Select a copy to move it.');
   };
+  /** Split only in the staged document; cancel and one undo preserve the original pair. */
+  placementContext = (paired = this.state.paired) => {
+    const { placing, doc } = this.state;
+    const owner = doc.accessories.find(a => a.id === placing?.movingId);
+    if (!owner?.paired || paired) return { doc, movingId: placing?.movingId ?? null };
+    const pieces = this.state.resolved.filter(r => r.ownerId === owner.id);
+    const next = unpairAccessory(doc, owner.id);
+    const movingId = pieces[1]?.id === placing?.physicalId ? next.accessories.at(-1)!.id : owner.id;
+    return { doc: next, movingId };
+  };
+  private mountProposal(target: Mount, paired = this.state.paired) {
+    try {
+      const { doc, movingId } = this.placementContext(paired);
+      const angle = this.state.placing?.rotation;
+      const base = movingId && angle !== undefined ? setAccessoryRotation(doc, movingId, angle) : doc;
+      const proposal = proposalAt(base, this.state.placing!.part, target, paired, movingId);
+      const reason = proposalCollision(resolveAssembly(proposal.doc), proposal);
+      return { proposal: reason ? null : proposal, reason: reason ?? '' };
+    } catch (error) { return { proposal: null, reason: (error as Error).message }; }
+  }
+  previewMount = (target: Mount) => {
+    const result = this.mountProposal(target);
+    this.patch({ proposal: result.proposal, placementText: result.proposal ? `${result.proposal.label} · Click to place · ESC cancels` : `Won’t fit: ${result.reason}` });
+  };
+  rotateMounted = (id: string, direction = 1) => {
+    const ownerId = this.ownerOf(id)!;
+    if (!rotationMode(this.state.doc, ownerId).supported) return false;
+    if (!this.state.placing) {
+      this.pickup(id);
+      const placing = this.getSnapshot().placing;
+      if (!placing) return false;
+      this.patch({ placing: { ...placing, rotationOnly: true } });
+    }
+    const proposal = this.state.proposal;
+    if (!proposal || this.state.placing?.part === 'rep-nighthawk') return false;
+    this.act(() => {
+      const mode = rotationMode(proposal.doc, proposal.ownerId);
+      const doc = rotateAccessory(proposal.doc, proposal.ownerId, direction * mode.step);
+      const entries = resolveAssembly(doc).filter(r => r.ownerId === proposal.ownerId);
+      const next = { ...proposal, doc, entries };
+      const collision = proposalCollision(resolveAssembly(doc), next);
+      this.patch({ placing: { ...this.state.placing!, rotation: doc.accessories.find(a => a.id === proposal.ownerId)!.rotation }, proposal: next, placementText: `${mode.label} · ${collision ? 'Overlap warning · ' : ''}Click to apply · ESC cancels` });
+    });
+    return true;
+  };
+  pickup = (physicalId: string) => {
+    const item = this.state.resolved.find(r => r.id === physicalId);
+    if (!item) return;
+    if (item.kind === 'structure') {
+      this.select(item.id);
+      this.patch({ structureMoveId: item.ownerId });
+      return;
+    }
+    if (item.kind === 'floor-item' || this.state.doc.accessories.some(a => a.id === item.ownerId)) this.startPlacement(item.part, item.ownerId, item.id);
+  };
   cancelPlacement = () => this.patch({ placing: null, structureChoice: null });
-  startPlacement = (part: PartId, movingId: string | null = null) => {
+  startPlacement = (part: PartId, movingId: string | null = null, physicalId = this.state.selected ?? undefined) => {
     if (addsStructure(part)) {
       this.patch({ selected: null, placing: null, structureChoice: part, structureMode: 'add', proposal: null, selectionTool: false });
       return;
@@ -477,9 +546,15 @@ export class BuilderStore {
     const result = suggestPlacement(this.state.doc, part, paired, movingId);
     const info = getPartPlacementInfo(part, this.state.doc);
     const structural = part === 'upright' || !!info?.slots?.length;
-    this.patch({ selected: null, placing: structural ? null : { part, movingId }, structureChoice: structural ? part : null,
+    this.patch({ selected: null, placing: structural ? null : { part, movingId, physicalId, rotation: this.state.doc.accessories.find(a => a.id === movingId)?.rotation }, structureChoice: structural ? part : null,
       paired, structureMode: "swap", proposal: result.proposal,
       placementText: result.proposal ? `Suggested: ${result.proposal.label}` : `Doesn't fit: ${result.reason}` });
+    if (movingId) {
+      const entries = this.state.resolved.filter(r => r.ownerId === movingId);
+      const item = this.state.doc.accessories.find(a => a.id === movingId)!;
+      const target = entries[0]?.mount ? { ...entries[0].mount, ...item.target } as Mount : undefined;
+      this.patch({ proposal: { doc: this.state.doc, entries, ownerId: movingId, target, label: 'Move attachment' }, placementText: 'Choose a mount · Click to place · ESC cancels' });
+    }
   };
   previewFloor = (position?: [number,number], rotationDelta = 0) => {
     const proposal=this.state.proposal;
@@ -507,10 +582,11 @@ export class BuilderStore {
     this.select(proposal.ownerId);
   });
   placementDoc = (target: Target) => {
-    const { placing, doc, paired } = this.state;
+    const { placing, paired } = this.state;
+    const { doc, movingId } = this.placementContext();
     if (!placing) throw new Error("Select a part first.");
-    return placing.movingId
-      ? moveAccessory(doc, placing.movingId, target, paired)
+    return movingId
+      ? moveAccessory(doc, movingId, target, paired)
       : addAccessory(doc, placing.part, target, paired);
   };
   importJSON = (text: string) => {

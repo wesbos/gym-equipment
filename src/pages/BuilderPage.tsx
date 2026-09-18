@@ -1,3 +1,4 @@
+import { rotationMode } from '../../rack-generator/assembly.ts';
 import { CableSmithControls } from '../components/CableSmithControls.tsx';
 import { isSystemPart } from '../../rack-generator/system-types.ts';
 import { FloorInspector } from '../components/FloorInspector.tsx';
@@ -170,7 +171,7 @@ function Inspector({ store }: { store: BuilderStore }) {
       <>
         <h2 id="selection-title">Rack settings</h2>
         <RackPresets store={store} />
-        <TopologyEditor key={JSON.stringify(doc)} doc={doc} store={store} selected={ownerId} />
+        <TopologyEditor key={JSON.stringify(doc)} doc={doc} store={store} selected={ownerId} moveRequested={state.structureMoveId === ownerId} />
         <form id="frame-form" onSubmit={e => { e.preventDefault(); store.endGesture(); }}>
           {(['height', 'width', 'depth'] as const).map(key => {
             const factor = 1;
@@ -220,7 +221,7 @@ function Inspector({ store }: { store: BuilderStore }) {
   return (
     <>
       <h2 id="selection-title">{nameOf(part)}</h2>
-      <TopologyEditor key={JSON.stringify(doc)} doc={doc} store={store} selected={ownerId} />
+      <TopologyEditor key={JSON.stringify(doc)} doc={doc} store={store} selected={ownerId} moveRequested={state.structureMoveId === ownerId} />
       <div id="inspector" className="inspector-fields">
         <form
           className="selection-form"
@@ -341,6 +342,10 @@ function Inspector({ store }: { store: BuilderStore }) {
               </p>
             </>
           )}
+          {entry && <div className="rotation-controls">
+            <p className="note">{rotationMode(doc, entry.id).reason}</p>
+            {rotationMode(doc, entry.id).supported && <button type="button" onClick={() => store.rotateMounted(selected ?? entry.id)}>{rotationMode(doc, entry.id).label} · R / scroll</button>}
+          </div>}
           {entry && <VendorControls store={store} entry={entry} />}
           <VendorCredit part={part} />
           {fields.map((field) => (
@@ -634,7 +639,8 @@ export default function BuilderPage() {
                 {state.placementText ||
                   `Place ${nameOf(state.placing?.part ?? state.structureChoice!)}`}
               </span>
-              {!(state.structureChoice && state.structureMode === "add") && <button id="accept-placement" disabled={!state.proposal} onClick={store.acceptProposal}>Place</button>}
+              {!(state.structureChoice && state.structureMode === "add") && <button id="accept-placement" disabled={!state.proposal} onClick={store.acceptProposal}>{state.placing?.rotationOnly ? "Apply rotation" : "Place"}</button>}
+              {state.placing?.movingId && getPartPlacementInfo(state.placing.part, state.doc)?.paired && <label><input type="checkbox" checked={state.paired} onChange={e => store.patch({ paired: e.target.checked })} /> Move pair together</label>}
               <button id="cancel-placement" onClick={store.cancelPlacement}>
                 Cancel <kbd>ESC</kbd>
               </button>

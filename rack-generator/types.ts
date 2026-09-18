@@ -22,11 +22,11 @@ export type UprightId = string;
 export interface UprightNode { x: number; y: number }
 export interface ConnectionEdge { id: string; from: string; to: string; level: "upper" | "lower" }
 export interface RackDimensions { height: number; width: number; depth: number; tube: number; holeDiameter: number; pitch: number; firstHole: number; benchStart?: number; benchEnd?: number; benchSpacing?: number }
-export interface UprightTarget { kind?: 'upright'; uprightId: UprightId; face: Face; hole: number }
+export interface UprightTarget { orientation?: number; kind?: 'upright'; uprightId: UprightId; face: Face; hole: number }
 /** Upper rail bearing tab with a side through-bolt at an actual rail station. */
-export interface CrossmemberTopTarget { kind: 'crossmember-top'; connectionId: string; station: number; side: 1 | -1; uprightId: UprightId; face: Face; hole: number }
+export interface CrossmemberTopTarget { orientation?: number; kind: 'crossmember-top'; connectionId: string; station: number; side: 1 | -1; uprightId: UprightId; face: Face; hole: number }
 export type Target = UprightTarget | CrossmemberTopTarget;
-export interface Accessory { id: string; part: PartId; target: Target; paired: boolean; params: NumericParams; spanTo?: string; pairTo?: string; pairedSpanTo?: string; pairTarget?: CrossmemberTopTarget }
+export interface Accessory { /** Radians about the adapter-defined axis; omitted means zero. */ rotation?: number; id: string; part: PartId; target: Target; paired: boolean; params: NumericParams; spanTo?: string; pairTo?: string; pairedSpanTo?: string; pairTarget?: CrossmemberTopTarget }
 export interface StructureVariant { part: PartId; params: NumericParams }
 export interface FloorItem { id: string; part: 'rep-nighthawk'; position: Vec2; rotation: number; params: NumericParams }
 export interface RackDoc { floorItems?: FloorItem[]; systems?: RackSystem[]; logo?: ValidatedLogo; appearance?: Appearance; version: 2; uprights: Record<string, UprightNode>; connections: ConnectionEdge[]; profileId?: string; rack: RackDimensions; removed: string[]; structure: Record<string, StructureVariant>; accessories: Accessory[]; nextId: number }

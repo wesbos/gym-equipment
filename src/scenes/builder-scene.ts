@@ -1,11 +1,14 @@
+import { rotationMode } from '../../rack-generator/assembly.ts';
+import { pickupAppearance, cloneAppliedAssembly } from './pickup-materials.ts';
 import { GeometryCache, geometryKey } from '../geometry/geometry-cache.ts';
+import { createGymBackdrop } from './gym-backdrop.ts';
 import { PointerGesture } from './pointer-gesture.ts';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { createGymFloor, fitRackShadow } from './gym-floor.ts';
 import { FrameFinishResources, addSteelUVs } from './frame-finishes.ts';
 import { structureCandidates, type StructureCandidate } from '../../rack-generator/structure-candidates.ts';
 import { partAttribution } from '../../rack-generator/attribution.ts';
-import { placementMounts, proposalAt, proposalCollision, type PlacementProposal } from '../../rack-generator/placement-proposals.ts';
+import { placementMounts, proposalCollision, type PlacementProposal } from '../../rack-generator/placement-proposals.ts';
 import { swapCandidate, swapCandidates, type SwapCandidate } from '../../rack-generator/swap.ts';
 import { createSwapRegions } from './swap-regions.ts';
 import { cloneInstanceMaterials } from './instance-materials.ts';
@@ -62,8 +65,8 @@ export function createBuilderScene(
     selectionBoxes: THREE.Box3Helper[] = [];
   let mountPoints: Mount[] = [];
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color("#e9ede7");
-  scene.fog = new THREE.Fog("#e9ede7", 10000, 18000);
+  scene.background = new THREE.Color("#343b38");
+  scene.fog = new THREE.Fog("#343b38", 18000, 42000);
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     preserveDrawingBuffer: true,
@@ -88,6 +91,8 @@ export function createBuilderScene(
   }
   const floor = createGymFloor(renderer.capabilities.getMaxAnisotropy());
   scene.add(floor.mesh);
+  const backdrop = createGymBackdrop();
+  scene.add(backdrop.group);
   const raycaster = new THREE.Raycaster(),
     pointer = new THREE.Vector2(),
     instances = new Map<string, THREE.Group>();
@@ -404,6 +409,10 @@ export function createBuilderScene(
   }
   function refreshPlacement() {
     resetPlacement();
+    for (const g of instances.values()) {
+      const moving = g.userData.ownerId === snapshot.placing?.movingId && (snapshot.paired || !snapshot.placing?.physicalId || g.userData.id === snapshot.placing.physicalId);
+      pickupAppearance(g, moving);
+    }
     const placing = snapshot.placing, part = swapPart();
     if (addingStructure()) {
       structuralCandidates = structureCandidates(snapshot.doc, snapshot.structureChoice!);
@@ -514,7 +523,7 @@ export function createBuilderScene(
     return swapCandidate(snapshot.doc, hit.id, part);
   }
   function updatePreview(event: { clientX: number; clientY: number }) {
-    if (!snapshot.placing && !snapshot.structureChoice) return;
+    if (!snapshot.placing && !snapshot.structureChoice || snapshot.placing?.rotationOnly) return;
     if(snapshot.placing?.part === 'rep-nighthawk') { const point=floorPoint(event); if(point) store.previewFloor(point); return; }
     if (addingStructure()) { updateStructure(event); return; }
     const candidate = candidateAt(event);
@@ -533,12 +542,11 @@ export function createBuilderScene(
     const target = snapshot.placing ? nearestMount(event) : null;
     if (!target || (!hadSwap && JSON.stringify(target) === JSON.stringify(previewTarget))) return;
     try {
-      const proposal = proposalAt(snapshot.doc, snapshot.placing!.part, target, snapshot.paired, snapshot.placing!.movingId);
-      const collision = proposalCollision(snapshot.resolved, proposal);
-      store.patch({ proposal: collision ? null : proposal, placementText: collision || proposal.label });
+      store.previewMount(target);
     } catch(error) { store.patch({ proposal: null, placementText: message(error) }); }
   }
   function dropPlacement(event: { clientX: number; clientY: number }) {
+    if (snapshot.placing?.rotationOnly) { store.acceptProposal(); return; }
     if(snapshot.placing?.part === 'rep-nighthawk') { updatePreview(event); store.acceptProposal(); return; }
     if (addingStructure()) { commitStructure(); return; }
     if (!candidateAt(event) && !nearestMount(event)) return;
@@ -567,6 +575,8 @@ export function createBuilderScene(
     if(event.key.toLowerCase()!=='r' || event.ctrlKey || event.metaKey || (event.target instanceof HTMLElement && /INPUT|SELECT|TEXTAREA/.test(event.target.tagName))) return;
     const delta=(event.shiftKey?-1:1)*Math.PI/12;
     if(snapshot.placing?.part==='rep-nighthawk') {event.preventDefault();store.previewFloor(undefined,delta);return;}
+    const mounted = rotationTarget();
+    if (mounted && store.rotateMounted(mounted, event.shiftKey ? -1 : 1)) { event.preventDefault(); return; }
     const id=floorDrag?.id ?? (snapshot.selection.length===1?snapshot.selected:null);
     const item=snapshot.doc.floorItems?.find(i=>i.id===id);
     if(item) {event.preventDefault();if(floorDrag)floorDrag.moved=true;store.updateFloor(item.id,{rotation:item.rotation+delta});}
@@ -576,6 +586,30 @@ export function createBuilderScene(
   marquee.style.cssText = 'position:fixed;pointer-events:none;border:1px solid #c77c36;background:#c77c3622;z-index:100;display:none';
   viewport.append(marquee);
   let selecting = false;
+  let draggedAt = -Infinity;
+  let hoveredId: string | null = null;
+  function rotationTarget() {
+    if (snapshot.placing) return snapshot.placing.movingId && rotationMode(snapshot.doc, snapshot.placing.movingId).supported ? snapshot.placing.movingId : null;
+    const candidates = [hoveredId, snapshot.selection.length === 1 ? snapshot.selected : null];
+    return candidates.find(id => id && rotationMode(snapshot.doc, store.ownerOf(id)!).supported) ?? null;
+  }
+  const onWheel = (event: WheelEvent) => {
+    const floorId = floorDrag?.id ?? hoveredId ?? (snapshot.selection.length === 1 ? snapshot.selected : null);
+    const floorItem = snapshot.doc.floorItems?.find(i => i.id === floorId);
+    const mounted = rotationTarget();
+    if (snapshot.placing?.part !== 'rep-nighthawk' && !floorItem && !mounted) return;
+    event.preventDefault(); event.stopImmediatePropagation();
+    if (!event.deltaY) return;
+    const direction = Math.sign(event.deltaY) * (event.shiftKey ? -1 : 1);
+    if (snapshot.placing?.part === 'rep-nighthawk') store.previewFloor(undefined, direction * Math.PI / 12);
+    else if (mounted) store.rotateMounted(mounted, direction);
+    else if (floorItem) { if (floorDrag) floorDrag.moved = true; store.updateFloor(floorItem.id, { rotation: floorItem.rotation + direction * Math.PI / 12 }); }
+  };
+  const onDoubleClick = (event: MouseEvent) => {
+    if (event.button !== 0 || snapshot.placing || snapshot.structureChoice || performance.now() - draggedAt < 600) return;
+    const hit = pickOwner(event);
+    if (hit) { event.preventDefault(); store.pickup(hit.id); }
+  };
   const onDown = (event: PointerEvent) => {
     pointerGesture.begin(event);
     if(event.button===0 && !snapshot.placing && !snapshot.structureChoice && !snapshot.selectionTool && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
@@ -590,6 +624,8 @@ export function createBuilderScene(
     if ((!addingStructure() && (snapshot.placing || snapshot.structureChoice) || selecting) && event.button === 0) pointerGesture.capture();
   };
   const onMove = (event: PointerEvent) => {
+    if (pointerGesture.start && Math.hypot(event.clientX-pointerGesture.start[0], event.clientY-pointerGesture.start[1]) > 4) draggedAt = performance.now();
+    if (!pointerGesture.start) hoveredId = pickOwner(event)?.id ?? null;
     if(floorDrag && pointerGesture.start) {
       if(Math.hypot(event.clientX-pointerGesture.start[0],event.clientY-pointerGesture.start[1])>4)floorDrag.moved=true;
       const point=floorPoint(event,false);
@@ -651,6 +687,8 @@ export function createBuilderScene(
     );
   };
   const onLeave = (event: PointerEvent) => {
+    hoveredId = null;
+    if (snapshot.placing?.rotationOnly) store.acceptProposal();
     if (addingStructure() && !(event.relatedTarget instanceof Node && viewport.contains(event.relatedTarget))) {
       showStructureHandles([]); previewStructure(null);
     }
@@ -670,6 +708,8 @@ export function createBuilderScene(
     event.preventDefault();
     dropPlacement(event);
   };
+  renderer.domElement.addEventListener("wheel", onWheel, { capture: true, passive: false });
+  renderer.domElement.addEventListener("dblclick", onDoubleClick);
   renderer.domElement.addEventListener("pointerdown", onDown, true);
   renderer.domElement.addEventListener("pointermove", onMove);
   renderer.domElement.addEventListener("pointerup", onUp);
@@ -735,6 +775,8 @@ export function createBuilderScene(
     if (disposed) return;
     frame = requestAnimationFrame(animate);
     controls.update();
+    backdrop.follow(camera, controls.target);
+    camera.far = Math.max(40000, camera.position.distanceTo(controls.target) * 4);
     camera.near = Math.max(
       0.5,
       camera.position.distanceTo(controls.target) / 200,
@@ -779,14 +821,14 @@ export function createBuilderScene(
       // Status messages can clear error flags; only a successful current build is exportable.
       if (renderedGeneration !== generation)
         throw Error("The current rack has not built successfully. Fix the build error before exporting.");
-      const output = assemblyRoot.clone();
+      const output = cloneAppliedAssembly(assemblyRoot);
       output.name = "BOS STRENGTH rack";
       output.scale.setScalar(0.001);
-      const data = await new GLTFExporter().parseAsync(output, {
-        binary: true,
-      });
-      if (!(data instanceof ArrayBuffer)) throw Error("Unexpected GLB output.");
-      return data;
+      try {
+        const data = await new GLTFExporter().parseAsync(output, { binary: true });
+        if (!(data instanceof ArrayBuffer)) throw Error("Unexpected GLB output.");
+        return data;
+      } finally { disposeMeshes(output, false); }
     },
     dispose() {
       if (disposed) return;
@@ -802,6 +844,8 @@ export function createBuilderScene(
       structureHandles.remove();
       marquee.remove();
       document.removeEventListener("keydown",floorKey);
+      renderer.domElement.removeEventListener("wheel", onWheel, true);
+      renderer.domElement.removeEventListener("dblclick", onDoubleClick);
       renderer.domElement.removeEventListener("pointerdown", onDown, true);
       renderer.domElement.removeEventListener("pointermove", onMove);
       renderer.domElement.removeEventListener("pointerup", onUp);
@@ -825,6 +869,7 @@ export function createBuilderScene(
       releaseAssembly();
       cache.dispose();
       floor.dispose();
+      backdrop.dispose();
 
       finishes.dispose();
       lighting.dispose();
