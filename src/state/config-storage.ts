@@ -1,4 +1,4 @@
-import { validateAssembly } from "../../rack-generator/assembly.ts";
+import { cleanDocument, validateTimeline, type TimelineData } from './history.ts';
 import type { RackDoc } from "../../rack-generator/types.ts";
 export interface StorageLike {
   getItem(key: string): string | null;
@@ -8,11 +8,13 @@ export interface SavedConfig {
   id: string;
   name: string;
   doc: RackDoc;
+  timeline?: TimelineData;
 }
 export interface ConfigCollection {
   configs: SavedConfig[];
   activeId: string | null;
   draft: RackDoc | null;
+  draftTimeline?: TimelineData;
 }
 /** Async boundary: a database adapter can replace browser storage without changing consumers. */
 export interface ConfigStorage {
@@ -32,7 +34,7 @@ export class LocalConfigStorage implements ConfigStorage {
               {
                 id: "legacy",
                 name: "Imported rack",
-                doc: validateAssembly(JSON.parse(legacy)),
+                doc: cleanDocument(JSON.parse(legacy)),
               },
             ]
           : [],
@@ -51,6 +53,7 @@ export class LocalConfigStorage implements ConfigStorage {
       !Array.isArray(value.configs)
     )
       throw new Error("Invalid saved configurations");
+    if ("version" in value && value.version !== 2) throw new Error("Unsupported configuration collection version");
     const data = value as ConfigCollection;
     const ids = new Set<string>();
     const configs = data.configs.map((config) => {
@@ -66,7 +69,8 @@ export class LocalConfigStorage implements ConfigStorage {
       return {
         id: config.id,
         name: config.name,
-        doc: validateAssembly(config.doc),
+        doc: cleanDocument(config.doc),
+        ...(config.timeline !== undefined ? { timeline: validateTimeline(config.timeline, cleanDocument(config.doc)) } : {}),
       };
     });
     return {
@@ -74,7 +78,8 @@ export class LocalConfigStorage implements ConfigStorage {
       activeId: configs.some((c) => c.id === data.activeId)
         ? data.activeId
         : null,
-      draft: data.draft ? validateAssembly(data.draft) : null,
+      draft: data.draft ? cleanDocument(data.draft) : null,
+      ...(data.draftTimeline !== undefined ? { draftTimeline: validateTimeline(data.draftTimeline, cleanDocument(data.draft)) } : {}),
     };
   }
   async write(value: ConfigCollection) {
@@ -82,6 +87,6 @@ export class LocalConfigStorage implements ConfigStorage {
       throw new Error(
         "Browser storage is unavailable. Export your design as JSON."
       );
-    this.storage.setItem(CONFIG_KEY, JSON.stringify(value));
+    this.storage.setItem(CONFIG_KEY, JSON.stringify({ ...value, version: 2 }));
   }
 }

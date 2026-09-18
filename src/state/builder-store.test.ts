@@ -70,7 +70,7 @@ test('commits detach inputs and replace redo; only explicit save persists durabl
   await reopened.ready;
   const saved = reopened.getSnapshot();
   assert.deepEqual(saved.doc, store.getSnapshot().doc);
-  assert.equal(saved.canUndo, false);
+  assert.equal(saved.canUndo, true);
   assert.equal(saved.canRedo, false);
   assert.equal(saved.doc.rack.height, 2282);
 });
@@ -159,15 +159,15 @@ test('unavailable or corrupt storage has a recoverable error without losing comm
   assert.equal(store.getSnapshot().doc.rack.width, 1075);
 });
 
-test('history retains the newest one hundred edits without an unbounded document stack', () => {
+test('history preserves every edit beyond the former hundred-document cliff', () => {
   const store = new BuilderStore();
   for (let i = 1; i <= 102; i++) store.commit({ ...store.getSnapshot().doc, nextId: i + 1 });
-  for (let i = 0; i < 100; i++) store.history('undo');
-  assert.equal(store.getSnapshot().doc.nextId, 3);
+  for (let i = 0; i < 102; i++) store.history('undo');
+  assert.equal(store.getSnapshot().doc.nextId, 1);
   assert.equal(store.getSnapshot().canUndo, false);
   const exhausted = store.getSnapshot(); store.history('undo');
   assert.equal(store.getSnapshot(), exhausted);
-  for (let i = 0; i < 100; i++) store.history('redo');
+  for (let i = 0; i < 102; i++) store.history('redo');
   assert.equal(store.getSnapshot().doc.nextId, 103);
   assert.equal(store.getSnapshot().canRedo, false);
 });
