@@ -3,6 +3,7 @@ import { detectCollisions } from './assembly-collisions.ts';
 import { systemLowerCrossmemberStation } from "./cable-stations.ts";
 import { validateSystems, resolveSystems } from './systems.ts';
 import { validateFloorItems, resolveFloorItems } from './floor-items.ts';
+import { parkBarbells } from './barbell-cradles.ts';
 import { validateLogo, logoSite } from './logos/types.ts';
 import { pairSuffix } from './physical-identity.ts';
 import { darkoTopMounts, darkoTopMount, matchingDarkoTarget } from './darko-mounts.ts';
@@ -589,6 +590,7 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
     }
   }
   result.push(...resolveSystems(doc));
+  parkBarbells(result, doc.floorItems);
   return result;
 }
 

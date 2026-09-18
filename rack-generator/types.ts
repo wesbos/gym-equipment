@@ -29,7 +29,8 @@ export interface CrossmemberTopTarget { orientation?: number; kind: 'crossmember
 export type Target = UprightTarget | CrossmemberTopTarget;
 export interface Accessory { /** Radians about the adapter-defined axis; omitted means zero. */ rotation?: number; id: string; part: PartId; target: Target; paired: boolean; params: NumericParams; spanTo?: string; pairTo?: string; pairedSpanTo?: string; pairTarget?: CrossmemberTopTarget; /** Storage-pin plate stack, root outward; each side of a pair carries it. */ plates?: PlateId[] }
 export interface StructureVariant { part: PartId; params: NumericParams }
-export interface FloorItem { id: string; part: FloorPartId; position: Vec2; rotation: number; params: NumericParams }
+/** `cradle` (parking parts only, #83): bar-cradle key from barbell-cradles.ts; position/rotation are then its floor drop spot. */
+export interface FloorItem { id: string; part: FloorPartId; position: Vec2; rotation: number; params: NumericParams; cradle?: string }
 export interface RackDoc { floorItems?: FloorItem[]; systems?: RackSystem[]; logo?: ValidatedLogo; appearance?: Appearance; version: 2; uprights: Record<string, UprightNode>; connections: ConnectionEdge[]; profileId?: string; rack: RackDimensions; removed: string[]; structure: Record<string, StructureVariant>; accessories: Accessory[]; nextId: number }
 
 export interface StructureSlot { id: string; part: PartId; connectedTo: UprightId[] }

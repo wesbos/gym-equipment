@@ -6,14 +6,19 @@ export function validateFloorItems(input: unknown, reserved: string[] = []): Flo
   if (input === undefined) return [];
   if (!Array.isArray(input) || input.length > 100) throw Error('At most 100 floor items are allowed.');
   const ids = new Set(reserved);
-  return input.map(item => {
+  const items: FloorItem[] = input.map(item => {
     if (!item || typeof item !== 'object' || typeof item.id !== 'string' || !/^floor-[a-z0-9-]{1,100}$/.test(item.id) || ids.has(item.id)) throw Error('Invalid or duplicate floor item ID.');
     ids.add(item.id);
     const part = entry(item.part);
     if (!Array.isArray(item.position) || item.position.length !== 2 || !item.position.every((v: unknown) => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= 100000)) throw Error('Invalid floor position.');
     if (typeof item.rotation !== 'number' || !Number.isFinite(item.rotation)) throw Error('Invalid floor rotation.');
-    return { id:item.id, part:item.part, position:[...item.position] as Vec2, rotation:Math.atan2(Math.sin(item.rotation),Math.cos(item.rotation)), params:validateFloorParams(part,item.params) };
+    if (item.cradle !== undefined && (!part.parks || typeof item.cradle !== 'string' || !/^[a-z0-9:#+-]{3,300}$/.test(item.cradle))) throw Error(`Invalid ${part.noun} cradle.`);
+    return { id:item.id, part:item.part, position:[...item.position] as Vec2, rotation:Math.atan2(Math.sin(item.rotation),Math.cos(item.rotation)), params:validateFloorParams(part,item.params), ...(item.cradle ? {cradle:item.cradle} : {}) };
   });
+  // One bar per cradle support; the cradle itself is resolved (or falls back to the floor) in resolveAssembly.
+  const supports = items.flatMap(i => i.cradle?.split('+') ?? []);
+  if (new Set(supports).size !== supports.length) throw Error('One barbell per cradle.');
+  return items;
 }
 /** Three floor X/Z -> source Z-up X/-Y. Source Z rotation maps to world Y. */
 export function resolveFloorItems(items: FloorItem[] = []): ResolvedInstance[] {
@@ -35,7 +40,7 @@ function rackBounds(doc: RackDoc): Bounds | null {
 }
 const title = (part: FloorPart) => part.noun[0].toUpperCase() + part.noun.slice(1);
 export function floorWarnings(doc: RackDoc) {
-  const items=doc.floorItems ?? [], warnings: {ids:[string,string];message:string}[]=[], rack=rackBounds(doc);
+  const items=(doc.floorItems ?? []).filter(i=>!i.cradle), warnings: {ids:[string,string];message:string}[]=[], rack=rackBounds(doc);
   for (const [i,item] of items.entries()) {
     const bounds=floorBounds(item),clear=clearanceBounds(item),noun=title(entry(item.part));
     if(rack && overlaps(bounds,rack)) warnings.push({ids:[item.id,'rack'],message:`${noun} overlaps the rack footprint.`});
@@ -64,6 +69,6 @@ export function addFloorItem(doc: RackDoc, part: string, position?: Vec2, pair =
   moveFloorGroup(items,start);
   // Step along the rack side by the footprint plus 100 mm, on the 25 mm grid, until clear of existing floor items.
   const stride=Math.ceil((span.max[along]-span.min[along]+100)/25)*25;
-  if(!position) while(items.some(item=>next.floorItems!.some(other=>overlaps(floorBounds(item),floorBounds(other),100)))) for(const item of items) item.position[along]+=stride;
+  if(!position) while(items.some(item=>next.floorItems!.some(other=>!other.cradle && overlaps(floorBounds(item),floorBounds(other),100)))) for(const item of items) item.position[along]+=stride;
   next.floorItems.push(...items); return next;
 }
