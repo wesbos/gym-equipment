@@ -21,6 +21,7 @@ import {
   validateAssembly,
   resolveAssembly,
   getPartPlacementInfo,
+  pairedByDefault,
   addAccessory,
   moveAccessory,
   unpairAccessory,
@@ -591,7 +592,8 @@ export class BuilderStore {
       this.patch({ selected:null, placing:{part,movingId}, structureChoice:null, proposal:{doc,entries:resolveFloorItems([item]),ownerId:item.id,label:'Floor placement'},placementText:'Click floor to place · R rotates · Alt disables snap' });
       return;
     }
-    const paired = movingId ? this.state.doc.accessories.find(a => a.id === movingId)?.paired ?? false : this.state.paired;
+    // Each new placement starts from the part's own default, not the last choice.
+    const paired = movingId ? this.state.doc.accessories.find(a => a.id === movingId)?.paired ?? false : pairedByDefault(part, this.state.doc);
     const result = suggestPlacement(this.state.doc, part, paired, movingId);
     const info = getPartPlacementInfo(part, this.state.doc);
     const structural = part === 'upright' || !!info?.slots?.length;
