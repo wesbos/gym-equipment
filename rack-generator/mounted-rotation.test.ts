@@ -20,7 +20,7 @@ test('Darko half turn remounts both cradles with seated tabs and aligned shafts;
   const tab=new Vector3(0,0,37.5).applyEuler(new Euler(...after[i].rotation)).add(new Vector3(...after[i].position));
   assert.equal(tab.z,after[i].mount!.center[2]+37.5);
  }
- for(const angle of [15,90,270])assert.throws(()=>rotateAccessory(doc,id,angle),/hole alignment/);
+ for(const angle of [15,90,270,0.000001])assert.throws(()=>rotateAccessory(doc,id,angle),/hole alignment/);
  const restored=validateAssembly(JSON.parse(JSON.stringify(next)));
  assert.deepEqual(resolveAssembly(restored),resolveAssembly(next));
  const unpaired=resolveAssembly(unpairAccessory(next,id)).filter(i=>i.part==='darko-anchor');
