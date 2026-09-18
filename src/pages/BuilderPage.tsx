@@ -609,7 +609,7 @@ export default function BuilderPage() {
           </div>
           <div className="catalog-footer">
             <Link to="/library">Browse parts library ↗</Link>
-            <Link to="/parts">Part detail viewer ↗</Link>
+            <Link to="/parts/$partId" params={{ partId: "upright" }}>Part detail viewer ↗</Link>
           </div>
         </aside>
         <main className="stage">

@@ -6,7 +6,7 @@ import { LatestRequest } from "../geometry/latest-request.ts";
 import type { LibraryWorkerRequest } from "../../rack-generator/worker-types.ts";
 import type { PartScene, View } from "../scenes/part-scene";
 import { useEffect, useRef, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { createPartScene, download } from "../scenes/part-scene";
 import "../../rack-generator/style.css";
 import "../../rack-generator/library.css";
@@ -18,6 +18,7 @@ type Definition = CatalogDefinition & { note?: string };
 const labelOf = (key: string) =>
   key.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
 export default function PartsPage() {
+  const { partId } = useParams({ from: "/parts/$partId" }), navigate = useNavigate();
   const form = useRef<HTMLFormElement>(null);
   const viewport = useRef<HTMLDivElement>(null),
     scene = useRef<PartScene | null>(null),
@@ -61,13 +62,26 @@ export default function PartsPage() {
     selectedRef.current = def;
     setSelected(def);
     setParams(next);
-    history.replaceState(
-      null,
-      "",
-      `${location.pathname}${location.search}#${def.id}`
-    );
     build(def, next);
   }
+  /** The URL owns the selection: catalog clicks push /parts/<id>, so back/forward step between parts. */
+  useEffect(() => {
+    if (!definitions.length) return;
+    const def = definitions.find((d) => d.id === partId);
+    if (def) {
+      if (def.id !== selectedRef.current?.id) select(def);
+      return;
+    }
+    ++sequence.current;
+    selectedRef.current = null;
+    setSelected(null);
+    setParams({});
+    setValid(false);
+    setDescription("");
+    scene.current?.setMeshes([]);
+    setError(true);
+    setStatus(`No part called “${partId}”.`);
+  }, [partId, definitions]);
   useEffect(() => {
     if (!viewport.current) return;
     let active = true;
@@ -96,10 +110,6 @@ export default function PartsPage() {
       if (data.type === "catalog") {
         definitionsRef.current = data.definitions;
         setDefinitions(data.definitions);
-        const def =
-          data.definitions.find((d) => d.id === location.hash.slice(1)) ||
-          data.definitions[0];
-        if (def) select(def);
         return;
       }
       requests.current?.complete();
@@ -130,17 +140,9 @@ export default function PartsPage() {
         compareRef.current.overlay
       );
     };
-    const hash = () => {
-      const def = definitionsRef.current.find(
-        (d) => d.id === location.hash.slice(1)
-      );
-      if (def && def.id !== selectedRef.current?.id) select(def);
-    };
-    window.addEventListener("hashchange", hash);
     return () => {
       active = false;
       ++sequence.current;
-      window.removeEventListener("hashchange", hash);
       geometryWorker.onmessage = null;
       geometryWorker.onerror = null;
       geometryWorker.terminate();
@@ -163,7 +165,8 @@ export default function PartsPage() {
     if (selected && Object.values(next).every(Number.isFinite)) build(selected, next);
     else { setValid(false); setStatus("Enter a valid parameter."); }
   }
-  const categories = [...new Set(definitions.map((d) => d.category))];
+  const categories = [...new Set(definitions.map((d) => d.category))],
+    missing = definitions.length > 0 && !definitions.some((d) => d.id === partId);
   return (
     <div className="parts-page">
       <aside>
@@ -172,9 +175,9 @@ export default function PartsPage() {
         </div>
         <h1>Parts</h1>
         <p className="intro">
-          <Link to="/">← Original upright builder</Link>
+          <Link to="/library">← Parts library</Link>
         </p>
-        <Link className="source-link" to="/builder">
+        <Link className="source-link" to="/">
           Build a complete rack ↗
         </Link>
         <input
@@ -198,8 +201,9 @@ export default function PartsPage() {
                 {entries.map((d) => (
                   <button
                     key={d.id}
-                    className={selected?.id === d.id ? "active" : ""}
-                    onClick={() => select(d)}
+                    className={partId === d.id ? "active" : ""}
+                    aria-current={partId === d.id ? "page" : undefined}
+                    onClick={() => navigate({ to: "/parts/$partId", params: { partId: d.id } })}
                   >
                     {d.name}
                   </button>
@@ -323,8 +327,25 @@ export default function PartsPage() {
               : "MANIFOLD REBUILD ←    → SOURCE MESH"}
           </div>
         </div>
+        {missing && (
+          <section className="part-missing" aria-labelledby="part-missing-title">
+            <h2 id="part-missing-title">Part not found</h2>
+            <p>
+              There is no part called <code>{partId}</code>. Pick one of the{" "}
+              {definitions.length} parts below or browse the{" "}
+              <Link to="/library">parts library</Link>.
+            </p>
+            <ul>
+              {definitions.map((d) => (
+                <li key={d.id}>
+                  <Link to="/parts/$partId" params={{ partId: d.id }}>{d.name}</Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         <div className="model-caption">
-          <h2 id="model-title">{selected?.name || "Loading parts…"}</h2>
+          <h2 id="model-title">{selected?.name || (missing ? "" : "Loading parts…")}</h2>
           <p id="model-description">{description}</p>
         </div>
         <footer>

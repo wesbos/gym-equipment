@@ -1,6 +1,6 @@
 import type { MaterialSource } from './appearance.ts';
-import type { LibraryWorkerRequest, NumericParams, PartDefinition, UprightMesh, UprightWorkerRequest } from './types.ts';
-export type { LibraryWorkerRequest, UprightWorkerRequest } from './types.ts';
+import type { LibraryWorkerRequest, NumericParams, PartDefinition } from './types.ts';
+export type { LibraryWorkerRequest } from './types.ts';
 /** Transferable mesh payload. Positions may contain additional properties after XYZ. */
 export interface LibraryMesh extends MaterialSource {
  name: string;
@@ -16,6 +16,3 @@ export type LibraryWorkerResponse =
  | { type: 'catalog'; definitions: CatalogDefinition[] }
  | { type: 'model'; id: LibraryWorkerRequest['id']; part: string; params: NumericParams; meshes: LibraryMesh[] }
  | { type: 'error'; id: LibraryWorkerRequest['id']; error: string };
-export type UprightWorkerResponse =
- | { id: UprightWorkerRequest['id']; model: UprightMesh }
- | { id: UprightWorkerRequest['id']; error: string };
