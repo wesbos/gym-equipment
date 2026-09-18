@@ -1,11 +1,12 @@
 import { physicalFinish, resetAppearanceField } from '../../rack-generator/appearance-reset.ts';
 import { ResetButton } from './ResetButton.tsx';
+import { GestureColorInput, type GestureCallbacks } from './GestureInputs.tsx';
 import { useSyncExternalStore } from 'react';
 import { DEFAULT_FRAME_COLOR, PAINT_SWATCHES, type Appearance, type FrameFinish, type HardwareFinish } from '../../rack-generator/appearance.ts';
 import type { BuilderStore } from '../state/builder-store.ts';
 import './appearance-controls.css';
 
-function PaintPicker({ label, color, mixedColor = false, finish, onColor, onFinish, colorChanged, finishChanged, onResetColor, onResetFinish }: {
+function PaintPicker({ label, color, mixedColor = false, finish, onColor, onFinish, colorChanged, finishChanged, onResetColor, onResetFinish, ...gesture }: GestureCallbacks & {
   label: string; color: string; mixedColor?: boolean; finish: FrameFinish | '';
   onColor(color: string): void; onFinish(finish: FrameFinish): void;
   colorChanged: boolean; finishChanged: boolean; onResetColor(): void; onResetFinish(): void;
@@ -15,7 +16,7 @@ function PaintPicker({ label, color, mixedColor = false, finish, onColor, onFini
       <button key={name} type="button" title={name} aria-label={`${label}: ${name}`} aria-pressed={!mixedColor && finish === 'paint' && color === hex} onClick={() => onColor(hex)}>
         <span style={{ background: hex }} />{name}
       </button>)}</div>
-    <label className="field"><span>Custom color{mixedColor ? ' · Mixed' : ''}</span><input aria-label={`${label} color`} type="color" value={color} onChange={e => onColor(e.target.value)} /><ResetButton label={`${label} color`} changed={colorChanged} onReset={onResetColor} /></label>
+    <label className="field"><span>Custom color{mixedColor ? ' · Mixed' : ''}</span><GestureColorInput aria-label={`${label} color`} value={color} onValue={onColor} {...gesture} /><ResetButton label={`${label} color`} changed={colorChanged} onReset={onResetColor} /></label>
     <label className="field"><span>Steel finish</span><select aria-label={`${label} steel finish`} value={finish} onChange={e => onFinish(e.target.value as FrameFinish)}>
       {finish === '' && <option value="" disabled>Mixed</option>}
       <option value="paint">Powder coat</option><option value="stainless">Stainless steel</option><option value="clear-grind">Clear grind</option>
@@ -32,10 +33,12 @@ export function AppearanceControls({ store }: { store: BuilderStore }) {
   const finishes = selection.map(id => physicalFinish(appearance, id));
   const mixedFinish = finishes.some(value => value !== finishes[0]);
   const color = appearance.frameColor ?? DEFAULT_FRAME_COLOR;
+  // Swatches stay discrete commits; only custom-color drags are bracketed.
+  const gesture: GestureCallbacks = { onGestureStart: store.beginGesture, onGestureEnd: store.endGesture, onGestureCancel: store.cancelGesture };
   return <section aria-label="Rack appearance" className="appearance-controls">
     <h3>Appearance</h3>
     {selection.length < 2 && <>
-    <PaintPicker label="Rack" color={color} finish={appearance.frameFinish ?? 'paint'} onColor={frameColor => update({ frameColor, frameFinish: 'paint' })} onFinish={frameFinish => update({ frameFinish })}
+    <PaintPicker {...gesture} label="Rack" color={color} finish={appearance.frameFinish ?? 'paint'} onColor={frameColor => update({ frameColor, frameFinish: 'paint' })} onFinish={frameFinish => update({ frameFinish })}
       colorChanged={color !== DEFAULT_FRAME_COLOR} onResetColor={() => update(current => resetAppearanceField(current, 'color'))}
       finishChanged={!!appearance.frameFinish && appearance.frameFinish !== 'paint'} onResetFinish={() => update(current => resetAppearanceField(current, 'finish'))} />
     <ResetButton label="rack appearance" changed={color !== DEFAULT_FRAME_COLOR || !!appearance.frameFinish && appearance.frameFinish !== 'paint'} onReset={() => update({ frameColor: DEFAULT_FRAME_COLOR, frameFinish: 'paint' })} />
@@ -45,7 +48,7 @@ export function AppearanceControls({ store }: { store: BuilderStore }) {
     </>}
     {physical && <>
       {selection.length > 1 ? <>
-        <PaintPicker label="Selected pieces" color={mixed ? '#808080' : colors[0] ?? color} mixedColor={mixed}
+        <PaintPicker {...gesture} label="Selected pieces" color={mixed ? '#808080' : colors[0] ?? color} mixedColor={mixed}
           finish={mixedFinish ? '' : finishes[0] ?? 'paint'}
           onColor={value => store.act(() => store.paintSelection(value))}
           onFinish={value => store.act(() => store.finishSelection(value))}
@@ -57,7 +60,7 @@ export function AppearanceControls({ store }: { store: BuilderStore }) {
           onClick={() => store.act(store.resetSelectionAppearance)}>Use rack appearance</button>
       </> : <>
       <p className="note">{physical.id.replaceAll('-', ' ')}</p>
-      <PaintPicker label="This piece" color={appearance.overrides?.[physical.id] ?? appearance.frameColor ?? (physical.kind === 'floor-item' ? '#353739' : DEFAULT_FRAME_COLOR)}
+      <PaintPicker {...gesture} label="This piece" color={appearance.overrides?.[physical.id] ?? appearance.frameColor ?? (physical.kind === 'floor-item' ? '#353739' : DEFAULT_FRAME_COLOR)}
         finish={physicalFinish(appearance, physical.id)}
         onColor={value => update(current => ({ ...current, overrides: { ...current.overrides, [physical.id]: value }, finishOverrides: { ...current.finishOverrides, [physical.id]: 'paint' } }))}
         onFinish={value => update(current => ({ ...current, finishOverrides: { ...current.finishOverrides, [physical.id]: value } }))}

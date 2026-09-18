@@ -26,6 +26,12 @@ test('multi-bolt patterns preserve measured rack station spacings and handed par
   assert.equal(getAttachmentPlacementInfo('dip-bar-adjustable').paired, false);
   assert.equal(getAttachmentPlacementInfo('dip-horn').paired, false);
 });
+test('pair capability and new-placement default are distinct', () => {
+  const defaults = Object.fromEntries(attachmentPartIds.map(part => [part, getAttachmentPlacementInfo(part).defaultPaired]));
+  assert.deepEqual(defaults, { 'spotter-arm': true, 'dip-horn': false, 'dip-bar-adjustable': false, landmine: false, monolift: true,
+    'single-bar-holder': false, 'storage-pin-short': true, 'storage-pin-long': true });
+  for (const part of ['landmine', 'single-bar-holder']) assert.equal(getAttachmentPlacementInfo(part).paired, true);
+});
 test('adapters reject resizing the mating cavity and return detached metadata', () => {
   for (const part of attachmentPartIds) {
     const defaults = getAttachmentDefaults(part);

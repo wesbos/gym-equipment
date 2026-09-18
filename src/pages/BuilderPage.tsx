@@ -3,6 +3,7 @@ import { rotationMode } from '../../rack-generator/assembly.ts';
 import { CableSmithControls, SystemPlacementOptions } from '../components/CableSmithControls.tsx';
 import { isSystemPart, SYSTEM_PARTS } from '../../rack-generator/system-types.ts';
 import { FloorInspector } from '../components/FloorInspector.tsx';
+import { PlateStackEditor } from '../components/PlateStackEditor.tsx';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { FLOOR_PART_IDS, floorPart } from '../../rack-generator/floor-registry.ts';
 import { LogoControls } from '../components/LogoControls.tsx';
@@ -39,6 +40,7 @@ import { createBuilderScene } from "../scenes/builder-scene.ts";
 import {
   createAssembly,
   getPartPlacementInfo,
+  pairedByDefault,
   getAvailableStructure,
   restoreInstance,
   replaceStructurePart,
@@ -257,7 +259,9 @@ function Inspector({ store }: { store: BuilderStore }) {
                     : Number(data.get("hole")) - 1,
                 };
                 if (item.spanTo && data.get("spanTo")) item.spanTo = String(data.get("spanTo"));
+                // An unpairable part submits no checkbox: adopt the new variant's default.
                 if (entry.target.kind !== "crossmember-top") item.paired =
+                  variant !== part && !info?.paired ? pairedByDefault(variant, doc) :
                   !!getPartPlacementInfo(variant, doc)?.paired &&
                   data.get("paired") === "on";
                 store.commit(next);
@@ -332,7 +336,7 @@ function Inspector({ store }: { store: BuilderStore }) {
                 <input
                   type="checkbox"
                   name="paired"
-                  checked={entry.paired}
+                  checked={!!info?.paired && entry.paired}
                   onChange={e => e.currentTarget.form?.requestSubmit()}
                   disabled={!info?.paired}
                 />
@@ -350,6 +354,7 @@ function Inspector({ store }: { store: BuilderStore }) {
             {rotationMode(doc, entry.id).supported && <button type="button" onClick={() => store.rotateMounted(selected ?? entry.id)}>{rotationMode(doc, entry.id).label} · R / scroll</button>}
           </div>}
           {entry && <VendorControls store={store} entry={entry} />}
+          {entry && <PlateStackEditor key={entry.id} store={store} entry={entry} />}
           <VendorCredit part={part} />
           {fields.map((field) => (
             <Field key={field.key} label={`${field.label} (mm)`}>
@@ -413,11 +418,14 @@ export default function BuilderPage() {
     importFile = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState(""),
     [drawer, setDrawer] = useState(false),
-    [view, setView] = useState<"iso" | "front" | "side" | "top">("iso");
+    [view, setView] = useState<"iso" | "front" | "side" | "top">("iso"),
+    [building, setBuilding] = useState(false);
   const nameOf = (part: string) =>
     state.definitions
       .find((d) => d.id === part)
       ?.name.replace(/^BOS STRENGTH\s*/, "") || part;
+  // Unpairable parts show unchecked, not a disabled "pair on".
+  const unpairable = !!state.placing && !getPartPlacementInfo(state.placing.part, state.doc)?.paired && !(floorPart(state.placing.part)?.pair && !state.placing.movingId);
   useEffect(() => {
     const scene = createBuilderScene(viewport.current!, store);
     controller.current = scene;
@@ -550,12 +558,8 @@ export default function BuilderPage() {
             <input
               id="paired"
               type="checkbox"
-              checked={state.paired}
-              disabled={
-                !!state.placing &&
-                !getPartPlacementInfo(state.placing.part, state.doc)?.paired &&
-                !(floorPart(state.placing.part)?.pair && !state.placing.movingId)
-              }
+              checked={state.paired && !unpairable}
+              disabled={unpairable}
               onChange={(e) => store.patch({ paired: e.target.checked })}
             />
             <span>
@@ -609,7 +613,7 @@ export default function BuilderPage() {
           </div>
           <div className="catalog-footer">
             <Link to="/library">Browse parts library ↗</Link>
-            <Link to="/parts">Part detail viewer ↗</Link>
+            <Link to="/parts/$partId" params={{ partId: "upright" }}>Part detail viewer ↗</Link>
           </div>
         </aside>
         <main className="stage">
@@ -725,7 +729,9 @@ export default function BuilderPage() {
           </div>
         </aside>
         <HistoryTimeline timeline={state.timeline} loading={state.loading}
-          seek={store.seekHistory} restore={() => store.restoreHistory()} clear={store.clearHistory} />
+          seek={store.seekHistory} restore={() => store.restoreHistory()} clear={store.clearHistory}
+          build={{ playing: building, disabled: state.loading || !!state.placing || !!state.structureChoice || !!state.systemChoice,
+            toggle: () => building ? controller.current?.stopBuild() : setBuilding(!!controller.current?.playBuild(() => setBuilding(false))) }} />
         <footer className="status-bar">
           <span
             id="status"

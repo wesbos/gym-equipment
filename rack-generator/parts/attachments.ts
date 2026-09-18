@@ -1,4 +1,6 @@
 import { attachmentMaterialRole } from './attachment-materials.ts';
+import { buildPlateStack } from './plates.ts';
+import { platePeg, platesFromParams } from '../plates.ts';
 import type { Manifold, CrossSection, Vec2, Vec3 } from 'manifold-3d';
 import type { ManifoldAPI, NumericParams, PartDefinition, SolidPart } from '../types.ts';
 type Owned = Manifold | CrossSection;
@@ -77,6 +79,9 @@ function buildPart(api: ManifoldAPI, id: string, data: AttachmentCAD, params: Nu
    const plastic=/uhmw|inner|pad|control|^arms$|^Arm\./i.test(component.name);
    result.push({name:component.name,solid,role:attachmentMaterialRole(id,component.name,index),color,metalness:component.metalness??(plastic?.05:bright?.8:.5),roughness:component.roughness??(plastic?.48:bright?.26:.4)});
   }
+  // Stored plates are visual dressing on the peg (plate1..N params from the accessory's stack).
+  const plates=platesFromParams(params), peg=platePeg(id);
+  if(plates.length&&peg)result.push(...buildPlateStack(api,plates,{origin:peg.origin,axis:peg.axis}));
   return result;
  }catch(error){result.length=0;throw error;}finally{
   const saved=new Set<Owned>(result.map(p=>p.solid));allocated.reverse().forEach(p=>{if(!saved.has(p))p.delete();});

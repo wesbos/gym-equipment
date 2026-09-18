@@ -16,8 +16,10 @@ export function historyKeyStep(key: string, position: number, latest: number) {
   if (key === 'ArrowRight') return Math.min(latest, position + 1);
   return undefined;
 }
-export function HistoryTimeline({ timeline, loading, seek, restore, clear }: {
-  timeline: Timeline; loading: boolean; seek: (step: number) => void; restore: () => void; clear: () => void;
+/** Presentation-only showcase trigger; it never touches history. */
+export interface BuildPlayback { playing: boolean; disabled: boolean; toggle: () => void }
+export function HistoryTimeline({ timeline, loading, seek, restore, clear, build }: {
+  timeline: Timeline; loading: boolean; seek: (step: number) => void; restore: () => void; clear: () => void; build?: BuildPlayback;
 }) {
   const { entries, position, latest, applied, viewing } = timeline;
   const [playing, setPlaying] = useState(false);
@@ -96,6 +98,9 @@ export function HistoryTimeline({ timeline, loading, seek, restore, clear }: {
         }}>{playing ? 'Ⅱ' : '▶'}</button>
       <button type="button" aria-label="Previous history step" disabled={!position} onClick={() => navigate(position - 1)}>‹</button>
       <button type="button" aria-label="Next history step" disabled={position === latest} onClick={() => navigate(position + 1)}>›</button>
+      {build && <button type="button" className="timeline-build" data-build-toggle aria-pressed={build.playing}
+        disabled={!build.playing && build.disabled} title="Watch the rack assemble itself · click, drag or ESC to skip"
+        onClick={() => { cancelPending(); setPlaying(false); build.toggle(); }}>{build.playing ? '■ Stop build' : '▶ Play build'}</button>}
       <output className={viewing ? 'timeline-position viewing' : 'timeline-position'} aria-live="off">
         {viewing ? 'Viewing history' : 'Current'} <span>{position} / {latest}</span>
       </output>

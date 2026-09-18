@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createAssembly, replaceStructurePart, resolveAssembly } from './assembly.ts';
-import { dimensionDefaults, partDefaults, resetDimensions, resetPart } from './reset.ts';
+import { addAccessory, createAssembly, replaceStructurePart, resolveAssembly } from './assembly.ts';
+import { dimensionDefaults, partDefaults, placementDefaults, resetDimensions, resetPart } from './reset.ts';
 import { applyPreset } from './presets.ts';
 import { BuilderStore } from '../src/state/builder-store.ts';
 
@@ -29,6 +29,13 @@ test('parameter defaults reset composite owner and pair without changing placeme
   const reset = resetPart(doc, 'pullup-front', 'diameter');
   assert.equal(reset.accessories[0].params.diameter, 32);
   assert.deepEqual(reset.accessories[0].target, doc.accessories[0].target);
+});
+test('pair reset returns the part default, not its pair capability', () => {
+  let doc = createAssembly({ emptyAccessories: true });
+  for (const [part, paired] of [['landmine', false], ['single-bar-holder', false], ['spotter-arm', true], ['monolift', true], ['storage-pin-long', true], ['dip-horn', false], ['j-hook-standard', true]] as const) {
+    doc = addAccessory(doc, part, {}, !paired);
+    assert.equal(placementDefaults(doc, doc.accessories.at(-1)!).paired, paired, part);
+  }
 });
 test('manufacturer parameter defaults respect pitch and mounting shaft clearance', () => {
   const doc = applyPreset('rep-pr-4000-four-2032-762');

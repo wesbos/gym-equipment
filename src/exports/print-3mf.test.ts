@@ -81,7 +81,11 @@ test('complete rack XML carries exact duplication, per-side overrides, dimension
   const entries=resolveAssembly(doc),result=exportPrint3MF(api,doc,definitions,{layout:'laid-out'}),archive=inspect(result.bytes);
   assert.equal(archive.items.length,result.report.parts.length);assert.equal(result.report.instances,14);
   assert.equal(result.report.parts.filter(p=>p.part==='upright').length,4);
-  for(const p of result.report.parts.filter(p=>p.part==='upright')) assert.ok(Math.abs(Math.max(...p.size)-203.2)<.001);
+  // Uprights stand base-down in laid-out plates (#87): full height is Z.
+  for(const p of result.report.parts.filter(p=>p.part==='upright')) {
+    assert.ok(Math.abs(p.size[2]-203.2)<.001); assert.ok(p.size[0]<14&&p.size[1]<14,'upright footprint is its floor plate');
+  }
+  assert.match(result.report.printDetail,/station numbers are omitted.*8 mm at 1:10/);
   assert.ok(archive.materials.some(m=>m.displaycolor==='#FE0123FF'));assert.ok(archive.materials.some(m=>m.displaycolor==='#1234FEFF'));
   const palette=JSON.parse(strFromU8(archive.files['Metadata/project_settings.config'])).filament_colour;
   assert.deepEqual(palette,archive.materials.map(m=>m.displaycolor.slice(0,7)));
@@ -110,7 +114,10 @@ test('complete rack XML carries exact duplication, per-side overrides, dimension
 for(const def of definitions) test(`print partition and XML round-trip: ${def.id}`,()=>{
   // Use a single physical slot to exercise every registered CAD builder,
   // including vendor solids that need specialized assembly mount constraints.
-  const adapter={...def,id:'upright',build:()=>def.build(api,def.defaults)};
+  // Every builder receives, and must tolerate, the injected print detail flag.
+  const adapter={...def,id:'upright',build:(_:unknown,p:{printMinFeature?:number})=>{
+    assert.equal(p.printMinFeature,8); return def.build(api,{...def.defaults,printMinFeature:p.printMinFeature});
+  }};
   const result=exportPrint3MF(api,single(),[adapter],{layout:'laid-out'});
   inspect(result.bytes);assert.ok(result.report.volumes>0);
 });
@@ -177,4 +184,36 @@ test('bed guard uses actual diagonal extents, not the unrotated beam length',()=
   const fits=exportPrint3MF(api,single(),[diagonal(3000)],{layout:'laid-out'});
   assert.ok(fits.report.parts[0].size[0]>210&&fits.report.parts[0].size[0]<214);
   assert.throws(()=>exportPrint3MF(api,single(),[diagonal(4000)],{layout:'laid-out'}),/bbox.*256.*1:20/);
+});
+test('real uprights stand vertically at both scales and fit the plate guardrail',()=>{
+  const upright=definitions.find(d=>d.id==='upright')!;
+  for(const scale of [10,20] as const) {
+    const [part]=exportPrint3MF(api,single(),[upright],{layout:'laid-out',scale}).report.parts;
+    assert.ok(Math.abs(part.size[2]-2032/scale)<1e-3);assert.ok(Math.max(part.size[0],part.size[1])<140/scale,`footprint ${part.size}`);
+    assert.equal(part.position[2],0);
+  }
+});
+test("packer's 90° Z swap keeps standing parts upright; other parts keep smallest-height orientation",()=>{
+  const doc=createAssembly({emptyAccessories:true}),keep=['rear-left','rear-right','rear-crossmember'];
+  doc.removed=resolveAssembly(doc).filter(e=>!keep.includes(e.id)).map(e=>e.id);
+  // A 200 × 250 mm plate-filler leaves a 52 mm strip, so each standing
+  // 100 × 40 mm footprint only packs after the Z swap.
+  const standing={...cubeDef,printOrientation:'standing' as const,build:()=>[{name:'tube',role:'frame' as const,solid:api.Manifold.cube([1000,400,1500])}]};
+  const filler={...cubeDef,id:'crossmember-1075',build:()=>[{name:'slab',role:'frame' as const,solid:api.Manifold.cube([2000,2500,10])}]};
+  const size=(report:{parts:{id:string;size:number[]}[]},id:string)=>report.parts.find(p=>p.id===id)!.size.map(v=>+v.toFixed(6));
+  const {report}=exportPrint3MF(api,doc,[standing,filler],{layout:'laid-out'});
+  assert.deepEqual(size(report,'rear-crossmember'),[200,250,1]);
+  for(const id of ['rear-left','rear-right']) assert.deepEqual(size(report,id),[40,100,150],'rotated about Z, still standing');
+  const lying=exportPrint3MF(api,single(),[{...standing,printOrientation:undefined}],{layout:'laid-out'}).report;
+  assert.equal(size(lying,'front-left')[2],40);
+});
+test('0.4 mm nozzle default process is preselected and described',()=>{
+  const files=unzipSync(exportPrint3MF(api,single(),[cubeDef],{layout:'laid-out'}).bytes);
+  const settings=JSON.parse(strFromU8(files['Metadata/project_settings.config']));
+  assert.equal(settings.print_settings_id,'0.20mm Standard @BBL X1C');assert.deepEqual(settings.nozzle_diameter,['0.4']);
+  assert.equal(settings.printer_settings_id,'','printer stays a placeholder');assert.equal(settings.different_settings_to_system,undefined);
+  const metadata=new XMLParser({ignoreAttributes:false,attributeNamePrefix:''}).parse(strFromU8(files['3D/3dmodel.model'])).model.metadata as {name:string;'#text':string}[];
+  const description=metadata.find(m=>m.name==='Description')!['#text'];
+  assert.match(description,/0\.4 mm nozzle default \(0\.20mm Standard @BBL X1C process\)/);assert.match(description,/station numbers are omitted/);
+  assert.doesNotMatch(description,/select your printer and filament profiles/);
 });

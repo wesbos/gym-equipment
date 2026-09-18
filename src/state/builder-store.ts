@@ -2,7 +2,7 @@ import { DocumentHistory, cleanDocument, diffDocuments, applyOps, parseSession, 
 import { systemProposal } from '../../rack-generator/system-proposal.ts';
 import { isSystemPart, SYSTEM_DEFAULTS, type SystemPartId } from '../../rack-generator/system-types.ts';
 import { addFloorItem, resolveFloorItems, floorWarnings, moveFloorGroup } from '../../rack-generator/floor-items.ts';
-import { isFloorPart } from '../../rack-generator/floor-registry.ts';
+import { floorPart, isFloorPart } from '../../rack-generator/floor-registry.ts';
 import { resetAppearanceField } from '../../rack-generator/appearance-reset.ts';
 import type { FrameFinish } from '../../rack-generator/appearance.ts';
 import { addsStructure } from '../../rack-generator/structure-candidates.ts';
@@ -22,6 +22,7 @@ import {
   validateAssembly,
   resolveAssembly,
   getPartPlacementInfo,
+  pairedByDefault,
   addAccessory,
   moveAccessory,
   unpairAccessory,
@@ -376,6 +377,9 @@ export class BuilderStore {
       return;
     }
     const wasViewing = this.state.timeline.viewing;
+    // Gesture branch: rewind to the pre-gesture journal so a whole drag lands as one entry.
+    // Continuous inputs must bracket their edits (NumericControl, GestureColorInput, GestureRange
+    // in components/GestureInputs.tsx) or every intermediate value floods history.
     if (this.gesture && this.gestureChanged && this.gestureHistory && this.gestureOriginal)
       this.journal = new DocumentHistory(this.gestureOriginal, structuredClone(this.gestureHistory));
     this.journal.append(doc, metadata);
@@ -589,10 +593,12 @@ export class BuilderStore {
       return;
     }
     if (isFloorPart(part)) {
-      this.patch({ selected:null, placing:{part,movingId}, structureChoice:null, ...this.floorProposal(part, movingId) });
+      const paired = !movingId && !!floorPart(part)?.pair;
+      this.patch({ selected:null, placing:{part,movingId}, structureChoice:null, paired, ...this.floorProposal(part, movingId, paired) });
       return;
     }
-    const paired = movingId ? this.state.doc.accessories.find(a => a.id === movingId)?.paired ?? false : this.state.paired;
+    // Each new placement starts from the part's own default, not the last choice.
+    const paired = movingId ? this.state.doc.accessories.find(a => a.id === movingId)?.paired ?? false : pairedByDefault(part, this.state.doc);
     const result = suggestPlacement(this.state.doc, part, paired, movingId);
     const info = getPartPlacementInfo(part, this.state.doc);
     const structural = part === 'upright' || !!info?.slots?.length;

@@ -1,6 +1,7 @@
 import type { AttributionResolver, VendorAttribution } from '../../rack-generator/catalog-contract.ts';
 import { buildPrintInstance } from './print-build.ts';
-import { SLICER_APPLICATION, slicerPalette } from './slicer-metadata.ts';
+import { SLICER_APPLICATION, SLICER_PROCESS, slicerPalette } from './slicer-metadata.ts';
+import { PRINT_NOZZLE, printMinFeature } from '../../rack-generator/print-detail.ts';
 import { strToU8, zipSync } from 'fflate';
 import { Euler, Matrix4, Vector3 } from 'three';
 import type { ManifoldAPI, PartDefinition, RackDoc, SolidPart } from '../../rack-generator/types.ts';
@@ -18,7 +19,7 @@ export interface PrintReport {
   scale: PrintScale; scaleFactor: number; plates: { name: string; objectIds: number[]; origin: readonly number[] }[];
   excludedInstances: string[];
   unit: 'millimeter'; layout: PrintLayout; instances: number; volumes: number; triangles: number;
-  occludedComponents: string[]; overlapPolicy: string; textureLimitation: string;
+  occludedComponents: string[]; overlapPolicy: string; printDetail: string; textureLimitation: string;
   vendorCredits: { part: string; attribution: VendorAttribution }[];
   parts: { id: string; ownerId: string; part: string; objectId: number; plate: string; roles: string[]; position: number[]; sourcePosition: number[]; size: number[]; volumes: number }[];
 }
@@ -54,9 +55,11 @@ export function exportPrint3MF(api: ManifoldAPI, input: RackDoc, definitions: re
   if (scale !== 10 && scale !== 20) throw Error('Print scale must be 1:10 or 1:20.');
   if (!entries.length) throw Error('No rack parts to export.');
   if (!['laid-out','assembled'].includes(options.layout)) throw Error('Unknown print layout.');
+  const minFeature = printMinFeature(scale);
   const report: PrintReport = { scale, scaleFactor:1/scale, plates:['Parts','Hardware'].map((name,i)=>({name,objectIds:[],origin:PLATE_ORIGINS[i]})),
     excludedInstances:resolved.filter(e=>!isPrintInstance(e)).map(e=>e.id), unit:'millimeter', layout:options.layout, instances:entries.length, volumes:0, triangles:0,
     occludedComponents:[], overlapPolicy:'Later catalog components own overlaps; earlier volumes are cut with Manifold. Separate rack instances remain independent.',
+    printDetail:`Simplified for a ${PRINT_NOZZLE} mm nozzle: laser-cut upright station numbers are omitted and stencil/logo cut features narrower than ${2*PRINT_NOZZLE} mm printed (${minFeature} mm at 1:${scale}) are removed. The on-screen model and GLB keep full detail.`,
     vendorCredits:[], textureLimitation:'Dominant solid colors only. Textures, metallic reflections and roughness are not printable material properties.', parts:[] };
   const objects: string[] = [], items: string[] = [], settings: string[] = [], colors: string[] = [];
   let nextId = 2;
@@ -67,7 +70,9 @@ export function exportPrint3MF(api: ManifoldAPI, input: RackDoc, definitions: re
     const attribution = attributionForPart?.(entry.part);
     if (attribution && !report.vendorCredits.some(credit => credit.part === entry.part))
       report.vendorCredits.push({ part: entry.part, attribution: { ...attribution } });
-    const parts = buildPrintInstance(api, def, entry);
+    // Build-time print detail (#89): number/stencil cuts are fused into solids,
+    // so they are suppressed in the builder, never filtered from volumes here.
+    const parts = buildPrintInstance(api, def, {...entry, params:{...entry.params, printMinFeature:minFeature}});
     const volumes: { source: SolidPart; mesh: PrintMesh }[] = [];
     let occupied: ReturnType<typeof api.Manifold.union> | undefined;
     try {
@@ -110,9 +115,12 @@ export function exportPrint3MF(api: ManifoldAPI, input: RackDoc, definitions: re
       const matrix=new Matrix4().makeRotationFromEuler(new Euler(...group.entry.rotation));
       matrix.setPosition(...group.entry.position); transform(meshes,matrix);
     } else {
-      const {size}=bounds(meshes);
-      if(size[0]<size[2]&&size[0]<=size[1]) transform(meshes,new Matrix4().makeRotationY(Math.PI/2));
-      else if(size[1]<size[2]) transform(meshes,new Matrix4().makeRotationX(Math.PI/2));
+      // Long perforated tubes keep their Z-up frame, base end down (#87): the
+      // hole column prints as vertical tunnels without supports. Packing only
+      // spins about Z, so they stay standing. Others lie at their lowest height.
+      const {size}=bounds(meshes), standing=group.def.printOrientation==='standing';
+      if(!standing&&size[0]<size[2]&&size[0]<=size[1]) transform(meshes,new Matrix4().makeRotationY(Math.PI/2));
+      else if(!standing&&size[1]<size[2]) transform(meshes,new Matrix4().makeRotationX(Math.PI/2));
       const {min}=bounds(meshes); transform(meshes,new Matrix4().makeTranslation(-min[0],-min[1],-min[2]));
     }
     transform(meshes,new Matrix4().makeScale(1/scale,1/scale,1/scale));
@@ -171,7 +179,7 @@ export function exportPrint3MF(api: ManifoldAPI, input: RackDoc, definitions: re
   const plateSettings = report.plates.map((plate,i)=>`<plate><metadata key="plater_id" value="${i+1}"/><metadata key="plater_name" value="${plate.name}"/><metadata key="locked" value="false"/>${plate.objectIds.map(id=>`<model_instance><metadata key="object_id" value="${id}"/><metadata key="instance_id" value="0"/><metadata key="identify_id" value="${id}"/></model_instance>`).join('')}</plate>`).join('');
   const credits = report.vendorCredits.map(({part,attribution:a}) =>
     `${part}: ${a.vendor}. ${a.credit}. ${a.url}. ${a.trademark}. ${a.reconstruction}`).join('\n');
-  const model = `<?xml version="1.0" encoding="UTF-8"?><model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02"><metadata name="Application">${SLICER_APPLICATION}</metadata><metadata name="Designer">BOS STRENGTH print exporter</metadata><metadata name="Title">Printable rack parts 1:${scale}</metadata>${credits ? `<metadata name="Copyright">${xml(credits)}</metadata>` : ''}<metadata name="Description">${xml('Generated by BOS STRENGTH with a Bambu/Orca compatibility marker. Placeholder 256 mm bed, 0.4 mm nozzle and Generic PLA colors; select your printer and filament profiles before slicing. '+report.overlapPolicy+' '+report.textureLimitation)}</metadata><resources><basematerials id="1">${colors.map(color=>`<base name="${color}" displaycolor="${color}FF"/>`).join('')}</basematerials>${objects.join('')}</resources><build>${items.join('')}</build></model>`;
+  const model = `<?xml version="1.0" encoding="UTF-8"?><model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02"><metadata name="Application">${SLICER_APPLICATION}</metadata><metadata name="Designer">BOS STRENGTH print exporter</metadata><metadata name="Title">Printable rack parts 1:${scale}</metadata>${credits ? `<metadata name="Copyright">${xml(credits)}</metadata>` : ''}<metadata name="Description">${xml(`Generated by BOS STRENGTH with a Bambu/Orca compatibility marker. Placeholder 256 mm bed printer with a ${PRINT_NOZZLE} mm nozzle default (${SLICER_PROCESS} process) and Generic PLA colors; select your printer and filaments before slicing. `+report.overlapPolicy+' '+report.printDetail+' '+report.textureLimitation)}</metadata><resources><basematerials id="1">${colors.map(color=>`<base name="${color}" displaycolor="${color}FF"/>`).join('')}</basematerials>${objects.join('')}</resources><build>${items.join('')}</build></model>`;
   const bytes = zipSync({
     '[Content_Types].xml':strToU8('<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/><Default Extension="config" ContentType="application/octet-stream"/><Default Extension="json" ContentType="application/json"/></Types>'),
     '_rels/.rels':strToU8('<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/></Relationships>'),

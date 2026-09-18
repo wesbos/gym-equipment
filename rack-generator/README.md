@@ -1,6 +1,6 @@
 # BOS STRENGTH
 
-Run `npm run dev` from the project root and open the URL Vite prints. `/` is the original configurable upright builder; `/parts` is the detailed 28-entry parts library. `/builder` is the rack editor and `/library` is the catalog gallery. `npm run build` typechecks and builds the React SPA, `npm run preview` serves it through Wrangler, and `npm test` checks geometry and state.
+Run `npm run dev` from the project root and open the URL Vite prints. `/` is the rack builder (`/builder` redirects there). `/library` is the catalog gallery, and each part has its own shareable detail page at `/parts/<id>` (e.g. `/parts/j-hook-standard`); a bare `/parts` redirects to the library. `npm run build` typechecks and builds the React SPA, `npm run preview` serves it through Wrangler, and `npm test` checks geometry and state.
 
 The library covers uprights; 425/725/1075 mm crossmembers; angled and offset members; a nameplate panel and full/lite branded members; short/long stabilizer feet; three pull-up bars; three safety styles; three J-hook styles; spotter arm; dip horn; adjustable dip bar; landmine; monolift; single bar holder; and short/long weight-storage pins. Repeated left/right instances and rack-height variants share builders. All parts are also available in the rack assembly editor.
 
@@ -10,7 +10,7 @@ Manifold constructs the solids in a Web Worker. Structural and bar/safety famili
 
 The fidelity revision replaces the previous generic forms with contoured mounting plates, actual hole and slot patterns, recessed numbering, nuts/washers/fasteners, liners, shaped monolift hooks, dip-arm hardware, hollow sleeves, a waisted roller, and lathed storage horns. Generated nameplates use BOS STRENGTH stencil lettering with bridges for enclosed counters. The original source branding is retained only in reference assets and provenance.
 
-The original upright tool defaults to 80 inches (2032 mm), 75 mm square tubing, 3 mm wall, 6 mm outside corner radius, 25 mm holes, 50 mm pitch, and a 50 mm first-hole offset. The parts-library upright also defaults to 2032 mm, but follows the source's 25 mm hole family and bench-zone pattern; source-derived numbering extends through the 2300 mm reference range. Both are configurable. Source labels above the available reference range are not invented.
+The standalone upright generator (`model.ts`) defaults to 80 inches (2032 mm), 75 mm square tubing, 3 mm wall, 6 mm outside corner radius, 25 mm holes, 50 mm pitch, and a 50 mm first-hole offset. The parts-library upright also defaults to 2032 mm, but follows the source's 25 mm hole family and bench-zone pattern; source-derived numbering extends through the 2300 mm reference range. Both are configurable. Source labels above the available reference range are not invented.
 
 ## Viewing and export
 
@@ -28,6 +28,7 @@ The rebuilt silhouettes and component layouts closely follow the reference. Some
 
 - `parts/structure.ts`, `parts/bars-safeties.ts`, `parts/attachments.ts`: Manifold builders and recovered fabrication profiles.
 - `library-worker.ts`, `../src/scenes/part-scene.ts`: background construction, viewing, comparison, and export.
+- `plates.ts`, `parts/plates.ts`: Olympic plate spec table (Rogue HG 2.0 bumper / machined iron widths), storage-peg capacity checks, and the reusable `buildPlateStack(api, plates, { origin, axis })`. Storage-pin stacks live on the accessory (`plates`), render in the scene and GLB, and are omitted from 3MF prints.
 - `reference/front.glb`, `reference/storage.glb`: original assemblies from https://strengthshop.eu/products/3d-rack-builder-riot-mrr-75 .
 - `reference/panel.glb`: the original nameplate panel isolated from its assembly for comparison.
 - `reference/decode.ts`, `components.ts`, `extract-panel.ts`, `decoded/`: source measurement and geometry-analysis tools/data.
@@ -41,7 +42,7 @@ Rack mounting holes default to 25 mm throughout the library. Upright bench-zone 
 
 ## Rack assembly editor
 
-Open `/builder` for the BOS STRENGTH rack builder. It starts with an 80-inch four-post frame, 1,075 mm clear width and 725 mm clear depth. Frame dimensions move the connected components together; the caption measures the overall assembled bounds, including feet and attachments.
+Open `/` for the BOS STRENGTH rack builder. It starts with an 80-inch four-post frame, 1,075 mm clear width and 725 mm clear depth. Frame dimensions move the connected components together; the caption measures the overall assembled bounds, including feet and attachments.
 
 Choose a J-hook, pull-up bar, or safety from the catalog, then click a highlighted mounting hole. Dragging a catalog card into the viewport also previews a snapped placement. Matching pairs are enabled initially. Select an installed part in the scene or parts list to change its variant, upright, mounting face, or hole number. Escape cancels placement; Command/Ctrl-Z undoes; Shift-Command/Ctrl-Z redoes; Delete removes the selection. Deleted frame slots can be restored from the frame catalog.
 
@@ -57,7 +58,7 @@ Existing version-1 designs remain readable. Optional `structure` records store f
 
 ## TypeScript SPA and Cloudflare
 
-Use Node 22 or newer, then `npm ci`. `npm run dev` starts Vite. React renders the forms and panels, TanStack Router handles `/`, `/builder`, `/parts`, and `/library`, and imperative Three controllers own their canvases. Every scene stops its animation loop and disposes listeners, observers, workers, geometry, materials, controls, and renderers when its route unmounts. The builder uses an external subscribing store (`src/state/builder-store.ts`); document validation, mounting, resolution, and collision logic stay framework independent.
+Use Node 22 or newer, then `npm ci`. `npm run dev` starts Vite. React renders the forms and panels, TanStack Router handles `/` (builder), `/library`, and `/parts/$partId` (read with `useParams`; catalog clicks push history entries so back/forward step between parts), plus redirects for `/builder`, `/parts`, and the legacy `.html` paths, and imperative Three controllers own their canvases. Every scene stops its animation loop and disposes listeners, observers, workers, geometry, materials, controls, and renderers when its route unmounts. The builder uses an external subscribing store (`src/state/builder-store.ts`); document validation, mounting, resolution, and collision logic stay framework independent.
 
 `npm test` runs the TypeScript Node tests through tsx. `npm run typecheck` checks the domain, workers, React UI, scene controllers, tests, and reference tools under strict TypeScript. Vendor Draco JavaScript remains distributed vendor code. Run reference tools with `node --import tsx rack-generator/reference/<tool>.ts`.
 

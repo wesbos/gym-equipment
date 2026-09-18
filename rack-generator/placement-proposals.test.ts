@@ -22,8 +22,17 @@ test('default catalog sweep: collision-free proposal or actual explicit no-fit, 
     }
   }
 });
+test('single-default parts propose one unit; pair defaults still propose two', () => {
+  const doc = createAssembly();
+  for (const part of ['landmine','single-bar-holder','dip-horn','dip-bar-adjustable'] as PartId[]) {
+    const p = suggestPlacement(doc,part).proposal!;
+    assert.equal(p.doc.accessories.at(-1)!.paired,false,part);
+    assert.equal(p.entries.length,1,part);
+  }
+  for (const part of ['spotter-arm','storage-pin-short'] as PartId[]) assert.equal(suggestPlacement(doc,part).proposal!.entries.length,2,part);
+});
 test('landmine measured studs and low outside paired proposal remain aligned', () => {
-  const doc = createAssembly(), r = suggestPlacement(doc,'landmine');
+  const doc = createAssembly(), r = suggestPlacement(doc,'landmine',true);
   const p = r.proposal!;
   assert.ok(getMounts(doc,'landmine').length > 0);
   assert.deepEqual(getAttachmentAnchor('landmine').boltStations.map(s => s.zOffset),[0,150]);

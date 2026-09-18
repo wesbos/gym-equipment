@@ -94,6 +94,31 @@
   color: #688171;
   letter-spacing: 1px;
 }
+.parts-page .part-missing {
+  position: absolute;
+  z-index: 3;
+  inset: 70px 24px 60px;
+  overflow: auto;
+  background: #f8f9f5;
+  border: 1px solid #cdd6ce;
+  border-radius: 8px;
+  padding: 22px 26px;
+  font-size: 13px;
+  color: #4b5d50;
+}
+.parts-page .part-missing ul {
+  columns: 14em;
+  gap: 20px;
+  padding: 0;
+  list-style: none;
+}
+.parts-page .part-missing li {
+  padding: 3px 0;
+  break-inside: avoid;
+}
+.parts-page .part-missing a {
+  color: #274d3b;
+}
 .parts-page header {
   padding: 17px 16px;
 }

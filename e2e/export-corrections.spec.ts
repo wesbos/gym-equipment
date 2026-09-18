@@ -3,13 +3,15 @@ import { test, expect, chromium } from '@playwright/test';
 // Run against an isolated Vite server and agent-browser session, not the shared builder.
 const base = process.env.GYM_EXPORT_BASE_URL ?? 'http://127.0.0.1:5327';
 const cdp = process.env.GYM_EXPORT_CDP_URL;
+// `/` is now the live builder; these module-level tests only need the origin, so use an unrouted page.
+const blank = base + '/__export-review';
 test.skip(!cdp, 'Set GYM_EXPORT_CDP_URL to an isolated agent-browser session.');
 
 test('failed current CAD build cannot export stale GLB, even after status changes; retry succeeds', async () => {
   test.setTimeout(90000);
   const browser = await chromium.connectOverCDP(cdp!);
   const page = await browser.contexts()[0].newPage();
-  await page.goto(base);
+  await page.goto(blank);
   try {
     const result = await page.evaluate(async () => {
       const load = (path: string) => import(path);
@@ -55,7 +57,7 @@ test('failed current CAD build cannot export stale GLB, even after status change
 
 test('builder and standalone GLB retain system product credits with identity and metre scale', async () => {
   const browser = await chromium.connectOverCDP(cdp!);
-  const page = await browser.contexts()[0].newPage(); await page.goto(base);
+  const page = await browser.contexts()[0].newPage(); await page.goto(blank);
   try {
     const result = await page.evaluate(async () => {
       const load = (path: string) => import(path);
@@ -130,7 +132,7 @@ test('Parts parameter downloads and original-reference links use system attribut
     window.Worker = FixtureWorker as unknown as typeof Worker;
   }, ids);
   try {
-    await page.goto(base + '/parts');
+    await page.goto(base + '/parts/' + ids[0]);
     for (const id of ids) {
       await page.locator('#catalog').getByRole('button', { name: id, exact: true }).click();
       const link = page.getByRole('link', { name: 'Original reference' });

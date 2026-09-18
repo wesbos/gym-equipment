@@ -13,6 +13,7 @@ import { placementMounts, proposalCollision, type PlacementProposal } from '../.
 import { swapCandidate, swapCandidates, type SwapCandidate } from '../../rack-generator/swap.ts';
 import { createSwapRegions } from './swap-regions.ts';
 import { cloneInstanceMaterials } from './instance-materials.ts';
+import { BuildAnimation, planBuild } from './build-animation.ts';
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
@@ -34,6 +35,9 @@ export interface BuilderScene {
   fit(mode?: BuilderView): void;
   refitOnNextBuild(): void;
   exportGLB(): Promise<ArrayBuffer>;
+  /** Cinematic self-assembly of the rendered rack; presentation only. False when it cannot (or, reduced-motion, need not) run. */
+  playBuild(onEnd?: () => void): boolean;
+  stopBuild(): void;
   dispose(): void;
 }
 const message = (error: unknown) =>
@@ -724,7 +728,50 @@ export function createBuilderScene(
   viewport.addEventListener("pointerleave", onLeave);
   viewport.addEventListener("dragover", onDrag);
   viewport.addEventListener("drop", onDrop);
+  let build: { animation: BuildAnimation; start: number; onEnd?: () => void } | null = null;
+  const buildToggle = (target: EventTarget | null) => target instanceof Element && !!target.closest('[data-build-toggle]');
+  // Any click, drag, wheel or key (bar the toggle itself) snaps to the finished rack.
+  const cancelBuildPointer = (event: Event) => {
+    if (buildToggle(event.target)) return;
+    // Swallow the cancelling press on the canvas so it neither selects nor starts a drag.
+    if (event.target === renderer.domElement) { event.preventDefault(); event.stopImmediatePropagation(); }
+    stopBuild();
+  };
+  const cancelBuildKey = (event: KeyboardEvent) => {
+    if (['Shift', 'Control', 'Alt', 'Meta', 'Unidentified'].includes(event.key) || (buildToggle(event.target) && (event.key === 'Enter' || event.key === ' '))) return;
+    stopBuild();
+  };
+  function playBuild(onEnd?: () => void) {
+    if (build || disposed || snapshot.loading || renderedGeneration !== generation || !instances.size || snapshot.placing || snapshot.structureChoice || snapshot.systemChoice) return false;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      renderer.domElement.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: 300, easing: 'ease-out' });
+      return false;
+    }
+    scene.updateMatrixWorld(true);
+    const center = new THREE.Box3().setFromObject(assemblyRoot).getCenter(new THREE.Vector3());
+    build = { animation: new BuildAnimation(planBuild(snapshot.resolved), instances, camera, controls.target, center), start: performance.now(), onEnd };
+    controls.enabled = false;
+    for (const box of selectionBoxes) box.visible = false;
+    window.addEventListener('pointerdown', cancelBuildPointer, true);
+    window.addEventListener('wheel', cancelBuildPointer, { capture: true, passive: false });
+    window.addEventListener('keydown', cancelBuildKey, true);
+    return true;
+  }
+  function stopBuild() {
+    if (!build) return;
+    const { animation, onEnd } = build;
+    build = null;
+    animation.finish();
+    window.removeEventListener('pointerdown', cancelBuildPointer, true);
+    window.removeEventListener('wheel', cancelBuildPointer, true);
+    window.removeEventListener('keydown', cancelBuildKey, true);
+    controls.enabled = !floorDrag && !snapshot.selectionTool;
+    controls.update();
+    refreshSelection();
+    onEnd?.();
+  }
   function fit(mode: BuilderView = view) {
+    stopBuild();
     view = mode;
     const box = new THREE.Box3().setFromObject(assemblyRoot);
     if (box.isEmpty())
@@ -781,12 +828,14 @@ export function createBuilderScene(
   function animate() {
     if (disposed) return;
     frame = requestAnimationFrame(animate);
-    controls.update();
-    backdrop.follow(camera, controls.target);
-    camera.far = Math.max(40000, camera.position.distanceTo(controls.target) * 4);
+    if (build && !build.animation.update((performance.now() - build.start) / 1000)) stopBuild();
+    if (!build) controls.update();
+    const focus = build ? build.animation.focus : controls.target;
+    backdrop.follow(camera, focus);
+    camera.far = Math.max(40000, camera.position.distanceTo(focus) * 4);
     camera.near = Math.max(
       0.5,
-      camera.position.distanceTo(controls.target) / 200,
+      camera.position.distanceTo(focus) / 200,
     );
     camera.updateProjectionMatrix();
     positionHandles();
@@ -797,6 +846,7 @@ export function createBuilderScene(
     const previous = snapshot;
     snapshot = store.getSnapshot();
     if (disposed) return;
+    if (snapshot.doc !== previous.doc || snapshot.placing || snapshot.structureChoice || snapshot.systemChoice) stopBuild();
     // History navigation finalizes/cancels the store gesture; never let an old
     // pointer capture or floor origin apply a stale drag to the new document.
     if (snapshot.inputRevision !== previous.inputRevision) {
@@ -828,8 +878,11 @@ export function createBuilderScene(
     refitOnNextBuild() {
       hasFit = false;
     },
+    playBuild,
+    stopBuild,
     async exportGLB() {
       if (disposed) throw Error("Scene has been disposed.");
+      stopBuild();
       if (snapshot.timeline.viewing) throw Error("Return to latest before exporting the applied rack.");
       if (snapshot.loading)
         throw Error("Wait for the rack to finish building.");
@@ -847,6 +900,7 @@ export function createBuilderScene(
     },
     dispose() {
       if (disposed) return;
+      stopBuild();
       disposed = true;
       generation++;
       previewSerial++;

@@ -1,5 +1,6 @@
 import { LOGO_DEFAULTS, defaultLogoSource, isDefaultLogoSource } from './logo-defaults.ts';
 import { ResetButton } from './ResetButton.tsx';
+import { GestureRange } from './GestureInputs.tsx';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { BuilderStore } from '../state/builder-store.ts';
 import type { LogoSource, ValidatedLogo } from '../../rack-generator/logos/types.ts';
@@ -58,6 +59,8 @@ export function LogoControls({ store }: { store: BuilderStore }) {
       const next = { ...store.getSnapshot().doc }; delete next.logo; store.commit(next);
     });
   }
+  // Raster tuning is draft-only today; bracketing keeps a single entry if it ever commits live.
+  const gesture = { onGestureStart: store.beginGesture, onGestureEnd: store.endGesture, onGestureCancel: store.cancelGesture };
   const canResetStock = !!doc.logo || !isDefaultLogoSource(source) || bridges !== LOGO_DEFAULTS.bridges || !!preview || !!error || busy;
   return <details className="appearance-controls logo-controls">
     <summary>Custom logo</summary>
@@ -73,9 +76,9 @@ export function LogoControls({ store }: { store: BuilderStore }) {
     </> : <label className="field"><span>Upload logo (250 KB maximum)</span><input key={source.data ? 'uploaded' : 'empty'} aria-label="Upload logo" type="file" accept=".svg,.png,.jpg,.jpeg" onChange={e => void upload(e.target.files?.[0])} /></label>}
     {source.kind !== 'text' && <ResetButton label="logo upload" changed={!!source.data} onReset={() => update({ ...source, data: '' })} />}
     {source.kind === 'raster' && <>
-      <label className="field"><span>Threshold: {source.threshold ?? LOGO_DEFAULTS.threshold}</span><input aria-label="Logo threshold" type="range" min="1" max="254" value={source.threshold ?? LOGO_DEFAULTS.threshold} onChange={e => update({ ...source, threshold: Number(e.target.value) })} /></label>
+      <label className="field"><span>Threshold: {source.threshold ?? LOGO_DEFAULTS.threshold}</span><GestureRange {...gesture} aria-label="Logo threshold" min="1" max="254" value={source.threshold ?? LOGO_DEFAULTS.threshold} onValue={threshold => update({ ...source, threshold })} /></label>
       <ResetButton label="logo threshold" value={LOGO_DEFAULTS.threshold} changed={(source.threshold ?? LOGO_DEFAULTS.threshold) !== LOGO_DEFAULTS.threshold} onReset={() => update({ ...source, threshold: LOGO_DEFAULTS.threshold })} />
-      <label className="field"><span>Contrast: {source.contrast ?? LOGO_DEFAULTS.contrast}</span><input aria-label="Logo contrast" type="range" min="0.5" max="3" step="0.1" value={source.contrast ?? LOGO_DEFAULTS.contrast} onChange={e => update({ ...source, contrast: Number(e.target.value) })} /></label>
+      <label className="field"><span>Contrast: {source.contrast ?? LOGO_DEFAULTS.contrast}</span><GestureRange {...gesture} aria-label="Logo contrast" min="0.5" max="3" step="0.1" value={source.contrast ?? LOGO_DEFAULTS.contrast} onValue={contrast => update({ ...source, contrast })} /></label>
       <ResetButton label="logo contrast" value={LOGO_DEFAULTS.contrast} changed={(source.contrast ?? LOGO_DEFAULTS.contrast) !== LOGO_DEFAULTS.contrast} onReset={() => update({ ...source, contrast: LOGO_DEFAULTS.contrast })} />
     </>}
     <label><input type="checkbox" checked={bridges} onChange={e => { stop(); setBusy(false); setBridges(e.target.checked); setPreview(null); }} /> Automatic island bridges</label>
