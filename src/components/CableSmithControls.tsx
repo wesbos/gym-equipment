@@ -4,20 +4,17 @@ import {
   trolleyStations,
 } from "../../rack-generator/cable-stations.ts";
 import { ResetButton } from "./ResetButton.tsx";
-import { useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import type { BuilderStore } from "../state/builder-store.ts";
-import { PartThumbnail } from "./PartThumbnail.tsx";
 import { NumericControl } from "./NumericControl.tsx";
 import {
   SYSTEM_DEFAULTS,
   SYSTEM_NAMES,
-  SYSTEM_PARTS,
   type RackSystem,
   type SystemPartId,
 } from "../../rack-generator/system-types.ts";
 import { systemWarnings, withSystem } from "../../rack-generator/systems.ts";
 import {
-  validateAssembly,
   removeInstance,
 } from "../../rack-generator/assembly.ts";
 import type { NumericParams } from "../../rack-generator/types.ts";
@@ -277,16 +274,6 @@ function Installed({
 }
 export function CableSmithControls({ store }: { store: BuilderStore }) {
   const { doc } = useSyncExternalStore(store.subscribe, store.getSnapshot);
-  const [part, setPart] = useState<SystemPartId>("cable-kraken");
-  const [params, setParams] = useState<NumericParams>({
-    ...SYSTEM_DEFAULTS[part],
-  });
-  let reason = "";
-  try {
-    validateAssembly(withSystem(doc, part, params));
-  } catch (e) {
-    reason = e instanceof Error ? e.message : String(e);
-  }
   return (
     <details className="system-controls">
       <summary>Cable systems & Smith</summary>
@@ -298,42 +285,7 @@ export function CableSmithControls({ store }: { store: BuilderStore }) {
           {w}
         </p>
       ))}
-      <label className="field">
-        <span>Add system</span>
-        <select
-          aria-label="System family"
-          value={part}
-          onChange={(e) => {
-            const id = e.target.value as SystemPartId;
-            setPart(id);
-            setParams({ ...SYSTEM_DEFAULTS[id] });
-          }}
-        >
-          {SYSTEM_PARTS.map((id) => (
-            <option key={id} value={id}>
-              {SYSTEM_NAMES[id]}
-            </option>
-          ))}
-        </select>
-      </label>
-      <PartThumbnail part={part} />
-      <Options
-        part={part}
-        p={params}
-        rack={doc.rack}
-        onChange={(patch) => setParams({ ...params, ...patch })}
-      />
-      {reason && <p role="status">{reason}</p>}
-      <button
-        disabled={!!reason}
-        onClick={() =>
-          store.act(() =>
-            store.commit(withSystem(store.getSnapshot().doc, part, params)),
-          )
-        }
-      >
-        Add {SYSTEM_NAMES[part]}
-      </button>
+      {!doc.systems?.length && <p className="note">Choose a system from the sidebar catalog to preview its mounting bay.</p>}
       <p className="note">
         Vendor parts credited to{" "}
         <a
@@ -355,4 +307,14 @@ export function CableSmithControls({ store }: { store: BuilderStore }) {
       </p>
     </details>
   );
+}
+
+/** Installation settings remain staged in the sidebar until Place is pressed. */
+export function SystemPlacementOptions({ store }: { store: BuilderStore }) {
+  const { systemChoice, systemParams, doc } = useSyncExternalStore(store.subscribe, store.getSnapshot);
+  if (!systemChoice) return null;
+  return <details className="system-placement-options" key={systemChoice}>
+    <summary>{SYSTEM_NAMES[systemChoice]} installation options</summary>
+    <Options part={systemChoice} p={systemParams} rack={doc.rack} onChange={store.previewSystem} />
+  </details>;
 }
