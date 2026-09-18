@@ -204,9 +204,11 @@ export function validateSystems(
             : 2029), "Smith bar exceeds the published upper travel.");
         const internal = doc.accessories.filter(
           (a) =>
-            a.part.startsWith("safety-") ||
+            (layout.ids.includes(a.target.uprightId) ||
+              [a.spanTo, a.pairTo, a.pairedSpanTo].some(id => id !== undefined && layout.ids.includes(id))) &&
+            (a.part.startsWith("safety-") ||
             (a.part === "spotter-arm" &&
-              ["left", "right"].includes(a.target.face)),
+              ["left", "right"].includes(a.target.face))),
         );
         require(p.outside === 1 || !internal.some(
           (a) => a.part === "safety-box" || a.part === "safety-webbing",

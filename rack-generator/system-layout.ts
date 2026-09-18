@@ -34,7 +34,7 @@ export function anchoredLayout(doc: RackDoc, anchor: unknown): SystemLayout {
 }
 
 /** Discover connected rectangles, independent of names, insertion order and rack metadata.
- * Prefer complete six-post runs; their four-post subsets must not bypass rear-bay rules.
+ * Prefer six-post runs, then try their independently supported four-post subsets.
  */
 export function candidateLayouts(doc: RackDoc): SystemLayout[] {
   const nodes = Object.entries(doc.uprights).filter(([id]) => !doc.removed.includes(id))
@@ -51,7 +51,7 @@ export function candidateLayouts(doc: RackDoc): SystemLayout[] {
     pairs.push([a, b]);
     for (const c of rows) if (linked(b, c)) triples.push([a, b, c]);
   }
-  return [...triples, ...pairs.filter(p => !triples.some(t => p.every(r => t.includes(r))))]
+  return [...triples, ...pairs]
     .map(rows => layout(rows, doc.rack.tube));
 }
 

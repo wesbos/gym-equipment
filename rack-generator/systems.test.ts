@@ -481,7 +481,12 @@ test('bay checks actual depth, straight member type and every required side leve
   const four = preset('rep-pr-5000', 'four');
   for (const node of Object.values(four.uprights)) if (node.y > 0) node.y += 50.8;
   assert.throws(() => validateAssembly(withSystem(four, 'smith-rep')), /main crossmembers span.*supported clear depth/);
-  assert.throws(() => validateAssembly(withSystem(preset('bos-manticore', 'six', 609.6, 2133.6), 'cable-kraken')), /30- or 43-inch/);
+  const shallowKraken = withSystem(preset('bos-manticore', 'six', 609.6, 2133.6), 'cable-kraken');
+  const sixPosts = Object.entries(shallowKraken.uprights).sort((a, b) => a[1].y - b[1].y || a[1].x - b[1].x).map(([id]) => id);
+  shallowKraken.systems![0].bay = sixPosts;
+  assert.throws(() => validateAssembly(shallowKraken), /30- or 43-inch/);
+  delete shallowKraken.systems![0].bay;
+  assert.equal(validateAssembly(shallowKraken).systems![0].bay!.length, 4);
 });
 
 function twoBays() {
@@ -551,13 +556,13 @@ test('108-inch Kraken raises only selected bay side beams, leaving unrelated ext
   assert.deepEqual(doc.systems![0].bay, bay);
 });
 
-test('all manufacturer preset heights and depths preserve canonical family eligibility', () => {
+test('all manufacturer preset heights and depths enforce family fit on the selected bay', () => {
   for (const p of RACK_PRESETS.filter(p => p.profileId !== 'generic-75')) {
     const doc = applyPreset(p.id);
     if (p.profileId.startsWith('bos-')) {
-      if (p.kind === 'six' && p.depth === 609.6)
-        assert.throws(() => validateAssembly(withSystem(doc, 'cable-kraken')), /30- or 43-inch/, p.id);
-      else assert.equal(validateAssembly(withSystem(doc, 'cable-kraken')).systems!.length, 1, p.id);
+      const installed = validateAssembly(withSystem(doc, 'cable-kraken'));
+      assert.equal(installed.systems!.length, 1, p.id);
+      assert.equal(installed.systems![0].bay!.length, p.kind === 'six' && p.depth !== 609.6 ? 6 : 4, p.id);
     } else {
       assert.equal(validateAssembly(withSystem(doc, 'smith-rep')).systems!.length, 1, p.id);
       if (p.profileId === 'rep-pr-4000' && p.kind === 'four')
@@ -571,4 +576,32 @@ test('all manufacturer preset heights and depths preserve canonical family eligi
       }
     }
   }
+});
+
+test('partial or unsupported rear extensions preserve a complete four-post mounting bay', () => {
+  for (const complete of [false, true]) {
+    const doc = preset('rep-pr-5000', 'four');
+    const posts = Object.keys(doc.uprights);
+    for (const side of ['left', 'right']) {
+      const from = `rear-${side}`, to = `extension-${side}`;
+      doc.uprights[to] = { ...doc.uprights[from], y: doc.uprights[from].y + 837 };
+      for (const level of ['upper', 'lower'] as const)
+        if (complete || (side === 'left' && level === 'upper'))
+          doc.connections.push({ id: `extension-${side}-${level}`, from, to, level });
+    }
+    const installed = validateAssembly(withSystem(doc, 'cable-athena'));
+    assert.deepEqual(new Set(installed.systems![0].bay), new Set(posts));
+    assert.deepEqual(resolveAssembly(installed).find(r => r.part === 'cable-athena')!.connectedTo, installed.systems![0].bay);
+  }
+});
+
+test('Smith ignores safeties in unrelated bays but checks every endpoint touching its selected bay', async () => {
+  const { spanAccessory } = await import('./graph-edits.ts');
+  const doc = spanAccessory(twoBays(), 'other-front-left', 'other-rear-left', 'safety-webbing', 10);
+  const installed = validateAssembly(withSystem(doc, 'smith-rep'));
+  assert.ok(installed.systems![0].bay!.every(id => !id.startsWith('other-')));
+  const conflict = structuredClone(installed);
+  conflict.accessories[0].target.uprightId = 'front-left';
+  conflict.accessories[0].spanTo = 'rear-left';
+  assert.throws(() => validateAssembly(conflict), /internal safeties/);
 });
