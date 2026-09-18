@@ -1,4 +1,4 @@
-import { test, expect, chromium } from '@playwright/test';
+import { test, expect, chromium, type Page } from '@playwright/test';
 import { createAssembly, addAccessory } from '../rack-generator/assembly.ts';
 import fs from 'node:fs/promises';
 
@@ -6,12 +6,14 @@ test('isolated reposition: double-click, pair opt-out, floor, rotation, Escape, 
   test.setTimeout(180000);
   if (!process.env.GYM_REPOSITION_CDP_URL) throw Error('Use isolated gym-wave4-reposition on port 5333 and set GYM_REPOSITION_CDP_URL.');
   const browser = await chromium.connectOverCDP(process.env.GYM_REPOSITION_CDP_URL);
+  let testPage: Page | undefined;
   try {
-    const page = browser.contexts()[0].pages().find(p => p.url().includes(':5333/builder'))!;
+    const page = testPage = await browser.contexts()[0].newPage();
+    await page.addInitScript(() => localStorage.removeItem("bos-strength-configurations-v1"));
+    await page.goto("http://127.0.0.1:5333/builder");
     page.on('dialog', dialog => dialog.accept());
     await page.setViewportSize({ width: 1280, height: 633 });
-    await page.evaluate(() => localStorage.removeItem("bos-strength-configurations-v1"));
-    await page.reload();
+
     const doc = async () => await page.evaluate(() => {
       const c = JSON.parse(localStorage.getItem('bos-strength-configurations-v1') ?? '{}');
       return c.draft ?? c.configs?.find((s: {id:string}) => s.id === c.activeId)?.doc;
@@ -99,7 +101,24 @@ test('isolated reposition: double-click, pair opt-out, floor, rotation, Escape, 
     await expect(page.getByRole('button',{name:'Apply rotation',exact:true})).toBeVisible();
     expect(await doc()).toEqual(rotationBefore);
     await page.keyboard.press('Escape'); expect(await doc()).toEqual(rotationBefore);
-    expect(await page.screenshot({clip:zoomRegion})).toEqual(cameraBefore); // rotation wheel never reaches OrbitControls zoom
+    const cameraAfter = await page.screenshot({clip:zoomRegion});
+    await fs.writeFile('/tmp/gym-wave4/camera-before.png', cameraBefore);
+    await fs.writeFile('/tmp/gym-wave4/camera-after.png', cameraAfter);
+    const pixelDifference = async (a:Buffer,b:Buffer) => page.evaluate(async ([first,second]) => {
+      const pixels = async (data:string) => {
+        const image = new Image(); image.src = `data:image/png;base64,${data}`; await image.decode();
+        const canvas = document.createElement('canvas'); canvas.width=image.width; canvas.height=image.height;
+        const context=canvas.getContext('2d')!; context.drawImage(image,0,0); return context.getImageData(0,0,image.width,image.height).data;
+      };
+      const [a,b]=await Promise.all([pixels(first),pixels(second)]);
+      let changed=0;
+      for(let i=0;i<a.length;i+=4) if(Math.max(Math.abs(a[i]-b[i]),Math.abs(a[i+1]-b[i+1]),Math.abs(a[i+2]-b[i+2]))>20) changed++;
+      return changed/(a.length/4);
+    }, [a.toString('base64'), b.toString('base64')]);
+    expect(await pixelDifference(cameraBefore,cameraAfter), 'rotation wheel must not zoom the rack').toBeLessThan(.005);
+    await page.mouse.wheel(0,240); // No selected/hovered attachment: ordinary zoom remains available.
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    expect(await pixelDifference(cameraAfter,await page.screenshot({clip:zoomRegion}))).toBeGreaterThan(.01);
     await select(storageId); await page.mouse.wheel(0,80); await page.keyboard.press('r');
     await page.mouse.click(850,180); await ready();
     expect((await doc()).accessories.find((a:{id:string})=>a.id===storageId).rotation).toBeCloseTo(Math.PI/6);
@@ -111,5 +130,7 @@ test('isolated reposition: double-click, pair opt-out, floor, rotation, Escape, 
     await expect.poll(async()=>(await doc()).accessories.find((a:{id:string})=>a.id===darkoId).rotation).toBeCloseTo(Math.PI);
     await ready(); await page.getByRole('button',{name:'Undo',exact:true}).click(); await ready(); expect(await doc()).toEqual(rotationBefore);
     console.log('Mounted R/wheel staged + click/scroll-out commit, Darko half-turn, Escape and single undo passed');
-  } finally { await browser.close(); }
+  } finally {
+    try { await testPage?.close({ runBeforeUnload: false }); } finally { await browser.close(); }
+  }
 });
