@@ -1,12 +1,14 @@
 import { gridProfile } from '../../rack-generator/profiles.ts';
 import './TopologyEditor.css';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { connectUprights, extendUpright, moveConnection, moveUpright, spanAccessory, type Direction } from '../../rack-generator/graph-edits.ts';
 import { removeInstance } from '../../rack-generator/assembly.ts';
 import type { RackDoc, PartId } from '../../rack-generator/types.ts';
 import type { BuilderStore } from '../state/builder-store.ts';
 /** A top-view ghost stays local until Apply; all edits go through normal undo/history. */
-export function TopologyEditor({ doc, store, selected }: { doc: RackDoc; store: BuilderStore; selected: string | null }) {
+export function TopologyEditor({ doc, store, selected, moveRequested = false }: { doc: RackDoc; store: BuilderStore; selected: string | null; moveRequested?: boolean }) {
+  const root = useRef<HTMLDetailsElement>(null);
+  useEffect(() => { if (moveRequested && root.current) { root.current.open = true; root.current.querySelector<HTMLElement>('[data-move-control]')?.focus(); } }, [moveRequested]);
   const [preview, setPreview] = useState<RackDoc | null>(null);
   const [error, setError] = useState('');
   const ids = Object.keys(doc.uprights).filter(id => !doc.removed.includes(id));
@@ -17,7 +19,7 @@ export function TopologyEditor({ doc, store, selected }: { doc: RackDoc; store: 
   const shown = preview ?? doc, entries = Object.entries(shown.uprights).filter(([id]) => !shown.removed.includes(id));
   const minX = Math.min(...entries.map(([,p]) => p.x))-200, minY = Math.min(...entries.map(([,p]) => p.y))-200;
   const width = Math.max(...entries.map(([,p]) => p.x))-minX+200, height = Math.max(...entries.map(([,p]) => p.y))-minY+200;
-  return <details className="topology-editor"><summary>Uprights & connections</summary>
+  return <details ref={root} className="topology-editor"><summary>Uprights & connections</summary>
     <svg role="img" aria-label="Top view placement preview" viewBox={`${minX} ${minY} ${width} ${height}`} style={{width:'100%',height:150,background:'#202020'}}>
       {shown.connections.filter(e => !shown.removed.includes(e.id)).map(e => <line key={e.id} x1={shown.uprights[e.from].x} y1={shown.uprights[e.from].y} x2={shown.uprights[e.to].x} y2={shown.uprights[e.to].y} stroke={preview && !doc.connections.some(old => old.id === e.id) ? '#f0ac59':'#888'} strokeWidth={20} />)}
       {shown.accessories.filter(a => a.spanTo).map(a => <line key={a.id} x1={shown.uprights[a.target.uprightId].x} y1={shown.uprights[a.target.uprightId].y} x2={shown.uprights[a.spanTo!].x} y2={shown.uprights[a.spanTo!].y} stroke="#82bdd8" strokeWidth={12} />)}
@@ -38,13 +40,13 @@ export function TopologyEditor({ doc, store, selected }: { doc: RackDoc; store: 
     </form>
     {selected && doc.uprights[selected] && <form key={selected+JSON.stringify(doc.uprights[selected])} onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget); propose(() => moveUpright(doc, selected, Number(f.get('x')), Number(f.get('y')))); }}>
       <p>{selected} · {doc.rack.pitch} mm grid</p>
-      <label>X (mm)<input name="x" type="number" step="any" defaultValue={doc.uprights[selected].x}/></label>
+      <label>X (mm)<input data-move-control name="x" type="number" step="any" defaultValue={doc.uprights[selected].x}/></label>
       <label>Depth (mm)<input name="y" type="number" step="any" defaultValue={doc.uprights[selected].y}/></label>
       <button>Preview move</button><button type="button" onClick={() => propose(() => removeInstance(doc, selected))}>Preview remove upright</button>
     </form>}
     {edge && <form key={JSON.stringify(edge)} onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget); propose(() => moveConnection(doc, edge.id, String(f.get('from')), String(f.get('to')), f.get('level') as 'upper' | 'lower')); }}>
       <p>Move connection {edge.id}</p>
-      <label>From<select name="from" defaultValue={edge.from}>{ids.map(id => <option key={id}>{id}</option>)}</select></label>
+      <label>From<select data-move-control name="from" defaultValue={edge.from}>{ids.map(id => <option key={id}>{id}</option>)}</select></label>
       <label>To<select name="to" defaultValue={edge.to}>{ids.map(id => <option key={id}>{id}</option>)}</select></label>
       <label>Level<select name="level" defaultValue={edge.level}><option>upper</option><option>lower</option></select></label>
       <button>Preview move connection</button>
