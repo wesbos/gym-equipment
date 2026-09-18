@@ -543,7 +543,36 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
         }
       }
       const floating = plan.pulleys.filter((w) => w.id.startsWith("Floating"));
-      if (floating.length) {
+      if (v2 && floating.length) {
+        const xs = floating.map((w) => w.center[0]),
+          x0 = Math.min(...xs), x1 = Math.max(...xs),
+          mid = (x0 + x1) / 2,
+          y = floating[0].center[1],
+          zs = [...new Set(floating.map((w) => w.center[2]))],
+          lo = Math.min(...zs) - 47, hi = Math.max(...zs) + 47;
+        for (const x of [x0 - 17, x1 + 17])
+          g.add("ARES2 coaxial equalizer outer cheek",
+            g.cut(g.box([4, 24, hi - lo], [x, y, (lo + hi) / 2]),
+              zs.map((z) => g.cylinder(8, 5.5, "x", [x, y, z]))));
+        for (const z of zs) {
+          // One shared axle per coaxial pair. Washers seat outside the frame,
+          // not between duplicated per-sheave cheek/bolt assemblies.
+          g.add("ARES2 coaxial equalizer shared axle",
+            g.cylinder(x1 - x0 + 60, 5, "x", [mid, y, z]), "fastener");
+          for (const [x, sign] of [[x0 - 19, -1], [x1 + 19, 1]]) {
+            g.add("ARES2 coaxial equalizer axle washer",
+              g.ring(3, 10, 5.2, "x", [x + sign * 1.5, y, z]), "fastener");
+            g.add("ARES2 coaxial equalizer axle nut",
+              g.cut(g.cylinder(7, 8.5, "x", [x + sign * 6.5, y, z], 6),
+                [g.cylinder(9, 5.2, "x", [x + sign * 6.5, y, z])]), "fastener");
+          }
+          g.add("ARES2 coaxial equalizer axle spacer",
+            g.ring(x1 - x0 - 24, 8, 5.2, "x", [mid, y, z]), "rod");
+        }
+        for (const z of [lo + 4, hi - 4])
+          g.add("ARES2 coaxial equalizer frame tie",
+            g.box([x1 - x0 + 38, 24, 8], [mid, y, z]));
+      } else if (floating.length) {
         const lo = Math.min(...floating.map((w) => w.center[2])) - 65,
           hi = Math.max(...floating.map((w) => w.center[2])) + 45;
         const xs = [...new Set(floating.map((w) => w.center[0]))];
