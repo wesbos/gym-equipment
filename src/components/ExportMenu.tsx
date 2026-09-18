@@ -1,5 +1,5 @@
 import './export-menu.css';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { ResetButton } from './ResetButton.tsx';
 import type { BuilderStore } from '../state/builder-store.ts';
 import type { PrintLayout, PrintScale } from '../exports/print-3mf.ts';
@@ -12,6 +12,7 @@ const formats: ExportFormat[] = ['glb', '3mf'];
 export function ExportMenu({ store, exportGLB, loading, empty }: {
   store: BuilderStore; exportGLB: () => Promise<ArrayBuffer>; loading: boolean; empty: boolean;
 }) {
+  const { timeline } = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const [open, setOpen] = useState(false);
   const [format, setFormat] = useState<ExportFormat>(() => {
     try { return readExportFormat(sessionStorage); } catch { return 'glb'; }
@@ -58,11 +59,11 @@ export function ExportMenu({ store, exportGLB, loading, empty }: {
   }, [open]);
 
   const start = () => {
-    if (busy || empty || (format === 'glb' && loading)) return;
+    if (busy || empty || (format === 'glb' && (loading || timeline.viewing))) return;
     try { rememberExportFormat(sessionStorage, format); } catch { /* Storage may be unavailable. */ }
     // Keep focus inside the popover before disabling its download button.
     items.current[formats.indexOf(format)]?.focus();
-    void job.start(format, store.getSnapshot().doc, layout, scale);
+    void job.start(format, store.getAppliedDoc(), layout, scale);
   };
   return <div className="export-menu" ref={root}
     onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) close(); }}
@@ -119,8 +120,9 @@ export function ExportMenu({ store, exportGLB, loading, empty }: {
         <p>Select printer and filaments.</p>
         <a href="https://github.com/wesbos/gym-equipment/blob/main/docs/print-export.md" target="_blank" rel="noreferrer">Export details ↗</a>
       </div>}
+      {format === 'glb' && timeline.viewing && <p>Return to latest to export the applied rack. <button type="button" onClick={store.latestHistory}>Return to latest</button></p>}
       <div className="export-menu-actions">
-        <button type="button" className="primary" disabled={!!busy || empty || (format === 'glb' && loading)}
+        <button type="button" className="primary" disabled={!!busy || empty || (format === 'glb' && (loading || timeline.viewing))}
           onClick={start}>{busy ? 'Preparing…' : `Download ${format.toUpperCase()}`}</button>
         {busy === '3mf' && <button type="button" onClick={() => { job.cancel(); items.current[1]?.focus(); }}>Cancel export</button>}
       </div>
