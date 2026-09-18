@@ -34,7 +34,7 @@ function boxBounds(item: FloorItem, box: FloorBox): Bounds {
 export const floorBounds = (item: FloorItem) => boxBounds(item, resolveBy(entry(item.part).footprint, item.params));
 export function clearanceBounds(item: FloorItem) { const clearance=entry(item.part).clearance; return clearance && boxBounds(item, resolveBy(clearance, item.params)); }
 const overlaps=(a:Bounds,b:Bounds,margin=0)=>a.min.every((v,i)=>v<b.max[i]+margin && a.max[i]+margin>b.min[i]);
-function rackBounds(doc: RackDoc): Bounds | null {
+export function rackBounds(doc: RackDoc): Bounds | null {
   const posts=Object.entries(doc.uprights).filter(([id])=>!doc.removed.includes(id)).map(([,p])=>p);
   return posts.length ? {min:[Math.min(...posts.map(p=>p.x))-doc.rack.tube/2,Math.min(...posts.map(p=>-p.y))-doc.rack.tube/2],max:[Math.max(...posts.map(p=>p.x))+doc.rack.tube/2,Math.max(...posts.map(p=>-p.y))+doc.rack.tube/2]} : null;
 }

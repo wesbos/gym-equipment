@@ -10,8 +10,8 @@ import { resolveMaterial } from '../../rack-generator/appearance.ts';
 import { packPlate, PRINT_BED, PLATE_ORIGINS } from './print-packing.ts';
 import { printableMesh, type PrintMesh } from './print-mesh.ts';
 
-/** Explicit semantic exclusion, including the floor-item contract used by #47. */
-export const isPrintInstance = (entry: {kind:string}) => entry.kind !== 'floor-item';
+/** Explicit semantic exclusion: floor (#47) and wall (#85) scenery never print. */
+export const isPrintInstance = (entry: {kind:string}) => entry.kind !== 'floor-item' && entry.kind !== 'wall-item';
 export type PrintLayout = 'laid-out' | 'assembled';
 export type PrintScale = 10 | 20;
 export interface PrintOptions { layout: PrintLayout; scale?: PrintScale }

@@ -20,9 +20,14 @@ const floor: PartDefinition[] = [
   ...pepin,
   ...barbell,
 ];
+// Wall parts: same pattern; entries register in wall-registry.ts.
+import { definitions as pegboard } from './parts/pegboard.ts';
+const wall: PartDefinition[] = [
+  ...pegboard,
+];
 // Retain PartDefinition's builder signature, including the optional logo argument
 // when that stream integrates; vendor marks remain internal to their builders.
-export const definitions: PartDefinition[] = [...structure, ...bars, ...attachments, ...voltra, ...darko, ...cables, ...smith, ...floor];
+export const definitions: PartDefinition[] = [...structure, ...bars, ...attachments, ...voltra, ...darko, ...cables, ...smith, ...floor, ...wall];
 export const catalog: CADCatalog = {
   definitions,
   attribution: partAttribution,

@@ -4,6 +4,9 @@ import { isSystemPart, SYSTEM_DEFAULTS, type SystemPartId } from '../../rack-gen
 import { addFloorItem, resolveFloorItems, floorWarnings, moveFloorGroup } from '../../rack-generator/floor-items.ts';
 import { floorPart, isFloorPart } from '../../rack-generator/floor-registry.ts';
 import { freeCradles, parkedPose, parksInCradles, settleBarbells, suggestCradle, type BarCradle } from '../../rack-generator/barbell-cradles.ts';
+import { addWallItem, resolveWallItems, wallWarnings, clampWallPosition, roomOf } from '../../rack-generator/wall-items.ts';
+import { isWallPart } from '../../rack-generator/wall-registry.ts';
+import type { Room, WallId } from '../../rack-generator/walls.ts';
 import { resetAppearanceField } from '../../rack-generator/appearance-reset.ts';
 import type { FrameFinish } from '../../rack-generator/appearance.ts';
 import { addsStructure } from '../../rack-generator/structure-candidates.ts';
@@ -177,7 +180,7 @@ export class BuilderStore {
     if (patch.selection) patch.selected = patch.selection.at(-1) ?? null;
     const pairToggle = patch.paired !== undefined && patch.paired !== this.state.paired && this.state.placing && !patch.placing;
     if (pairToggle && isFloorPart(this.state.placing!.part)) { if (!this.state.placing!.movingId) patch = { ...patch, ...this.floorProposal(this.state.placing!.part, null, patch.paired) }; }
-    else if (pairToggle && this.state.placing) {
+    else if (pairToggle && this.state.placing && !isWallPart(this.state.placing.part)) {
       const { part } = this.state.placing;
       const { doc, movingId } = this.placementContext(patch.paired);
       let target = this.state.proposal?.target;
@@ -550,7 +553,7 @@ export class BuilderStore {
       this.patch({ placing: { ...placing, rotationOnly: true } });
     }
     const proposal = this.state.proposal;
-    if (!proposal || isFloorPart(this.state.placing?.part)) return false;
+    if (!proposal || isFloorPart(this.state.placing?.part) || isWallPart(this.state.placing?.part)) return false;
     this.act(() => {
       const mode = rotationMode(proposal.doc, proposal.ownerId);
       const doc = rotateAccessory(proposal.doc, proposal.ownerId, direction * mode.step);
@@ -569,7 +572,7 @@ export class BuilderStore {
       this.patch({ structureMoveId: item.ownerId });
       return;
     }
-    if (item.kind === 'floor-item' || this.state.doc.accessories.some(a => a.id === item.ownerId)) this.startPlacement(item.part, item.ownerId, item.id);
+    if (item.kind === 'floor-item' || item.kind === 'wall-item' || this.state.doc.accessories.some(a => a.id === item.ownerId)) this.startPlacement(item.part, item.ownerId, item.id);
   };
   previewSystem = (patch: NumericParams) => {
     const part = this.state.systemChoice;
@@ -600,6 +603,10 @@ export class BuilderStore {
     if (isFloorPart(part)) {
       const paired = !movingId && !!floorPart(part)?.pair;
       this.patch({ selected:null, placing:{part,movingId}, structureChoice:null, paired, ...this.floorProposal(part, movingId, paired) });
+      return;
+    }
+    if (isWallPart(part)) {
+      this.patch({ selected:null, placing:{part,movingId}, structureChoice:null, ...this.wallProposal(part, movingId) });
       return;
     }
     // Each new placement starts from the part's own default, not the last choice.
@@ -654,6 +661,32 @@ export class BuilderStore {
   updateFloor = (id:string, patch:Partial<import('../../rack-generator/types.ts').FloorItem>) => {
     const doc=structuredClone(this.state.doc),item=doc.floorItems?.find(i=>i.id===id);
     if(item) {Object.assign(item,patch);this.commit(doc);}
+  };
+  /** Staged wall ghost: the moving item, or a fresh one at its suggested spot beside the rack. */
+  private wallProposal(part: PartId, movingId: string | null) {
+    const doc = movingId ? structuredClone(this.state.doc) : addWallItem(this.state.doc, part);
+    const item = movingId ? doc.wallItems!.find(i=>i.id===movingId)! : doc.wallItems!.at(-1)!;
+    return { proposal:{doc,entries:resolveWallItems([item],roomOf(doc)),ownerId:item.id,label:'Wall placement'}, placementText:'Click a wall to place · Alt disables snap · ESC cancels' };
+  }
+  previewWall = (wall: WallId, position: [number,number], snap = true) => {
+    const proposal=this.state.proposal;
+    if(!isWallPart(this.state.placing?.part) || !proposal) return;
+    const doc=structuredClone(proposal.doc), item=doc.wallItems!.find(i=>i.id===proposal.ownerId)!;
+    item.wall=wall; item.position=clampWallPosition(roomOf(doc), item, wall, position, snap);
+    this.patch({proposal:{...proposal,doc,entries:resolveWallItems([item],roomOf(doc))},placementText:wallWarnings(doc).some(w=>w.ids.includes(item.id)) ? 'Overlap warning · Click to place anyway' : 'Click a wall to place · Alt disables snap · ESC cancels'});
+  };
+  /** Wall edits keep the face on its wall; only a new `position` snaps. */
+  updateWall = (id:string, patch:Partial<import('../../rack-generator/types.ts').WallItem>, snap = true) => {
+    const doc=structuredClone(this.state.doc),item=doc.wallItems?.find(i=>i.id===id);
+    if(!item) return;
+    Object.assign(item,patch); item.position=clampWallPosition(roomOf(doc), item, item.wall, item.position, snap && !!patch.position);
+    this.commit(doc);
+  };
+  /** Moves one wall plane; its items keep their wall coordinates and stay on the (resized) walls. */
+  setRoom = (patch: Partial<Room>) => {
+    const doc=structuredClone(this.state.doc); doc.room={...roomOf(doc),...patch};
+    for(const item of doc.wallItems ?? []) item.position=clampWallPosition(doc.room, item, item.wall, item.position, false);
+    this.commit(doc);
   };
   previewStructure = (slot: string) => this.act(() => {
     const part = this.state.structureChoice;

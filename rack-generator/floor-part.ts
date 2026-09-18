@@ -16,13 +16,15 @@ export interface FloorPartSpec<Id extends string = string> {
   /** Parks in rack bar cradles (barbell-cradles.ts); floor placement is the fallback. */ parks?: boolean;
 }
 export interface FloorPart<Id extends string = string> extends FloorPartSpec<Id> { defaults: NumericParams }
+/** The param contract shared by floor and wall parts (wall-part.ts). */
+export type ParamPart = Pick<FloorPart, 'defaults' | 'params' | 'noun' | 'validate'>;
 export function defineFloorPart<const Id extends string>(spec: FloorPartSpec<Id>): FloorPart<Id> {
   return { ...spec, defaults: Object.fromEntries(spec.params.map(p => [p.key, p.default])) };
 }
 export const resolveBy = <T,>(value: ByParams<T>, params: NumericParams): T => typeof value === 'function' ? (value as (p: NumericParams) => T)(params) : value;
 export const floorOptions = (param: FloorParam, params: NumericParams) => resolveBy(param.options, params);
 /** Strict: saved docs with unknown keys or off-list values are rejected, never coerced. */
-export function validateFloorParams(part: FloorPart, input: unknown): NumericParams {
+export function validateFloorParams(part: ParamPart, input: unknown): NumericParams {
   if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).some(k => !Object.hasOwn(part.defaults, k))) throw Error(`Invalid ${part.noun} parameters.`);
   const params = { ...part.defaults, ...input as NumericParams };
   for (const p of part.params) if (!floorOptions(p, params).includes(params[p.key])) throw Error(`Unsupported ${part.noun} ${p.label.toLowerCase()}.`);
@@ -30,7 +32,7 @@ export function validateFloorParams(part: FloorPart, input: unknown): NumericPar
   return params;
 }
 /** UI edits: snap each param (in order) to its nearest allowed option so dependent options stay valid. */
-export function coerceFloorParams(part: FloorPart, input: NumericParams): NumericParams {
+export function coerceFloorParams(part: ParamPart, input: NumericParams): NumericParams {
   const params = { ...part.defaults, ...input };
   for (const p of part.params) { const options = floorOptions(p, params); if (!options.includes(params[p.key])) params[p.key] = options.reduce((a, b) => Math.abs(b - params[p.key]) < Math.abs(a - params[p.key]) ? b : a); }
   return params;

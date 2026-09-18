@@ -4,6 +4,8 @@ import { systemLowerCrossmemberStation } from "./cable-stations.ts";
 import { validateSystems, resolveSystems } from './systems.ts';
 import { validateFloorItems, resolveFloorItems } from './floor-items.ts';
 import { parkBarbells } from './barbell-cradles.ts';
+import { validateWallItems, resolveWallItems } from './wall-items.ts';
+import { validateRoom } from './walls.ts';
 import { validateLogo, logoSite } from './logos/types.ts';
 import { pairSuffix } from './physical-identity.ts';
 import { darkoTopMounts, darkoTopMount, matchingDarkoTarget } from './darko-mounts.ts';
@@ -302,9 +304,10 @@ export function validateAssembly(input: unknown): RackDoc {
   if (typeof input.nextId !== 'number' || !Number.isSafeInteger(input.nextId) || input.nextId < 1 || input.nextId > 1000000) fail('Invalid next accessory ID.');
   const appearance = validateAppearance(input.appearance);
   const floorItems = validateFloorItems(input.floorItems, [...Object.keys(graph.uprights), ...graph.connections.map(e=>e.id), ...accessories.map(a=>a.id)]);
+  const wallItems = validateWallItems(input.wallItems, [...Object.keys(graph.uprights), ...graph.connections.map(e=>e.id), ...accessories.map(a=>a.id), ...floorItems.map(f=>f.id)]), room = validateRoom(input.room);
   const systems = validateSystems({ ...input, ...graph, rack, removed, structure, accessories, floorItems } as RackDoc, input.systems);
   const logo = validateLogo(input.logo);
-  return { ...copy(input), ...(input.floorItems !== undefined ? { floorItems } : {}), ...(logo ? { logo } : {}), ...(appearance ? { appearance } : {}), ...graph, ...(systems ? { systems } : {}), version: ASSEMBLY_VERSION, rack, removed: [...removed], structure, accessories, nextId: input.nextId };
+  return { ...copy(input), ...(input.floorItems !== undefined ? { floorItems } : {}), ...(input.wallItems !== undefined ? { wallItems } : {}), ...(room ? { room } : {}), ...(logo ? { logo } : {}), ...(appearance ? { appearance } : {}), ...graph, ...(systems ? { systems } : {}), version: ASSEMBLY_VERSION, rack, removed: [...removed], structure, accessories, nextId: input.nextId };
 
 }
 export function getPartPlacementInfo(part: string, input?: RackDoc): PlacementInfo | null {
@@ -406,6 +409,7 @@ export function setPlateStack(input: RackDoc, id: string, plates: readonly Plate
 }
 export function removeInstance(input: RackDoc, id: string): RackDoc {
   if (input.floorItems?.some(item => item.id === id)) return validateAssembly({ ...input, floorItems: input.floorItems.filter(item => item.id !== id) });
+  if (input.wallItems?.some(item => item.id === id)) return validateAssembly({ ...input, wallItems: input.wallItems.filter(item => item.id !== id) });
   const doc = validateAssembly(input), ownerId = id.split(':')[0];
   if (structureSlots(doc).some(slot => slot.id === ownerId)) {
     const removed = new Set(doc.removed); removed.add(ownerId);
@@ -472,7 +476,7 @@ export function getMounts(input: RackDoc, part?: string, params: NumericParams =
 }
 /** Resolve every connection against the current rack dimensions and source origins. */
 export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
-  const doc = validateAssembly(input), r = { ...doc.rack, uprights: doc.uprights }, result: ResolvedInstance[] = resolveFloorItems(doc.floorItems);
+  const doc = validateAssembly(input), r = { ...doc.rack, uprights: doc.uprights }, result: ResolvedInstance[] = [...resolveFloorItems(doc.floorItems), ...resolveWallItems(doc.wallItems, doc.room)];
   const append = (id: string, part: PartId, params: NumericParams, position: Vec3, angle: number, mounts: Mount[], kind: ResolvedInstance['kind'], ownerId = id, paired = false, connectedTo: string[] = []) => {
     result.push({ ...(doc.logo && logoSite(part) ? { logo: doc.logo } : {}), id, part, params, position, rotation: [0, 0, angle], mount: mounts[0] ?? null, mounts, ownerId, kind, paired, connectedTo });
   };

@@ -1,0 +1,32 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {BuilderStore} from './builder-store.ts';
+import {ROOM_DEFAULTS} from '../../rack-generator/walls.ts';
+const memory=()=>{const values=new Map<string,string>();return {getItem:(k:string)=>values.get(k)??null,setItem:(k:string,v:string)=>{values.set(k,v);},removeItem:(k:string)=>{values.delete(k);}};};
+test('wall placement stages a ghost, ESC cancels, clicks commit once, drags are one undo and named Save reloads',async()=>{
+ const storage=memory(),store=new BuilderStore(storage);await store.ready;
+ const before=store.getSnapshot().doc;
+ store.startPlacement('pegboard-panel');
+ assert.equal(store.getSnapshot().doc.wallItems,undefined,'the ghost lives only in the proposal');
+ assert.equal(store.getSnapshot().proposal!.entries[0].kind,'wall-item');
+ store.previewWall('back',[412,1612]);assert.deepEqual(store.getSnapshot().proposal!.doc.wallItems![0].position,[400,1600],'25 mm snap');
+ store.previewWall('back',[412,1612],false);assert.deepEqual(store.getSnapshot().proposal!.doc.wallItems![0].position,[412,1612],'Alt bypasses snap');
+ store.escape();assert.equal(store.getSnapshot().placing,null);assert.deepEqual(store.getSnapshot().doc,before);
+ store.startPlacement('pegboard-panel');store.previewWall('right',[99999,-5]);store.acceptProposal();
+ const id=store.getSnapshot().selected!,placed=structuredClone(store.getSnapshot().doc);
+ assert.deepEqual(placed.wallItems,[{id,part:'pegboard-panel',wall:'right',position:[2250-609.5,305],params:{width:1219}}],'clamped onto the wall');
+ store.history('undo');assert.deepEqual(store.getSnapshot().doc,before);store.history('redo');
+ store.beginGesture();store.updateWall(id,{position:[0,1000]});store.updateWall(id,{position:[10,1510]});store.endGesture();
+ assert.deepEqual(store.getSnapshot().doc.wallItems![0].position,[0,1500]);
+ store.history('undo');assert.deepEqual(store.getSnapshot().doc,placed,'a drag is one undo step');
+ store.beginGesture();store.updateWall(id,{position:[-500,900]});store.escape();assert.deepEqual(store.getSnapshot().doc,placed,'ESC cancels a drag');
+ // Double-click pickup moves the same item, to another wall; params shrink but keep the face on the wall.
+ store.pickup(id);assert.equal(store.getSnapshot().placing!.movingId,id);store.previewWall('left',[300,2000]);store.acceptProposal();
+ assert.deepEqual(store.getSnapshot().doc.wallItems!.map(i=>[i.id,i.wall,i.position]),[[id,'left',[300,2000]]]);
+ store.updateWall(id,{params:{width:610}});store.setRoom({left:2000});
+ assert.deepEqual(store.getSnapshot().doc.room,{...ROOM_DEFAULTS,left:2000});
+ await store.save('Wall panels');await store.flushStorage();
+ const restored=new BuilderStore(storage);await restored.ready;assert.deepEqual(restored.getSnapshot().doc,store.getSnapshot().doc);
+ assert.equal(restored.getSnapshot().resolved.filter(r=>r.kind==='wall-item').length,1);
+ store.select(id);store.removeSelected();assert.equal(store.getSnapshot().doc.wallItems!.length,0);store.history('undo');assert.equal(store.getSnapshot().doc.wallItems!.length,1);
+});
