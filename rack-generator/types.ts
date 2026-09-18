@@ -16,7 +16,6 @@ export interface PartDefinition { standardOptions?: Record<string, readonly Stan
 export interface UprightParams { height: number; width: number; wall: number; radius: number; diameter: number; spacing: number; offset: number }
 export interface UprightMesh { positions: Float32Array; indices: Uint32Array; stride: number; height: number; centers: number[]; volume: number; params: UprightParams }
 export interface LibraryWorkerRequest { logo?: ValidatedLogo; id: number | string; part: string; params: NumericParams }
-export interface UprightWorkerRequest { id: number | string; params: Partial<UprightParams> }
 export type Face = 'front' | 'back' | 'left' | 'right';
 export type UprightId = string;
 export interface UprightNode { x: number; y: number }

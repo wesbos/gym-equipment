@@ -51,7 +51,7 @@ export default function LibraryPage() {
           <p className="eyebrow">BOS STRENGTH / LIBRARY</p>
           <h1>Parts library</h1>
         </div>
-        <Link to="/builder">Build a rack ↗</Link>
+        <Link to="/">Build a rack ↗</Link>
       </header>
       <div className="gallery-filters">
         <label>
@@ -84,8 +84,8 @@ export default function LibraryPage() {
           <Link
             className="gallery-card"
             key={part.id}
-            to="/parts"
-            hash={part.id}
+            to="/parts/$partId"
+            params={{ partId: part.id }}
           >
             <PartThumbnail part={part.id} params={part.defaults} />
             <span className="gallery-category">{part.category}</span>

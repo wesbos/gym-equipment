@@ -1,24 +1,24 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
-:where(.upright-page, .parts-page) {
+:where(.parts-page) {
   font-family: "DM Sans", sans-serif;
   color: #22322e;
   background: #e9eeea;
   font-synthesis: none;
 }
-:where(.upright-page, .parts-page) * {
+:where(.parts-page) * {
   box-sizing: border-box;
 }
-:where(.upright-page, .parts-page) {
+:where(.parts-page) {
   margin: 0;
   display: grid;
   grid-template-columns: 345px 1fr;
   height: 100dvh;
 }
-:where(.upright-page, .parts-page) button,
-:where(.upright-page, .parts-page) input {
+:where(.parts-page) button,
+:where(.parts-page) input {
   font: inherit;
 }
-:where(.upright-page, .parts-page) button {
+:where(.parts-page) button {
   cursor: pointer;
   border: 1px solid #cbd3cd;
   background: transparent;
@@ -26,48 +26,48 @@
   border-radius: 5px;
   padding: 9px 12px;
 }
-:where(.upright-page, .parts-page) button:hover {
+:where(.parts-page) button:hover {
   background: #dce5de;
 }
-:where(.upright-page, .parts-page) button:disabled {
+:where(.parts-page) button:disabled {
   opacity: 0.4;
   cursor: wait;
 }
-:where(.upright-page, .parts-page) button:focus-visible,
-:where(.upright-page, .parts-page) input:focus-visible {
+:where(.parts-page) button:focus-visible,
+:where(.parts-page) input:focus-visible {
   outline: 2px solid #368663;
   outline-offset: 3px;
 }
-:where(.upright-page, .parts-page) aside {
+:where(.parts-page) aside {
   background: #f8f9f5;
   border-right: 1px solid #cdd6ce;
   padding: 26px;
   overflow: auto;
 }
-:where(.upright-page, .parts-page) .eyebrow {
+:where(.parts-page) .eyebrow {
   font-size: 11px;
   letter-spacing: 1.8px;
   font-weight: 700;
   display: flex;
   justify-content: space-between;
 }
-:where(.upright-page, .parts-page) .eyebrow span {
+:where(.parts-page) .eyebrow span {
   color: #819087;
   font-weight: 400;
 }
-:where(.upright-page, .parts-page) h1 {
+:where(.parts-page) h1 {
   font-family: "Space Grotesk", sans-serif;
   font-size: 30px;
   letter-spacing: -1.5px;
   margin: 30px 0 9px;
 }
-:where(.upright-page, .parts-page) .intro {
+:where(.parts-page) .intro {
   color: #78847b;
   font-size: 13px;
   line-height: 1.65;
   margin: 0 0 27px;
 }
-:where(.upright-page, .parts-page) .section-title {
+:where(.parts-page) .section-title {
   display: flex;
   gap: 10px;
   font-size: 11px;
@@ -77,22 +77,22 @@
   padding-top: 18px;
   margin: 23px 0 16px;
 }
-:where(.upright-page, .parts-page) .section-title span {
+:where(.parts-page) .section-title span {
   font-size: 13px;
   color: #314537;
   font-weight: 600;
 }
-:where(.upright-page, .parts-page) .section-title small {
+:where(.parts-page) .section-title small {
   margin-left: auto;
   font-size: 8px;
   letter-spacing: 1px;
 }
-:where(.upright-page, .parts-page) label {
+:where(.parts-page) label {
   font-size: 11px;
   color: #647267;
   display: block;
 }
-:where(.upright-page, .parts-page) .input-wrap {
+:where(.parts-page) .input-wrap {
   display: flex;
   align-items: center;
   border: 1px solid #cfd7ce;
@@ -100,7 +100,7 @@
   margin-top: 7px;
   background: #fff;
 }
-:where(.upright-page, .parts-page) .input-wrap input {
+:where(.parts-page) .input-wrap input {
   width: 100%;
   min-width: 0;
   border: 0;
@@ -109,30 +109,20 @@
   font-size: 16px;
   color: #233a2d;
 }
-:where(.upright-page, .parts-page) .input-wrap span {
+:where(.parts-page) .input-wrap span {
   padding-right: 10px;
   font-size: 11px;
   color: #8f9c91;
 }
-:where(.upright-page, .parts-page) .height-label input {
-  font-size: 29px;
-  font-family: "Space Grotesk", sans-serif;
-  padding: 10px 13px;
-}
-:where(.upright-page, .parts-page) .conversion {
-  font-size: 11px;
-  color: #8d998f;
-  margin: 7px 0 17px;
-}
-:where(.upright-page, .parts-page) .fields {
+:where(.parts-page) .fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px 12px;
 }
-:where(.upright-page, .parts-page) .fields label:last-child:nth-child(odd) {
+:where(.parts-page) .fields label:last-child:nth-child(odd) {
   grid-column: 1/-1;
 }
-:where(.upright-page, .parts-page) .primary {
+:where(.parts-page) .primary {
   width: 100%;
   background: #274d3b;
   color: white;
@@ -141,43 +131,20 @@
   border: 0;
   padding: 13px 15px;
 }
-:where(.upright-page, .parts-page) .primary span {
+:where(.parts-page) .primary span {
   float: right;
 }
-:where(.upright-page, .parts-page) .primary:hover {
+:where(.parts-page) .primary:hover {
   background: #37694d;
 }
-:where(.upright-page, .parts-page) .note {
-  font-size: 10px;
-  line-height: 1.65;
-  color: #8b958a;
-  margin-top: 16px;
-}
-:where(.upright-page, .parts-page) .aside-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 22px;
-}
-:where(.upright-page, .parts-page) .aside-footer button {
-  font-size: 10px;
-  padding: 0;
-  border: 0;
-  text-decoration: underline;
-}
-:where(.upright-page, .parts-page) .aside-footer span {
-  font-size: 8px;
-  letter-spacing: 1px;
-  color: #8d998f;
-}
-:where(.upright-page, .parts-page) main {
+:where(.parts-page) main {
   position: relative;
   min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
-:where(.upright-page, .parts-page) header {
+:where(.parts-page) header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -187,12 +154,12 @@
   border-bottom: 1px solid #cdd6ce;
   z-index: 2;
 }
-:where(.upright-page, .parts-page) header button {
+:where(.parts-page) header button {
   font-size: 11px;
   letter-spacing: 0;
   background: #f7f9f4;
 }
-:where(.upright-page, .parts-page) .live-dot {
+:where(.parts-page) .live-dot {
   display: inline-block;
   width: 6px;
   height: 6px;
@@ -200,23 +167,23 @@
   border-radius: 50%;
   margin-right: 6px;
 }
-:where(.upright-page, .parts-page) .muted {
+:where(.parts-page) .muted {
   color: #8c9b90;
   margin-left: 12px;
 }
-:where(.upright-page, .parts-page) #viewport {
+:where(.parts-page) #viewport {
   flex: 1;
   min-height: 0;
   position: relative;
 }
-:where(.upright-page, .parts-page) canvas {
+:where(.parts-page) canvas {
   display: block;
   width: 100%;
   height: 100%;
   touch-action: none;
 }
-:where(.upright-page, .parts-page) .view-tools,
-:where(.upright-page, .parts-page) .display-tools {
+:where(.parts-page) .view-tools,
+:where(.parts-page) .display-tools {
   position: absolute;
   z-index: 2;
   display: flex;
@@ -224,16 +191,16 @@
   left: 25px;
   top: 19px;
 }
-:where(.upright-page, .parts-page) .view-tools button {
+:where(.parts-page) .view-tools button {
   background: #f3f6f0ba;
   font-size: 10px;
   border: 1px solid transparent;
 }
-:where(.upright-page, .parts-page) .view-tools button.selected {
+:where(.parts-page) .view-tools button.selected {
   background: #f9fbf6;
   border-color: #b8c8ba;
 }
-:where(.upright-page, .parts-page) .display-tools {
+:where(.parts-page) .display-tools {
   left: auto;
   right: 25px;
   top: auto;
@@ -241,32 +208,32 @@
   align-items: center;
   gap: 15px;
 }
-:where(.upright-page, .parts-page) .display-tools label {
+:where(.parts-page) .display-tools label {
   display: flex;
   align-items: center;
   gap: 5px;
 }
-:where(.upright-page, .parts-page) .display-tools button {
+:where(.parts-page) .display-tools button {
   font-size: 10px;
   background: #f3f6f0ba;
 }
-:where(.upright-page, .parts-page) .model-caption {
+:where(.parts-page) .model-caption {
   position: absolute;
   bottom: 78px;
   left: 28px;
   pointer-events: none;
 }
-:where(.upright-page, .parts-page) h2 {
+:where(.parts-page) h2 {
   font-family: "Space Grotesk", sans-serif;
   letter-spacing: -1px;
   font-size: 26px;
   margin: 0;
 }
-:where(.upright-page, .parts-page) .model-caption p {
+:where(.parts-page) .model-caption p {
   font-size: 11px;
   color: #819087;
 }
-:where(.upright-page, .parts-page) footer {
+:where(.parts-page) footer {
   display: flex;
   justify-content: space-between;
   gap: 12px;
@@ -277,54 +244,54 @@
   color: #6c8171;
   z-index: 2;
 }
-:where(.upright-page, .parts-page) footer span:last-child {
+:where(.parts-page) footer span:last-child {
   font-size: 8px;
   color: #8c9b90;
 }
-:where(.upright-page, .parts-page) #status.error {
+:where(.parts-page) #status.error {
   color: #a3392c;
 }
 @media (max-width: 800px) {
-  :where(.upright-page, .parts-page) {
+  :where(.parts-page) {
     grid-template-columns: 280px 1fr;
   }
-  :where(.upright-page, .parts-page) aside {
+  :where(.parts-page) aside {
     padding: 20px;
   }
-  :where(.upright-page, .parts-page) .view-tools {
+  :where(.parts-page) .view-tools {
     left: 10px;
     flex-wrap: wrap;
     right: 10px;
   }
-  :where(.upright-page, .parts-page) header {
+  :where(.parts-page) header {
     padding: 16px 12px;
   }
-  :where(.upright-page, .parts-page) .muted,
-  :where(.upright-page, .parts-page) footer span:last-child {
+  :where(.parts-page) .muted,
+  :where(.parts-page) footer span:last-child {
     display: none;
   }
 }
 @media (max-width: 600px) {
-  :where(.upright-page, .parts-page) {
+  :where(.parts-page) {
     display: flex;
     flex-direction: column;
     height: auto;
   }
-  :where(.upright-page, .parts-page) main {
+  :where(.parts-page) main {
     height: 70dvh;
     min-height: 480px;
     order: -1;
   }
-  :where(.upright-page, .parts-page) aside {
+  :where(.parts-page) aside {
     overflow: visible;
   }
-  :where(.upright-page, .parts-page) .model-caption {
+  :where(.parts-page) .model-caption {
     bottom: 95px;
   }
-  :where(.upright-page, .parts-page) .display-tools {
+  :where(.parts-page) .display-tools {
     right: 12px;
   }
-  :where(.upright-page, .parts-page) .intro {
+  :where(.parts-page) .intro {
     margin-bottom: 15px;
   }
 }
