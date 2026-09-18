@@ -4,6 +4,7 @@ import { partAttribution } from './attribution.ts';
 import { catalog } from './catalog.ts';
 import { SYSTEM_PARTS } from './system-types.ts';
 import { FLOOR_PART_IDS } from './floor-registry.ts';
+import { HANG_PART_IDS } from './hang-registry.ts';
 import { DARKO_IDS, VOLTRA_IDS, vendorAttribution } from './vendor-metadata.ts';
 
 test('all catalog export consumers share complete product identity', () => {
@@ -14,7 +15,7 @@ test('all catalog export consumers share complete product identity', () => {
     assert.match(credit.url, id === 'cable-kraken' ? /^https:\/\/bellsofsteel.com\// : /^https:\/\/repfitness.com\//);
     assert.ok(credit.credit && credit.trademark && credit.reconstruction);
   }
-  for (const id of [...DARKO_IDS, ...VOLTRA_IDS, ...FLOOR_PART_IDS])
+  for (const id of [...DARKO_IDS, ...VOLTRA_IDS, ...FLOOR_PART_IDS, ...HANG_PART_IDS])
     assert.deepEqual(partAttribution(id), vendorAttribution(id));
   assert.equal(partAttribution('upright'), undefined);
 });

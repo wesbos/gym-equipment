@@ -22,8 +22,11 @@ const floor: PartDefinition[] = [
 ];
 // Wall parts: same pattern; entries register in wall-registry.ts.
 import { definitions as pegboard } from './parts/pegboard.ts';
+import { definitions as cableAttachments } from './parts/cable-attachments.ts';
 const wall: PartDefinition[] = [
   ...pegboard,
+  // Hang parts (hang-registry.ts)
+  ...cableAttachments,
 ];
 // Retain PartDefinition's builder signature, including the optional logo argument
 // when that stream integrates; vendor marks remain internal to their builders.

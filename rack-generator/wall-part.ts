@@ -9,6 +9,8 @@ export interface WallPartSpec<Id extends string = string> {
   id: Id; /** Inspector/instance name */ name: string; /** Catalog card name */ title: string; /** Lowercase noun for UI copy and warnings */ noun: string;
   description?: string; params: readonly FloorParam[]; validate?: (params: NumericParams) => void;
   face: ByParams<WallFace>; depth: number;
+  /** Hook slots for hangable parts (hang-registry.ts): [x along, z up] on the face, from its centre. Index = slot number. */
+  slots?: (params: NumericParams) => [number, number][];
   /** Suggested centre height above the floor (default 1500 mm). */ height?: number;
   vendor?: VendorAttribution;
 }

@@ -10,6 +10,7 @@ import { definitions } from './catalog.ts';
 import { isSystemPart } from './system-types.ts';
 import { floorPart, validateFloorParams } from './floor-registry.ts';
 import { wallPart } from './wall-registry.ts';
+import { hangPart } from './hang-registry.ts';
 const ready = Module({ locateFile: () => wasmUrl }).then((api) => {
   api.setup();
   return api;
@@ -23,8 +24,8 @@ self.onmessage = async ({ data }: MessageEvent<LibraryWorkerRequest>) => {
   try {
     const def = definitions.find((d) => d.id === data.part);
     if (!def) throw new Error("Unknown part");
-    const params = { ...def.defaults, ...data.params }, floor = floorPart(data.part) ?? wallPart(data.part);
-    // Floor and wall parts carry their own option lists (negative/zero values allowed where listed).
+    const params = { ...def.defaults, ...data.params }, floor = floorPart(data.part) ?? wallPart(data.part) ?? hangPart(data.part);
+    // Floor, wall and hang parts carry their own option lists (negative/zero values allowed where listed).
     if (floor) validateFloorParams(floor, data.params);
     else for (const [key, value] of Object.entries(params))
       if (

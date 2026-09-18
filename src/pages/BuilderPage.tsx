@@ -7,6 +7,9 @@ import { PlateStackEditor } from '../components/PlateStackEditor.tsx';
 import { WallInspector } from '../components/WallInspector.tsx';
 import { wallWarnings } from '../../rack-generator/wall-items.ts';
 import { WALL_PART_IDS } from '../../rack-generator/wall-registry.ts';
+import { HangInspector } from '../components/HangInspector.tsx';
+import { hangWarnings } from '../../rack-generator/hang-items.ts';
+import { HANG_PART_IDS } from '../../rack-generator/hang-registry.ts';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { FLOOR_PART_IDS, floorPart } from '../../rack-generator/floor-registry.ts';
 import { LogoControls } from '../components/LogoControls.tsx';
@@ -65,6 +68,7 @@ const groups: [string, readonly PartId[]][] = [
   ["Systems", SYSTEM_PARTS],
   ["Floor items", FLOOR_PART_IDS],
   ["Wall storage", WALL_PART_IDS],
+  ["Cable attachments", HANG_PART_IDS],
   ["Digital resistance", VOLTRA_IDS],
   ["Darko Lifting", DARKO_IDS],
   [
@@ -210,7 +214,7 @@ function Inspector({ store }: { store: BuilderStore }) {
       </>
     );
   if (physical.kind === 'floor-item') return <FloorInspector store={store} id={physical.id} />;
-  if (physical.kind === 'wall-item') return <WallInspector store={store} id={physical.id} />;
+  if (physical.kind === 'wall-item') return doc.hangItems?.some(h => h.id === physical.id) ? <HangInspector store={store} id={physical.id} /> : <WallInspector store={store} id={physical.id} />;
   const fields = editableFields(part, doc);
   const variants = allParts.filter((id) =>
     entry
@@ -465,7 +469,7 @@ export default function BuilderPage() {
       controller.current = null;
     };
   }, [store]);
-  const warnings = [...detectCollisions(state.resolved), ...floorWarnings(state.doc), ...wallWarnings(state.doc)];
+  const warnings = [...detectCollisions(state.resolved), ...floorWarnings(state.doc), ...wallWarnings(state.doc), ...hangWarnings(state.doc)];
   const fit = (mode = view) => {
     setView(mode);
     controller.current?.fit(mode);
