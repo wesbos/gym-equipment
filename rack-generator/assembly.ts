@@ -14,6 +14,7 @@ import { legacyGraph, validateGraph, structureSlots } from './topology.ts';
 import { snapDimensions } from './grid.ts';
 import { validateAppearance } from './appearance.ts';
 import type { RackDoc, RackDimensions, Accessory, Target, Mount, ResolvedInstance, Vec3, NumericParams, PartId, Face, UprightId, StructureSlot, StructureVariant, PlacementInfo } from './types.ts';
+import { holdsPlates, platePeg, plateParams, validatePlateFloor, validatePlateStack, type PlateId } from './plates.ts';
 import { attachmentPartIds, getAttachmentDefaults, getAttachmentPlacementInfo, getAttachmentAnchor, getAttachmentCollisionBoxes } from './attachment-mounts.ts';
 
 /** Connection-based rack document. Coordinates are millimetres, Z up; angles radians.
@@ -247,6 +248,11 @@ export function validateAssembly(input: unknown): RackDoc {
     }
     validateMountShaft(a.part, params, rack.holeDiameter);
     const clean: Accessory = { ...copy(a), id: a.id, part: a.part as PartId, target: { ...copy(a.target), uprightId: a.target.uprightId as UprightId, face: a.target.face as Face, hole: a.target.hole }, paired: a.paired, params: { ...params } };
+    if (a.plates !== undefined) {
+      const plates = validatePlateStack(clean.part, a.plates);
+      if (plates.length) validatePlateFloor(plates, holeZ(rack, clean.target.hole) + platePeg(clean.part)!.origin[2] - getAttachmentAnchor(clean.part, params).point[2]);
+      if (plates.length) clean.plates = plates; else delete clean.plates;
+    }
     validateMountedRotation(clean);
     if (clean.rotation !== undefined || clean.target.orientation !== undefined) clean.rotation = accessoryRotation(clean);
     if (isVendorPart(clean.part)) validateVendorMount({ rack, ...graph, removed, structure }, clean);
@@ -385,6 +391,13 @@ export function unpairAccessory(input: RackDoc, id: string): RackDoc {
   doc.accessories.push(second);
   return validateAssembly(doc);
 }
+/** Replace a storage pin's plate stack (root outward); both sides of a pair carry it. */
+export function setPlateStack(input: RackDoc, id: string, plates: readonly PlateId[]): RackDoc {
+  const doc = validateAssembly(input), a = doc.accessories.find(a => a.id === id.split(':')[0]);
+  if (!a || !holdsPlates(a.part)) fail('Select a weight storage pin to load plates.');
+  if (plates.length) a.plates = [...plates]; else delete a.plates;
+  return validateAssembly(doc);
+}
 export function removeInstance(input: RackDoc, id: string): RackDoc {
   if (input.floorItems?.some(item => item.id === id)) return validateAssembly({ ...input, floorItems: input.floorItems.filter(item => item.id !== id) });
   const doc = validateAssembly(input), ownerId = id.split(':')[0];
@@ -521,7 +534,7 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
         const rotation = shaftRotation(angle, accessoryRotation(a));
         const m = mount(r, t.uprightId, t.hole, t.face, anchor.point), local = rotateMountedPoint(anchor.point, rotation);
         const mounts = anchor.boltStations.map(station => ({ ...mount(r, t.uprightId, t.hole + Math.round(station.zOffset / r.pitch), t.face, station.point), pinAxis: rotateZ(station.axis, angle) }));
-        append(a.paired ? `${a.id}:${pairSuffix(targetsFor(a), index)}` : a.id, a.part, { ...params, holeDiameter: r.holeDiameter }, m.center.map((v, i) => v - local[i]) as Vec3, angle, mounts, 'accessory', a.id, a.paired, [t.uprightId]);
+        append(a.paired ? `${a.id}:${pairSuffix(targetsFor(a), index)}` : a.id, a.part, { ...params, holeDiameter: r.holeDiameter, ...plateParams(a.plates) }, m.center.map((v, i) => v - local[i]) as Vec3, angle, mounts, 'accessory', a.id, a.paired, [t.uprightId]);
         result[result.length - 1].rotation = rotation;
         result[result.length - 1].collisionBoxes = getAttachmentCollisionBoxes(a.part, params);
         result[result.length - 1].localOutward = anchor.outward;

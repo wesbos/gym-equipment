@@ -2,6 +2,7 @@ import type { RackSystem, SystemPartId } from './system-types.ts';
 import type { ValidatedLogo } from './logos/types.ts';
 import type { Appearance, MaterialSource } from './appearance.ts';
 import type { Manifold, ManifoldToplevel } from 'manifold-3d';
+import type { PlateId } from './plates.ts';
 
 export type ManifoldAPI = ManifoldToplevel;
 export type { Manifold, CrossSection, Mesh } from 'manifold-3d';
@@ -26,7 +27,7 @@ export interface UprightTarget { orientation?: number; kind?: 'upright'; upright
 /** Upper rail bearing tab with a side through-bolt at an actual rail station. */
 export interface CrossmemberTopTarget { orientation?: number; kind: 'crossmember-top'; connectionId: string; station: number; side: 1 | -1; uprightId: UprightId; face: Face; hole: number }
 export type Target = UprightTarget | CrossmemberTopTarget;
-export interface Accessory { /** Radians about the adapter-defined axis; omitted means zero. */ rotation?: number; id: string; part: PartId; target: Target; paired: boolean; params: NumericParams; spanTo?: string; pairTo?: string; pairedSpanTo?: string; pairTarget?: CrossmemberTopTarget }
+export interface Accessory { /** Radians about the adapter-defined axis; omitted means zero. */ rotation?: number; id: string; part: PartId; target: Target; paired: boolean; params: NumericParams; spanTo?: string; pairTo?: string; pairedSpanTo?: string; pairTarget?: CrossmemberTopTarget; /** Storage-pin plate stack, root outward; each side of a pair carries it. */ plates?: PlateId[] }
 export interface StructureVariant { part: PartId; params: NumericParams }
 export interface FloorItem { id: string; part: 'rep-nighthawk'; position: Vec2; rotation: number; params: NumericParams }
 export interface RackDoc { floorItems?: FloorItem[]; systems?: RackSystem[]; logo?: ValidatedLogo; appearance?: Appearance; version: 2; uprights: Record<string, UprightNode>; connections: ConnectionEdge[]; profileId?: string; rack: RackDimensions; removed: string[]; structure: Record<string, StructureVariant>; accessories: Accessory[]; nextId: number }
