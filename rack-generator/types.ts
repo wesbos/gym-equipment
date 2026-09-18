@@ -36,7 +36,7 @@ export interface LocalBox { min: Vec3; max: Vec3 }
 export type Mount = Target & { position: Vec3; center: Vec3; localAnchor?: Vec3; pinAxis?: Vec3; label?: string; connectorId?: string }
 export interface ResolvedInstance { logo?: ValidatedLogo; id: string; part: PartId; params: NumericParams; position: Vec3; rotation: Vec3; mount: Mount | null; mounts: Mount[]; ownerId: string; kind: 'structure' | 'accessory' | 'floor-item'; paired: boolean; connectedTo: string[]; collisionEnabled?: boolean; collisionBoxes?: LocalBox[]; localOutward?: Vec3; name?: string }
 export interface PlacementField { key: string; label: string; min: number; max: number; step: number }
-export interface PlacementInfo { family: string; label: string; paired: boolean; slots?: string[]; fields: PlacementField[]; faces?: Face[]; fixedHole?: number; requiredPitch?: number; handed?: boolean; mountType?: string; description?: string }
+export interface PlacementInfo { family: string; label: string; paired: boolean; /** Initial pair choice; omitted means `paired`. */ defaultPaired?: boolean; slots?: string[]; fields: PlacementField[]; faces?: Face[]; fixedHole?: number; requiredPitch?: number; handed?: boolean; mountType?: string; description?: string }
 export interface CollisionWarning { ids: [string, string]; message: string }
 export type CollisionInstance = Partial<Omit<ResolvedInstance, 'id' | 'part' | 'mount' | 'mounts'>> & { id: string; part: string; mount?: Partial<Mount> | null; mounts?: Partial<Mount>[] };
 export interface BoltStation { point: Vec3; zOffset: number; axis: Vec3; diameter: number }

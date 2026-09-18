@@ -38,6 +38,7 @@ import { createBuilderScene } from "../scenes/builder-scene.ts";
 import {
   createAssembly,
   getPartPlacementInfo,
+  pairedByDefault,
   getAvailableStructure,
   restoreInstance,
   replaceStructurePart,
@@ -256,7 +257,9 @@ function Inspector({ store }: { store: BuilderStore }) {
                     : Number(data.get("hole")) - 1,
                 };
                 if (item.spanTo && data.get("spanTo")) item.spanTo = String(data.get("spanTo"));
+                // An unpairable part submits no checkbox: adopt the new variant's default.
                 if (entry.target.kind !== "crossmember-top") item.paired =
+                  variant !== part && !info?.paired ? pairedByDefault(variant, doc) :
                   !!getPartPlacementInfo(variant, doc)?.paired &&
                   data.get("paired") === "on";
                 store.commit(next);
@@ -331,7 +334,7 @@ function Inspector({ store }: { store: BuilderStore }) {
                 <input
                   type="checkbox"
                   name="paired"
-                  checked={entry.paired}
+                  checked={!!info?.paired && entry.paired}
                   onChange={e => e.currentTarget.form?.requestSubmit()}
                   disabled={!info?.paired}
                 />
@@ -417,6 +420,8 @@ export default function BuilderPage() {
     state.definitions
       .find((d) => d.id === part)
       ?.name.replace(/^BOS STRENGTH\s*/, "") || part;
+  // Unpairable parts show unchecked, not a disabled "pair on".
+  const unpairable = !!state.placing && !getPartPlacementInfo(state.placing.part, state.doc)?.paired;
   useEffect(() => {
     const scene = createBuilderScene(viewport.current!, store);
     controller.current = scene;
@@ -549,11 +554,8 @@ export default function BuilderPage() {
             <input
               id="paired"
               type="checkbox"
-              checked={state.paired}
-              disabled={
-                !!state.placing &&
-                !getPartPlacementInfo(state.placing.part, state.doc)?.paired
-              }
+              checked={state.paired && !unpairable}
+              disabled={unpairable}
               onChange={(e) => store.patch({ paired: e.target.checked })}
             />
             <span>

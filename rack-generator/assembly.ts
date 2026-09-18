@@ -318,6 +318,11 @@ export function getPartPlacementInfo(part: string, input?: RackDoc): PlacementIn
   if (isSafety(part)) return { family: 'safeties', label: part.replaceAll('-', ' '), paired: true, faces: ['left', 'right'], fields: part === 'safety-webbing' ? [{ key: 'sag', label: 'Strap sag', min: 10, max: 100, step: 5 }] : [] };
   return { family: 'pullups', label: part.replaceAll('-', ' '), paired: false, faces: ['left', 'right'], ...(isWidePullup(part) ? { fixedHole: upperHole(input?.rack ?? RACK_DEFAULTS) + 1 } : {}), fields: [{ key: 'diameter', label: 'Grip diameter', min: 15, max: 60, step: 1 }] };
 }
+/** Initial pair choice for a new placement or reset: never a pair for unpairable parts. */
+export function pairedByDefault(part: string, input?: RackDoc): boolean {
+  const info = getPartPlacementInfo(part, input);
+  return !!info?.paired && (info.defaultPaired ?? true);
+}
 export function replaceStructurePart(input: RackDoc, id: string, part: string, params: NumericParams = {}): RackDoc {
   const doc = validateAssembly(input), slot = structureSlots(doc).find(s => s.id === id);
   if (part === 'upright' && Object.hasOwn(doc.uprights, id)) return restoreInstance(doc, id);

@@ -129,10 +129,13 @@ test('placement previews are pure and moving adopts the existing group pairing',
 test('new placement respects pair preference and complete attachments cannot become pairs', () => {
   const store = new BuilderStore();
   store.patch({ paired: false }); store.startPlacement('storage-pin-long');
+  assert.equal(store.getSnapshot().paired, true);
+  store.patch({ paired: false });
   assert.equal(store.placementDoc(target).accessories.at(-1)!.paired, false);
   store.patch({ paired: true });
   assert.equal(store.placementDoc(target).accessories.at(-1)!.paired, true);
   store.startPlacement('dip-horn');
+  assert.equal(store.getSnapshot().paired, false);
   assert.equal(store.placementDoc(target).accessories.at(-1)!.paired, false);
   const removed = removeInstance(store.getSnapshot().doc, 'rear-left');
   store.commit(removed); store.startPlacement('storage-pin-long');
@@ -366,12 +369,32 @@ test('catalog suggestion is transient, second click commits once and undo restor
 test('pair toggle recomputes transient preview and cancel cannot commit stale proposal', async () => {
   const store = new BuilderStore(new MemoryStorage()); await store.ready;
   store.startPlacement('landmine');
+  assert.equal(store.getSnapshot().proposal?.entries.length,1);
+  store.patch({paired:true});
   assert.equal(store.getSnapshot().proposal?.entries.length,2);
   store.patch({paired:false});
   assert.equal(store.getSnapshot().proposal?.entries.length,1);
   const original = store.getSnapshot().doc;
   store.cancelPlacement(); store.acceptProposal();
   assert.equal(store.getSnapshot().doc,original);
+});
+test('each new placement starts from the part pair default and places one dip assembly per click', async () => {
+  const store = new BuilderStore(new MemoryStorage()); await store.ready;
+  for (const [part, paired] of [['spotter-arm', true], ['landmine', false], ['single-bar-holder', false], ['monolift', true]] as const) {
+    store.startPlacement(part);
+    assert.equal(store.getSnapshot().paired, paired, part);
+    store.patch({ paired: !paired }); store.cancelPlacement();
+    store.startPlacement(part);
+    assert.equal(store.getSnapshot().paired, paired, `${part} is not sticky`);
+    store.cancelPlacement();
+  }
+  const before = store.getSnapshot().doc.accessories.length;
+  store.startPlacement('dip-horn');
+  assert.equal(store.getSnapshot().proposal?.entries.length, 1);
+  store.acceptProposal();
+  const added = store.getSnapshot().doc.accessories.slice(before);
+  assert.deepEqual(added.map(a => [a.part, a.paired]), [['dip-horn', false]]);
+  assert.equal(store.getSnapshot().resolved.filter(r => r.ownerId === added[0].id).length, 1);
 });
 test('structural catalog previews a compatible slot before accept', async () => {
   const store = new BuilderStore(new MemoryStorage()); await store.ready;
