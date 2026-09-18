@@ -404,7 +404,7 @@ test("systems and floor items share a collision-free identity namespace", async 
   const { addFloorItem } = await import("./floor-items.ts");
   const doc = validateAssembly(withSystem(preset(), "cable-ares2"));
   doc.systems![0].id = `floor-${doc.nextId}`;
-  const added = validateAssembly(addFloorItem(doc));
+  const added = validateAssembly(addFloorItem(doc, "rep-nighthawk"));
   assert.notEqual(added.floorItems![0].id, added.systems![0].id);
   const resolved = resolveAssembly(added);
   assert.equal(new Set(resolved.map((r) => r.id)).size, resolved.length);
