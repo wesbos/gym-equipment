@@ -1,4 +1,4 @@
-import { defaultAccessoryTarget, createAssembly, getPartDefaults, getPartPlacementInfo, RACK_DEFAULTS, resizeAssembly, validateAssembly, resolveAssembly } from './assembly.ts';
+import { defaultAccessoryTarget, createAssembly, getPartDefaults, getPartPlacementInfo, pairedByDefault, RACK_DEFAULTS, resizeAssembly, validateAssembly, resolveAssembly } from './assembly.ts';
 import { snapDimensions } from './grid.ts';
 import { gridProfile } from './profiles.ts';
 import { structureSlots } from './topology.ts';
@@ -37,7 +37,7 @@ export function placementDefaults(doc: RackDoc, accessory: Accessory): Accessory
   const info = getPartPlacementInfo(accessory.part, doc);
   return { ...accessory, params: {}, target: { ...target,
     face: accessory.spanTo ? accessory.target.face : target.face,
-    hole: info?.fixedHole ?? target.hole }, paired: !!info?.paired };
+    hole: info?.fixedHole ?? target.hole }, paired: pairedByDefault(accessory.part, doc) };
 }
 export function resetPart(doc: RackDoc, id: string, field?: string): RackDoc {
   const next = structuredClone(doc), owner = ownerFor(doc, id);

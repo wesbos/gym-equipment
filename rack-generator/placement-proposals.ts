@@ -1,6 +1,6 @@
 import { swapCandidate } from './swap.ts';
 import { partDefaults } from './reset.ts';
-import { getMounts, getPartPlacementInfo, resolveAssembly, validateAssembly, addAccessory, moveAccessory } from './assembly.ts';
+import { getMounts, getPartPlacementInfo, pairedByDefault, resolveAssembly, validateAssembly, addAccessory, moveAccessory } from './assembly.ts';
 import { detectCollisions } from './assembly-collisions.ts';
 import type { RackDoc, PartId, Mount, ResolvedInstance, NumericParams } from './types.ts';
 
@@ -76,7 +76,7 @@ export function structureProposalAt(doc: RackDoc, part: PartId, slot: string): P
   if (!candidate.valid) throw new Error(candidate.reason);
   return { ...candidate, label: slot.replaceAll('-', ' ') };
 }
-export function suggestPlacement(doc: RackDoc, part: PartId, paired = true, movingId: string | null = null): ProposalResult {
+export function suggestPlacement(doc: RackDoc, part: PartId, paired = pairedByDefault(part, doc), movingId: string | null = null): ProposalResult {
   const info = getPartPlacementInfo(part, doc), base = resolveAssembly(doc);
   let reason = 'No compatible mounting connection remains.', evaluated = 0;
   const structural = part === 'upright' || !!info?.slots?.length;

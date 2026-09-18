@@ -1,5 +1,5 @@
 import type { Vec3, Vec2, NumericParams, PlacementInfo, AttachmentAnchor, LocalBox, Face } from './types.ts';
-interface AttachmentDefinition { label: string; size: Vec3; anchor: Vec3; outward: Vec3; pinAxis: Vec3; paired: boolean; type: string; note: string; boxes: [Vec3, Vec3][]; requiredPitch?: number; handed?: boolean; additionalBolts?: { z: number; axis: Vec3 }[] }
+interface AttachmentDefinition { label: string; size: Vec3; anchor: Vec3; outward: Vec3; pinAxis: Vec3; paired: boolean; /** New placements start as a pair only when true. */ defaultPaired: boolean; type: string; note: string; boxes: [Vec3, Vec3][]; requiredPitch?: number; handed?: boolean; additionalBolts?: { z: number; axis: Vec3 }[] }
 /** Source-derived upright adapters. Millimetres, Z up.
  * Anchors are upright CENTER / bolt-axis intersections, not mesh bounds centers.
  * Measurements come from decoded source collar contact planes and shaft sections.
@@ -8,13 +8,13 @@ interface AttachmentDefinition { label: string; size: Vec3; anchor: Vec3; outwar
 const TABLE: Record<string, AttachmentDefinition> = {
   'spotter-arm': {
     label: 'Spotter arm', size: [95.9795495156153, 711.8301833828959, 385.0044128179775],
-    anchor: [0, -318.41469035, 355.00034], outward: [0, 1, 0], pinAxis: [1, 0, 0], paired: true,
+    anchor: [0, -318.41469035, 355.00034], outward: [0, 1, 0], pinAxis: [1, 0, 0], paired: true, defaultPaired: true,
     type: 'retaining-pin', note: 'Transverse retaining shaft at Z355; upright cavity between the opposed UHMW side pads.',
     boxes: [[[-39, -265.9, 75], [39, 355.9151, 265]]],
   },
   'dip-horn': {
     label: 'Dip horn', size: [686.272410067909, 606.7577509815051, 199.9958250671625],
-    anchor: [302.11049, -7.04947, 25.00042], outward: [-1, 0, 0], pinAxis: [0, 1, 0], paired: false,
+    anchor: [302.11049, -7.04947, 25.00042], outward: [-1, 0, 0], pinAxis: [0, 1, 0], paired: false, defaultPaired: false,
     type: 'retaining-pin', note: 'Complete two-handle assembly. Anchor is the transverse pin through the padded 75 mm collar.',
     boxes: [
       [[128.45, -249.11, 6.99], [265, 238.23, 127.01]],
@@ -24,7 +24,7 @@ const TABLE: Record<string, AttachmentDefinition> = {
   },
   'dip-bar-adjustable': {
     label: 'Adjustable dip bar', size: [476.48113348489386, 557.9987205721534, 316.2001718155119],
-    anchor: [-173.70955, -158.50075, 25.0002], outward: [1, 0, 0], pinAxis: [1, 0, 0], paired: false,
+    anchor: [-173.70955, -158.50075, 25.0002], outward: [1, 0, 0], pinAxis: [1, 0, 0], paired: false, defaultPaired: false,
     type: 'multi-bolt-collar', requiredPitch: 50, handed: true,
     additionalBolts: [{ z: 250, axis: [1, 0, 0] }, { z: 50, axis: [0, 1, 0] }, { z: 200, axis: [0, 1, 0] }],
     note: 'Handed source assembly. Lower/upper transverse bolts are 250 mm apart; perpendicular collar pins are 150 mm apart. Place individually; automatic mirroring is not implied.',
@@ -36,33 +36,33 @@ const TABLE: Record<string, AttachmentDefinition> = {
   },
   landmine: {
     label: 'Landmine', size: [400.0000059604645, 91.99855476617813, 190.00183045864105],
-    anchor: [-147.50001, 3.99685, 19.995], outward: [1, 0, 0], pinAxis: [1, 0, 0], paired: true,
+    anchor: [-147.50001, 3.99685, 19.995], outward: [1, 0, 0], pinAxis: [1, 0, 0], paired: true, defaultPaired: false,
     type: 'two-bolt-plate', requiredPitch: 50, additionalBolts: [{ z: 150, axis: [1, 0, 0] }],
     note: 'Two rack mounting studs at Z20 and Z170. The smaller sleeve articulation bolts are not rack mounts.',
     boxes: [[[ -84.96, -31.01, 57], [20, 39, 133]], [[-20.01, -24.52, 66.5], [200, 32.5, 123.5]]],
   },
   monolift: {
     label: 'Monolift', size: [152.50658867013829, 556.6585891784836, 325.52698254585266],
-    anchor: [8.748, -240.82804, 300.81799], outward: [0, 1, 0], pinAxis: [1, 0, 0], paired: true,
+    anchor: [8.748, -240.82804, 300.81799], outward: [0, 1, 0], pinAxis: [1, 0, 0], paired: true, defaultPaired: true,
     type: 'retaining-pin', note: 'Rear transverse 16 mm source shaft, not the forward swing pivot. Source upright cavity is centered between the opposed liners.',
     boxes: [[[-8.26, -192.3, 0], [25.77, 278.34, 323.31]]],
   },
   'single-bar-holder': {
     label: 'Single bar holder', size: [246.21925984427253, 64.73516080390016, 140.0000937283039],
-    anchor: [71.78962545, -0.0332, 20.0002], outward: [-1, 0, 0], pinAxis: [1, 0, 0], paired: true,
+    anchor: [71.78962545, -0.0332, 20.0002], outward: [-1, 0, 0], pinAxis: [1, 0, 0], paired: true, defaultPaired: false,
     type: 'two-bolt-plate', additionalBolts: [{ z: 100, axis: [1, 0, 0] }],
     note: 'Rack-facing mounting plate is X34.289625; the upright center sits another 37.5 mm behind it. Bolt levels Z20 and Z120.',
     boxes: [[[-123.11, -32.37, 29.99], [-58.30, 32.37, 140.01]], [[-75.8, -32.37, 40], [30, 32.37, 100]]],
   },
   'storage-pin-short': {
     label: 'Short storage pin', size: [340.00001614913344, 79.54709240133084, 79.77537915533793],
-    anchor: [-112.50000547, -0.2264557, 39.88815497], outward: [1, 0, 0], pinAxis: [1, 0, 0], paired: true,
+    anchor: [-112.50000547, -0.2264557, 39.88815497], outward: [1, 0, 0], pinAxis: [1, 0, 0], paired: true, defaultPaired: true,
     type: 'through-stud', note: 'The peg shoulder meets the rack at X-75; the rear nut sits behind the far upright face at X-150.',
     boxes: [[[-74.9, -39.78, 0], [-64.9, 39.78, 79.78]], [[-64.9, -25.3, 14.59], [170.01, 25.3, 65.19]]],
   },
   'storage-pin-long': {
     label: 'Long storage pin', size: [455.00002056360245, 79.54099029302597, 79.76317405700684],
-    anchor: [-170.00001594, -0.22950768, 39.88815472], outward: [1, 0, 0], pinAxis: [1, 0, 0], paired: true,
+    anchor: [-170.00001594, -0.22950768, 39.88815472], outward: [1, 0, 0], pinAxis: [1, 0, 0], paired: true, defaultPaired: true,
     type: 'through-stud', note: 'The peg shoulder meets the rack at X-132.5; the rear nut sits behind the far upright face at X-207.5.',
     boxes: [[[-132.4, -39.78, 0], [-122.4, 39.78, 79.78]], [[-122.4, -25.3, 14.59], [227.51, 25.3, 65.19]]],
   },
@@ -79,7 +79,7 @@ export function getAttachmentDefaults(part: string): NumericParams {
 }
 export function getAttachmentPlacementInfo(part: string): PlacementInfo {
   const d = definition(part);
-  return { family: 'attachment', label: d.label, paired: d.paired, faces: [...faces], fields: [],
+  return { family: 'attachment', label: d.label, paired: d.paired, defaultPaired: d.paired && d.defaultPaired, faces: [...faces], fields: [],
     ...(d.requiredPitch ? { requiredPitch: d.requiredPitch } : {}), handed: !!d.handed,
     mountType: d.type, description: d.note };
 }
