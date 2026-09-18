@@ -1,4 +1,5 @@
 import './export-menu.css';
+import { resolveAssembly } from '../../rack-generator/assembly.ts';
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { ResetButton } from './ResetButton.tsx';
 import type { BuilderStore } from '../state/builder-store.ts';
@@ -13,6 +14,7 @@ export function ExportMenu({ store, exportGLB, loading, empty }: {
   store: BuilderStore; exportGLB: () => Promise<ArrayBuffer>; loading: boolean; empty: boolean;
 }) {
   const { timeline } = useSyncExternalStore(store.subscribe, store.getSnapshot);
+  const appliedEmpty = !resolveAssembly(store.getAppliedDoc()).length;
   const [open, setOpen] = useState(false);
   const [format, setFormat] = useState<ExportFormat>(() => {
     try { return readExportFormat(sessionStorage); } catch { return 'glb'; }
@@ -58,8 +60,9 @@ export function ExportMenu({ store, exportGLB, loading, empty }: {
     // Focus the remembered choice on opening, not when selecting a format.
   }, [open]);
 
+  const exportEmpty = format === '3mf' ? appliedEmpty : empty;
   const start = () => {
-    if (busy || empty || (format === 'glb' && (loading || timeline.viewing))) return;
+    if (busy || exportEmpty || (format === 'glb' && (loading || timeline.viewing))) return;
     try { rememberExportFormat(sessionStorage, format); } catch { /* Storage may be unavailable. */ }
     // Keep focus inside the popover before disabling its download button.
     items.current[formats.indexOf(format)]?.focus();
@@ -122,7 +125,7 @@ export function ExportMenu({ store, exportGLB, loading, empty }: {
       </div>}
       {format === 'glb' && timeline.viewing && <p>Return to latest to export the applied rack. <button type="button" onClick={store.latestHistory}>Return to latest</button></p>}
       <div className="export-menu-actions">
-        <button type="button" className="primary" disabled={!!busy || empty || (format === 'glb' && (loading || timeline.viewing))}
+        <button type="button" className="primary" disabled={!!busy || exportEmpty || (format === 'glb' && (loading || timeline.viewing))}
           onClick={start}>{busy ? 'Preparing…' : `Download ${format.toUpperCase()}`}</button>
         {busy === '3mf' && <button type="button" onClick={() => { job.cancel(); items.current[1]?.focus(); }}>Cancel export</button>}
       </div>

@@ -1,5 +1,6 @@
 import { test, expect, chromium, type Page } from '@playwright/test';
 import { createAssembly, resizeAssembly, addAccessory } from '../rack-generator/assembly.ts';
+import { DocumentHistory } from '../src/state/history.ts';
 import type { ConfigCollection } from '../src/state/config-storage.ts';
 
 /** Uses the real CAD worker and renderer in an isolated headed Metal browser. */
@@ -145,4 +146,40 @@ test('full timeline: 30+ edits, pointer scrubbing, replay, restoration, persiste
     await testPage?.close();
     await browser.close();
   }
+});
+
+
+test('3MF availability follows the applied rack, including empty historical views', async () => {
+  test.setTimeout(90000);
+  const browser = await chromium.launch({ channel: 'chrome', headless: false, args: ['--use-angle=metal'] });
+  try {
+    const page = await browser.newPage();
+    await page.addInitScript(() => localStorage.clear());
+    await page.goto('http://127.0.0.1:5341/builder');
+    const full = createAssembly();
+    const empty = { ...full, accessories: [], removed: [...Object.keys(full.uprights), ...full.connections.map(edge => edge.id)] };
+    const history = new DocumentHistory(empty);
+    history.append(full);
+    const load = async (doc: typeof full) => page.locator('#import-file').setInputFiles({
+      name: 'empty-history.json', mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify({ format: 'bos-strength-session', version: 1, doc, timeline: history.data })),
+    });
+    await load(full);
+    const slider = page.getByRole('slider', { name: 'History playhead' });
+    await slider.focus(); await page.keyboard.press('Home');
+    await expect(slider).toHaveAttribute('aria-valuenow', '0');
+    await expect(page.locator('#parts-toggle')).toHaveText('Parts list (0)');
+    await page.locator('#export').click();
+    await page.getByRole('menuitemradio', { name: /3MF/ }).click();
+    await expect(page.getByRole('button', { name: 'Download 3MF', exact: true })).toBeEnabled();
+    await page.keyboard.press('Escape');
+    history.append(empty);
+    await load(empty);
+    await slider.focus(); await page.keyboard.press('ArrowLeft');
+    await expect(slider).toHaveAttribute('aria-valuenow', '1');
+    await expect(page.locator('#parts-toggle')).not.toHaveText('Parts list (0)');
+    await page.locator('#export').click();
+    await page.getByRole('menuitemradio', { name: /3MF/ }).click();
+    await expect(page.getByRole('button', { name: 'Download 3MF', exact: true })).toBeDisabled();
+  } finally { await browser.close(); }
 });
