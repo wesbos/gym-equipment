@@ -415,7 +415,8 @@ export default function BuilderPage() {
     importFile = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState(""),
     [drawer, setDrawer] = useState(false),
-    [view, setView] = useState<"iso" | "front" | "side" | "top">("iso");
+    [view, setView] = useState<"iso" | "front" | "side" | "top">("iso"),
+    [building, setBuilding] = useState(false);
   const nameOf = (part: string) =>
     state.definitions
       .find((d) => d.id === part)
@@ -725,7 +726,9 @@ export default function BuilderPage() {
           </div>
         </aside>
         <HistoryTimeline timeline={state.timeline} loading={state.loading}
-          seek={store.seekHistory} restore={() => store.restoreHistory()} clear={store.clearHistory} />
+          seek={store.seekHistory} restore={() => store.restoreHistory()} clear={store.clearHistory}
+          build={{ playing: building, disabled: state.loading || !!state.placing || !!state.structureChoice || !!state.systemChoice,
+            toggle: () => building ? controller.current?.stopBuild() : setBuilding(!!controller.current?.playBuild(() => setBuilding(false))) }} />
         <footer className="status-bar">
           <span
             id="status"
