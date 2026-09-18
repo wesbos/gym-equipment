@@ -4,6 +4,7 @@ import { CableSmithControls, SystemPlacementOptions } from '../components/CableS
 import { isSystemPart, SYSTEM_PARTS } from '../../rack-generator/system-types.ts';
 import { FloorInspector } from '../components/FloorInspector.tsx';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
+import { FLOOR_PART_IDS, floorPart } from '../../rack-generator/floor-registry.ts';
 import { LogoControls } from '../components/LogoControls.tsx';
 import { addsStructure } from '../../rack-generator/structure-candidates.ts';
 import { VendorControls, VendorCredit } from '../components/VendorControls.tsx';
@@ -57,7 +58,7 @@ import "../../rack-generator/builder.css";
 import "../components/history-timeline.css";
 const groups: [string, readonly PartId[]][] = [
   ["Systems", SYSTEM_PARTS],
-  ["Floor items", ["rep-nighthawk"]],
+  ["Floor items", FLOOR_PART_IDS],
   ["Digital resistance", VOLTRA_IDS],
   ["Darko Lifting", DARKO_IDS],
   [
@@ -552,7 +553,8 @@ export default function BuilderPage() {
               checked={state.paired}
               disabled={
                 !!state.placing &&
-                !getPartPlacementInfo(state.placing.part, state.doc)?.paired
+                !getPartPlacementInfo(state.placing.part, state.doc)?.paired &&
+                !(floorPart(state.placing.part)?.pair && !state.placing.movingId)
               }
               onChange={(e) => store.patch({ paired: e.target.checked })}
             />

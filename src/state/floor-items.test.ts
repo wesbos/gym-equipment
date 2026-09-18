@@ -1,6 +1,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {BuilderStore} from './builder-store.ts';
+import {defineFloorPart,registerFloorPart} from '../../rack-generator/floor-registry.ts';
+import type {PartId} from '../../rack-generator/types.ts';
 test('floor suggestion commits once, transforms group into one undo, ESC restores redo, named Save reloads',async()=>{
  const values=new Map<string,string>();const storage={getItem:(k:string)=>values.get(k)??null,setItem:(k:string,v:string)=>{values.set(k,v);},removeItem:(k:string)=>{values.delete(k);}};
  const store=new BuilderStore(storage);await store.ready;
@@ -13,4 +15,17 @@ test('floor suggestion commits once, transforms group into one undo, ESC restore
  store.select(id);store.paintSelection('#a9232c');store.updateFloor(id,{params:{backrestAngle:85,seatAngle:-15}});await store.save('Bench floor');await store.flushStorage();
  const restored=new BuilderStore(storage);await restored.ready;assert.deepEqual(restored.getSnapshot().doc,store.getSnapshot().doc);
  store.selectMany([id,'front-left']);store.removeSelected();assert.equal(store.getSnapshot().doc.floorItems!.length,0);assert.ok(store.getSnapshot().doc.removed.includes('front-left'));store.history('undo');assert.equal(store.getSnapshot().doc.floorItems!.length,1);
+});
+test('pairable floor parts stage both units, follow the pair toggle, move rigidly and commit once',async()=>{
+ registerFloorPart(defineFloorPart({id:'test-dumbbell',name:'Test dumbbell',title:'Test dumbbell',noun:'dumbbell',params:[],footprint:{width:200,depth:400},pair:{gap:50}}));
+ const values=new Map<string,string>();const storage={getItem:(k:string)=>values.get(k)??null,setItem:(k:string,v:string)=>{values.set(k,v);},removeItem:(k:string)=>{values.delete(k);}};
+ const store=new BuilderStore(storage);await store.ready;
+ const before=store.getSnapshot().doc,part='test-dumbbell' as PartId;
+ store.startPlacement(part);assert.equal(store.getSnapshot().proposal!.entries.length,2,'paired by default');
+ store.patch({paired:false});assert.equal(store.getSnapshot().proposal!.entries.length,1);
+ store.patch({paired:true});store.previewFloor([2000,1000],Math.PI/2);
+ const [a,b]=store.getSnapshot().proposal!.doc.floorItems!;assert.deepEqual(a.position,[2000,1000]);assert.ok(Math.abs(b.position[0]-2000)<1e-9 && Math.abs(b.position[1]-750)<1e-9);
+ assert.deepEqual(store.getSnapshot().doc,before);store.acceptProposal();
+ assert.equal(store.getSnapshot().doc.floorItems!.length,2);assert.equal(store.getSnapshot().selected,a.id);
+ store.history('undo');assert.deepEqual(store.getSnapshot().doc,before);
 });
