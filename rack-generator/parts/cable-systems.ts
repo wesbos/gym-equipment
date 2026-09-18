@@ -63,6 +63,8 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
           : 45.72;
     const top = height + addedHeight - 112;
     const sides = p.sides === 3 ? [-1, 1] : [p.sides === 1 ? -1 : 1];
+    const lowerHeaderZ = p.firstHole + (v2 ? 120 : 45);
+    const headerPlans: ReturnType<typeof cableRoutePlan>[] = [];
     for (const side of sides) {
       const postX = (side * p.rackWidth) / 2;
       // ARES 2 rotates stacks across the rear bay; original ARES stacks run lengthwise.
@@ -246,6 +248,12 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
       }
       const movingZ = p.loading ? headZ + 70 : 370;
       const plan = cableRoutePlan(p, id, side, stackX, stackY, movingZ);
+      if (v2) headerPlans.push(plan);
+      if (v2)
+        for (const plate of g.parts.filter((part) => part.name === "Drilled guide support plate"))
+          // RevK pp66–68: return legs pass through fairlead openings beside
+          // the guide sockets before turning beneath the lower stack frame.
+          plate.solid = cableClearances(g, plate.solid, plan);
       const stackWheel = plan.pulleys.find(
         (w) => w.id === "Moving stack pulley",
       )!;
@@ -316,7 +324,7 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
               p.tube + 38,
             );
         }
-      for (const z of [p.firstHole + 40, height + addedHeight - 12]) {
+      for (const z of [p.firstHole + 40, v2 ? height - 60 : height + addedHeight - 12]) {
         const beam = g.box([70, p.depth, 6], [postX, p.depth / 2, z]);
         const folded = g.union([
           beam,
@@ -329,7 +337,8 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
           { length: Math.floor((p.depth - 50) / p.pitch) },
           (_, i) => g.cylinder(80, 7, "z", [postX, 25 + i * p.pitch, z]),
         );
-        g.add("Folded perforated pulley rail", g.cut(folded, holes));
+        g.add("Folded perforated pulley rail",
+          v2 ? cableClearances(g, g.cut(folded, holes), plan) : g.cut(folded, holes));
       }
       const trolleyX = postX + (v2 ? side * 75 : ares ? -side * 10 : 0),
         ty = plan.ty,
@@ -397,7 +406,7 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
       )) {
         const railZ =
           wheel.center[2] > height / 2
-            ? height + addedHeight - 12
+            ? v2 ? height - 60 : height + addedHeight - 12
             : p.firstHole + 40;
         const anchor: Vec3 = [
           postX,
@@ -422,15 +431,17 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
         const at = wheel.center.map((v, i) => v + n[i] * 19) as Vec3;
         const angle = (Math.atan2(n[1], n[0]) * 180) / Math.PI;
         const h = Math.abs(railZ - at[2]) + 18;
-        const web = g.move(g.rotate(g.box([6, 24, h]), [0, 0, angle]), [
-          at[0],
-          at[1],
-          (railZ + at[2]) / 2,
-        ]);
-        const hole = g.move(
-          g.rotate(g.cylinder(10, 5.5, "x", [0, 0, 0]), [0, 0, angle]),
-          at,
-        );
+        const horizontal = Math.abs(n[2]) > 0.99;
+        const web = horizontal
+          ? g.box([24, 24, h], [at[0], at[1], (railZ + at[2]) / 2])
+          : g.move(g.rotate(g.box([6, 24, h]), [0, 0, angle]), [
+            at[0], at[1], (railZ + at[2]) / 2,
+          ]);
+        const hole = horizontal
+          ? g.cylinder(h + 2, 10.5, "z", [at[0], at[1], (railZ + at[2]) / 2])
+          : g.move(
+            g.rotate(g.cylinder(10, 5.5, "x", [0, 0, 0]), [0, 0, angle]), at,
+          );
         g.add(wheel.id + " hanger web", g.cut(web, [hole]));
         const dx = anchor[0] - at[0],
           dy = anchor[1] - at[1];
@@ -534,11 +545,11 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
             // Two pivot bearings stand on a central pedestal connected to
             // the lower transverse stack rail, not a floating side hanger.
             g.add("Low row swivel pedestal",
-              g.box([40, 8, z + 45 - (p.firstHole + 45)],
-                [x, y + 85, (z + 45 + p.firstHole + 45) / 2]));
+              g.box([40, 8, z + 45 - lowerHeaderZ],
+                [x, y + 85, (z + 45 + lowerHeaderZ) / 2]));
             g.add("Low row pedestal base",
               g.box([44, Math.abs(stackY - (y + 85)) + 20, 8],
-                [x, (stackY + y + 85) / 2, p.firstHole + 45]));
+                [x, (stackY + y + 85) / 2, lowerHeaderZ]));
           }
         }
       }
@@ -636,15 +647,23 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
       }
     }
     if (ares) {
-      for (const z of [p.firstHole + 45, v2 ? height - (height < 2200 ? 110 : 140) : top + 50]) {
+      for (const z of [lowerHeaderZ, v2 ? height - (height < 2200 ? 110 : 140) : top + 50]) {
         const y = p.depth - (p.rearBay || p.depth) / 2;
         const rail = g.box([p.rackWidth, 75, 75], [0, y, z]);
         const hollow = g.box([p.rackWidth + 2, 69, 69], [0, y, z]);
-        g.add("ARES transverse stack support", g.cut(rail, [hollow]));
+        g.add("ARES transverse stack support", headerPlans.reduce(
+          (body, plan) => cableClearances(g, body, plan), g.cut(rail, [hollow])));
       }
       if (v2) {
+        // Reconstructed rise leaves complete underhung sheaves below the header.
+        // End webs connect the raised header to the existing lower side rails.
+        for (const side of [-1, 1])
+          g.add("ARES2 lower header end bracket",
+            g.box([6, 75, lowerHeaderZ - (p.firstHole + 40) + 6],
+              [side * (p.rackWidth / 2 - 3), p.depth - (p.rearBay || p.depth) / 2,
+                (lowerHeaderZ + p.firstHole + 40) / 2]));
         const headerZ = height - (height < 2200 ? 110 : 140),
-          railZ = height + addedHeight - 12;
+          railZ = height - 60;
         for (const side of [-1, 1])
           g.add("ARES2 header end bracket",
             g.box([6, 75, railZ - headerZ + 6],
@@ -684,7 +703,7 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
             "Lat output bar connector",
             g.path(
               [
-                [side * 90, y, v2 ? p.height - (height < 2200 ? 170 : 200) : latZ + 30],
+                [side * 90, y, v2 ? p.height - (height < 2200 ? 176 : 206) : latZ + 30],
                 [side * 90, y, latZ],
               ],
               4,

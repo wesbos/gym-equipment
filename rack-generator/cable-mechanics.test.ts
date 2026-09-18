@@ -365,7 +365,7 @@ test("ARES2 REP pp58/66 fixture: upper adjuster ascends, working output feeds fr
           assert.equal(lower.end, "Low row output eye");
           assert.equal(upper.end, "Lat output eye");
           const overStack = upper.points.find((p) => p.pulley === "Upper rear redirect 2")!.point;
-          assert.ok(overStack[2] >= height, "rear path crosses above the header, not below it");
+          assert.ok(overStack[2] > height - 30, "rear path crosses above the header, not below it");
         }
         const left = plans[0].pulleys.find((p) => p.id === "Low row swivel")!;
         const right = plans[1].pulleys.find((p) => p.id === "Low row swivel")!;
@@ -394,15 +394,29 @@ test("ARES2 source/mesh fixture: transverse plates, paired supported swivels, ca
       assert.ok(parts.every((p) => p.solid.status() === "NoError" && p.solid.volume() > 0));
       const plate = parts.find((p) => p.name === "Weight stack plate 1")!.solid.boundingBox();
       assert.ok(plate.max[0] - plate.min[0] > 2 * (plate.max[1] - plate.min[1]));
-      const additions = parts.filter((p) => /lower keeper|paired swivel|swivel pivot|swivel pedestal|pedestal base|header end bracket/i.test(p.name));
+      const additions = parts.filter((p) => /lower keeper|paired swivel|swivel pivot|swivel pedestal|pedestal base|header end bracket|coaxial equalizer|Folded perforated pulley rail/i.test(p.name));
       assert.equal(parts.filter((p) => /lower keeper grooved/.test(p.name)).length, 4);
       assert.equal(parts.filter((p) => p.name === "Low row vertical swivel pivot").length, 2);
       for (const part of additions) {
         printableMesh(part.solid, part.name);
         for (const cable of cableParts(parts)) clear(cable, part);
       }
+      assert.equal(parts.filter((p) => p.name === "ARES2 coaxial equalizer shared axle").length, 4);
+      assert.equal(parts.filter((p) => /^Floating equalizer.*(cheek|axle)/.test(p.name)).length, 0);
+      const wheels = parts.filter((p) => p.name.endsWith("grooved six-spoke wheel"));
+      for (let i = 0; i < wheels.length; i++)
+        for (let j = i + 1; j < wheels.length; j++) clear(wheels[i], wheels[j]);
+      for (const fixed of parts.filter((p) => /^(Lower rear redirect 1|Lower row approach).*wheel|^(Lower rear redirect 1|Lower row approach).*cheek/.test(p.name)))
+        for (const support of parts.filter((p) => /Drilled guide support plate|ARES transverse stack support/.test(p.name)))
+          clear(fixed, support);
       for (const strap of parts.filter((p) => p.name.endsWith("paired swivel cheek strap")))
         for (const axle of parts.filter((p) => /axle/.test(p.name))) clear(strap, axle);
+      for (const bracket of parts.filter((p) => p.name === "ARES2 lower header end bracket"))
+        for (const target of ["ARES transverse stack support", "Folded perforated pulley rail"])
+          assert.ok(parts.filter((p) => p.name === target).some((p) => {
+            const overlap = bracket.solid.intersect(p.solid);
+            try { return overlap.volume() > 1; } finally { overlap.delete(); }
+          }), `raised lower header bracket must meet ${target}`);
       for (const bearing of parts.filter((p) => p.name.endsWith("swivel pivot bearing"))) {
         assert.ok(parts.filter((p) => p.name.endsWith("swivel pivot arm")).some((arm) => {
           if (!intersects(arm, bearing)) return false;
@@ -417,4 +431,32 @@ test("ARES2 source/mesh fixture: transverse plates, paired supported swivels, ca
         }), "raised row pivot pedestal must meet its base");
     } finally { parts.forEach((p) => p.solid.delete()); }
   }
+});
+
+test("ARES2 RevK pp59/63/67 equalizer fixture: coaxial pairs, same-handed wraps, one fixed reversal and horizontal corners", () => {
+  const def = definitions.find((d) => d.id === "cable-ares2")!;
+  for (const height of [2032, 2362.2])
+    for (const depth of [481.4, 1318.4])
+      for (const side of [-1, 1]) {
+        const p = { ...def.defaults, height, depth };
+        const plan = cableRoutePlan(p, "cable-ares2", side,
+          side * (def.defaults.rackWidth / 2 - 205), depth - def.defaults.rearBay / 2, 822.5);
+        assert.ok(Math.abs(plan.pulleys.find((w) => w.id === "Lower row horizontal redirect")!.normal[2]) > 0.9999,
+          "H turns the lower return lane in the horizontal plane");
+        for (const level of ["upper", "lower"]) {
+          const pair = [1, 2].map((n) => plan.pulleys.find((w) => w.id === `Floating equalizer ${level} ${n}`)!);
+          assert.equal(pair[0].center[1], pair[1].center[1]);
+          assert.equal(pair[0].center[2], pair[1].center[2]);
+          assert.ok(Math.abs(pair[0].center[0] - pair[1].center[0]) < 50,
+            "two adjacent grooves, not two separated floating frames");
+          assert.ok(pair[0].normal.every((v, i) => Math.abs(v - pair[1].normal[i]) < 1e-6),
+            "inside and outside wraps must have the same handedness");
+          const prefix = level === "upper" ? "Upper" : "Lower";
+          const transfer = plan.pulleys.filter((w) => w.id.startsWith(`${prefix} equalizer transfer`));
+          assert.equal(transfer.length, 1, "REP E is one fixed reversal");
+          assert.ok(Math.abs(transfer[0].normal[2]) < 1e-6, "E is an upright sheave, not a horizontal turn");
+          const corner = plan.pulleys.find((w) => w.id === `${prefix} rear horizontal redirect`)!;
+          assert.ok(Math.abs(corner.normal[2]) > 0.9999, "C explicitly turns the horizontal cable lane");
+        }
+      }
 });

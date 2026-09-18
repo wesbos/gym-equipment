@@ -40,10 +40,10 @@ export function cableRoutePlan(
     : post + (v2 ? side * 75 : ares ? -side * 10 : -side * 70);
   // ARES2 upper hardware sits over the stack header (REP RevK pp57–60).
   // Centers remain reconstructed, not manufacturer dimensions.
-  const H = p.height - (v2 ? (p.height < 2200 ? 50 : 80) : ares ? 180 : 120),
-    F = Math.max(430, Math.min(1000, movingZ + 180));
-  const fy = ares ? stackY - 260 : ty + 130;
-  const low = 95,
+  const H = p.height - (v2 ? (p.height < 2200 ? 56 : 86) : ares ? 180 : 120),
+    F = v2 ? movingZ + 250 : Math.max(430, Math.min(1000, movingZ + 180));
+  const fy = v2 ? stackY + 60 : ares ? stackY - 260 : ty + 130;
+  const low = v2 ? 18 : 95,
     routes: CableRoute[] = [];
   const start = (name: string, pts: RoutePoint[], a: string, b: string) =>
     routes.push({ name, points: pts, start: a, end: b });
@@ -107,7 +107,7 @@ export function cableRoutePlan(
   } else {
     // ARES RevK upper A–J and lower A–I. Two sheaves at each level share
     // a floating frame; upper terminates at lat output, lower at trolley.
-    const lane = x - side * 30,
+    const lane = v2 ? post - side * 70 : x - side * 30,
       second = lane - side * (v2 ? 44 : 180),
       latX = side * 90;
     const latY = p.depth - (p.rearBay || p.depth) + 40,
@@ -123,16 +123,17 @@ export function cableRoutePlan(
       `${v2 ? "ARES2" : "ARES1"} upper functional/lat cable`,
       [
         point(out, ty + 60, tz + 55),
-        point(out, ty + 60, H, "Upper front redirect 1"),
-        point(lane, fy - 40, H, "Upper rear redirect 1"),
+        point(out, ty + 60, v2 ? H + 80 : H, "Upper front redirect 1"),
+        ...(v2 ? [point(out, fy - 40, H + 80, "Upper rear horizontal redirect")] : []),
+        point(lane, fy - 40, v2 ? H + 80 : H, "Upper rear redirect 1"),
         point(lane, fy - 40, F - 40, "Floating equalizer upper 1"),
         point(lane, fy + 40, F - 40, "Floating equalizer upper 1"),
-        point(lane, fy + 40, H + 80, v2 ? "Upper equalizer transfer" : "Upper equalizer transfer 1", transferRadius),
-        point(second, secondEntryY, H + 80, v2 ? "Upper equalizer transfer" : "Upper equalizer transfer 2", transferRadius),
+        point(lane, fy + 40, v2 ? H - 120 : H + 80, v2 ? "Upper equalizer transfer" : "Upper equalizer transfer 1", transferRadius),
+        point(second, secondEntryY, v2 ? H - 120 : H + 80, v2 ? "Upper equalizer transfer" : "Upper equalizer transfer 2", transferRadius),
         point(second, secondEntryY, F - 40, "Floating equalizer upper 2"),
         point(second, secondExitY, F - 40, "Floating equalizer upper 2"),
-        point(second, secondExitY, H - 100, "Upper stack approach"),
-        point(x, stackY - 40, H - 100, "Upper stack redirect"),
+        point(second, secondExitY, v2 ? H + 80 : H - 100, "Upper stack approach"),
+        point(x, stackY - 40, v2 ? H + 80 : H - 100, "Upper stack redirect"),
         ...stackLoop,
         point(x, stackY + 40, H + 80, "Upper rear redirect 2"),
         point(latX, latY, H + 80, "Lat pulldown swivel"),
@@ -158,15 +159,17 @@ export function cableRoutePlan(
           point(out, ty + 40, tz + 40, "Swivel cable output 1"),
           point(out, ty + 40, low, "Lower front return"),
         ]),
+        ...(v2 ? [point(out, fy - 40, low, "Lower rear horizontal redirect")] : []),
         point(lane, fy - 40, low, "Lower rear redirect 1"),
         point(lane, fy - 40, bottom + 40, "Floating equalizer lower 1"),
         point(lane, fy + 40, bottom + 40, "Floating equalizer lower 1"),
-        point(lane, fy + 40, low - 65, v2 ? "Lower equalizer transfer" : "Lower equalizer transfer 1", transferRadius),
-        point(second, secondEntryY, low - 65, v2 ? "Lower equalizer transfer" : "Lower equalizer transfer 2", transferRadius),
+        point(lane, fy + 40, v2 ? 260 : low - 65, v2 ? "Lower equalizer transfer" : "Lower equalizer transfer 1", transferRadius),
+        point(second, secondEntryY, v2 ? 260 : low - 65, v2 ? "Lower equalizer transfer" : "Lower equalizer transfer 2", transferRadius),
         point(second, secondEntryY, bottom + 40, "Floating equalizer lower 2"),
         point(second, secondExitY, bottom + 40, "Floating equalizer lower 2"),
-        point(second, secondExitY, low, "Lower row approach"),
-        point(latX, latY + 120, v2 ? low : 50, "Lower row redirect"),
+        point(second, secondExitY, v2 ? 30 : low, "Lower row approach"),
+        ...(v2 ? [point(second, latY + 120, 30, "Lower row horizontal redirect")] : []),
+        point(latX, latY + 120, v2 ? 30 : 50, "Lower row redirect"),
         ...(v2 ? [
           point(latX, latY + 120, rowZ + 80, "Low row swivel"),
           point(latX, latY + 40, rowZ + 80, "Low row swivel"),
