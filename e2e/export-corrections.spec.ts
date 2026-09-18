@@ -130,7 +130,7 @@ test('Parts parameter downloads and original-reference links use system attribut
     window.Worker = FixtureWorker as unknown as typeof Worker;
   }, ids);
   try {
-    await page.goto(base + '/parts');
+    await page.goto(base + '/parts/' + ids[0]);
     for (const id of ids) {
       await page.locator('#catalog').getByRole('button', { name: id, exact: true }).click();
       const link = page.getByRole('link', { name: 'Original reference' });
