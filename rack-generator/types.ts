@@ -1,6 +1,7 @@
 import type { RackSystem, SystemPartId } from './system-types.ts';
 import type { FloorPartId } from './floor-registry.ts';
 import type { WallPartId } from './wall-registry.ts';
+import type { HangPartId } from './hang-registry.ts';
 import type { Room, WallId } from './walls.ts';
 import type { ValidatedLogo } from './logos/types.ts';
 import type { Appearance, MaterialSource } from './appearance.ts';
@@ -13,7 +14,7 @@ export type Vec2 = [number, number];
 export type Vec3 = [number, number, number];
 export type NumericParams = Record<string, number>;
 export type PartParams = NumericParams;
-export type PartId = SystemPartId | FloorPartId | WallPartId | 'darko-anchor' | 'darko-dock' | 'darko-j' | 'darko-double-j' | 'darko-double-decker' | 'voltra-sliding' | 'voltra-adaptive' | 'voltra-fixed' | 'upright' | 'crossmember-425' | 'crossmember-725' | 'crossmember-1075' | 'angled-crossmember' | 'offset-crossmember' | 'nameplate' | 'branded-crossmember' | 'branded-crossmember-lite' | 'foot-400' | 'foot-800' | 'pullup-straight' | 'pullup-multigrip' | 'pullup-sphere' | 'safety-box' | 'safety-pin-pipe' | 'safety-webbing' | 'j-hook-standard' | 'j-hook-roller' | 'j-hook-sandwich' | 'spotter-arm' | 'dip-horn' | 'dip-bar-adjustable' | 'landmine' | 'monolift' | 'single-bar-holder' | 'storage-pin-short' | 'storage-pin-long';
+export type PartId = SystemPartId | FloorPartId | WallPartId | HangPartId | 'darko-anchor' | 'darko-dock' | 'darko-j' | 'darko-double-j' | 'darko-double-decker' | 'voltra-sliding' | 'voltra-adaptive' | 'voltra-fixed' | 'upright' | 'crossmember-425' | 'crossmember-725' | 'crossmember-1075' | 'angled-crossmember' | 'offset-crossmember' | 'nameplate' | 'branded-crossmember' | 'branded-crossmember-lite' | 'foot-400' | 'foot-800' | 'pullup-straight' | 'pullup-multigrip' | 'pullup-sphere' | 'safety-box' | 'safety-pin-pipe' | 'safety-webbing' | 'j-hook-standard' | 'j-hook-roller' | 'j-hook-sandwich' | 'spotter-arm' | 'dip-horn' | 'dip-bar-adjustable' | 'landmine' | 'monolift' | 'single-bar-holder' | 'storage-pin-short' | 'storage-pin-long';
 export interface SolidPart extends MaterialSource { name: string; solid: Manifold; color?: string; metalness?: number; roughness?: number }
 export interface StandardOption { value: number; label: string }
 export interface PartDefinition { standardOptions?: Record<string, readonly StandardOption[]>; id: string; name: string; category: string; defaults: NumericParams; build: (api: ManifoldAPI, params: NumericParams, logo?: ValidatedLogo) => SolidPart[]; reference?: { file: string; node: string }; description?: string; /** Laid-out 3MF: keep the builder's Z-up frame (base end down) instead of the smallest-height heuristic. */ printOrientation?: 'standing' }
@@ -35,7 +36,9 @@ export interface StructureVariant { part: PartId; params: NumericParams }
 export interface FloorItem { id: string; part: FloorPartId; position: Vec2; rotation: number; params: NumericParams; cradle?: string }
 /** Wall-mounted scenery (#85): `position` is [u along the wall from its centre, face-centre height] in mm. */
 export interface WallItem { id: string; part: WallPartId; wall: WallId; position: Vec2; params: NumericParams }
-export interface RackDoc { room?: Room; wallItems?: WallItem[]; floorItems?: FloorItem[]; systems?: RackSystem[]; logo?: ValidatedLogo; appearance?: Appearance; version: 2; uprights: Record<string, UprightNode>; connections: ConnectionEdge[]; profileId?: string; rack: RackDimensions; removed: string[]; structure: Record<string, StructureVariant>; accessories: Accessory[]; nextId: number }
+/** An attachment hanging on hook `slot` of wall item `panel`; it follows the panel. */
+export interface HangItem { id: string; part: HangPartId; panel: string; slot: number }
+export interface RackDoc { room?: Room; wallItems?: WallItem[]; hangItems?: HangItem[]; floorItems?: FloorItem[]; systems?: RackSystem[]; logo?: ValidatedLogo; appearance?: Appearance; version: 2; uprights: Record<string, UprightNode>; connections: ConnectionEdge[]; profileId?: string; rack: RackDimensions; removed: string[]; structure: Record<string, StructureVariant>; accessories: Accessory[]; nextId: number }
 
 export interface StructureSlot { id: string; part: PartId; connectedTo: UprightId[] }
 export interface LocalBox { min: Vec3; max: Vec3 }

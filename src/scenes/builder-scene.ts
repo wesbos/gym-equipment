@@ -6,10 +6,12 @@ import { PointerGesture } from './pointer-gesture.ts';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { isFloorPart } from '../../rack-generator/floor-registry.ts';
 import { freeCradles, parkedPose, parksInCradles, type BarCradle } from '../../rack-generator/barbell-cradles.ts';
-import { isWallPart } from '../../rack-generator/wall-registry.ts';
+import { isWallPart, wallPart } from '../../rack-generator/wall-registry.ts';
 import { roomOf, wallWarnings } from '../../rack-generator/wall-items.ts';
 import { wallFrames, wallHit, wallPlaneHit, type WallId } from '../../rack-generator/walls.ts';
 import { createGymWalls } from './gym-walls.ts';
+import { isHangPart } from '../../rack-generator/hang-registry.ts';
+import { freeSlots, hangWarnings, hookAnchor, type HangTarget } from '../../rack-generator/hang-items.ts';
 import { createGymFloor, fitRackShadow } from './gym-floor.ts';
 import { FrameFinishResources, addSteelUVs } from './frame-finishes.ts';
 import { structureCandidates, type StructureCandidate } from '../../rack-generator/structure-candidates.ts';
@@ -27,6 +29,7 @@ import { createStudioLighting } from './studio-lighting.ts';
 import { detectCollisions } from "../../rack-generator/assembly-collisions.ts";
 import type {
   Mount,
+  PartId,
   ResolvedInstance,
   Vec3,
 } from "../../rack-generator/types.ts";
@@ -74,6 +77,8 @@ export function createBuilderScene(
   let previewTarget: Mount | null = null,
     selectionBoxes: THREE.Box3Helper[] = [];
   let mountPoints: Mount[] = [];
+  /** Free hooks for the attachment being placed: source-space marker and outward normal. */
+  let hangTargets: (HangTarget & { position: Vec3; normal: Vec3 })[] = [];
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#343b38");
   scene.fog = new THREE.Fog("#343b38", 18000, 42000);
@@ -106,8 +111,8 @@ export function createBuilderScene(
   scene.add(backdrop.group);
   const walls = createGymWalls();
   scene.add(walls.group);
-  const placingWall = () => isWallPart(snapshot.placing?.part);
-  const updateWalls = () => walls.update(roomOf(snapshot.doc), !!snapshot.doc.wallItems?.length || placingWall());
+  const placingWall = () => isWallPart(snapshot.placing?.part), placingHang = () => isHangPart(snapshot.placing?.part);
+  const updateWalls = () => walls.update(roomOf(snapshot.doc), !!snapshot.doc.wallItems?.length || placingWall() || placingHang());
   const raycaster = new THREE.Raycaster(),
     pointer = new THREE.Vector2(),
     instances = new Map<string, THREE.Group>();
@@ -270,7 +275,7 @@ export function createBuilderScene(
       refreshSelection();
       refreshPlacement();
       trimCache();
-      const warnings = [...detectCollisions(entries), ...floorWarnings(snapshot.doc), ...wallWarnings(snapshot.doc)];
+      const warnings = [...detectCollisions(entries), ...floorWarnings(snapshot.doc), ...wallWarnings(snapshot.doc), ...hangWarnings(snapshot.doc)];
       store.patch({
         loading: false,
         dimensions: dimensions(true),
@@ -304,7 +309,7 @@ export function createBuilderScene(
   function clearMounts() {
     disposeMeshes(mountsRoot);
     mountsRoot.clear();
-    mountPoints = [];
+    mountPoints = []; hangTargets = [];
   }
   // Barbell parking (#83): every free cradle shows a faint bar ghost; hover picks the nearest, else the floor.
   let cradles: BarCradle[] = [], cradleSerial = 0, releaseCradles = () => {};
@@ -430,7 +435,7 @@ export function createBuilderScene(
   window.addEventListener('keydown', onStructureKey);
   function resetPlacement() {
     structuralCandidates = []; structuralPreview = null; showStructureHandles([]);
-    swapRegions?.dispose(); swapRegions = null; hoveredSwap = null; queuedPreview = null;
+    swapRegions?.dispose(); swapRegions = null; hoveredSwap = null; queuedPreview = null; hoveredHang = '';
     previewTarget = null;
     previewSerial++;
     clearGhost();
@@ -464,7 +469,8 @@ export function createBuilderScene(
   function refreshPlacement() {
     resetPlacement();
     for (const g of instances.values()) {
-      const moving = g.userData.ownerId === snapshot.placing?.movingId && (snapshot.paired || !snapshot.placing?.physicalId || g.userData.id === snapshot.placing.physicalId);
+      const moving = g.userData.ownerId === snapshot.placing?.movingId && (snapshot.paired || !snapshot.placing?.physicalId || g.userData.id === snapshot.placing.physicalId)
+        || (!!snapshot.placing?.movingId && !!snapshot.resolved.find(r => r.id === g.userData.id && r.kind === 'wall-item')?.connectedTo.includes(snapshot.placing.movingId));
       pickupAppearance(g, moving);
     }
     const placing = snapshot.placing, part = swapPart();
@@ -474,15 +480,47 @@ export function createBuilderScene(
       store.patch({ proposal: null, placementText: structuralCandidates.length ? 'Hover a post or gap · ESC cancels' : 'No valid adjacent positions · ESC cancels' });
       return;
     }
-    if (part && !isFloorPart(part) && !isWallPart(part)) {
+    if (part && !isFloorPart(part) && !isWallPart(part) && !isHangPart(part)) {
       swapRegions = createSwapRegions(swapCandidates(snapshot.doc, part), instances, snapshot.doc);
       scene.add(swapRegions.root);
     }
     if (!placing && !snapshot.structureChoice && !snapshot.systemChoice) return;
-    if (placing && !isFloorPart(placing.part) && !isWallPart(placing.part)) showMounts();
+    if (placing && isHangPart(placing.part)) showHangTargets();
+    else if (placing && !isFloorPart(placing.part) && !isWallPart(placing.part)) showMounts();
     if (placing && parksInCradles(placing.part)) void showCradles();
     renderer.domElement.style.cursor = "crosshair";
     if (snapshot.proposal) void renderProposal(snapshot.proposal);
+  }
+  /** Ghost-highlight every free hook (#18/#32 mount dots); hover snaps the ghost, click hangs it. */
+  function showHangTargets() {
+    clearMounts();
+    const doc = snapshot.doc, panels = new Map(snapshot.resolved.filter(r => r.kind === 'wall-item').map(r => [r.id, r]));
+    hangTargets = freeSlots(doc, snapshot.placing!.part, snapshot.placing!.movingId).map(target => {
+      const panel = doc.wallItems!.find(p => p.id === target.panel)!, at = panels.get(target.panel)!, a = at.rotation[2], [x, , z] = hookAnchor(panel, target.slot);
+      // Marker sits on the hook's hole, just proud of the face.
+      const rotate = (u: number, v: number): [number, number] => [u * Math.cos(a) - v * Math.sin(a), u * Math.sin(a) + v * Math.cos(a)];
+      const [px, py] = rotate(x, -(wallPart(panel.part)!.depth + 6)), [nx, ny] = rotate(0, -1);
+      return { ...target, position: [at.position[0] + px, at.position[1] + py, at.position[2] + z] as Vec3, normal: [nx, ny, 0] as Vec3 };
+    });
+    const dots = new THREE.InstancedMesh(new THREE.SphereGeometry(9, 12, 8), new THREE.MeshBasicMaterial({ color: '#d28a40', transparent: true, opacity: .75 }), hangTargets.length), matrix = new THREE.Matrix4();
+    hangTargets.forEach((t, i) => dots.setMatrixAt(i, matrix.makeTranslation(...t.position)));
+    dots.renderOrder = 5;
+    mountsRoot.add(dots);
+  }
+  let hoveredHang = '';
+  function nearestHang(event: { clientX: number; clientY: number }) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    let best: HangTarget | null = null, distance = 28;
+    scene.updateMatrixWorld(true);
+    for (const target of hangTargets) {
+      const world = mountsRoot.localToWorld(new THREE.Vector3(...target.position)), normal = new THREE.Vector3(...target.normal).transformDirection(mountsRoot.matrixWorld);
+      if (normal.dot(camera.position.clone().sub(world)) <= 0) continue;
+      const point = world.project(camera);
+      if (point.z > 1 || point.z < -1) continue;
+      const d = Math.hypot(rect.left + (point.x + 1) * rect.width / 2 - event.clientX, rect.top + (1 - point.y) * rect.height / 2 - event.clientY);
+      if (d < distance) { distance = d; best = target; }
+    }
+    return best;
   }
   function renderProposal(proposal: PlacementProposal) {
     previewTarget = proposal.target ?? null;
@@ -582,6 +620,7 @@ export function createBuilderScene(
     if (parksInCradles(snapshot.placing?.part)) { const cradle = cradleAt(event); if (cradle) { store.previewCradle(cradle.key); return; } }
     if(isFloorPart(snapshot.placing?.part)) { const point=floorPoint(event); if(point) store.previewFloor(point); return; }
     if(placingWall()) { const hit=wallRay(event); if(hit) store.previewWall(hit.wall,[hit.u,hit.h],!(event as {altKey?:boolean}).altKey); return; }
+    if(placingHang()) { const target=nearestHang(event), key=target ? `${target.panel}:${target.slot}` : ''; if(target && key!==hoveredHang) store.previewHang(target.panel,target.slot); hoveredHang=key; return; }
     if (addingStructure()) { updateStructure(event); return; }
     const candidate = candidateAt(event);
     if (candidate) {
@@ -605,6 +644,7 @@ export function createBuilderScene(
   function dropPlacement(event: { clientX: number; clientY: number }) {
     if (snapshot.placing?.rotationOnly) { store.acceptProposal(); return; }
     if(isFloorPart(snapshot.placing?.part) || placingWall()) { updatePreview(event); store.acceptProposal(); return; }
+    if(placingHang()) { const target=nearestHang(event); if(target) { store.previewHang(target.panel,target.slot); store.acceptProposal(); } return; }
     if (addingStructure()) { commitStructure(); return; }
     if (!candidateAt(event) && !nearestMount(event)) return;
     updatePreview(event);
@@ -613,6 +653,8 @@ export function createBuilderScene(
   const floorPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
   /** Floor drags move [x, z]; wall drags (`wall` set) move [u, height] on that wall's plane. */
   let floorDrag: {id:string;start:[number,number];position:[number,number];moved:boolean;wall?:WallId} | null=null;
+  /** Hung attachment drag: past 6 px it becomes a move placement; release over a free hook hangs it there. */
+  let hangDrag: {id:string;part:string;started:boolean} | null=null;
   function wallRay(event:{clientX:number;clientY:number}, wall?:WallId) {
     const rect=renderer.domElement.getBoundingClientRect();
     pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);
@@ -632,11 +674,11 @@ export function createBuilderScene(
   const floorKey=(event:KeyboardEvent)=>{
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !(event.target instanceof HTMLElement && (/INPUT|SELECT|TEXTAREA/.test(event.target.tagName) || event.target.isContentEditable))) {
       // BuilderPage invokes history next; leave store gesture finalization to history.
-      floorDrag = null; pointerGesture.finish(); selecting = false; marquee.style.display = 'none';
+      floorDrag = null; hangDrag = null; pointerGesture.finish(); selecting = false; marquee.style.display = 'none';
       controls.enabled = !snapshot.selectionTool;
       return;
     }
-    if(event.key==='Escape') { floorDrag=null; store.cancelGesture(); controls.enabled=true; pointerGesture.finish(); return; }
+    if(event.key==='Escape') { floorDrag=null; hangDrag=null; store.cancelGesture(); controls.enabled=true; pointerGesture.finish(); return; }
     if(event.key.toLowerCase()!=='r' || event.ctrlKey || event.metaKey || (event.target instanceof HTMLElement && (/INPUT|SELECT|TEXTAREA/.test(event.target.tagName) || event.target.isContentEditable))) return;
     if (snapshot.systemChoice) return;
     const delta=(event.shiftKey?-1:1)*Math.PI/12;
@@ -683,7 +725,12 @@ export function createBuilderScene(
     pointerGesture.begin(event);
     if(event.button===0 && !snapshot.systemChoice && !snapshot.placing && !snapshot.structureChoice && !snapshot.selectionTool && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
       const hit=pickOwner(event),applied=store.getAppliedDoc(),item=applied.floorItems?.find(i=>i.id===hit?.id && !i.cradle),point=floorPoint(event,false);
-      const wallItem=applied.wallItems?.find(i=>i.id===hit?.id),wallPoint=wallItem && wallRay(event,wallItem.wall);
+      const wallItem=applied.wallItems?.find(i=>i.id===hit?.id),wallPoint=wallItem && wallRay(event,wallItem.wall),hung=applied.hangItems?.find(i=>i.id===hit?.id);
+      if(hung && snapshot.selection.length<=1) {
+        if (snapshot.timeline.viewing) { store.latestHistory(); pointerGesture.begin(event); }
+        store.select(hung.id);hangDrag={id:hung.id,part:hung.part,started:false};
+        controls.enabled=false;pointerGesture.capture();event.stopImmediatePropagation();return;
+      }
       if(wallItem && wallPoint && (snapshot.selection.length<=1 || !snapshot.selection.includes(wallItem.id))) {
         if (snapshot.timeline.viewing) { store.latestHistory(); pointerGesture.begin(event); }
         store.select(wallItem.id);store.beginGesture();floorDrag={id:wallItem.id,start:[wallPoint.u,wallPoint.h],position:[...wallItem.position],moved:false,wall:wallItem.wall};
@@ -702,6 +749,11 @@ export function createBuilderScene(
   const onMove = (event: PointerEvent) => {
     if (pointerGesture.start && Math.hypot(event.clientX-pointerGesture.start[0], event.clientY-pointerGesture.start[1]) > 4) draggedAt = performance.now();
     if (!pointerGesture.start) hoveredId = pickOwner(event)?.id ?? null;
+    if(hangDrag && pointerGesture.start) {
+      if(!hangDrag.started && Math.hypot(event.clientX-pointerGesture.start[0],event.clientY-pointerGesture.start[1])>6) { hangDrag.started=true; store.startPlacement(hangDrag.part as PartId,hangDrag.id); }
+      if(hangDrag.started) updatePreview(event);
+      return;
+    }
     if(floorDrag && pointerGesture.start) {
       if(Math.hypot(event.clientX-pointerGesture.start[0],event.clientY-pointerGesture.start[1])>4)floorDrag.moved=true;
       if(floorDrag.wall) { const hit=wallRay(event,floorDrag.wall); if(hit && floorDrag.moved) store.updateWall(floorDrag.id,{position:[floorDrag.position[0]+hit.u-floorDrag.start[0],floorDrag.position[1]+hit.h-floorDrag.start[1]]},!event.altKey); return; }
@@ -716,6 +768,9 @@ export function createBuilderScene(
   };
   const onUp = (event: PointerEvent) => {
     if(floorDrag) {floorDrag=null;pointerGesture.finish();store.endGesture();controls.enabled=true;return;}
+    if(hangDrag) {const drag=hangDrag;hangDrag=null;pointerGesture.finish();controls.enabled=true;
+      if(drag.started && placingHang()) { if(nearestHang(event)) dropPlacement(event); else { store.cancelPlacement(); store.select(drag.id); } }
+      return;}
     controls.enabled = !floorDrag && !snapshot.selectionTool;
     marquee.style.display = 'none';
     if (selecting && pointerGesture.start && Math.hypot(event.clientX - pointerGesture.start[0], event.clientY - pointerGesture.start[1]) > 6) {
@@ -773,6 +828,7 @@ export function createBuilderScene(
   };
   const onCancel = () => {
     if(floorDrag) {floorDrag=null;store.cancelGesture();}
+    if(hangDrag) {if(hangDrag.started) store.cancelPlacement(); hangDrag=null;}
     pointerGesture.finish();
     selecting = false; marquee.style.display = 'none';
     controls.enabled = !floorDrag && !snapshot.selectionTool;
@@ -918,7 +974,7 @@ export function createBuilderScene(
     // History navigation finalizes/cancels the store gesture; never let an old
     // pointer capture or floor origin apply a stale drag to the new document.
     if (snapshot.inputRevision !== previous.inputRevision) {
-      floorDrag = null; hoveredId = null; selecting = false;
+      floorDrag = null; hangDrag = null; hoveredId = null; selecting = false;
       pointerGesture.finish(); marquee.style.display = 'none';
     }
     if (snapshot.doc !== previous.doc) requestRebuild();

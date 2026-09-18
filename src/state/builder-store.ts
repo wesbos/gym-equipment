@@ -6,6 +6,8 @@ import { floorPart, isFloorPart } from '../../rack-generator/floor-registry.ts';
 import { freeCradles, parkedPose, parksInCradles, settleBarbells, suggestCradle, type BarCradle } from '../../rack-generator/barbell-cradles.ts';
 import { addWallItem, resolveWallItems, wallWarnings, clampWallPosition, roomOf } from '../../rack-generator/wall-items.ts';
 import { isWallPart } from '../../rack-generator/wall-registry.ts';
+import { isHangPart } from '../../rack-generator/hang-registry.ts';
+import { freeSlots, placeHang, reslotHangs, resolveHangItems, type HangTarget } from '../../rack-generator/hang-items.ts';
 import type { Room, WallId } from '../../rack-generator/walls.ts';
 import { resetAppearanceField } from '../../rack-generator/appearance-reset.ts';
 import type { FrameFinish } from '../../rack-generator/appearance.ts';
@@ -180,7 +182,7 @@ export class BuilderStore {
     if (patch.selection) patch.selected = patch.selection.at(-1) ?? null;
     const pairToggle = patch.paired !== undefined && patch.paired !== this.state.paired && this.state.placing && !patch.placing;
     if (pairToggle && isFloorPart(this.state.placing!.part)) { if (!this.state.placing!.movingId) patch = { ...patch, ...this.floorProposal(this.state.placing!.part, null, patch.paired) }; }
-    else if (pairToggle && this.state.placing && !isWallPart(this.state.placing.part)) {
+    else if (pairToggle && this.state.placing && !isWallPart(this.state.placing.part) && !isHangPart(this.state.placing.part)) {
       const { part } = this.state.placing;
       const { doc, movingId } = this.placementContext(patch.paired);
       let target = this.state.proposal?.target;
@@ -476,8 +478,12 @@ export class BuilderStore {
     this.commit({ ...this.state.doc, appearance: { ...this.state.doc.appearance, overrides, finishOverrides } });
   };
   removeSelected = () => {
-    this.commit(removeSelection(this.state.doc, this.state.resolved, this.state.selection));
+    const before = this.state.doc.hangItems ?? [], selection = this.state.selection;
+    this.commit(removeSelection(this.state.doc, this.state.resolved, selection));
     this.select(null);
+    // Removing a panel takes its hung attachments with it; say so, undo restores them.
+    const taken = before.filter(h => !selection.includes(h.id) && !this.state.doc.hangItems?.some(k => k.id === h.id)).length;
+    if (taken) this.status(`Removed ${taken} hung attachment${taken === 1 ? '' : 's'} with the panel · Undo restores`);
   };
   editSelectionParam = (key: string, value: number) => {
     const instances = this.state.resolved.filter(r => this.state.selection.includes(r.id));
@@ -553,7 +559,7 @@ export class BuilderStore {
       this.patch({ placing: { ...placing, rotationOnly: true } });
     }
     const proposal = this.state.proposal;
-    if (!proposal || isFloorPart(this.state.placing?.part) || isWallPart(this.state.placing?.part)) return false;
+    if (!proposal || isFloorPart(this.state.placing?.part) || isWallPart(this.state.placing?.part) || isHangPart(this.state.placing?.part)) return false;
     this.act(() => {
       const mode = rotationMode(proposal.doc, proposal.ownerId);
       const doc = rotateAccessory(proposal.doc, proposal.ownerId, direction * mode.step);
@@ -607,6 +613,10 @@ export class BuilderStore {
     }
     if (isWallPart(part)) {
       this.patch({ selected:null, placing:{part,movingId}, structureChoice:null, ...this.wallProposal(part, movingId) });
+      return;
+    }
+    if (isHangPart(part)) {
+      this.patch({ selected:null, placing:{part,movingId}, structureChoice:null, ...this.hangProposal(part, movingId) });
       return;
     }
     // Each new placement starts from the part's own default, not the last choice.
@@ -666,21 +676,42 @@ export class BuilderStore {
   private wallProposal(part: PartId, movingId: string | null) {
     const doc = movingId ? structuredClone(this.state.doc) : addWallItem(this.state.doc, part);
     const item = movingId ? doc.wallItems!.find(i=>i.id===movingId)! : doc.wallItems!.at(-1)!;
-    return { proposal:{doc,entries:resolveWallItems([item],roomOf(doc)),ownerId:item.id,label:'Wall placement'}, placementText:'Click a wall to place · Alt disables snap · ESC cancels' };
+    return { proposal:{doc,entries:this.wallEntries(doc,item.id),ownerId:item.id,label:'Wall placement'}, placementText:'Click a wall to place · Alt disables snap · ESC cancels' };
   }
+  /** A wall item's ghost carries its hung attachments. */
+  private wallEntries(doc: RackDoc, id: string) {
+    return [...resolveWallItems(doc.wallItems!.filter(i=>i.id===id),roomOf(doc)), ...resolveHangItems(doc,(doc.hangItems ?? []).filter(h=>h.panel===id))];
+  }
+  /** Staged attachment on `target`, else its current hook (moving) or the first free hook. */
+  private hangProposal(part: PartId, movingId: string | null, target?: HangTarget) {
+    const doc = this.state.doc, current = doc.hangItems?.find(h => h.id === movingId);
+    if (!doc.wallItems?.length) return { proposal: null, placementText: 'Add a wall panel first · ESC cancels' };
+    const slot = target ?? (current ? { panel: current.panel, slot: current.slot } : freeSlots(doc, part)[0]);
+    if (!slot) return { proposal: null, placementText: 'No free hook fits this attachment · ESC cancels' };
+    const next = placeHang(doc, part, slot, movingId), id = movingId ?? next.hangItems!.at(-1)!.id;
+    return { proposal: { doc: next, entries: resolveHangItems(next, next.hangItems!.filter(h => h.id === id)), ownerId: id, label: 'Hang attachment' }, placementText: 'Click a highlighted hook · ESC cancels' };
+  }
+  previewHang = (panel: string, slot: number) => {
+    const placing = this.state.placing;
+    if (!isHangPart(placing?.part)) return;
+    this.act(() => this.patch(this.hangProposal(placing!.part, placing!.movingId, { panel, slot })));
+  };
   previewWall = (wall: WallId, position: [number,number], snap = true) => {
     const proposal=this.state.proposal;
     if(!isWallPart(this.state.placing?.part) || !proposal) return;
     const doc=structuredClone(proposal.doc), item=doc.wallItems!.find(i=>i.id===proposal.ownerId)!;
     item.wall=wall; item.position=clampWallPosition(roomOf(doc), item, wall, position, snap);
-    this.patch({proposal:{...proposal,doc,entries:resolveWallItems([item],roomOf(doc))},placementText:wallWarnings(doc).some(w=>w.ids.includes(item.id)) ? 'Overlap warning · Click to place anyway' : 'Click a wall to place · Alt disables snap · ESC cancels'});
+    this.patch({proposal:{...proposal,doc,entries:this.wallEntries(doc,item.id)},placementText:wallWarnings(doc).some(w=>w.ids.includes(item.id)) ? 'Overlap warning · Click to place anyway' : 'Click a wall to place · Alt disables snap · ESC cancels'});
   };
   /** Wall edits keep the face on its wall; only a new `position` snaps. */
   updateWall = (id:string, patch:Partial<import('../../rack-generator/types.ts').WallItem>, snap = true) => {
     const doc=structuredClone(this.state.doc),item=doc.wallItems?.find(i=>i.id===id);
     if(!item) return;
+    const previous=item.params;
     Object.assign(item,patch); item.position=clampWallPosition(roomOf(doc), item, item.wall, item.position, snap && !!patch.position);
+    const dropped=patch.params ? reslotHangs(doc, id, previous) : [];
     this.commit(doc);
+    if(dropped.length) this.status(`${dropped.length} hung attachment${dropped.length === 1 ? '' : 's'} had no matching hook and ${dropped.length === 1 ? 'was' : 'were'} removed · Undo restores`);
   };
   /** Moves one wall plane; its items keep their wall coordinates and stay on the (resized) walls. */
   setRoom = (patch: Partial<Room>) => {
