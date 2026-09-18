@@ -37,7 +37,9 @@ export function cableRoutePlan(
   const out = kraken
     ? x
     : post + (v2 ? side * 75 : ares ? -side * 10 : -side * 70);
-  const H = p.height - (ares ? 180 : 120),
+  // ARES2 upper hardware sits over the stack header (REP RevK pp57–60).
+  // Centers remain reconstructed, not manufacturer dimensions.
+  const H = p.height - (v2 ? (p.height < 2200 ? 50 : 80) : ares ? 180 : 120),
     F = Math.max(430, Math.min(1000, movingZ + 180));
   const fy = ares ? stackY - 260 : ty + 130;
   const low = 95,
@@ -135,9 +137,19 @@ export function cableRoutePlan(
     start(
       `${v2 ? "ARES2" : "ARES1"} lower functional/row cable`,
       [
-        point(out, ty - 100, tz + 40),
-        point(out, ty + 40, tz + 40, "Swivel cable output 1"),
-        point(out, ty + 40, low, "Lower front return"),
+        // RevK p66 A/B: working cable rises from the upright foot, wraps
+        // the upper swivel sheave and hangs past its lower keeper sheave.
+        // The separate upper cable still terminates at the trolley adjuster.
+        ...(v2 ? [
+          point(out, -80, tz - 110),
+          point(out, -80, tz + 80, "Swivel cable output 1"),
+          point(out, 0, tz + 80, "Swivel cable output 1"),
+          point(out, 0, low, "Lower front return"),
+        ] : [
+          point(out, ty - 100, tz + 40),
+          point(out, ty + 40, tz + 40, "Swivel cable output 1"),
+          point(out, ty + 40, low, "Lower front return"),
+        ]),
         point(lane, fy - 40, low, "Lower rear redirect 1"),
         point(lane, fy - 40, bottom + 40, "Floating equalizer lower 1"),
         point(lane, fy + 40, bottom + 40, "Floating equalizer lower 1"),
@@ -147,8 +159,14 @@ export function cableRoutePlan(
         point(second, fy - 40, bottom + 40, "Floating equalizer lower 2"),
         point(second, fy - 40, low, "Lower row approach"),
         point(latX, latY + 120, v2 ? low : 50, "Lower row redirect"),
-        point(latX, latY + 120, rowZ, "Low row swivel"),
-        point(latX, latY - 100, rowZ),
+        ...(v2 ? [
+          point(latX, latY + 120, rowZ + 80, "Low row swivel"),
+          point(latX, latY + 40, rowZ + 80, "Low row swivel"),
+          point(latX, latY + 40, rowZ - 110),
+        ] : [
+          point(latX, latY + 120, rowZ, "Low row swivel"),
+          point(latX, latY - 100, rowZ),
+        ]),
       ],
       "Output handle 1",
       "Low row output eye",

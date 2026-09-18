@@ -334,11 +334,12 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
       const trolleyX = postX + (v2 ? side * 75 : ares ? -side * 10 : 0),
         ty = plan.ty,
         tz = p.trolley;
-      const housing = g.box([p.tube + 20, p.tube + 20, 175], [postX, 0, tz]);
+      const sleeveHeight = v2 ? 220 : 175;
+      const housing = g.box([p.tube + 20, p.tube + 20, sleeveHeight], [postX, 0, tz]);
       g.add(
         "Sliding trolley steel sleeve",
         g.cut(housing, [
-          g.box([p.tube + 9, p.tube + 9, 180], [postX, 0, tz]),
+          g.box([p.tube + 9, p.tube + 9, sleeveHeight + 5], [postX, 0, tz]),
           g.cylinder(p.tube + 24, Math.min(14, p.bore - 0.8) / 2 + 0.5, "y", [
             postX,
             0,
@@ -348,8 +349,8 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
       );
       g.add(
         "Trolley UHMW lining",
-        g.cut(g.box([p.tube + 9, p.tube + 9, 169], [postX, 0, tz]), [
-          g.box([p.tube + 1, p.tube + 1, 175], [postX, 0, tz]),
+        g.cut(g.box([p.tube + 9, p.tube + 9, sleeveHeight - 6], [postX, 0, tz]), [
+          g.box([p.tube + 1, p.tube + 1, sleeveHeight], [postX, 0, tz]),
           g.cylinder(p.tube + 24, Math.min(14, p.bore - 0.8) / 2 + 0.5, "y", [
             postX,
             0,
@@ -392,7 +393,7 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
       );
       buildCableRoutes(g, plan);
       for (const wheel of plan.pulleys.filter(
-        (w) => !/Moving|Floating|Swivel cable/.test(w.id),
+        (w) => !/Moving|Floating|Swivel cable/.test(w.id) && !(v2 && w.id === "Low row swivel"),
       )) {
         const railZ =
           wheel.center[2] > height / 2
@@ -490,7 +491,7 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
               [
                 (wheel.center[0] + postX) / 2,
                 wheel.center[1] / 2,
-                wheel.center[2] - 52,
+                wheel.center[2] - (v2 ? 142 : 52),
               ],
             ),
             plan,
@@ -498,14 +499,48 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
         );
         g.add(
           "Trolley output pivot",
-          g.cylinder(100, 8, "z", [
+          g.cylinder(v2 ? 200 : 100, 8, "z", [
             wheel.center[0],
             // Sheave rim + cable radius + pivot radius + 4.6 mm clearance.
-            wheel.center[1] + wheel.radius + 2.4 + 8 + 4.6,
-            wheel.center[2],
+            wheel.center[1] + wheel.radius + 2.4 + 8 + 4.6 + (v2 ? 12 : 0),
+            wheel.center[2] - (v2 ? 45 : 0),
           ]),
           "rod",
         );
+      }
+      if (v2) {
+        for (const wheel of plan.pulleys.filter((w) =>
+          /^(Swivel cable output 1|Low row swivel)$/.test(w.id),
+        )) {
+          const [x, y, z] = wheel.center;
+          g.pulley(wheel.id + " lower keeper", [x, y, z - 90], wheel.radius);
+          for (const n of [-1, 1]) {
+            // Shared cheek straps join both axle cheeks; the forward cable
+            // remains tangent to the keeper rather than acquiring a fake turn.
+            g.add(wheel.id + " paired swivel cheek strap",
+              g.cut(g.box([4, 22, 90], [x + n * 17, y, z - 45]),
+                [z, z - 90].map((level) =>
+                  g.cylinder(8, 10.5, "x", [x + n * 17, y, level]))));
+            for (const level of [z + 45, z - 135])
+              g.add(wheel.id + " swivel pivot arm",
+                g.box([4, 76, 6], [x + n * 17, y + 33, level]));
+          }
+          for (const level of [z + 45, z - 135])
+            g.add(wheel.id + " swivel pivot bearing",
+              g.ring(12, 19, 8.4, "z", [x, y + 67, level]));
+          if (wheel.id === "Low row swivel") {
+            g.add("Low row vertical swivel pivot",
+              g.cylinder(200, 8, "z", [x, y + 67, z - 45]), "rod");
+            // Two pivot bearings stand on a central pedestal connected to
+            // the lower transverse stack rail, not a floating side hanger.
+            g.add("Low row swivel pedestal",
+              g.box([40, 8, z + 45 - (p.firstHole + 45)],
+                [x, y + 85, (z + 45 + p.firstHole + 45) / 2]));
+            g.add("Low row pedestal base",
+              g.box([44, Math.abs(stackY - (y + 85)) + 20, 8],
+                [x, (stackY + y + 85) / 2, p.firstHole + 45]));
+          }
+        }
       }
       const floating = plan.pulleys.filter((w) => w.id.startsWith("Floating"));
       if (floating.length) {
@@ -572,11 +607,20 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
       }
     }
     if (ares) {
-      for (const z of [p.firstHole + 45, top + 50]) {
+      for (const z of [p.firstHole + 45, v2 ? height - (height < 2200 ? 110 : 140) : top + 50]) {
         const y = p.depth - (p.rearBay || p.depth) / 2;
         const rail = g.box([p.rackWidth, 75, 75], [0, y, z]);
         const hollow = g.box([p.rackWidth + 2, 69, 69], [0, y, z]);
         g.add("ARES transverse stack support", g.cut(rail, [hollow]));
+      }
+      if (v2) {
+        const headerZ = height - (height < 2200 ? 110 : 140),
+          railZ = height + addedHeight - 12;
+        for (const side of [-1, 1])
+          g.add("ARES2 header end bracket",
+            g.box([6, 75, railZ - headerZ + 6],
+              [side * p.rackWidth / 2, p.depth - (p.rearBay || p.depth) / 2,
+                (railZ + headerZ) / 2]));
       }
       const y = p.depth - (p.rearBay || p.depth) + 40,
         z = v2 ? 320 : 130;
@@ -611,7 +655,7 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
             "Lat output bar connector",
             g.path(
               [
-                [side * 90, y, latZ + 30],
+                [side * 90, y, v2 ? p.height - (height < 2200 ? 170 : 200) : latZ + 30],
                 [side * 90, y, latZ],
               ],
               4,
@@ -622,9 +666,9 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
           "Low row twin-output connector",
           g.path(
             [
-              [-90, y - 100, rowZ],
-              [0, y - 140, rowZ],
-              [90, y - 100, rowZ],
+              [-90, v2 ? y + 40 : y - 100, v2 ? rowZ - 110 : rowZ],
+              [0, y - 140, v2 ? rowZ - 110 : rowZ],
+              [90, v2 ? y + 40 : y - 100, v2 ? rowZ - 110 : rowZ],
             ],
             5,
           ),
@@ -643,7 +687,7 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
           ),
           "handle",
         );
-        g.handle("Low row handle", [0, y - 140, rowZ]);
+        g.handle("Low row handle", [0, y - 140, v2 ? rowZ - 110 : rowZ]);
       }
     }
   });
