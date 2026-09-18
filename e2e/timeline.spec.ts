@@ -1,5 +1,5 @@
 import { test, expect, chromium, type Page } from '@playwright/test';
-import { createAssembly, resizeAssembly, addAccessory } from '../rack-generator/assembly.ts';
+import { createAssembly, resizeAssembly, addAccessory, resolveAssembly } from '../rack-generator/assembly.ts';
 import { DocumentHistory } from '../src/state/history.ts';
 import type { ConfigCollection } from '../src/state/config-storage.ts';
 
@@ -181,5 +181,48 @@ test('3MF availability follows the applied rack, including empty historical view
     await page.locator('#export').click();
     await page.getByRole('menuitemradio', { name: /3MF/ }).click();
     await expect(page.getByRole('button', { name: 'Download 3MF', exact: true })).toBeDisabled();
+  } finally { await browser.close(); }
+});
+
+test('30 part additions deconstruct and reconstruct under a held playhead without changing the applied rack', async () => {
+  test.setTimeout(90000);
+  const browser = await chromium.launch({ channel: 'chrome', headless: false, args: ['--use-angle=metal'] });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+    page.setDefaultTimeout(15000);
+    await page.addInitScript(() => localStorage.clear());
+    await page.goto('http://127.0.0.1:5341/builder');
+    const initial = createAssembly(), history = new DocumentHistory(initial);
+    let applied = initial;
+    for (let i = 0; i < 30; i++) {
+      applied = addAccessory(applied, 'storage-pin-short', { uprightId: 'rear-left', face: 'left', hole: i + 1 }, false);
+      history.append(applied);
+    }
+    await page.locator('#import-file').setInputFiles({ name: 'thirty-part-build.json', mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify({ format: 'bos-strength-session', version: 1, doc: applied, timeline: history.data })),
+    });
+    const slider = page.getByRole('slider', { name: 'History playhead' });
+    const initialCount = resolveAssembly(initial).length;
+    const readyAt = async (step: number) => {
+      const count = initialCount + step;
+      await expect(slider).toHaveAttribute('aria-valuenow', String(step));
+      await expect(page.locator('#parts-toggle')).toHaveText(`Parts list (${count})`);
+      await expect(page.locator('#status')).toHaveText(new RegExp(`(?:^${count} parts · All connections aligned$|placement warnings? · ${count} parts$)`), { timeout: 60000 });
+      const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('bos-strength-configurations-v1')!));
+      expect(stored.draft).toEqual(applied);
+      expect(stored.draftTimeline).toEqual(history.data);
+    };
+    await readyAt(30);
+    const bounds = (await slider.boundingBox())!;
+    const moveTo = (step: number) => page.mouse.move(bounds.x + step * 28 + 14, bounds.y + 20, { steps: 10 });
+    await moveTo(30); await page.mouse.down();
+    await moveTo(15); await readyAt(15);
+    await page.screenshot({ path: '/tmp/gym-wave5-timeline-deconstruct-mid.png' });
+    await moveTo(0); await readyAt(0);
+    await page.screenshot({ path: '/tmp/gym-wave5-timeline-deconstruct-start.png' });
+    await moveTo(15); await readyAt(15);
+    await moveTo(30); await readyAt(30); await page.mouse.up();
+    await page.screenshot({ path: '/tmp/gym-wave5-timeline-deconstruct-end.png' });
+    console.log(`30 real part commits: held-pointer counts ${initialCount + 30} → ${initialCount + 15} → ${initialCount} → ${initialCount + 15} → ${initialCount + 30}; each build ready; applied doc and persisted timeline unchanged.`);
   } finally { await browser.close(); }
 });
