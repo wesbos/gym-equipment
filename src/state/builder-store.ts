@@ -366,7 +366,7 @@ export class BuilderStore {
     // Diff BEFORE returning to applied state: UI closures may contain an old view.
     // Owner-keyed paths preserve additions and reject edits to owners removed later.
     const doc = this.state.timeline.viewing && !metadata.replacement
-      ? applyOps(this.appliedDoc, diffDocuments(this.state.doc, candidate)) : candidate;
+      ? applyOps(this.appliedDoc, diffDocuments(this.state.doc, candidate), false, false, true) : candidate;
     resolveAssembly(doc);
     if (JSON.stringify(doc) === JSON.stringify(this.appliedDoc)) {
       if (this.state.timeline.viewing) this.publishApplied(true);
