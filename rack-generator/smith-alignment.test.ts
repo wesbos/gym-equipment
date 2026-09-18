@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import Module from "manifold-3d";
-import { definitions } from "./parts/smith.ts";
+import { definitions, SMITH_GUIDE_X } from "./parts/smith.ts";
 import { smithLayout } from "./system-mounts.ts";
-import type { SolidPart, NumericParams } from "./types.ts";
+import type { SolidPart, NumericParams, Vec3 } from "./types.ts";
 
 const api = await Module();
 api.setup();
@@ -114,11 +114,11 @@ test("Smith shared carriage bore stays on shaft axis at both travel limits and a
           barHeight,
         });
         for (const side of [-1, 1]) {
-          const bore = layout.carriageAt([side * (529 + 37), -60, 0]);
+          const bore = layout.carriageAt([side * (SMITH_GUIDE_X + 37), -60, 0]);
           const shaft = layout.barAt(bore[0]);
           bore.forEach((value, axis) => close(value, shaft[axis]));
           close(shaft[2], barHeight);
-          const bearing = layout.carriageAt([side * 529, 0, 52]);
+          const bearing = layout.carriageAt([side * SMITH_GUIDE_X, 0, 52]);
           const guide = layout.at(bearing[0], bearing[2]);
           close(bearing[1], guide[1], "bearing on guide at travel limit");
         }
@@ -188,4 +188,100 @@ test("published lower travel and contextual height resets retain real carriage/s
         assert.ok(resetBar.barHeight >= safetyHeight + SMITH_SAFETY_GAP);
       }
     }
+});
+
+// Photo-audit fixtures (reference/photos/smith-rep/DISCREPANCIES.md): REP's ladder sits inboard of
+// the guide, the hook swings between its plates, and the carriage clears rungs, ladder and posts.
+test("Smith ladder, hook and carriage keep the REP arrangement and clear each other through travel", async () => {
+  const { SMITH_GUIDE_X, SMITH_LADDER } = await import("./parts/smith.ts");
+  const box = (min: Vec3, max: Vec3) =>
+    api.Manifold.cube(max.map((v, i) => v - min[i]) as Vec3).translate(min);
+  const absRange = (s: SolidPart) => {
+    const { min, max } = s.solid.boundingBox();
+    return [Math.min(Math.abs(min[0]), Math.abs(max[0])), Math.max(Math.abs(min[0]), Math.abs(max[0]))];
+  };
+  const mid = (s: SolidPart) => (s.solid.boundingBox().min[0] + s.solid.boundingBox().max[0]) / 2;
+  for (const height of [2032, 2362.2])
+    for (const angle of [-5, 0, 5])
+      for (const barHeight of [396, 1100, height === 2032 ? 1721 : 2029]) {
+        const p: NumericParams = { ...definition.defaults, height, angle, barHeight, safetyHeight: 246 };
+        const parts = definition.build(api, p);
+        const post: SolidPart = { ...parts[0], solid: box([p.rackWidth / 2 - 37.5, -37.5, 0], [p.rackWidth / 2 + 37.5, 37.5, height]) };
+        try {
+          const named = (re: RegExp) => parts.filter((s) => re.test(s.name));
+          const label = `${height} ${angle}° bar ${barHeight}`;
+          const hooks = named(/^Rotating bar locking hook$|^Composite hook contact liner$/),
+            fixed = named(/^Racking post \d+ of|^Smith catch ladder/),
+            carriage = named(/^Smith linear bearing housing$|^Carriage (side plate|inner gusset|bar flange bearing)$/);
+          assert.equal(named(/^Smith catch ladder plate/).length, 4);
+          for (const a of [...hooks, ...carriage]) {
+            for (const b of fixed) assert.ok(overlap(a, b) < 1e-6, `${label}: ${a.name} / ${b.name}`);
+            assert.ok(overlap(a, post) < 1e-6, `${label}: ${a.name} clears the front post`);
+          }
+          const shaft = named(/Smith bar shaft/)[0];
+          for (const a of named(/^Carriage (inner gusset|bar flange bearing)$/))
+            assert.ok(overlap(shaft, a) < 1e-6, `${a.name} is bored for the shaft`);
+          for (const side of [-1, 1]) {
+            const mine = (re: RegExp) => named(re).filter((s) => Math.sign(mid(s)) === side);
+            const plates = mine(/^Smith catch ladder plate/).map((s) => Math.abs(mid(s))).sort((a, b) => a - b);
+            close(plates[0], SMITH_GUIDE_X - SMITH_LADDER.inner, "inner ladder plate");
+            close(plates[1], SMITH_GUIDE_X - SMITH_LADDER.outer, "outer ladder plate");
+            const [lo, hi] = absRange(mine(/^Rotating bar locking hook$/)[0]);
+            assert.ok(lo > plates[0] + 3 && hi < plates[1] - 3, `hook plane stays between the ladder plates (${lo}–${hi})`);
+            const collar = absRange(mine(/^Sleeve shoulder collar$/)[0])[0],
+              flange = absRange(mine(/^Carriage bar flange bearing$/)[0])[1];
+            assert.ok(collar - flange > 0 && collar - flange < 10, `collar sits just outboard of the flange bearing (${collar - flange})`);
+          }
+        } finally {
+          post.solid.delete();
+          parts.forEach((part) => part.solid.delete());
+        }
+      }
+});
+
+test("Smith finish roles: metallic-black upright, chrome guides/rungs/bar/hook, composite liners", async () => {
+  const { resolveMaterial } = await import("./appearance.ts");
+  const parts = definition.build(api, definition.defaults);
+  try {
+    const roles = (name: string) => [...new Set(parts.filter((s) => s.name.startsWith(name)).map((s) => s.role))];
+    for (const name of ["Smith catch ladder plate", "Smith linear bearing housing", "Carriage side plate", "Low-profile Smith safety stop", "Smith upright end plate"]) {
+      assert.deepEqual(roles(name), ["source"], name);
+      const s = parts.find((part) => part.name.startsWith(name))!;
+      assert.equal(resolveMaterial(s, { frameColor: "#a9232c" }).color, "#353739", `${name} ignores rack paint`);
+    }
+    for (const name of ["Polished Smith guide rod", "Racking post 1 of", "Polished 35 mm Smith bar shaft"])
+      assert.deepEqual(roles(name), ["rod"], name);
+    assert.deepEqual(roles("Rotating bar locking hook"), ["sleeve"]);
+    for (const name of ["Composite hook contact liner", "Safety stop impact pad", "Linear bearing dust seal"])
+      assert.deepEqual(roles(name), ["liner"], name);
+    assert.ok(!parts.some((s) => s.name === "Bar rotation lever"), "REP bar is rotated by hand; no lever");
+  } finally {
+    parts.forEach((part) => part.solid.delete());
+  }
+});
+
+test("front Smith FFE 2.0 drops to a floor toe at the published 658.35 mm; upper bracket has only paired holes", () => {
+  const p: NumericParams = { ...definition.defaults, outside: 1 };
+  const parts = definition.build(api, p);
+  try {
+    const face = -p.tube / 2;
+    const feet = parts.filter((s) => s.name === "FFE 2.0 floor foot plate");
+    assert.equal(feet.length, 2);
+    for (const foot of feet) {
+      const b = foot.solid.boundingBox();
+      close(b.min[2], 0, "foot on floor");
+      close(b.min[1], face - 658.35, "published FFE length");
+    }
+    for (const tube of parts.filter((s) => s.name === "FFE 2.0 drilled extension tube")) {
+      const b = tube.solid.boundingBox();
+      close(b.min[2], 6, "tube seats on the sole plate");
+      close(b.max[2], smithLayout(p).lowerBeam + p.tube / 2, "level run at lower crossmember height");
+    }
+    const upper = parts.find((s) => s.name === "Smith front extension drilled tube")!;
+    const shell = (75 * 75 - 69 * 69) * 176.5,
+      holes = 2 * 2 * 3 * Math.PI * (p.bore / 2) ** 2;
+    assert.ok(Math.abs(shell - holes - upper.solid.volume()) < 0.01 * shell, "two lateral through-holes only");
+  } finally {
+    parts.forEach((part) => part.solid.delete());
+  }
 });
