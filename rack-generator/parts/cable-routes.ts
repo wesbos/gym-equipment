@@ -43,7 +43,7 @@ export function cableRoutePlan(
   const H = p.height - (v2 ? (p.height < 2200 ? 56 : 86) : ares ? 180 : 120),
     F = v2 ? movingZ + 250 : Math.max(430, Math.min(1000, movingZ + 180));
   const fy = v2 ? stackY + 60 : ares ? stackY - 260 : ty + 130;
-  const low = v2 ? 18 : 95,
+  const low = v2 ? 30 : 95,
     routes: CableRoute[] = [];
   const start = (name: string, pts: RoutePoint[], a: string, b: string) =>
     routes.push({ name, points: pts, start: a, end: b });
@@ -167,9 +167,9 @@ export function cableRoutePlan(
         point(second, secondEntryY, v2 ? 260 : low - 65, v2 ? "Lower equalizer transfer" : "Lower equalizer transfer 2", transferRadius),
         point(second, secondEntryY, bottom + 40, "Floating equalizer lower 2"),
         point(second, secondExitY, bottom + 40, "Floating equalizer lower 2"),
-        point(second, secondExitY, v2 ? 30 : low, "Lower row approach"),
-        ...(v2 ? [point(second, latY + 120, 30, "Lower row horizontal redirect")] : []),
-        point(latX, latY + 120, v2 ? 30 : 50, "Lower row redirect"),
+        point(second, secondExitY, low, "Lower row approach"),
+        ...(v2 ? [point(second, latY + 120, low, "Lower row horizontal redirect")] : []),
+        point(latX, latY + 120, v2 ? low : 50, "Lower row redirect"),
         ...(v2 ? [
           point(latX, latY + 120, rowZ + 80, "Low row swivel"),
           point(latX, latY + 40, rowZ + 80, "Low row swivel"),

@@ -382,6 +382,7 @@ test("ARES2 source/mesh fixture: transverse plates, paired supported swivels, ca
     const params = { ...def.defaults, trolley: lockedTrolley({ ...def.defaults, trolley }) };
     const parts = def.build(api, params);
     try {
+      assert.ok(parts.every((p) => p.solid.boundingBox().min[2] >= 0), "all ARES2 source hardware stays above the floor");
       const boxes = systemCollisionBoxes("cable-ares2", params);
       for (const part of parts.filter((p) =>
         /^(Sliding trolley steel sleeve|Swivel cable output 1|Trolley output pivot|Output handle 1)/.test(p.name),

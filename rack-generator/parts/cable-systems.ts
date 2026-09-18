@@ -95,7 +95,7 @@ function cable(api: ManifoldAPI, p: NumericParams, id: SystemPartId) {
             "liner",
           );
       }
-      for (const z of [115, height + addedHeight - 12]) {
+      for (const z of [v2 ? 140 : 115, height + addedHeight - 12]) {
         const base = g.rounded(plateW + 45, plateD + 35, 10, [
           stackX,
           stackY,
