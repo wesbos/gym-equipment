@@ -1,5 +1,6 @@
+import { Euler, Vector3 } from 'three';
 import type { Vec2, Vec3, NumericParams, LocalBox, CollisionInstance, CollisionWarning, Mount } from './types.ts';
-interface OrientedBox { center: Vec3; half: Vec3; axes: [Vec2, Vec2] }
+interface OrientedBox { center: Vec3; half: Vec3; axes: [Vec3, Vec3, Vec3] }
 // Conservative interference checks for resolved accessories, in millimetres.
 // These envelopes cover working bodies, excluding collars, mounting pins and
 // washers. Frame-to-frame joins and accessory-to-post contact are omitted;
@@ -196,30 +197,27 @@ function localBodies(instance: CollisionInstance): LocalBox[] {
 
 function worldBodies(instance: CollisionInstance): OrientedBox[] {
   const origin = vector(instance.position) ? instance.position : [0, 0, 0];
-  const yaw = Number.isFinite(instance.rotation?.[2]) ? instance.rotation![2] : 0;
-  const c = Math.cos(yaw), s = Math.sin(yaw);
+  const rotation = new Euler(...(instance.rotation?.every(Number.isFinite) ? instance.rotation : [0,0,0]) as Vec3);
+  const axes = [[1,0,0],[0,1,0],[0,0,1]].map(v=>new Vector3(...v).applyEuler(rotation).toArray()) as [Vec3,Vec3,Vec3];
   return localBodies(instance).flatMap<OrientedBox>(b => {
     if (!vector(b.min) || !vector(b.max) || b.min.some((v, i) => v >= b.max[i])) return [];
-    const local = b.min.map((v, i) => (v + b.max[i]) / 2);
-    return [{
-      center: [origin[0] + local[0] * c - local[1] * s,
-        origin[1] + local[0] * s + local[1] * c, origin[2] + local[2]],
-      half: b.min.map((v, i) => (b.max[i] - v) / 2) as Vec3,
-      axes: [[c, s], [-s, c]],
-    }];
+    const local = b.min.map((v, i) => (v + b.max[i]) / 2) as Vec3;
+    const center=new Vector3(...local).applyEuler(rotation).add(new Vector3(...origin)).toArray() as Vec3;
+    return [{center, half:b.min.map((v,i)=>(b.max[i]-v)/2) as Vec3, axes}];
   });
 }
 
 function intersects(a: OrientedBox, b: OrientedBox) {
   const delta = a.center.map((v, i) => b.center[i] - v);
-  if (Math.min(a.center[2] + a.half[2], b.center[2] + b.half[2])
-    - Math.max(a.center[2] - a.half[2], b.center[2] - b.half[2]) <= CLEARANCE) return false;
-  // Separating-axis test in XY: unlike a world AABB this does not report
-  // false collisions between two long diagonal arms whose bounds cross.
-  for (const axis of [...a.axes, ...b.axes]) {
-    const dot = (v: number[]) => v[0] * axis[0] + v[1] * axis[1];
-    const extent = (o: OrientedBox) => o.half[0] * Math.abs(dot(o.axes[0])) + o.half[1] * Math.abs(dot(o.axes[1]));
-    if (extent(a) + extent(b) - Math.abs(dot(delta)) <= CLEARANCE) return false;
+  // Full 15-axis OBB SAT: shaft spins are roll/pitch, not CAD Z yaw.
+  const cross=a.axes.flatMap(x=>b.axes.map(y=>new Vector3(...x).cross(new Vector3(...y)).toArray() as Vec3));
+  for (const candidate of [...a.axes,...b.axes,...cross]) {
+    const length=Math.hypot(...candidate);
+    if(length<1e-10) continue;
+    const axis=candidate.map(v=>v/length);
+    const dot=(v: number[])=>v.reduce((sum,x,i)=>sum+x*axis[i],0);
+    const extent=(o: OrientedBox)=>o.half.reduce((sum,h,i)=>sum+h*Math.abs(dot(o.axes[i])),0);
+    if(extent(a)+extent(b)-Math.abs(dot(delta))<=CLEARANCE) return false;
   }
   return true;
 }

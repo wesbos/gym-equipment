@@ -1,3 +1,5 @@
+import { accessoryRotation, validateMountedRotation, mountedRotationMode, orientedMountTarget, shaftRotation, rotateMountedPoint } from './mounted-rotation.ts';
+import { detectCollisions } from './assembly-collisions.ts';
 import { systemLowerCrossmemberStation } from "./cable-stations.ts";
 import { validateSystems, resolveSystems } from './systems.ts';
 import { validateFloorItems, resolveFloorItems } from './floor-items.ts';
@@ -245,6 +247,8 @@ export function validateAssembly(input: unknown): RackDoc {
     }
     validateMountShaft(a.part, params, rack.holeDiameter);
     const clean: Accessory = { ...copy(a), id: a.id, part: a.part as PartId, target: { ...copy(a.target), uprightId: a.target.uprightId as UprightId, face: a.target.face as Face, hole: a.target.hole }, paired: a.paired, params: { ...params } };
+    validateMountedRotation(clean);
+    if (clean.rotation !== undefined || clean.target.orientation !== undefined) clean.rotation = accessoryRotation(clean);
     if (isVendorPart(clean.part)) validateVendorMount({ rack, ...graph, removed, structure }, clean);
     if (clean.target.kind === 'crossmember-top') {
       if (!isDarkoTop(clean.part)) fail('This part requires an upright target.');
@@ -354,6 +358,8 @@ export function moveAccessory(input: RackDoc, id: string, target: Partial<Target
   const doc = validateAssembly(input), ownerId = id.split(':')[0];
   const a = doc.accessories.find(a => a.id === ownerId); if (!a) fail('Select an accessory to move.');
   if (target.uprightId && target.uprightId !== a.target.uprightId && UPRIGHT_IDS.includes(target.uprightId)) { delete a.spanTo; delete a.pairTo; delete a.pairedSpanTo; }
+  if (target.orientation !== undefined) a.rotation = target.orientation;
+  delete a.target.orientation;
   a.target = { ...a.target, ...target } as Target; if (a.target.kind === 'crossmember-top') delete a.pairTarget; if (paired !== undefined) a.paired = supportsPair(a.part) ? paired : false;
   return validateAssembly(doc);
 }
@@ -495,7 +501,7 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
   for (const a of doc.accessories) {
     const defaults = isVendorPart(a.part) ? vendorDefaults(a.part) : SOURCE_DEFAULTS[a.part], params = { ...defaults, ...a.params };
     if (isVendorPart(a.part)) {
-      result.push(...resolveVendor(doc, a, targetsFor(a)));
+      result.push(...resolveVendor(doc, a, targetsFor(a).map(t=>orientedMountTarget(t,accessoryRotation(a)))));
     } else if (a.spanTo) {
       for (const [index, t] of targetsFor(a).entries()) {
       const endpoint = index ? a.pairedSpanTo! : a.spanTo;
@@ -512,9 +518,11 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
       const anchor = getAttachmentAnchor(a.part, params);
       for (const [index, t] of targetsFor(a).entries()) {
         const normal = NORMALS[t.face], angle = Math.atan2(normal[1], normal[0]) - Math.atan2(anchor.outward[1], anchor.outward[0]);
-        const m = mount(r, t.uprightId, t.hole, t.face, anchor.point), local = rotateZ(anchor.point, angle);
+        const rotation = shaftRotation(angle, accessoryRotation(a));
+        const m = mount(r, t.uprightId, t.hole, t.face, anchor.point), local = rotateMountedPoint(anchor.point, rotation);
         const mounts = anchor.boltStations.map(station => ({ ...mount(r, t.uprightId, t.hole + Math.round(station.zOffset / r.pitch), t.face, station.point), pinAxis: rotateZ(station.axis, angle) }));
         append(a.paired ? `${a.id}:${pairSuffix(targetsFor(a), index)}` : a.id, a.part, { ...params, holeDiameter: r.holeDiameter }, m.center.map((v, i) => v - local[i]) as Vec3, angle, mounts, 'accessory', a.id, a.paired, [t.uprightId]);
+        result[result.length - 1].rotation = rotation;
         result[result.length - 1].collisionBoxes = getAttachmentCollisionBoxes(a.part, params);
         result[result.length - 1].localOutward = anchor.outward;
       }
@@ -564,4 +572,30 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
   }
   result.push(...resolveSystems(doc));
   return result;
+}
+
+/** Preview callers stage this document and commit once; this function never mutates input. */
+export function setAccessoryRotation(input: RackDoc, id: string, radians: number): RackDoc {
+  const doc=validateAssembly(input), a=doc.accessories.find(a=>a.id===id.split(':')[0]);
+  if(!a) throw Error('Select an accessory to rotate.');
+  a.rotation=radians;
+  delete a.target.orientation;
+  if(a.pairTarget) delete a.pairTarget.orientation;
+  return validateAssembly(doc);
+}
+export function rotateAccessory(input: RackDoc, id: string, deltaDegrees: number): RackDoc {
+  const a=input.accessories.find(a=>a.id===id.split(':')[0]);
+  if(!a) throw Error('Select an accessory to rotate.');
+  return setAccessoryRotation(input,id,accessoryRotation(a)+deltaDegrees*Math.PI/180);
+}
+export function rotationMode(doc: RackDoc, id: string) {
+  const a=doc.accessories.find(a=>a.id===id.split(':')[0]);
+  return a ? mountedRotationMode(a) : {kind:'fixed' as const,supported:false,step:0,label:'No mounted selection',reason:'Select a mounted attachment.'};
+}
+export function previewAccessoryRotation(input: RackDoc, id: string, radians: number) {
+  try {
+    const doc=setAccessoryRotation(input,id,radians), all=resolveAssembly(doc), instances=all.filter(i=>i.ownerId===id.split(':')[0]);
+    const ids=new Set(instances.map(i=>i.id)), warnings=detectCollisions(all).filter(w=>w.ids.some(id=>ids.has(id)));
+    return {valid:true as const,doc,instances,warnings,error:undefined};
+  } catch(error) { return {valid:false as const,error:(error as Error).message,warnings:[]}; }
 }
