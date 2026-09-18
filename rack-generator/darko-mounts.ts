@@ -1,7 +1,6 @@
 import { pairSuffix } from './physical-identity.ts';
 import type { Accessory, CrossmemberTopTarget, Mount, RackDoc, ResolvedInstance, Target, Vec3 } from './types.ts';
-import { isDarkoTop } from './vendor-metadata.ts';
-import { darkoDefaults } from './parts/darko.ts';
+import { darkoDefaults, darkoTopCollisionBoxes } from './parts/darko.ts';
 type MountDoc = Pick<RackDoc,'rack'|'uprights'|'connections'|'removed'|'structure'>;
 export function darkoTopMount(doc:MountDoc,target:CrossmemberTopTarget): Mount {
  const edge=doc.connections.find(e=>e.id===target.connectionId),r=doc.rack;
@@ -10,6 +9,8 @@ export function darkoTopMount(doc:MountDoc,target:CrossmemberTopTarget): Mount {
  if(!Number.isInteger(target.station)||target.station<0||![1,-1].includes(target.side))throw Error('Invalid crossmember hole station or side.');
  if(target.uprightId!==edge.from || target.hole!==0)throw Error('Crossmember target must identify its current start upright and use the rail station.');
  const a=doc.uprights[edge.from],b=doc.uprights[edge.to],distance=Math.hypot(b.x-a.x,b.y-a.y),span=distance-r.tube;
+ // Match the actual bores cut by structure.ts beamSolid. These are hole-grid
+ // endpoints, not accessory padding; a free offset would put a bolt in steel.
  const along=62.5+target.station*r.pitch;
  if(along>span-50)throw Error('Crossmember station is outside the perforated rail.');
  const angle=Math.atan2(b.y-a.y,b.x-a.x),normal:Vec3=[-Math.sin(angle)*target.side,Math.cos(angle)*target.side,0];
@@ -42,7 +43,7 @@ export function resolveDarkoTop(doc:RackDoc,a:Accessory,targets:Target[]):Resolv
   if(t.kind!=='crossmember-top')throw Error('Darko Anchor requires a crossmember-top target.');
   const m=darkoTopMount(doc,t),edge=doc.connections.find(e=>e.id===t.connectionId)!,start=doc.uprights[edge.from],end=doc.uprights[edge.to];
   const angle=Math.atan2(end.y-start.y,end.x-start.x)+(t.side===-1?Math.PI:0);
-  return {id:a.paired?`${a.id}:${pairSuffix(targets,i)}`:a.id,part:a.part,params:{...darkoDefaults,...a.params,upright:doc.rack.tube,mountSpacing:doc.rack.pitch},position:m.center,rotation:[0,0,angle],mount:m,mounts:[m],ownerId:a.id,kind:'accessory',paired:a.paired,connectedTo:[edge.id,edge.from,edge.to],localOutward:[0,1,0],collisionBoxes:[{min:[-106,doc.rack.tube/2+1,isDarkoTop(a.part)&&a.part==='darko-double-decker'?-325:-211],max:[106,doc.rack.tube/2+16,-45]}]};
+  return {id:a.paired?`${a.id}:${pairSuffix(targets,i)}`:a.id,part:a.part,params:{...darkoDefaults,...a.params,upright:doc.rack.tube,mountSpacing:doc.rack.pitch},position:m.center,rotation:[0,0,angle],mount:m,mounts:[m],ownerId:a.id,kind:'accessory',paired:a.paired,connectedTo:[edge.id,edge.from,edge.to],localOutward:[0,1,0],collisionBoxes:darkoTopCollisionBoxes(a.part,doc.rack.tube)};
  });
 }
 export function darkoGuidance(doc:RackDoc):string|undefined {
