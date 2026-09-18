@@ -11,7 +11,7 @@ export function systemProposal(doc: RackDoc, part: SystemPartId, params: Numeric
     const system = next.systems!.at(-1)!;
     const entries = resolveAssembly(next).filter(entry => entry.ownerId === system.id);
     return { proposal: { doc: next, entries, ownerId: system.id,
-      label: `${SYSTEM_NAMES[part]} · ${system.bay!.length}-post bay (${system.bay!.join(', ')})` }, reason: '' };
+      label: `${SYSTEM_NAMES[part]} · ${system.bay!.length}-post bay` }, reason: '' };
   } catch (error) {
     return { proposal: null, reason: error instanceof Error ? error.message : String(error) };
   }

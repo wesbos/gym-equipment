@@ -591,7 +591,7 @@ export default function BuilderPage() {
                         params={state.definitions.find((d) => d.id === id)?.defaults}
                         className="thumb"
                       />
-                      <span>{nameOf(id)}<VendorCredit part={id} compact />{isSystemPart(id) && <small className="system-hint">{id === "cable-kraken" ? "Hydra / Manticore · supported 4/6-post bay" : id.includes("ares") ? "REP · 6-post or anchored PR-5000 16″ bay" : "REP · supported 4/6-post bay"}</small>}</span>
+                      <span>{nameOf(id)}{!isSystemPart(id) && <VendorCredit part={id} compact />}{isSystemPart(id) && <small className="system-hint">{id === "cable-kraken" ? "Hydra / Manticore · supported 4/6-post bay" : id.includes("ares") ? "REP · 6-post or anchored PR-5000 16″ bay" : "REP · supported 4/6-post bay"}</small>}</span>
                       <span className="part-plus">+</span>
                     </button>
                   ))}
