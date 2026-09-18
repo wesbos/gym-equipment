@@ -227,6 +227,13 @@ function intersects(a: OrientedBox, b: OrientedBox) {
 function sharedSlot(a: CollisionInstance, b: CollisionInstance): Partial<Mount> | null {
   const mounts = (instance: CollisionInstance) => Array.isArray(instance.mounts) ? instance.mounts : instance.mount ? [instance.mount] : [];
   for (const x of mounts(a)) for (const y of mounts(b)) {
+    // Top targets use hole=0 as an upright placeholder. Their actual through
+    // hole is identified by rail and station, including both faces of the rail.
+    if (x?.kind === 'crossmember-top' || y?.kind === 'crossmember-top') {
+      if (x?.kind === 'crossmember-top' && y?.kind === 'crossmember-top'
+        && x.connectionId === y.connectionId && Number.isInteger(x.station) && x.station === y.station) return x;
+      continue;
+    }
     if (x?.uprightId && (x.connectorId ?? x.uprightId) === (y?.connectorId ?? y?.uprightId) && Number.isFinite(x.hole) && x.hole === y.hole) return x;
   }
   return null;
@@ -254,7 +261,9 @@ export function detectCollisions(resolvedInstances: unknown): CollisionWarning[]
     // The first ID is the movable accessory so a warning click opens its editor.
     const ids: [string, string] = a.kind === 'structure' ? [b.id, a.id] : [a.id, b.id];
     warnings.push({ ids, message: slot
-      ? `${name(a)} and ${name(b)} share mounting hole ${slot.hole! + 1} on ${slot.uprightId}.`
+      ? slot.kind === 'crossmember-top'
+        ? `${name(a)} and ${name(b)} share mounting station ${slot.station! + 1} on ${slot.connectionId}.`
+        : `${name(a)} and ${name(b)} share mounting hole ${slot.hole! + 1} on ${slot.uprightId}.`
       : `${name(a)} and ${name(b)} overlap. Move one to another hole or face.` });
     seen.add(key);
   }
