@@ -13,10 +13,12 @@ import { partAttribution } from './attribution.ts';
 import { definitions as nighthawk } from './parts/nighthawk.ts';
 import { definitions as powerblock } from './parts/powerblock.ts';
 import { definitions as pepin } from './parts/pepin.ts';
+import { definitions as barbell } from './parts/barbell.ts';
 const floor: PartDefinition[] = [
   ...nighthawk,
   ...powerblock,
   ...pepin,
+  ...barbell,
 ];
 // Retain PartDefinition's builder signature, including the optional logo argument
 // when that stream integrates; vendor marks remain internal to their builders.
