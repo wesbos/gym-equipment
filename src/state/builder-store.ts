@@ -373,6 +373,9 @@ export class BuilderStore {
       return;
     }
     const wasViewing = this.state.timeline.viewing;
+    // Gesture branch: rewind to the pre-gesture journal so a whole drag lands as one entry.
+    // Continuous inputs must bracket their edits (NumericControl, GestureColorInput, GestureRange
+    // in components/GestureInputs.tsx) or every intermediate value floods history.
     if (this.gesture && this.gestureChanged && this.gestureHistory && this.gestureOriginal)
       this.journal = new DocumentHistory(this.gestureOriginal, structuredClone(this.gestureHistory));
     this.journal.append(doc, metadata);
