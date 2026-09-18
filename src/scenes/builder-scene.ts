@@ -424,7 +424,7 @@ export function createBuilderScene(
       swapRegions = createSwapRegions(swapCandidates(snapshot.doc, part), instances, snapshot.doc);
       scene.add(swapRegions.root);
     }
-    if (!placing && !snapshot.structureChoice) return;
+    if (!placing && !snapshot.structureChoice && !snapshot.systemChoice) return;
     if (placing && placing.part !== 'rep-nighthawk') showMounts();
     renderer.domElement.style.cursor = "crosshair";
     if (snapshot.proposal) void renderProposal(snapshot.proposal);
@@ -573,6 +573,7 @@ export function createBuilderScene(
     }
     if(event.key==='Escape') { floorDrag=null; store.cancelGesture(); controls.enabled=true; pointerGesture.finish(); return; }
     if(event.key.toLowerCase()!=='r' || event.ctrlKey || event.metaKey || (event.target instanceof HTMLElement && /INPUT|SELECT|TEXTAREA/.test(event.target.tagName))) return;
+    if (snapshot.systemChoice) return;
     const delta=(event.shiftKey?-1:1)*Math.PI/12;
     if(snapshot.placing?.part==='rep-nighthawk') {event.preventDefault();store.previewFloor(undefined,delta);return;}
     const mounted = rotationTarget();
@@ -589,11 +590,13 @@ export function createBuilderScene(
   let draggedAt = -Infinity;
   let hoveredId: string | null = null;
   function rotationTarget() {
+    if (snapshot.systemChoice) return null;
     if (snapshot.placing) return snapshot.placing.movingId && rotationMode(snapshot.doc, snapshot.placing.movingId).supported ? snapshot.placing.movingId : null;
     const candidates = [hoveredId, snapshot.selection.length === 1 ? snapshot.selected : null];
     return candidates.find(id => id && rotationMode(snapshot.doc, store.ownerOf(id)!).supported) ?? null;
   }
   const onWheel = (event: WheelEvent) => {
+    if (snapshot.systemChoice) return;
     const floorId = floorDrag?.id ?? hoveredId ?? (snapshot.selection.length === 1 ? snapshot.selected : null);
     const floorItem = snapshot.doc.floorItems?.find(i => i.id === floorId);
     const mounted = rotationTarget();
@@ -606,20 +609,21 @@ export function createBuilderScene(
     else if (floorItem) { if (floorDrag) floorDrag.moved = true; store.updateFloor(floorItem.id, { rotation: floorItem.rotation + direction * Math.PI / 12 }); }
   };
   const onDoubleClick = (event: MouseEvent) => {
+    if (snapshot.systemChoice) return;
     if (event.button !== 0 || snapshot.placing || snapshot.structureChoice || performance.now() - draggedAt < 600) return;
     const hit = pickOwner(event);
     if (hit) { event.preventDefault(); store.pickup(hit.id); }
   };
   const onDown = (event: PointerEvent) => {
     pointerGesture.begin(event);
-    if(event.button===0 && !snapshot.placing && !snapshot.structureChoice && !snapshot.selectionTool && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+    if(event.button===0 && !snapshot.systemChoice && !snapshot.placing && !snapshot.structureChoice && !snapshot.selectionTool && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
       const hit=pickOwner(event),item=snapshot.doc.floorItems?.find(i=>i.id===hit?.id),point=floorPoint(event,false);
       if(item && point && (snapshot.selection.length<=1 || !snapshot.selection.includes(item.id))) {
         store.select(item.id);store.beginGesture();floorDrag={id:item.id,start:point,position:[...item.position],moved:false};
         controls.enabled=false;pointerGesture.capture();event.stopImmediatePropagation();return;
       }
     }
-    selecting = snapshot.selectionTool && !snapshot.placing && !snapshot.structureChoice && event.button === 0;
+    selecting = snapshot.selectionTool && !snapshot.systemChoice && !snapshot.placing && !snapshot.structureChoice && event.button === 0;
     if ((!addingStructure() && (snapshot.placing || snapshot.structureChoice) || selecting) && event.button === 0) controls.enabled = false;
     if ((!addingStructure() && (snapshot.placing || snapshot.structureChoice) || selecting) && event.button === 0) pointerGesture.capture();
   };
@@ -666,6 +670,7 @@ export function createBuilderScene(
       ) > 6
     )
       return;
+    if (snapshot.systemChoice) return;
     if (snapshot.placing || snapshot.structureChoice) {
       dropPlacement(event);
       return;
@@ -797,18 +802,19 @@ export function createBuilderScene(
     if (
       snapshot.placing !== previous.placing ||
       snapshot.structureChoice !== previous.structureChoice ||
+      snapshot.systemChoice !== previous.systemChoice ||
       snapshot.structureMode !== previous.structureMode ||
       snapshot.paired !== previous.paired ||
       snapshot.doc !== previous.doc
     )
       refreshPlacement();
     else if (snapshot.proposal !== previous.proposal) {
-      if (snapshot.proposal && (snapshot.placing || snapshot.structureChoice)) void renderProposal(snapshot.proposal);
+      if (snapshot.proposal && (snapshot.placing || snapshot.structureChoice || snapshot.systemChoice)) void renderProposal(snapshot.proposal);
       else { previewTarget = null; previewSerial++; clearGhost(); }
     }
   });
   requestRebuild();
-  if (snapshot.placing || snapshot.structureChoice) refreshPlacement();
+  if (snapshot.placing || snapshot.structureChoice || snapshot.systemChoice) refreshPlacement();
   return {
     fit,
     refitOnNextBuild() {
