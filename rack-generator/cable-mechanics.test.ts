@@ -404,6 +404,15 @@ test("ARES2 source/mesh fixture: transverse plates, paired supported swivels, ca
       }
       assert.equal(parts.filter((p) => p.name === "ARES2 coaxial equalizer shared axle").length, 4);
       assert.equal(parts.filter((p) => /^Floating equalizer.*(cheek|axle)/.test(p.name)).length, 0);
+      for (const axle of parts.filter((p) => p.name === "ARES2 coaxial equalizer shared axle")) {
+        const a = axle.solid.boundingBox();
+        const pair = parts.filter((p) => /^Floating equalizer.*grooved six-spoke wheel$/.test(p.name)).filter((p) => {
+          const b = p.solid.boundingBox();
+          return [1, 2].every((i) => Math.abs(a.min[i] + a.max[i] - b.min[i] - b.max[i]) < 0.01)
+            && b.min[0] > a.min[0] && b.max[0] < a.max[0];
+        });
+        assert.equal(pair.length, 2, "one physical axle spans both coaxial equalizer wheels");
+      }
       const wheels = parts.filter((p) => p.name.endsWith("grooved six-spoke wheel"));
       for (let i = 0; i < wheels.length; i++)
         for (let j = i + 1; j < wheels.length; j++) clear(wheels[i], wheels[j]);
