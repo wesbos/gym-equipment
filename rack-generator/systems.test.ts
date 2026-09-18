@@ -179,8 +179,9 @@ test("systems reject malformed params, unsupported angles, outside adapters, bad
       }),
     /Unknown/
   );
-  d.uprights[Object.keys(d.uprights).at(-1)!].x += 50.8;
-  assert.throws(() => systemLayout(d), /align/);
+  const installed = validateAssembly(withSystem(d, "cable-ares2"));
+  installed.uprights[Object.keys(installed.uprights).at(-1)!].x += 50.8;
+  assert.throws(() => systemLayout(installed), /align/);
 });
 test("system dependency removal cascades, and named profiles retain strict tube dimensions", () => {
   const d = validateAssembly(withSystem(preset(), "cable-ares2"));
@@ -428,4 +429,179 @@ test('unrelated beam deletion retains configured systems while support deletion 
   for (const support of ['front-left', 'left-upper-crossmember', 'left-lower-crossmember']) {
     assert.equal(removeInstance(doc, support).systems?.length, 0);
   }
+});
+
+test('graph-built four-to-six bays accept cable and Smith systems with a seventh side-extension post', async () => {
+  const { extendUpright } = await import('./graph-edits.ts');
+  for (const profile of ['rep-pr-5000', 'bos-manticore']) {
+    const bos = profile.startsWith('bos');
+    let doc = preset(profile, 'four', 762, bos ? 2133.6 : 2032);
+    for (const side of ['left', 'right']) doc = extendUpright(doc, `rear-${side}`, 'rear', bos ? 609.6 : 406.4);
+    doc = extendUpright(doc, 'front-right', 'right', 762);
+    for (const part of bos ? ['cable-kraken'] as const : ['cable-ares2', 'cable-athena', 'smith-rep'] as const) {
+      const installed = validateAssembly(withSystem(doc, part));
+      const system = resolveAssembly(installed).find(r => r.part === part)!;
+      assert.equal(Object.keys(installed.uprights).length, 7);
+      assert.equal(system.connectedTo.length, 6);
+      assert.deepEqual(system.connectedTo, installed.systems![0].bay);
+      assert.equal(system.params.rearBay, (bos ? 609.6 : 406.4) + doc.rack.tube);
+    }
+  }
+});
+
+test('bay width is measured from columns and accepts every width in the active catalog', () => {
+  for (const width of [425, 725, 1075]) {
+    const doc = createAssembly({ width, emptyAccessories: true });
+    doc.rack.width = 800;
+    assert.equal(systemLayout(doc).width, width + doc.rack.tube);
+  }
+  const doc = preset();
+  doc.rack.width = 800;
+  const installed = validateAssembly(withSystem(doc, 'cable-ares2'));
+  assert.equal(resolveAssembly(installed).find(r => r.part === 'cable-ares2')!.params.rackWidth, 1215.32);
+  for (const node of Object.values(doc.uprights)) if (node.x > 0) node.x += 50.8;
+  assert.throws(() => validateAssembly(withSystem(doc, 'cable-ares2')), /clear width.*measured.*Align/);
+});
+
+test('bay checks actual depth, straight member type and every required side level', () => {
+  const doc = preset();
+  for (const part of ['crossmember-425', 'crossmember-725', 'crossmember-1075'] as const) {
+    doc.structure['left-upper-crossmember'] = { part, params: {} };
+    assert.equal(validateAssembly(withSystem(doc, 'cable-ares2')).systems!.length, 1);
+  }
+  doc.structure['left-upper-crossmember'] = { part: 'angled-crossmember', params: { rise: 203.2 } };
+  assert.throws(() => validateAssembly(withSystem(doc, 'cable-ares2')), /left-upper-crossmember.*straight/);
+  delete doc.structure['left-upper-crossmember'];
+  doc.removed.push('right-lower-crossmember');
+  assert.throws(() => validateAssembly(withSystem(doc, 'cable-ares2')), /lower.*front-right.*rear-right/);
+  doc.removed = [];
+  const rear = Math.max(...Object.values(doc.uprights).map(n => n.y));
+  for (const node of Object.values(doc.uprights)) if (node.y === rear) node.y += 50.8;
+  assert.throws(() => validateAssembly(withSystem(doc, 'cable-ares2')), /16-inch rear bay.*measured/);
+  const four = preset('rep-pr-5000', 'four');
+  for (const node of Object.values(four.uprights)) if (node.y > 0) node.y += 50.8;
+  assert.throws(() => validateAssembly(withSystem(four, 'smith-rep')), /main crossmembers span.*supported clear depth/);
+  const shallowKraken = withSystem(preset('bos-manticore', 'six', 609.6, 2133.6), 'cable-kraken');
+  const sixPosts = Object.entries(shallowKraken.uprights).sort((a, b) => a[1].y - b[1].y || a[1].x - b[1].x).map(([id]) => id);
+  shallowKraken.systems![0].bay = sixPosts;
+  assert.throws(() => validateAssembly(shallowKraken), /30- or 43-inch/);
+  delete shallowKraken.systems![0].bay;
+  assert.equal(validateAssembly(shallowKraken).systems![0].bay!.length, 4);
+});
+
+function twoBays() {
+  const doc = preset();
+  const other = preset();
+  for (const [id, n] of Object.entries(other.uprights)) doc.uprights[`other-${id}`] = { x: n.x + 4000, y: n.y };
+  doc.connections.push(...other.connections.map(e => ({ ...e, id: `other-${e.id}`, from: `other-${e.from}`, to: `other-${e.to}` })));
+  return doc;
+}
+
+test('multiple bays select deterministically, persist selection, and never relocate after support removal', () => {
+  const input = twoBays();
+  const doc = validateAssembly(withSystem(input, 'cable-ares2'));
+  const bay = doc.systems![0].bay!;
+  assert.ok(bay.every(id => !id.startsWith('other-')));
+  const reversed = structuredClone(input);
+  reversed.uprights = Object.fromEntries(Object.entries(reversed.uprights).reverse());
+  reversed.connections.reverse();
+  assert.deepEqual(validateAssembly(withSystem(reversed, 'cable-ares2')).systems![0].bay, bay);
+  assert.deepEqual(validateAssembly(JSON.parse(JSON.stringify(doc))).systems, doc.systems);
+  assert.equal(removeInstance(doc, 'front-left').systems!.length, 0);
+  assert.equal(removeInstance(doc, 'left-upper-crossmember').systems!.length, 0);
+  assert.deepEqual(removeInstance(doc, 'other-left-upper-crossmember').systems, doc.systems);
+  assert.deepEqual(removeInstance(doc, 'rear-crossmember').systems, doc.systems);
+  const raw = structuredClone(doc);
+  raw.removed.push('front-left');
+  assert.throws(() => validateAssembly(raw), /requires upright front-left.*Restore/);
+  // Legacy input selects once during validation, then deletion is equally stable.
+  delete doc.systems![0].bay;
+  assert.equal(removeInstance(doc, 'front-left').systems!.length, 0);
+});
+
+test('candidate selection evaluates mechanical fit and resolver uses the successful bay', () => {
+  const input = twoBays();
+  const maxY = Math.max(...Object.values(input.uprights).map(n => n.y));
+  for (const [id, n] of Object.entries(input.uprights)) if (!id.startsWith('other-') && n.y === maxY) n.y += 50.8;
+  const raw = withSystem(input, 'cable-ares2');
+  const doc = validateAssembly(raw);
+  assert.ok(doc.systems![0].bay!.every(id => id.startsWith('other-')));
+  const instance = resolveAssembly(doc).find(r => r.part === 'cable-ares2')!;
+  assert.equal(instance.position[0], 4000);
+  assert.deepEqual(systemLayout(raw).ids, doc.systems![0].bay);
+  assert.deepEqual(instance.connectedTo, doc.systems![0].bay);
+  const next = validateAssembly(withSystem(doc, 'smith-rep'));
+  assert.deepEqual(next.systems![1].bay, next.systems![0].bay);
+});
+
+test('bay anchors reject malformed, removed and misordered supports', () => {
+  const doc = validateAssembly(withSystem(preset(), 'cable-ares2'));
+  for (const bay of [null, {}, [], ['front-left', 'front-left', 'rear-left', 'rear-right'], [...doc.systems![0].bay!].reverse()]) {
+    assert.throws(() => validateAssembly({ ...doc, systems: [{ ...doc.systems![0], bay }] }), /System bay/);
+  }
+});
+
+test('108-inch Kraken raises only selected bay side beams, leaving unrelated extensions at normal stations', async () => {
+  const { extendUpright } = await import('./graph-edits.ts');
+  let doc = validateAssembly(withSystem(preset('bos-manticore', 'six', 762, 2743.2), 'cable-kraken'));
+  const bay = doc.systems![0].bay!;
+  doc = extendUpright(doc, bay.at(-1)!, 'rear', 762);
+  const instances = resolveAssembly(doc);
+  const lower = doc.connections.filter(e => e.level === 'lower');
+  for (const edge of lower) {
+    const beam = instances.find(r => r.id === edge.id)!;
+    const selected = bay.includes(edge.from) && bay.includes(edge.to);
+    assert.equal(beam.mounts[0].hole, selected ? 9 : 0, edge.id);
+  }
+  assert.deepEqual(doc.systems![0].bay, bay);
+});
+
+test('all manufacturer preset heights and depths enforce family fit on the selected bay', () => {
+  for (const p of RACK_PRESETS.filter(p => p.profileId !== 'generic-75')) {
+    const doc = applyPreset(p.id);
+    if (p.profileId.startsWith('bos-')) {
+      const installed = validateAssembly(withSystem(doc, 'cable-kraken'));
+      assert.equal(installed.systems!.length, 1, p.id);
+      assert.equal(installed.systems![0].bay!.length, p.kind === 'six' && p.depth !== 609.6 ? 6 : 4, p.id);
+    } else {
+      assert.equal(validateAssembly(withSystem(doc, 'smith-rep')).systems!.length, 1, p.id);
+      if (p.profileId === 'rep-pr-4000' && p.kind === 'four')
+        assert.throws(() => validateAssembly(withSystem(doc, 'cable-athena')), /six posts/, p.id);
+      else assert.equal(validateAssembly(withSystem(doc, 'cable-athena')).systems!.length, 1, p.id);
+      for (const part of ['cable-ares1', 'cable-ares2'] as const) {
+        const add = () => validateAssembly(withSystem(doc, part, { anchored: 1 }));
+        if (p.kind === 'four' && (p.profileId !== 'rep-pr-5000' || p.depth !== 406.4))
+          assert.throws(add, /PR-5000 16-inch/, p.id);
+        else assert.equal(add().systems!.length, 1, p.id);
+      }
+    }
+  }
+});
+
+test('partial or unsupported rear extensions preserve a complete four-post mounting bay', () => {
+  for (const complete of [false, true]) {
+    const doc = preset('rep-pr-5000', 'four');
+    const posts = Object.keys(doc.uprights);
+    for (const side of ['left', 'right']) {
+      const from = `rear-${side}`, to = `extension-${side}`;
+      doc.uprights[to] = { ...doc.uprights[from], y: doc.uprights[from].y + 837 };
+      for (const level of ['upper', 'lower'] as const)
+        if (complete || (side === 'left' && level === 'upper'))
+          doc.connections.push({ id: `extension-${side}-${level}`, from, to, level });
+    }
+    const installed = validateAssembly(withSystem(doc, 'cable-athena'));
+    assert.deepEqual(new Set(installed.systems![0].bay), new Set(posts));
+    assert.deepEqual(resolveAssembly(installed).find(r => r.part === 'cable-athena')!.connectedTo, installed.systems![0].bay);
+  }
+});
+
+test('Smith ignores safeties in unrelated bays but checks every endpoint touching its selected bay', async () => {
+  const { spanAccessory } = await import('./graph-edits.ts');
+  const doc = spanAccessory(twoBays(), 'other-front-left', 'other-rear-left', 'safety-webbing', 10);
+  const installed = validateAssembly(withSystem(doc, 'smith-rep'));
+  assert.ok(installed.systems![0].bay!.every(id => !id.startsWith('other-')));
+  const conflict = structuredClone(installed);
+  conflict.accessories[0].target.uprightId = 'front-left';
+  conflict.accessories[0].spanTo = 'rear-left';
+  assert.throws(() => validateAssembly(conflict), /internal safeties/);
 });

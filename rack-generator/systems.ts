@@ -1,3 +1,4 @@
+import { anchoredLayout, candidateLayouts, validateBayStructure, type SystemLayout } from "./system-layout.ts";
 import { SMITH_BAR_MIN, SMITH_SAFETY_MIN, SMITH_SAFETY_GAP } from "./smith-heights.ts";
 import { lockedTrolley, krakenBaseRise } from "./cable-stations.ts";
 import { smithLayout, cableMountTop } from "./system-mounts.ts";
@@ -22,57 +23,21 @@ const close = (a: number, b: number) => Math.abs(a - b) < 0.05;
 const require = (condition: unknown, message: string): void => {
   if (!condition) throw Error(message);
 };
-export function systemLayout(doc: RackDoc) {
-  const nodes = Object.entries(doc.uprights).filter(
-    ([id]) => !doc.removed.includes(id),
-  );
-  require(nodes.length === 4 ||
-    nodes.length ===
-      6, "Cable/Smith systems require a rectangular 4- or 6-post rack.");
-  const ys = [...new Set(nodes.map(([, n]) => n.y))].sort((a, b) => a - b);
-  const rows = ys.map((y) =>
-    nodes.filter(([, n]) => n.y === y).sort((a, b) => a[1].x - b[1].x),
-  );
-  require(rows.length === nodes.length / 2 &&
-    rows.every(
-      (r) => r.length === 2,
-    ), "Cable/Smith systems require two aligned upright columns.");
-  require(rows.every(
-    (r) =>
-      close(r[0][1].x, rows[0][0][1].x) && close(r[1][1].x, rows[0][1][1].x),
-  ), "Cable/Smith upright columns must align.");
-  const width = rows[0][1][1].x - rows[0][0][1].x;
-  require(close(
-    width - doc.rack.tube,
-    gridProfile(doc.profileId).widths.at(-1)!,
-  ), "System requires the manufacturer rack width.");
-  for (let j = 0; j < rows.length - 1; j++)
-    for (let side = 0; side < 2; side++)
-      for (const level of ["upper", "lower"]) {
-        const from = rows[j][side][0],
-          to = rows[j + 1][side][0];
-        require(doc.connections.some(
-          (e) =>
-            !doc.removed.includes(e.id) &&
-            e.level === level &&
-            [e.from, e.to].includes(from) &&
-            [e.from, e.to].includes(to) &&
-            !doc.structure[e.id],
-        ), "Systems require unmodified upper and lower side crossmembers in every bay.");
-      }
-  return {
-    rows,
-    ids: nodes.map(([id]) => id),
-    width,
-    mainDepth: ys[1] - ys[0] - doc.rack.tube,
-    rearDepth: rows.length === 3 ? ys[2] - ys[1] - doc.rack.tube : 0,
-    depth: ys.at(-1)! - ys[0],
-    origin: [(rows[0][0][1].x + rows[0][1][1].x) / 2, ys[0], 0] as [
-      number,
-      number,
-      number,
-    ],
-  };
+/** Without systems, returns the first structurally valid candidate. Installed systems retain their anchor. */
+export function systemLayout(doc: RackDoc, bay?: string[]) {
+  const anchor = bay ?? (doc.systems?.length ? validateSystems(doc, doc.systems)![0].bay : undefined);
+  const candidates = anchor ? [anchoredLayout(doc, anchor)] : candidateLayouts(doc);
+  let error: unknown = Error("System bay needs two aligned upright columns connected by upper and lower side crossmembers.");
+  for (const candidate of candidates) {
+    try { validateLayout(doc, candidate); return candidate; } catch (e) { error = e; }
+  }
+  throw error;
+}
+function validateLayout(doc: RackDoc, layout: SystemLayout) {
+  const widths = gridProfile(doc.profileId).widths;
+  require(widths.some(w => close(w, layout.width - doc.rack.tube)),
+    `System bay requires manufacturer clear width ${widths.join(" or ")} mm; measured ${layout.width - doc.rack.tube} mm. Align the columns to a supported width.`);
+  validateBayStructure(doc, layout);
 }
 export function validateSystemParams(
   part: SystemPartId,
@@ -150,8 +115,7 @@ export function validateSystems(
     return { ...structuredClone(s), params };
   });
   if (!systems.length) return systems;
-  const layout = systemLayout(doc),
-    profile = doc.profileId;
+  const profile = doc.profileId;
   const cable = systems.filter((s) => s.part !== "smith-rep"),
     smith = systems.filter((s) => s.part === "smith-rep");
   require(smith.length <= 1, "Only one Smith system fits.");
@@ -166,79 +130,95 @@ export function validateSystems(
   }
   require(new Set(cable.map((s) => s.part)).size <=
     1, "Different cable families cannot share a rack.");
-  for (const s of systems) {
-    const p = s.params,
-      kraken = s.part === "cable-kraken";
-    require(kraken
-      ? ["bos-hydra", "bos-manticore"].includes(profile ?? "")
-      : ["rep-pr-4000", "rep-pr-5000"].includes(
-          profile ?? "",
-        ), `${SYSTEM_NAMES[s.part]} requires its named manufacturer rack profile.`);
-    require((kraken ? [2133.6, 2286, 2743.2] : [2032, 2362.2]).some((h) =>
-      close(h, doc.rack.height),
-    ), `${SYSTEM_NAMES[s.part]} requires a supported tower/rack height.`);
-    require(close(
-      doc.rack.tube,
-      kraken ? 76.2 : 75,
-    ), "Incorrect upright tube for this system.");
-    const depths = gridProfile(profile).depths;
-    require(depths.some((d) =>
-      close(d, layout.mainDepth),
-    ), "Unsupported main crossmember depth.");
-    if (kraken && layout.rows.length === 3)
-      require(layout.mainDepth >=
-        761.95, "Six-post Kraken requires 30- or 43-inch front crossmembers; use the four-post adapter for a 24-inch bay.");
-    if (layout.rows.length === 3)
+  const anchors = systems.filter(s => s.bay !== undefined).map(s => anchoredLayout(doc, s.bay));
+  require(anchors.every(a => a.ids.join(":") === anchors[0].ids.join(":")),
+    "Installed systems must share the same mounting bay. Remove and reinstall to change bays.");
+  const candidates = anchors.length ? [anchors[0]] : candidateLayouts(doc);
+  let failure: unknown;
+  for (const layout of candidates) {
+    try {
+      validateLayout(doc, layout);
+      validateFit(layout);
+      return systems.map(s => ({ ...s, bay: [...layout.ids] }));
+    } catch (error) { failure ??= error; if (anchors.length) break; }
+  }
+  throw failure ?? Error("System bay needs two aligned upright columns connected by upper and lower side crossmembers.");
+  function validateFit(layout: SystemLayout) {
+    for (const s of systems) {
+      const p = s.params,
+        kraken = s.part === "cable-kraken";
+      require(kraken
+        ? ["bos-hydra", "bos-manticore"].includes(profile ?? "")
+        : ["rep-pr-4000", "rep-pr-5000"].includes(
+            profile ?? "",
+          ), `${SYSTEM_NAMES[s.part]} requires its named manufacturer rack profile.`);
+      require((kraken ? [2133.6, 2286, 2743.2] : [2032, 2362.2]).some((h) =>
+        close(h, doc.rack.height),
+      ), `${SYSTEM_NAMES[s.part]} requires a supported tower/rack height.`);
       require(close(
-        layout.rearDepth,
-        kraken ? 609.6 : 406.4,
-      ), `Requires a ${kraken ? "24" : "16"}-inch rear bay.`);
-    if (s.part.includes("ares") && layout.rows.length === 2) {
-      require(profile === "rep-pr-5000" &&
-        close(
-          layout.mainDepth,
-          406.4,
-        ), "Four-post ARES requires the documented PR-5000 16-inch configuration.");
-      require(p.anchored ===
-        1, "Four-post ARES requires floor anchoring. Confirm anchored installation.");
-    }
-    if (s.part === "cable-athena" && profile === "rep-pr-4000")
-      require(layout.rows.length ===
-        3, "PR-4000 Athena requires six posts and updated 16-inch crossmembers.");
-    if ("trolley" in p) {
-      require(p.trolley <= doc.rack.height - 250, "Trolley must clear the top pulley brackets.");
-      p.trolley = lockedTrolley({ ...doc.rack, bore:doc.rack.holeDiameter, ...p }, kraken);
-    }
-    if (s.part === "smith-rep") {
-      require(!p.outside || profile === "rep-pr-5000", "Front Smith currently requires PR-5000 with the modeled FFE 2.0 pair.");
-      require(!(p.outside && cable.length), "Front Smith cannot share a rack with ARES or Athena: trolley interference.");
-      require(!(
-        cable.length && layout.rows.length === 2
-      ), "Smith and cable systems cannot share a four-post rack.");
-      require(!(
-        cable.length &&
-        profile === "rep-pr-4000" &&
-        p.angle !== 0
-      ), "PR-4000 with cables only supports a vertical Smith installation.");
-      require(p.barHeight <=
-        (doc.rack.height < 2200
-          ? 1721
-          : 2029), "Smith bar exceeds the published upper travel.");
-      const internal = doc.accessories.filter(
-        (a) =>
-          a.part.startsWith("safety-") ||
-          (a.part === "spotter-arm" &&
-            ["left", "right"].includes(a.target.face)),
-      );
-      require(p.outside === 1 || !internal.some(
-        (a) => a.part === "safety-box" || a.part === "safety-webbing",
-      ) &&
-        !(
-          layout.mainDepth <= 762.05 && internal.length
-        ), "Inside Smith mounting conflicts with internal safeties/spotter arms at this depth. Remove the conflicting attachments.");
+        doc.rack.tube,
+        kraken ? 76.2 : 75,
+      ), "Incorrect upright tube for this system.");
+      const depths = gridProfile(profile).depths;
+      require(depths.some((d) =>
+        close(d, layout.mainDepth),
+      ), `System bay main crossmembers span ${layout.mainDepth} mm; use a supported clear depth (${depths.join(", ")} mm).`);
+      if (kraken && layout.rows.length === 3)
+        require(layout.mainDepth >=
+          761.95, "Six-post Kraken requires 30- or 43-inch front crossmembers; use the four-post adapter for a 24-inch bay.");
+      if (layout.rows.length === 3)
+        require(close(
+          layout.rearDepth,
+          kraken ? 609.6 : 406.4,
+        ), `Requires a ${kraken ? "24" : "16"}-inch rear bay; measured ${layout.rearDepth} mm. Move the rear supports to the required clear depth.`);
+      if (s.part.includes("ares") && layout.rows.length === 2) {
+        require(profile === "rep-pr-5000" &&
+          close(
+            layout.mainDepth,
+            406.4,
+          ), "Four-post ARES requires the documented PR-5000 16-inch configuration.");
+        require(p.anchored ===
+          1, "Four-post ARES requires floor anchoring. Confirm anchored installation.");
+      }
+      if (s.part === "cable-athena" && profile === "rep-pr-4000")
+        require(layout.rows.length ===
+          3, "PR-4000 Athena requires six posts and updated 16-inch crossmembers.");
+      if ("trolley" in p) {
+        require(p.trolley <= doc.rack.height - 250, "Trolley must clear the top pulley brackets.");
+        p.trolley = lockedTrolley({ ...doc.rack, bore:doc.rack.holeDiameter, ...p }, kraken);
+      }
+      if (s.part === "smith-rep") {
+        require(!p.outside || profile === "rep-pr-5000", "Front Smith currently requires PR-5000 with the modeled FFE 2.0 pair.");
+        require(!(p.outside && cable.length), "Front Smith cannot share a rack with ARES or Athena: trolley interference.");
+        require(!(
+          cable.length && layout.rows.length === 2
+        ), "Smith and cable systems cannot share a four-post rack.");
+        require(!(
+          cable.length &&
+          profile === "rep-pr-4000" &&
+          p.angle !== 0
+        ), "PR-4000 with cables only supports a vertical Smith installation.");
+        require(p.barHeight <=
+          (doc.rack.height < 2200
+            ? 1721
+            : 2029), "Smith bar exceeds the published upper travel.");
+        const internal = doc.accessories.filter(
+          (a) =>
+            (layout.ids.includes(a.target.uprightId) ||
+              [a.spanTo, a.pairTo, a.pairedSpanTo].some(id => id !== undefined && layout.ids.includes(id))) &&
+            (a.part.startsWith("safety-") ||
+            (a.part === "spotter-arm" &&
+              ["left", "right"].includes(a.target.face))),
+        );
+        require(p.outside === 1 || !internal.some(
+          (a) => a.part === "safety-box" || a.part === "safety-webbing",
+        ) &&
+          !(
+            layout.mainDepth <= 762.05 && internal.length
+          ), "Inside Smith mounting conflicts with internal safeties/spotter arms at this depth. Remove the conflicting attachments.");
+      }
     }
   }
-  return systems;
 }
 export function systemWarnings(doc: RackDoc): string[] {
   const s = doc.systems ?? [];
@@ -307,9 +287,9 @@ export function systemCollisionBoxes(
 }
 export function resolveSystems(doc: RackDoc): ResolvedInstance[] {
   if (!doc.systems?.length) return [];
-  const l = systemLayout(doc),
-    r = doc.rack;
-  return doc.systems.map((s) => {
+  const systems = validateSystems(doc, doc.systems)!;
+  const l = systemLayout(doc, systems[0].bay), r = doc.rack;
+  return systems.map((s) => {
     const params = {
       ...s.params,
       height: r.height,
@@ -357,6 +337,7 @@ export function resolveSystems(doc: RackDoc): ResolvedInstance[] {
             to = l.rows[1][side][0];
           const edge = doc.connections.find(
             (e) =>
+              !doc.removed.includes(e.id) &&
               [e.from, e.to].includes(row) &&
               [e.from, e.to].includes(to) &&
               e.level === (station.index ? "upper" : "lower"),

@@ -7,11 +7,13 @@ export const SYSTEM_PARTS = [
   "smith-rep",
 ] as const;
 export type SystemPartId = (typeof SYSTEM_PARTS)[number];
-/** Whole-rack mechanical families use graph-derived interfaces, not a single hole target. */
+/** Mechanical families use a selected graph bay, not a single hole target. */
 export interface RackSystem {
   id: string;
   part: SystemPartId;
   params: NumericParams;
+  /** Selected mounting posts, front-to-back and left-to-right. Added on validation of legacy documents. */
+  bay?: string[];
 }
 export const isSystemPart = (id: string): id is SystemPartId =>
   (SYSTEM_PARTS as readonly string[]).includes(id);
