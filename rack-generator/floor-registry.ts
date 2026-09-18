@@ -10,8 +10,9 @@
  * Params are numeric selects (enums as 0/1/… with `format`); `options` may depend on earlier params. */
 import type { FloorPart } from './floor-part.ts';
 import { NIGHTHAWK } from './floor-parts/nighthawk.ts';
+import { POWERBLOCK } from './floor-parts/powerblock.ts';
 export * from './floor-part.ts';
-export const FLOOR_PARTS = [NIGHTHAWK] as const;
+export const FLOOR_PARTS = [NIGHTHAWK, POWERBLOCK] as const;
 export type FloorPartId = (typeof FLOOR_PARTS)[number]['id'];
 export const FLOOR_PART_IDS: FloorPartId[] = FLOOR_PARTS.map(p => p.id);
 const registry = new Map<string, FloorPart>(FLOOR_PARTS.map(p => [p.id, p]));

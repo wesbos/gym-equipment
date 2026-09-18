@@ -11,8 +11,10 @@ import { definitions as smith } from './parts/smith.ts';
 import { partAttribution } from './attribution.ts';
 // Floor parts: one import + one `floor` line each; entries register in floor-registry.ts.
 import { definitions as nighthawk } from './parts/nighthawk.ts';
+import { definitions as powerblock } from './parts/powerblock.ts';
 const floor: PartDefinition[] = [
   ...nighthawk,
+  ...powerblock,
 ];
 // Retain PartDefinition's builder signature, including the optional logo argument
 // when that stream integrates; vendor marks remain internal to their builders.
