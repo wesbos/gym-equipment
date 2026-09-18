@@ -35,7 +35,9 @@ export function systemLowerCrossmemberStation(
     !krakenBaseRise(doc.rack.height)
   )
     return 0;
-  return doc.uprights[from].x === doc.uprights[to].x
-    ? Math.round(krakenBaseRise(doc.rack.height) / doc.rack.pitch)
-    : 0;
+  // Validation persists the selected posts. Only adjacent rows in that bay
+  // receive the raised kit; unrelated extensions retain ordinary beam stations.
+  const selected = doc.systems!.some(s => s.part === "cable-kraken" && s.bay?.some((id, i, bay) =>
+    i + 2 < bay.length && ((id === from && bay[i + 2] === to) || (id === to && bay[i + 2] === from))));
+  return selected ? Math.round(krakenBaseRise(doc.rack.height) / doc.rack.pitch) : 0;
 }
