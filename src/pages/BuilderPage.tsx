@@ -1,3 +1,4 @@
+import { HistoryTimeline, historyKeyStep } from '../components/HistoryTimeline.tsx';
 import { rotationMode } from '../../rack-generator/assembly.ts';
 import { CableSmithControls, SystemPlacementOptions } from '../components/CableSmithControls.tsx';
 import { isSystemPart, SYSTEM_PARTS } from '../../rack-generator/system-types.ts';
@@ -53,6 +54,7 @@ import type {
   PlacementField,
 } from "../../rack-generator/types.ts";
 import "../../rack-generator/builder.css";
+import "../components/history-timeline.css";
 const groups: [string, readonly PartId[]][] = [
   ["Systems", SYSTEM_PARTS],
   ["Floor items", ["rep-nighthawk"]],
@@ -195,7 +197,7 @@ function Inspector({ store }: { store: BuilderStore }) {
               <span>mm</span>
             </div></Field>;
           })}
-          <button type="button" onClick={() => store.act(() => { store.endGesture(); store.commit(resetDimensions(doc)); })}>Reset dimensions</button>
+          <button type="button" onClick={() => store.act(() => { store.endGesture(); store.edit(current => resetDimensions(current)); })}>Reset dimensions</button>
           <output aria-live="polite">{snapHint || `Grid: ${doc.rack.pitch} mm · depths ${gridProfile(doc.profileId).depths.join(' / ')} mm`}</output>
         </form>
       </>
@@ -361,7 +363,7 @@ function Inspector({ store }: { store: BuilderStore }) {
                 })} />
             </Field>
           ))}
-          <button type="button" onClick={() => store.act(() => { store.endGesture(); store.commit(resetPart(doc, physical.id)); })}>Reset this part</button>
+          <button type="button" onClick={() => store.act(() => { store.endGesture(); store.edit(current => resetPart(current, physical.id)); })}>Reset this part</button>
           {part !== "upright" && (
             <button className="primary">
               {entry ? "Apply placement" : "Replace frame member"}
@@ -422,12 +424,17 @@ export default function BuilderPage() {
       if (e.key === "Escape") store.escape();
       if (
         e.target instanceof HTMLElement &&
-        /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)
+        (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName) || e.target.isContentEditable)
       )
         return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
         e.preventDefault();
         store.history(e.shiftKey ? "redo" : "undo");
+      }
+      if (!e.defaultPrevented && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+        const timeline = store.getSnapshot().timeline;
+        const step = historyKeyStep(e.key, timeline.position, timeline.latest);
+        if (step !== undefined) { e.preventDefault(); store.seekHistory(step); }
       }
       const selected = store.getSnapshot().selected;
       if ((e.key === "Delete" || e.key === "Backspace") && selected) {
@@ -486,7 +493,7 @@ export default function BuilderPage() {
               id="save"
               onClick={() =>
                 download(
-                  new Blob([JSON.stringify(state.doc, null, 2)], {
+                  new Blob([store.exportJSON()], {
                     type: "application/json",
                   }),
                   "bos-strength-rack.json",
@@ -511,8 +518,6 @@ export default function BuilderPage() {
                   file = input.files?.[0];
                 if (!file) return;
                 try {
-                  if (file.size > 2_000_000)
-                    throw new Error("Design file is too large.");
                   store.importJSON(await file.text());
                 } catch (error) {
                   store.status(
@@ -621,7 +626,7 @@ export default function BuilderPage() {
             ))}
           </div>
           <div className="stage-caption">
-            <span className="eyebrow">Your rack</span>
+            <span className="eyebrow">{state.timeline.viewing ? "Viewing history · edits apply to latest" : "Your rack"}</span>
             <div id="dimensions">{state.dimensions}</div>
           </div>
           <div className="stage-actions">
@@ -708,7 +713,7 @@ export default function BuilderPage() {
               className="new-rack-button"
               onClick={() => {
                 if (window.confirm('Reset entire rack to the stock BOS starting assembly? All dimensions, parts and appearance will reset. You can Undo this change.')) {
-                  store.endGesture(); store.commit(createAssembly()); store.select(null);
+                  store.endGesture(); store.commit(createAssembly(), { category: "preset", label: "Reset entire rack", replacement: true }); store.select(null);
                   controller.current?.refitOnNextBuild();
                 }
               }}
@@ -717,6 +722,8 @@ export default function BuilderPage() {
             </button>
           </div>
         </aside>
+        <HistoryTimeline timeline={state.timeline} loading={state.loading}
+          seek={store.seekHistory} restore={() => store.restoreHistory()} clear={store.clearHistory} />
         <footer className="status-bar">
           <span
             id="status"

@@ -565,21 +565,21 @@ export function createBuilderScene(
     return [grid(point.x),grid(point.z)];
   }
   const floorKey=(event:KeyboardEvent)=>{
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !(event.target instanceof HTMLElement && /INPUT|SELECT|TEXTAREA/.test(event.target.tagName))) {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !(event.target instanceof HTMLElement && (/INPUT|SELECT|TEXTAREA/.test(event.target.tagName) || event.target.isContentEditable))) {
       // BuilderPage invokes history next; leave store gesture finalization to history.
       floorDrag = null; pointerGesture.finish(); selecting = false; marquee.style.display = 'none';
       controls.enabled = !snapshot.selectionTool;
       return;
     }
     if(event.key==='Escape') { floorDrag=null; store.cancelGesture(); controls.enabled=true; pointerGesture.finish(); return; }
-    if(event.key.toLowerCase()!=='r' || event.ctrlKey || event.metaKey || (event.target instanceof HTMLElement && /INPUT|SELECT|TEXTAREA/.test(event.target.tagName))) return;
+    if(event.key.toLowerCase()!=='r' || event.ctrlKey || event.metaKey || (event.target instanceof HTMLElement && (/INPUT|SELECT|TEXTAREA/.test(event.target.tagName) || event.target.isContentEditable))) return;
     if (snapshot.systemChoice) return;
     const delta=(event.shiftKey?-1:1)*Math.PI/12;
     if(snapshot.placing?.part==='rep-nighthawk') {event.preventDefault();store.previewFloor(undefined,delta);return;}
     const mounted = rotationTarget();
     if (mounted && store.rotateMounted(mounted, event.shiftKey ? -1 : 1)) { event.preventDefault(); return; }
     const id=floorDrag?.id ?? (snapshot.selection.length===1?snapshot.selected:null);
-    const item=snapshot.doc.floorItems?.find(i=>i.id===id);
+    const item=store.getAppliedDoc().floorItems?.find(i=>i.id===id);
     if(item) {event.preventDefault();if(floorDrag)floorDrag.moved=true;store.updateFloor(item.id,{rotation:item.rotation+delta});}
   };
   document.addEventListener('keydown',floorKey);
@@ -598,7 +598,7 @@ export function createBuilderScene(
   const onWheel = (event: WheelEvent) => {
     if (snapshot.systemChoice) return;
     const floorId = floorDrag?.id ?? hoveredId ?? (snapshot.selection.length === 1 ? snapshot.selected : null);
-    const floorItem = snapshot.doc.floorItems?.find(i => i.id === floorId);
+    const floorItem = store.getAppliedDoc().floorItems?.find(i => i.id === floorId);
     const mounted = rotationTarget();
     if (snapshot.placing?.part !== 'rep-nighthawk' && !floorItem && !mounted) return;
     event.preventDefault(); event.stopImmediatePropagation();
@@ -617,8 +617,9 @@ export function createBuilderScene(
   const onDown = (event: PointerEvent) => {
     pointerGesture.begin(event);
     if(event.button===0 && !snapshot.systemChoice && !snapshot.placing && !snapshot.structureChoice && !snapshot.selectionTool && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
-      const hit=pickOwner(event),item=snapshot.doc.floorItems?.find(i=>i.id===hit?.id),point=floorPoint(event,false);
+      const hit=pickOwner(event),item=store.getAppliedDoc().floorItems?.find(i=>i.id===hit?.id),point=floorPoint(event,false);
       if(item && point && (snapshot.selection.length<=1 || !snapshot.selection.includes(item.id))) {
+        if (snapshot.timeline.viewing) { store.latestHistory(); pointerGesture.begin(event); }
         store.select(item.id);store.beginGesture();floorDrag={id:item.id,start:point,position:[...item.position],moved:false};
         controls.enabled=false;pointerGesture.capture();event.stopImmediatePropagation();return;
       }
@@ -795,6 +796,12 @@ export function createBuilderScene(
     const previous = snapshot;
     snapshot = store.getSnapshot();
     if (disposed) return;
+    // History navigation finalizes/cancels the store gesture; never let an old
+    // pointer capture or floor origin apply a stale drag to the new document.
+    if (snapshot.inputRevision !== previous.inputRevision) {
+      floorDrag = null; hoveredId = null; selecting = false;
+      pointerGesture.finish(); marquee.style.display = 'none';
+    }
     if (snapshot.doc !== previous.doc) requestRebuild();
     if (snapshot.selection !== previous.selection) refreshSelection();
     controls.enabled = !floorDrag && !snapshot.selectionTool && !selecting && !(pointerGesture.start && !addingStructure() && (snapshot.placing || snapshot.structureChoice));
@@ -822,6 +829,7 @@ export function createBuilderScene(
     },
     async exportGLB() {
       if (disposed) throw Error("Scene has been disposed.");
+      if (snapshot.timeline.viewing) throw Error("Return to latest before exporting the applied rack.");
       if (snapshot.loading)
         throw Error("Wait for the rack to finish building.");
       // Status messages can clear error flags; only a successful current build is exportable.

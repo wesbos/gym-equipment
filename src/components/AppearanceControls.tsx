@@ -26,7 +26,7 @@ export function AppearanceControls({ store }: { store: BuilderStore }) {
   const { doc, resolved, selected, selection } = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const physical = resolved.find(r => r.id === selected) ?? resolved.find(r => r.ownerId === selected);
   const appearance = doc.appearance ?? {};
-  const update = (patch: Partial<Appearance>) => store.act(() => store.commit({ ...doc, appearance: { ...appearance, ...patch } }));
+  const update = (change: Partial<Appearance> | ((current: Appearance) => Appearance)) => store.act(() => store.edit(current => ({ ...current, appearance: typeof change === 'function' ? change(current.appearance ?? {}) : { ...current.appearance, ...change } })));
   const colors = selection.map(id => appearance.overrides?.[id] ?? appearance.frameColor ?? (id.startsWith('floor-') ? '#353739' : DEFAULT_FRAME_COLOR));
   const mixed = colors.some(value => value !== colors[0]);
   const finishes = selection.map(id => physicalFinish(appearance, id));
@@ -36,8 +36,8 @@ export function AppearanceControls({ store }: { store: BuilderStore }) {
     <h3>Appearance</h3>
     {selection.length < 2 && <>
     <PaintPicker label="Rack" color={color} finish={appearance.frameFinish ?? 'paint'} onColor={frameColor => update({ frameColor, frameFinish: 'paint' })} onFinish={frameFinish => update({ frameFinish })}
-      colorChanged={color !== DEFAULT_FRAME_COLOR} onResetColor={() => update(resetAppearanceField(appearance, 'color'))}
-      finishChanged={!!appearance.frameFinish && appearance.frameFinish !== 'paint'} onResetFinish={() => update(resetAppearanceField(appearance, 'finish'))} />
+      colorChanged={color !== DEFAULT_FRAME_COLOR} onResetColor={() => update(current => resetAppearanceField(current, 'color'))}
+      finishChanged={!!appearance.frameFinish && appearance.frameFinish !== 'paint'} onResetFinish={() => update(current => resetAppearanceField(current, 'finish'))} />
     <ResetButton label="rack appearance" changed={color !== DEFAULT_FRAME_COLOR || !!appearance.frameFinish && appearance.frameFinish !== 'paint'} onReset={() => update({ frameColor: DEFAULT_FRAME_COLOR, frameFinish: 'paint' })} />
     <label className="field"><span>Fastener finish</span><select aria-label="Fastener finish" value={appearance.hardwareFinish ?? ''} onChange={e => update({ hardwareFinish: e.target.value ? e.target.value as HardwareFinish : undefined })}>
       <option value="">Original finishes</option><option value="chrome">Chrome</option><option value="gold">Gold</option><option value="oxide">Oxide (black)</option>
@@ -59,13 +59,15 @@ export function AppearanceControls({ store }: { store: BuilderStore }) {
       <p className="note">{physical.id.replaceAll('-', ' ')}</p>
       <PaintPicker label="This piece" color={appearance.overrides?.[physical.id] ?? appearance.frameColor ?? (physical.kind === 'floor-item' ? '#353739' : DEFAULT_FRAME_COLOR)}
         finish={physicalFinish(appearance, physical.id)}
-        onColor={value => update({ overrides: { ...appearance.overrides, [physical.id]: value }, finishOverrides: { ...appearance.finishOverrides, [physical.id]: 'paint' } })}
-        onFinish={value => update({ finishOverrides: { ...appearance.finishOverrides, [physical.id]: value } })}
-        colorChanged={!!appearance.overrides?.[physical.id]} onResetColor={() => update(resetAppearanceField(appearance, 'color', physical.id))}
-        finishChanged={physicalFinish(appearance, physical.id) !== (appearance.frameFinish ?? 'paint')} onResetFinish={() => update(resetAppearanceField(appearance, 'finish', physical.id))} />
+        onColor={value => update(current => ({ ...current, overrides: { ...current.overrides, [physical.id]: value }, finishOverrides: { ...current.finishOverrides, [physical.id]: 'paint' } }))}
+        onFinish={value => update(current => ({ ...current, finishOverrides: { ...current.finishOverrides, [physical.id]: value } }))}
+        colorChanged={!!appearance.overrides?.[physical.id]} onResetColor={() => update(current => resetAppearanceField(current, 'color', physical.id))}
+        finishChanged={physicalFinish(appearance, physical.id) !== (appearance.frameFinish ?? 'paint')} onResetFinish={() => update(current => resetAppearanceField(current, 'finish', physical.id))} />
       <button type="button" disabled={!appearance.overrides?.[physical.id] && !appearance.finishOverrides?.[physical.id]} onClick={() => {
-        const overrides = { ...appearance.overrides }, finishOverrides = { ...appearance.finishOverrides };
-        delete overrides[physical.id]; delete finishOverrides[physical.id]; update({ overrides, finishOverrides });
+        update(current => {
+          const overrides = { ...current.overrides }, finishOverrides = { ...current.finishOverrides };
+          delete overrides[physical.id]; delete finishOverrides[physical.id]; return { ...current, overrides, finishOverrides };
+        });
       }}>Use rack appearance</button>
       </>}
 
