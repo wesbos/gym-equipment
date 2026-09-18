@@ -10,7 +10,7 @@ export interface HistoryEvent extends HistoryEntry { parent: number; ops: Histor
 export interface TimelineData { version: 1; base: RackDoc; events: HistoryEvent[]; applied: number; redo: number[]; keyframes: { step: number; json: string }[] }
 export interface SessionDocument { format: 'bos-strength-session'; version: 1; doc: RackDoc; timeline: TimelineData }
 export interface TimelineSnapshot { entries: readonly HistoryEntry[]; position: number; latest: number; applied: number; viewing: boolean }
-const fields = ['version','rack','uprights','connections','profileId','removed','structure','accessories','nextId','appearance','logo','floorItems','systems'] as const;
+const fields = ['version','rack','uprights','connections','profileId','removed','structure','accessories','nextId','appearance','logo','floorItems','systems','wallItems','room'] as const;
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 /** Never copy unknown document fields (notably an embedded timeline) into geometry or keyframes. */
@@ -86,7 +86,7 @@ export function describeChange(before: RackDoc, after: RackDoc): Required<Pick<H
   for (const key of Object.keys(after.rack) as (keyof RackDoc['rack'])[]) if (before.rack[key] !== after.rack[key]) return { category: 'dimension', label: `${key} ${before.rack[key]}→${after.rack[key]}` };
   if (!equal(before.logo, after.logo)) return { category: 'logo', label: after.logo ? 'Update logo' : 'Remove logo' };
   if (!equal(before.appearance, after.appearance)) return { category: 'appearance', label: 'Color / finish' };
-  for (const key of ['accessories','floorItems','systems'] as const) {
+  for (const key of ['accessories','floorItems','wallItems','systems'] as const) {
     const a = before[key] ?? [], b = after[key] ?? [];
     const added = b.filter(x => !a.some(y => y.id === x.id)), removed = a.filter(x => !b.some(y => y.id === x.id));
     if (added.length) return { category: 'add', label: `+ ${added.length > 1 ? `${added.length} parts` : (added[0] as any).part ?? 'system'}` };

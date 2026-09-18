@@ -4,6 +4,9 @@ import { CableSmithControls, SystemPlacementOptions } from '../components/CableS
 import { isSystemPart, SYSTEM_PARTS } from '../../rack-generator/system-types.ts';
 import { FloorInspector } from '../components/FloorInspector.tsx';
 import { PlateStackEditor } from '../components/PlateStackEditor.tsx';
+import { WallInspector } from '../components/WallInspector.tsx';
+import { wallWarnings } from '../../rack-generator/wall-items.ts';
+import { WALL_PART_IDS } from '../../rack-generator/wall-registry.ts';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { FLOOR_PART_IDS, floorPart } from '../../rack-generator/floor-registry.ts';
 import { LogoControls } from '../components/LogoControls.tsx';
@@ -61,6 +64,7 @@ import "../components/history-timeline.css";
 const groups: [string, readonly PartId[]][] = [
   ["Systems", SYSTEM_PARTS],
   ["Floor items", FLOOR_PART_IDS],
+  ["Wall storage", WALL_PART_IDS],
   ["Digital resistance", VOLTRA_IDS],
   ["Darko Lifting", DARKO_IDS],
   [
@@ -206,6 +210,7 @@ function Inspector({ store }: { store: BuilderStore }) {
       </>
     );
   if (physical.kind === 'floor-item') return <FloorInspector store={store} id={physical.id} />;
+  if (physical.kind === 'wall-item') return <WallInspector store={store} id={physical.id} />;
   const fields = editableFields(part, doc);
   const variants = allParts.filter((id) =>
     entry
@@ -460,7 +465,7 @@ export default function BuilderPage() {
       controller.current = null;
     };
   }, [store]);
-  const warnings = [...detectCollisions(state.resolved), ...floorWarnings(state.doc)];
+  const warnings = [...detectCollisions(state.resolved), ...floorWarnings(state.doc), ...wallWarnings(state.doc)];
   const fit = (mode = view) => {
     setView(mode);
     controller.current?.fit(mode);

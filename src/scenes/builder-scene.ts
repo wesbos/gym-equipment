@@ -6,6 +6,10 @@ import { PointerGesture } from './pointer-gesture.ts';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { isFloorPart } from '../../rack-generator/floor-registry.ts';
 import { freeCradles, parkedPose, parksInCradles, type BarCradle } from '../../rack-generator/barbell-cradles.ts';
+import { isWallPart } from '../../rack-generator/wall-registry.ts';
+import { roomOf, wallWarnings } from '../../rack-generator/wall-items.ts';
+import { wallFrames, wallHit, wallPlaneHit, type WallId } from '../../rack-generator/walls.ts';
+import { createGymWalls } from './gym-walls.ts';
 import { createGymFloor, fitRackShadow } from './gym-floor.ts';
 import { FrameFinishResources, addSteelUVs } from './frame-finishes.ts';
 import { structureCandidates, type StructureCandidate } from '../../rack-generator/structure-candidates.ts';
@@ -100,6 +104,10 @@ export function createBuilderScene(
   scene.add(floor.mesh);
   const backdrop = createGymBackdrop();
   scene.add(backdrop.group);
+  const walls = createGymWalls();
+  scene.add(walls.group);
+  const placingWall = () => isWallPart(snapshot.placing?.part);
+  const updateWalls = () => walls.update(roomOf(snapshot.doc), !!snapshot.doc.wallItems?.length || placingWall());
   const raycaster = new THREE.Raycaster(),
     pointer = new THREE.Vector2(),
     instances = new Map<string, THREE.Group>();
@@ -262,7 +270,7 @@ export function createBuilderScene(
       refreshSelection();
       refreshPlacement();
       trimCache();
-      const warnings = [...detectCollisions(entries), ...floorWarnings(snapshot.doc)];
+      const warnings = [...detectCollisions(entries), ...floorWarnings(snapshot.doc), ...wallWarnings(snapshot.doc)];
       store.patch({
         loading: false,
         dimensions: dimensions(true),
@@ -466,12 +474,12 @@ export function createBuilderScene(
       store.patch({ proposal: null, placementText: structuralCandidates.length ? 'Hover a post or gap · ESC cancels' : 'No valid adjacent positions · ESC cancels' });
       return;
     }
-    if (part && !isFloorPart(part)) {
+    if (part && !isFloorPart(part) && !isWallPart(part)) {
       swapRegions = createSwapRegions(swapCandidates(snapshot.doc, part), instances, snapshot.doc);
       scene.add(swapRegions.root);
     }
     if (!placing && !snapshot.structureChoice && !snapshot.systemChoice) return;
-    if (placing && !isFloorPart(placing.part)) showMounts();
+    if (placing && !isFloorPart(placing.part) && !isWallPart(placing.part)) showMounts();
     if (placing && parksInCradles(placing.part)) void showCradles();
     renderer.domElement.style.cursor = "crosshair";
     if (snapshot.proposal) void renderProposal(snapshot.proposal);
@@ -573,6 +581,7 @@ export function createBuilderScene(
     if (!snapshot.placing && !snapshot.structureChoice || snapshot.placing?.rotationOnly) return;
     if (parksInCradles(snapshot.placing?.part)) { const cradle = cradleAt(event); if (cradle) { store.previewCradle(cradle.key); return; } }
     if(isFloorPart(snapshot.placing?.part)) { const point=floorPoint(event); if(point) store.previewFloor(point); return; }
+    if(placingWall()) { const hit=wallRay(event); if(hit) store.previewWall(hit.wall,[hit.u,hit.h],!(event as {altKey?:boolean}).altKey); return; }
     if (addingStructure()) { updateStructure(event); return; }
     const candidate = candidateAt(event);
     if (candidate) {
@@ -595,14 +604,22 @@ export function createBuilderScene(
   }
   function dropPlacement(event: { clientX: number; clientY: number }) {
     if (snapshot.placing?.rotationOnly) { store.acceptProposal(); return; }
-    if(isFloorPart(snapshot.placing?.part)) { updatePreview(event); store.acceptProposal(); return; }
+    if(isFloorPart(snapshot.placing?.part) || placingWall()) { updatePreview(event); store.acceptProposal(); return; }
     if (addingStructure()) { commitStructure(); return; }
     if (!candidateAt(event) && !nearestMount(event)) return;
     updatePreview(event);
     store.acceptProposal();
   }
   const floorPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
-  let floorDrag: {id:string;start:[number,number];position:[number,number];moved:boolean} | null=null;
+  /** Floor drags move [x, z]; wall drags (`wall` set) move [u, height] on that wall's plane. */
+  let floorDrag: {id:string;start:[number,number];position:[number,number];moved:boolean;wall?:WallId} | null=null;
+  function wallRay(event:{clientX:number;clientY:number}, wall?:WallId) {
+    const rect=renderer.domElement.getBoundingClientRect();
+    pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);
+    raycaster.setFromCamera(pointer,camera);
+    const {origin,direction}=raycaster.ray, room=roomOf(snapshot.doc);
+    return wall ? wallPlaneHit(wallFrames(room)[wall],origin.toArray(),direction.toArray()) : wallHit(room,origin.toArray(),direction.toArray());
+  }
   function floorPoint(event:{clientX:number;clientY:number;altKey?:boolean}, snap=true):[number,number]|null {
     const rect=renderer.domElement.getBoundingClientRect();
     pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);
@@ -665,7 +682,13 @@ export function createBuilderScene(
   const onDown = (event: PointerEvent) => {
     pointerGesture.begin(event);
     if(event.button===0 && !snapshot.systemChoice && !snapshot.placing && !snapshot.structureChoice && !snapshot.selectionTool && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
-      const hit=pickOwner(event),item=store.getAppliedDoc().floorItems?.find(i=>i.id===hit?.id && !i.cradle),point=floorPoint(event,false);
+      const hit=pickOwner(event),applied=store.getAppliedDoc(),item=applied.floorItems?.find(i=>i.id===hit?.id && !i.cradle),point=floorPoint(event,false);
+      const wallItem=applied.wallItems?.find(i=>i.id===hit?.id),wallPoint=wallItem && wallRay(event,wallItem.wall);
+      if(wallItem && wallPoint && (snapshot.selection.length<=1 || !snapshot.selection.includes(wallItem.id))) {
+        if (snapshot.timeline.viewing) { store.latestHistory(); pointerGesture.begin(event); }
+        store.select(wallItem.id);store.beginGesture();floorDrag={id:wallItem.id,start:[wallPoint.u,wallPoint.h],position:[...wallItem.position],moved:false,wall:wallItem.wall};
+        controls.enabled=false;pointerGesture.capture();event.stopImmediatePropagation();return;
+      }
       if(item && point && (snapshot.selection.length<=1 || !snapshot.selection.includes(item.id))) {
         if (snapshot.timeline.viewing) { store.latestHistory(); pointerGesture.begin(event); }
         store.select(item.id);store.beginGesture();floorDrag={id:item.id,start:point,position:[...item.position],moved:false};
@@ -681,6 +704,7 @@ export function createBuilderScene(
     if (!pointerGesture.start) hoveredId = pickOwner(event)?.id ?? null;
     if(floorDrag && pointerGesture.start) {
       if(Math.hypot(event.clientX-pointerGesture.start[0],event.clientY-pointerGesture.start[1])>4)floorDrag.moved=true;
+      if(floorDrag.wall) { const hit=wallRay(event,floorDrag.wall); if(hit && floorDrag.moved) store.updateWall(floorDrag.id,{position:[floorDrag.position[0]+hit.u-floorDrag.start[0],floorDrag.position[1]+hit.h-floorDrag.start[1]]},!event.altKey); return; }
       const point=floorPoint(event,false);
       if(point && floorDrag.moved) {const grid=(v:number)=>event.altKey?v:Math.round(v/25)*25;store.updateFloor(floorDrag.id,{position:[grid(floorDrag.position[0]+point[0]-floorDrag.start[0]),grid(floorDrag.position[1]+point[1]-floorDrag.start[1])]});}
       return;
@@ -875,6 +899,7 @@ export function createBuilderScene(
     if (!build) controls.update();
     const focus = build ? build.animation.focus : controls.target;
     backdrop.follow(camera, focus);
+    walls.follow(camera);
     camera.far = Math.max(40000, camera.position.distanceTo(focus) * 4);
     camera.near = Math.max(
       0.5,
@@ -897,6 +922,7 @@ export function createBuilderScene(
       pointerGesture.finish(); marquee.style.display = 'none';
     }
     if (snapshot.doc !== previous.doc) requestRebuild();
+    if (snapshot.doc !== previous.doc || snapshot.placing !== previous.placing) updateWalls();
     if (snapshot.selection !== previous.selection) refreshSelection();
     controls.enabled = !floorDrag && !snapshot.selectionTool && !selecting && !(pointerGesture.start && !addingStructure() && (snapshot.placing || snapshot.structureChoice));
     if (previous.selectionTool && !snapshot.selectionTool) onCancel();
@@ -915,6 +941,7 @@ export function createBuilderScene(
     }
   });
   requestRebuild();
+  updateWalls();
   if (snapshot.placing || snapshot.structureChoice || snapshot.systemChoice) refreshPlacement();
   return {
     fit,
@@ -983,6 +1010,7 @@ export function createBuilderScene(
       cache.dispose();
       floor.dispose();
       backdrop.dispose();
+      walls.dispose();
 
       finishes.dispose();
       lighting.dispose();
