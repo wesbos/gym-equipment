@@ -1,6 +1,6 @@
 import { rotationMode } from '../../rack-generator/assembly.ts';
-import { CableSmithControls } from '../components/CableSmithControls.tsx';
-import { isSystemPart } from '../../rack-generator/system-types.ts';
+import { CableSmithControls, SystemPlacementOptions } from '../components/CableSmithControls.tsx';
+import { isSystemPart, SYSTEM_PARTS } from '../../rack-generator/system-types.ts';
 import { FloorInspector } from '../components/FloorInspector.tsx';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { LogoControls } from '../components/LogoControls.tsx';
@@ -53,7 +53,8 @@ import type {
   PlacementField,
 } from "../../rack-generator/types.ts";
 import "../../rack-generator/builder.css";
-const groups: [string, PartId[]][] = [
+const groups: [string, readonly PartId[]][] = [
+  ["Systems", SYSTEM_PARTS],
   ["Floor items", ["rep-nighthawk"]],
   ["Digital resistance", VOLTRA_IDS],
   ["Darko Lifting", DARKO_IDS],
@@ -170,7 +171,6 @@ function Inspector({ store }: { store: BuilderStore }) {
     return (
       <>
         <h2 id="selection-title">Rack settings</h2>
-        <RackPresets store={store} />
         <TopologyEditor key={JSON.stringify(doc)} doc={doc} store={store} selected={ownerId} moveRequested={state.structureMoveId === ownerId} />
         <form id="frame-form" onSubmit={e => { e.preventDefault(); store.endGesture(); }}>
           {(['height', 'width', 'depth'] as const).map(key => {
@@ -556,6 +556,7 @@ export default function BuilderPage() {
             </span>
           </label>
           <div id="catalog">
+            <RackPresets store={store} />
             {groups.map(([label, ids]) => {
               const matches = ids.filter((id) =>
                 nameOf(id).toLowerCase().includes(search.toLowerCase()),
@@ -569,11 +570,12 @@ export default function BuilderPage() {
                       key={id}
                       data-part={id}
                       aria-pressed={
+                        state.systemChoice === id ||
                         state.placing?.part === id ||
                         state.structureChoice === id
                       }
                       draggable={
-                        id !== "upright" &&
+                        !isSystemPart(id) && id !== "upright" &&
                         !getPartPlacementInfo(id, state.doc)?.slots?.length
                       }
                       onClick={() => store.startPlacement(id)}
@@ -589,10 +591,11 @@ export default function BuilderPage() {
                         params={state.definitions.find((d) => d.id === id)?.defaults}
                         className="thumb"
                       />
-                      <span>{nameOf(id)}<VendorCredit part={id} compact /></span>
+                      <span>{nameOf(id)}{!isSystemPart(id) && <VendorCredit part={id} compact />}{isSystemPart(id) && <small className="system-hint">{id === "cable-kraken" ? "Hydra / Manticore · supported 4/6-post bay" : id.includes("ares") ? "REP · 6-post or anchored PR-5000 16″ bay" : "REP · supported 4/6-post bay"}</small>}</span>
                       <span className="part-plus">+</span>
                     </button>
                   ))}
+                  {label === "Systems" && <SystemPlacementOptions store={store} />}
                 </section>
               ) : null;
             })}
@@ -633,7 +636,7 @@ export default function BuilderPage() {
               Parts list ({state.resolved.length})
             </button>
           </div>
-          {(state.placing || state.structureChoice) && (
+          {(state.placing || state.structureChoice || state.systemChoice) && (
             <div className="placement-hint" id="placement-hint">
               <span id="placement-text">
                 {state.placementText ||

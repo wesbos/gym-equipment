@@ -1,3 +1,5 @@
+import { systemProposal } from '../../rack-generator/system-proposal.ts';
+import { isSystemPart, SYSTEM_DEFAULTS, type SystemPartId } from '../../rack-generator/system-types.ts';
 import { addFloorItem, resolveFloorItems, floorWarnings } from '../../rack-generator/floor-items.ts';
 import { resetAppearanceField } from '../../rack-generator/appearance-reset.ts';
 import type { FrameFinish } from '../../rack-generator/appearance.ts';
@@ -27,6 +29,7 @@ import {
 } from "../../rack-generator/assembly.ts";
 import type {
   RackDoc,
+  NumericParams,
   ResolvedInstance,
   PartId,
   PartDefinition,
@@ -52,6 +55,8 @@ export interface BuilderSnapshot {
   definitions: CatalogPart[];
   placing: { part: PartId; movingId: string | null; physicalId?: string; rotationOnly?: boolean; rotation?: number } | null;
   structureMoveId: string | null;
+  systemChoice: SystemPartId | null;
+  systemParams: NumericParams;
   structureChoice: PartId | null;
   structureMode: "add" | "swap";
   paired: boolean;
@@ -106,6 +111,8 @@ export class BuilderStore {
       selected: null,
       definitions: [],
       placing: null,
+      systemChoice: null,
+      systemParams: {},
       structureChoice: null,
       structureMoveId: null,
       structureMode: "add",
@@ -154,6 +161,9 @@ export class BuilderStore {
   };
   getSnapshot = () => this.state;
   patch = (patch: Partial<BuilderSnapshot>) => {
+    // Other edits, selection and placement modes invalidate a staged system.
+    if (!("systemChoice" in patch) && (patch.doc || patch.selected !== undefined || patch.placing !== undefined || patch.structureChoice !== undefined)) patch.systemChoice = null;
+    if (patch.systemChoice === null && this.state.systemChoice && !("proposal" in patch)) patch.proposal = null;
     if (patch.selected !== undefined && patch.selection === undefined) patch.selection = patch.selected ? [patch.selected] : [];
     if (patch.resolved && !patch.selection) patch.selection = this.state.selection.filter(id => patch.resolved!.some(r => r.id === id));
     if (patch.selection) patch.selected = patch.selection.at(-1) ?? null;
@@ -169,7 +179,7 @@ export class BuilderStore {
       const result = target ? this.mountProposal(target, patch.paired) : suggestPlacement(doc, part, patch.paired, movingId);
       patch = { ...patch, proposal: result.proposal, placementText: result.proposal ? `Suggested: ${result.proposal.label}` : `Doesn't fit: ${result.reason}` };
     }
-    if (patch.doc || patch.structureMode !== undefined && !("proposal" in patch) || patch.placing === null && patch.structureChoice === null) patch.proposal = null;
+    if (patch.doc || patch.structureMode !== undefined && !("proposal" in patch) || patch.placing === null && patch.structureChoice === null && !patch.systemChoice) patch.proposal = null;
     this.state = { ...this.state, ...patch };
     this.listeners.forEach((fn) => fn());
   };
@@ -377,7 +387,7 @@ export class BuilderStore {
   ownerOf = (id: string | null) =>
     this.state.resolved.find(instance => instance.id === id)?.ownerId || id;
   select = (id: string | null, gesture?: SelectionGesture, order?: readonly string[]) => {
-    if (gesture && (this.state.placing || this.state.structureChoice)) return;
+    if (gesture && (this.state.placing || this.state.structureChoice || this.state.systemChoice)) return;
     gesture ??= {};
     const physicalId = this.state.resolved.find(r => r.id === id)?.id ?? this.state.resolved.find(r => r.ownerId === id)?.id ?? id;
     const toggle = gesture.metaKey || gesture.ctrlKey;
@@ -391,7 +401,7 @@ export class BuilderStore {
     this.patch({ placing: null, proposal: null, structureChoice: null, structureMoveId: null, selection, selectionAnchor: gesture.shiftKey ? this.state.selectionAnchor : physicalId });
   };
   selectMany = (ids: readonly PhysicalInstanceId[], additive = false) => {
-    if (this.state.placing || this.state.structureChoice) return;
+    if (this.state.placing || this.state.structureChoice || this.state.systemChoice) return;
     const valid = ids.filter(id => this.state.resolved.some(r => r.id === id));
     this.patch({ selection: [...new Set([...(additive ? this.state.selection : []), ...valid])] });
   };
@@ -526,8 +536,23 @@ export class BuilderStore {
     }
     if (item.kind === 'floor-item' || this.state.doc.accessories.some(a => a.id === item.ownerId)) this.startPlacement(item.part, item.ownerId, item.id);
   };
+  previewSystem = (patch: NumericParams) => {
+    const part = this.state.systemChoice;
+    if (!part) return;
+    const systemParams = { ...this.state.systemParams, ...patch };
+    const result = systemProposal(this.state.doc, part, systemParams);
+    this.patch({ systemParams, proposal: result.proposal,
+      placementText: result.proposal ? `Suggested: ${result.proposal.label}` : `Doesn't fit: ${result.reason}` });
+  };
   cancelPlacement = () => this.patch({ placing: null, structureChoice: null });
   startPlacement = (part: PartId, movingId: string | null = null, physicalId = this.state.selected ?? undefined) => {
+    if (isSystemPart(part)) {
+      const result = systemProposal(this.state.doc, part);
+      this.patch({ selected: null, placing: null, structureChoice: null, systemChoice: part, systemParams: { ...SYSTEM_DEFAULTS[part] },
+        selectionTool: false, proposal: result.proposal,
+        placementText: result.proposal ? `Suggested: ${result.proposal.label}` : `Doesn't fit: ${result.reason}` });
+      return;
+    }
     if (addsStructure(part)) {
       this.patch({ selected: null, placing: null, structureChoice: part, structureMode: 'add', proposal: null, selectionTool: false });
       return;
@@ -577,7 +602,7 @@ export class BuilderStore {
   });
   acceptProposal = () => this.act(() => {
     const proposal = this.state.proposal;
-    if (!proposal || (!this.state.placing && !this.state.structureChoice)) return;
+    if (!proposal || (!this.state.placing && !this.state.structureChoice && !this.state.systemChoice)) return;
     this.commit(proposal.doc);
     this.select(proposal.ownerId);
   });
