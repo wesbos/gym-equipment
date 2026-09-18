@@ -13,7 +13,8 @@ const point = (
   y: number,
   z: number,
   pulley?: string,
-): RoutePoint => ({ point: [x, y, z], pulley });
+  radius?: number,
+): RoutePoint => ({ point: [x, y, z], pulley, radius });
 export function cableRoutePlan(
   p: NumericParams,
   id: SystemPartId,
@@ -37,10 +38,12 @@ export function cableRoutePlan(
   const out = kraken
     ? x
     : post + (v2 ? side * 75 : ares ? -side * 10 : -side * 70);
-  const H = p.height - (ares ? 180 : 120),
-    F = Math.max(430, Math.min(1000, movingZ + 180));
-  const fy = ares ? stackY - 260 : ty + 130;
-  const low = 95,
+  // ARES2 upper hardware sits over the stack header (REP RevK pp57–60).
+  // Centers remain reconstructed, not manufacturer dimensions.
+  const H = p.height - (v2 ? (p.height < 2200 ? 56 : 86) : ares ? 180 : 120),
+    F = v2 ? movingZ + 250 : Math.max(430, Math.min(1000, movingZ + 180));
+  const fy = v2 ? stackY + 60 : ares ? stackY - 260 : ty + 130;
+  const low = v2 ? 30 : 95,
     routes: CableRoute[] = [];
   const start = (name: string, pts: RoutePoint[], a: string, b: string) =>
     routes.push({ name, points: pts, start: a, end: b });
@@ -104,25 +107,33 @@ export function cableRoutePlan(
   } else {
     // ARES RevK upper A–J and lower A–I. Two sheaves at each level share
     // a floating frame; upper terminates at lat output, lower at trolley.
-    const lane = x - side * 30,
-      second = lane - side * 180,
+    const lane = v2 ? post - side * 70 : x - side * 30,
+      second = lane - side * (v2 ? 44 : 180),
       latX = side * 90;
     const latY = p.depth - (p.rearBay || p.depth) + 40,
       rowZ = v2 ? 375 : 150;
+    // RevK p59 E / p63: one fixed reversal transfers the inside groove
+    // to the outside groove of a compact coaxial floating pair. Both
+    // floating wraps have the same handedness. Opposite tangent legs
+    // keep the two lanes separate without invented horizontal crossovers.
+    const secondEntryY = fy + (v2 ? -40 : 40),
+      secondExitY = fy + (v2 ? 40 : -40),
+      transferRadius = v2 ? Math.hypot(44, 80) / 2 : undefined;
     start(
       `${v2 ? "ARES2" : "ARES1"} upper functional/lat cable`,
       [
         point(out, ty + 60, tz + 55),
-        point(out, ty + 60, H, "Upper front redirect 1"),
-        point(lane, fy - 40, H, "Upper rear redirect 1"),
+        point(out, ty + 60, v2 ? H + 80 : H, "Upper front redirect 1"),
+        ...(v2 ? [point(out, fy - 40, H + 80, "Upper rear horizontal redirect")] : []),
+        point(lane, fy - 40, v2 ? H + 80 : H, "Upper rear redirect 1"),
         point(lane, fy - 40, F - 40, "Floating equalizer upper 1"),
         point(lane, fy + 40, F - 40, "Floating equalizer upper 1"),
-        point(lane, fy + 40, H + 80, "Upper equalizer transfer 1"),
-        point(second, fy + 40, H + 80, "Upper equalizer transfer 2"),
-        point(second, fy + 40, F - 40, "Floating equalizer upper 2"),
-        point(second, fy - 40, F - 40, "Floating equalizer upper 2"),
-        point(second, fy - 40, H - 100, "Upper stack approach"),
-        point(x, stackY - 40, H - 100, "Upper stack redirect"),
+        point(lane, fy + 40, v2 ? H - 120 : H + 80, v2 ? "Upper equalizer transfer" : "Upper equalizer transfer 1", transferRadius),
+        point(second, secondEntryY, v2 ? H - 120 : H + 80, v2 ? "Upper equalizer transfer" : "Upper equalizer transfer 2", transferRadius),
+        point(second, secondEntryY, F - 40, "Floating equalizer upper 2"),
+        point(second, secondExitY, F - 40, "Floating equalizer upper 2"),
+        point(second, secondExitY, v2 ? H + 80 : H - 100, "Upper stack approach"),
+        point(x, stackY - 40, v2 ? H + 80 : H - 100, "Upper stack redirect"),
         ...stackLoop,
         point(x, stackY + 40, H + 80, "Upper rear redirect 2"),
         point(latX, latY, H + 80, "Lat pulldown swivel"),
@@ -135,26 +146,44 @@ export function cableRoutePlan(
     start(
       `${v2 ? "ARES2" : "ARES1"} lower functional/row cable`,
       [
-        point(out, ty - 100, tz + 40),
-        point(out, ty + 40, tz + 40, "Swivel cable output 1"),
-        point(out, ty + 40, low, "Lower front return"),
+        // RevK p66 A/B: working cable rises from the upright foot, wraps
+        // the upper swivel sheave and hangs past its lower keeper sheave.
+        // The separate upper cable still terminates at the trolley adjuster.
+        ...(v2 ? [
+          point(out, -80, tz - 110),
+          point(out, -80, tz + 80, "Swivel cable output 1"),
+          point(out, 0, tz + 80, "Swivel cable output 1"),
+          point(out, 0, low, "Lower front return"),
+        ] : [
+          point(out, ty - 100, tz + 40),
+          point(out, ty + 40, tz + 40, "Swivel cable output 1"),
+          point(out, ty + 40, low, "Lower front return"),
+        ]),
+        ...(v2 ? [point(out, fy - 40, low, "Lower rear horizontal redirect")] : []),
         point(lane, fy - 40, low, "Lower rear redirect 1"),
         point(lane, fy - 40, bottom + 40, "Floating equalizer lower 1"),
         point(lane, fy + 40, bottom + 40, "Floating equalizer lower 1"),
-        point(lane, fy + 40, low - 65, "Lower equalizer transfer 1"),
-        point(second, fy + 40, low - 65, "Lower equalizer transfer 2"),
-        point(second, fy + 40, bottom + 40, "Floating equalizer lower 2"),
-        point(second, fy - 40, bottom + 40, "Floating equalizer lower 2"),
-        point(second, fy - 40, low, "Lower row approach"),
+        point(lane, fy + 40, v2 ? 260 : low - 65, v2 ? "Lower equalizer transfer" : "Lower equalizer transfer 1", transferRadius),
+        point(second, secondEntryY, v2 ? 260 : low - 65, v2 ? "Lower equalizer transfer" : "Lower equalizer transfer 2", transferRadius),
+        point(second, secondEntryY, bottom + 40, "Floating equalizer lower 2"),
+        point(second, secondExitY, bottom + 40, "Floating equalizer lower 2"),
+        point(second, secondExitY, low, "Lower row approach"),
+        ...(v2 ? [point(second, latY + 120, low, "Lower row horizontal redirect")] : []),
         point(latX, latY + 120, v2 ? low : 50, "Lower row redirect"),
-        point(latX, latY + 120, rowZ, "Low row swivel"),
-        point(latX, latY - 100, rowZ),
+        ...(v2 ? [
+          point(latX, latY + 120, rowZ + 80, "Low row swivel"),
+          point(latX, latY + 40, rowZ + 80, "Low row swivel"),
+          point(latX, latY + 40, rowZ - 110),
+        ] : [
+          point(latX, latY + 120, rowZ, "Low row swivel"),
+          point(latX, latY - 100, rowZ),
+        ]),
       ],
       "Output handle 1",
       "Low row output eye",
     );
   }
-  return { ...routeCables(routes), routes, ty };
+  return { ...routeCables(routes), routes, ty, coaxialEqualizer: v2 };
 }
 export function buildCableRoutes(
   g: Mechanical,
@@ -164,6 +193,10 @@ export function buildCableRoutes(
     const from = g.parts.length,
       n = pulley.normal;
     g.pulley(pulley.id, [0, 0, 0], pulley.radius);
+    if (plan.coaxialEqualizer && pulley.id.startsWith("Floating"))
+      // Paired grooves share one axle and outer frame, built by cable-systems.
+      // Keep the detailed wheel; do not duplicate overlapping axle/cheek kits.
+      g.parts.splice(from + 1);
     const rotation: Vec3 = [
       0,
       (-Math.asin(Math.max(-1, Math.min(1, n[2]))) * 180) / Math.PI,
