@@ -20,7 +20,7 @@ export function validateMountedRotation(a: Accessory): void {
     const orientation = normalizeMountedRotation(target.orientation);
     if (Math.abs(orientation-angle)>1e-10) throw Error('Mount orientation must agree with the accessory rotation, including its pair.');
   }
-  if (mode.kind === 'stepped' && !mode.angles!.some(v=>Math.abs(v-angle)<1e-10)) throw Error(mode.reason);
+  if (mode.kind === 'stepped' && !mode.angles!.includes(angle)) throw Error(mode.reason);
   if (mode.kind === 'fixed' && angle !== 0) throw Error(mode.reason);
 }
 export function nextMountedRotation(a: Accessory, direction = 1): number { return normalizeMountedRotation(accessoryRotation(a)+direction*mountedRotationMode(a).step*Math.PI/180); }
