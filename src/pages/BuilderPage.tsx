@@ -3,6 +3,7 @@ import { rotationMode } from '../../rack-generator/assembly.ts';
 import { CableSmithControls, SystemPlacementOptions } from '../components/CableSmithControls.tsx';
 import { isSystemPart, SYSTEM_PARTS } from '../../rack-generator/system-types.ts';
 import { FloorInspector } from '../components/FloorInspector.tsx';
+import { PlateStackEditor } from '../components/PlateStackEditor.tsx';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { LogoControls } from '../components/LogoControls.tsx';
 import { addsStructure } from '../../rack-generator/structure-candidates.ts';
@@ -352,6 +353,7 @@ function Inspector({ store }: { store: BuilderStore }) {
             {rotationMode(doc, entry.id).supported && <button type="button" onClick={() => store.rotateMounted(selected ?? entry.id)}>{rotationMode(doc, entry.id).label} · R / scroll</button>}
           </div>}
           {entry && <VendorControls store={store} entry={entry} />}
+          {entry && <PlateStackEditor key={entry.id} store={store} entry={entry} />}
           <VendorCredit part={part} />
           {fields.map((field) => (
             <Field key={field.key} label={`${field.label} (mm)`}>
