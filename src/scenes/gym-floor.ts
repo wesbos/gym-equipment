@@ -8,9 +8,10 @@ export function createGymFloor(anisotropy: number) {
   let seed = 261709;
   const random = () => ((seed = (1664525 * seed + 1013904223) >>> 0) / 4294967296);
   const pixels = context.createImageData(1024, 1024);
-  const shades = [24, 26, 23, 25];
+  // Diffuse-only, so the base carries the brightness the old GGX sheen used to add (~0.03 albedo, real black rubber).
+  const shades = [80, 82, 79, 81];
   for (let y = 0; y < 1024; y++) for (let x = 0; x < 1024; x++) {
-    const shade = shades[Math.floor(y / 512) * 2 + Math.floor(x / 512)] + Math.floor(random() * 9);
+    const shade = shades[Math.floor(y / 512) * 2 + Math.floor(x / 512)] + Math.floor(random() * 10);
     const i = (y * 1024 + x) * 4;
     pixels.data[i] = shade; pixels.data[i + 1] = shade + 1; pixels.data[i + 2] = shade + 1; pixels.data[i + 3] = 255;
   }
@@ -24,8 +25,8 @@ export function createGymFloor(anisotropy: number) {
   }
   // 3 mm recessed joints, with a faint edge highlight. The repeat boundary is a joint too.
   for (const p of [0, 512]) {
-    context.fillStyle = '#0a0b0b'; context.fillRect(p, 0, 1.5, 1024); context.fillRect(0, p, 1024, 1.5);
-    context.fillStyle = '#343636'; context.fillRect(p + 1.5, 0, 0.5, 1024); context.fillRect(0, p + 1.5, 1024, 0.5);
+    context.fillStyle = '#434545'; context.fillRect(p, 0, 1.5, 1024); context.fillRect(0, p, 1024, 1.5);
+    context.fillStyle = '#707272'; context.fillRect(p + 1.5, 0, 0.5, 1024); context.fillRect(0, p + 1.5, 1024, 0.5);
   }
   const texture = new THREE.CanvasTexture(canvas);
   texture.name = 'Rubber gym tile speckles — 2m atlas';
@@ -35,7 +36,9 @@ export function createGymFloor(anisotropy: number) {
   texture.generateMipmaps = true;
   texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.anisotropy = Math.min(8, anisotropy);
-  const material = new THREE.MeshStandardMaterial({ map: texture, color: '#909090', roughness: 0.94, metalness: 0, envMapIntensity: 0.15 });
+  // Rubber is near-Lambertian: no specular lobe or env reflection to sweep across the plane while orbiting.
+  // scene.environment (PMREM) still adds only its view-independent diffuse irradiance.
+  const material = new THREE.MeshLambertMaterial({ map: texture, color: '#909090', reflectivity: 0 });
   const geometry = new THREE.PlaneGeometry(40000, 40000);
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = 'Gym floor scenery (not exported)';
