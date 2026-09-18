@@ -1,3 +1,4 @@
+import { DocumentHistory, cleanDocument, diffDocuments, applyOps, parseSession, type TimelineData, type TimelineSnapshot, type HistoryMetadata, type SessionDocument } from './history.ts';
 import { systemProposal } from '../../rack-generator/system-proposal.ts';
 import { isSystemPart, SYSTEM_DEFAULTS, type SystemPartId } from '../../rack-generator/system-types.ts';
 import { addFloorItem, resolveFloorItems, floorWarnings } from '../../rack-generator/floor-items.ts';
@@ -39,6 +40,7 @@ import type {
 export type CatalogPart = Omit<PartDefinition, "build">;
 export interface BuilderSnapshot {
   inputRevision: number;
+  timeline: TimelineSnapshot;
   configs: SavedConfig[];
   activeId: string | null;
   dirty: boolean;
@@ -71,8 +73,8 @@ export interface BuilderSnapshot {
 }
 export class BuilderStore {
   private listeners = new Set<() => void>();
-  private undo: RackDoc[] = [];
-  private redo: RackDoc[] = [];
+  private journal = new DocumentHistory(createAssembly());
+  private appliedDoc = createAssembly();
   private state: BuilderSnapshot;
   private repository: ConfigStorage;
   private collection: ConfigCollection = {
@@ -83,10 +85,11 @@ export class BuilderStore {
   private writes: Promise<void> = Promise.resolve();
   private storageReadable = true;
   private pendingDraft: RackDoc | null = null;
+  private pendingTimeline: TimelineData | undefined;
   private draftQueued = false;
   private gesture = false;
   private gestureOriginal: RackDoc | null = null;
-  private gestureRedo: RackDoc[] = [];
+  private gestureHistory: TimelineData | null = null;
   private gestureChanged = false;
   readonly ready: Promise<void>;
   constructor(storage?: StorageLike | ConfigStorage) {
@@ -97,6 +100,7 @@ export class BuilderStore {
       error = false;
     this.state = {
       inputRevision: 0,
+      timeline: this.journal.snapshot(0),
       configs: [],
       activeId: null,
       dirty: false,
@@ -140,7 +144,7 @@ export class BuilderStore {
           storageReady: true,
         });
         if (!this.state.dirty && saved)
-          this.patch({ doc: saved.doc, resolved: resolveAssembly(saved.doc) });
+          this.replaceWorking(saved.doc, saved.timeline);
       })
       .catch(() => {
         this.storageReadable = false;
@@ -227,29 +231,31 @@ export class BuilderStore {
       (c) => c.id === this.state.activeId,
     );
     const dirty =
-      !saved || JSON.stringify(saved.doc) !== JSON.stringify(this.state.doc);
+      !saved || JSON.stringify(saved.doc) !== JSON.stringify(this.appliedDoc) || JSON.stringify(saved.timeline) !== JSON.stringify(this.journal.data);
     this.patch({ dirty, draftAvailable: false });
-    this.pendingDraft = dirty ? this.state.doc : null;
+    this.pendingDraft = dirty ? this.appliedDoc : null;
+    this.pendingTimeline = dirty ? structuredClone(this.journal.data) : undefined;
     if (this.draftQueued) return;
     this.draftQueued = true;
     void this.mutateStorage((current) => {
-      const draft = this.pendingDraft;
+      const draft = this.pendingDraft, draftTimeline = this.pendingTimeline;
       this.pendingDraft = null;
       this.draftQueued = false;
-      return { ...current, draft };
+      return { ...current, draft, draftTimeline };
     }).catch(() => {
       this.draftQueued = false;
     });
   }
   save = async (name: string, duplicate = false) => {
     if (!name.trim()) throw new Error("Enter a configuration name.");
-    const doc = validateAssembly(this.state.doc);
+    this.endGesture();
+    const doc = cleanDocument(this.appliedDoc), timeline = structuredClone(this.journal.data);
     const id =
       !duplicate && this.state.activeId
         ? this.state.activeId
         : crypto.randomUUID();
     await this.mutateStorage((current) => {
-      const config = { id, name: name.trim(), doc };
+      const config = { id, name: name.trim(), doc, timeline };
       return {
         configs: [...current.configs.filter((c) => c.id !== id), config],
         activeId: id,
@@ -258,7 +264,7 @@ export class BuilderStore {
     });
     this.patch({
       activeId: id,
-      dirty: JSON.stringify(this.state.doc) !== JSON.stringify(doc),
+      dirty: JSON.stringify(this.appliedDoc) !== JSON.stringify(doc) || JSON.stringify(this.journal.data) !== JSON.stringify(timeline),
       draftAvailable: false,
     });
     // A draft queued before this save may have absorbed edits made after the
@@ -270,7 +276,7 @@ export class BuilderStore {
     const config = this.collection.configs.find((c) => c.id === id);
     if (!config) throw new Error("Configuration not found.");
     await this.mutateStorage((current) => ({ ...current, activeId: id }));
-    this.replaceWorking(config.doc);
+    this.replaceWorking(config.doc, config.timeline);
     this.patch({ activeId: id, draftAvailable: !!this.collection.draft });
   };
   rename = async (id: string, name: string) => {
@@ -294,7 +300,7 @@ export class BuilderStore {
     });
   };
   newRack = () => {
-    this.commit(createAssembly());
+    this.commit(createAssembly(), { label: "New rack", replacement: true });
     this.select(null);
     this.patch({
       activeId: null,
@@ -304,84 +310,100 @@ export class BuilderStore {
   };
   recoverDraft = () => {
     if (this.collection.draft) {
-      this.commit(this.collection.draft);
+      this.replaceWorking(this.collection.draft, this.collection.draftTimeline);
+      this.autosave();
       this.patch({ draftAvailable: false });
     }
   };
-  private replaceWorking(doc: RackDoc) {
-    this.undo = [];
-    this.redo = [];
+  private replaceWorking(input: RackDoc, timeline?: TimelineData) {
+    const doc = cleanDocument(input);
+    this.gesture = false; this.gestureOriginal = null; this.gestureHistory = null; this.gestureChanged = false;
+    this.journal = new DocumentHistory(doc, timeline ? structuredClone(timeline) : undefined);
+    this.appliedDoc = doc;
     this.patch({
-      inputRevision: this.state.inputRevision + 1,
-      doc: validateAssembly(doc),
-      resolved: resolveAssembly(doc),
-      selection: [],
-      selectionAnchor: null,
-      selectionTool: false,
-      selected: null,
-      placing: null,
-      structureChoice: null,
-      dirty: false,
-      canUndo: false,
-      canRedo: false,
+      inputRevision: this.state.inputRevision + 1, doc, resolved: resolveAssembly(doc),
+      timeline: this.journal.snapshot(this.journal.data.applied),
+      selection: [], selectionAnchor: null, selectionTool: false, selected: null,
+      placing: null, structureChoice: null, structureMoveId: null, dirty: false,
+      canUndo: this.journal.data.applied > 0, canRedo: !!this.journal.data.redo.length,
     });
   }
+  getAppliedDoc = () => structuredClone(this.appliedDoc);
+  exportJSON = () => JSON.stringify({ format: 'bos-strength-session', version: 1,
+    doc: this.appliedDoc, timeline: this.journal.data } satisfies SessionDocument, null, 2);
+  /** Callback edits run against the applied document, irrespective of the displayed view. */
+  edit = (action: (doc: RackDoc) => RackDoc, metadata?: HistoryMetadata) => {
+    this.commit(action(this.getAppliedDoc()), { ...metadata, replacement: true });
+  };
   beginGesture = () => {
-    this.gestureOriginal = structuredClone(this.state.doc);
-    this.gestureRedo = [...this.redo];
-    this.gesture = true;
-    this.gestureChanged = false;
+    if (this.gesture) return;
+    this.gestureOriginal = structuredClone(this.appliedDoc);
+    this.gestureHistory = structuredClone(this.journal.data);
+    this.gesture = true; this.gestureChanged = false;
   };
   cancelGesture = () => {
-    if (this.gestureOriginal && this.gestureChanged) {
-      this.undo.pop(); this.redo = this.gestureRedo;
-      const doc = this.gestureOriginal;
-      this.patch({ doc, resolved: resolveAssembly(doc), canUndo: !!this.undo.length, canRedo: !!this.redo.length });
-      this.autosave();
+    if (this.gestureOriginal && this.gestureHistory && this.gestureChanged) {
+      this.journal = new DocumentHistory(this.gestureOriginal, this.gestureHistory);
+      this.appliedDoc = this.gestureOriginal;
+      this.publishApplied(true); this.autosave();
     }
     this.endGesture();
   };
   endGesture = () => {
-    this.gestureOriginal = null;
-    this.gesture = false;
-    this.gestureChanged = false;
+    this.gestureOriginal = null; this.gestureHistory = null;
+    this.gesture = false; this.gestureChanged = false;
   };
-  commit = (input: RackDoc) => {
-    const doc = validateAssembly(input),
-      resolved = resolveAssembly(doc);
-    if (JSON.stringify(doc) === JSON.stringify(this.state.doc)) return;
-    if (!this.gesture || !this.gestureChanged)
-      this.undo.push(structuredClone(this.state.doc));
-    this.gestureChanged = true;
-    if (this.undo.length > 100) this.undo.shift();
-    this.redo = [];
-    this.patch({
-      doc,
-      resolved,
-      placing: null,
-      structureChoice: null,
-      canUndo: true,
-      canRedo: false,
+  private publishApplied(navigation = false) {
+    const doc = this.appliedDoc;
+    this.patch({ doc, resolved: resolveAssembly(doc), placing: null, structureChoice: null,
+      structureMoveId: null, timeline: this.journal.snapshot(this.journal.data.applied),
+      canUndo: this.journal.data.applied > 0, canRedo: !!this.journal.data.redo.length,
+      ...(navigation ? { inputRevision: this.state.inputRevision + 1 } : {}),
     });
-    this.autosave();
+  }
+  commit = (input: RackDoc, metadata: HistoryMetadata = {}) => {
+    const candidate = cleanDocument(input);
+    // Diff BEFORE returning to applied state: UI closures may contain an old view.
+    // Owner-keyed paths preserve additions and reject edits to owners removed later.
+    const doc = this.state.timeline.viewing && !metadata.replacement
+      ? applyOps(this.appliedDoc, diffDocuments(this.state.doc, candidate), false, false, true) : candidate;
+    resolveAssembly(doc);
+    if (JSON.stringify(doc) === JSON.stringify(this.appliedDoc)) {
+      if (this.state.timeline.viewing) this.publishApplied(true);
+      return;
+    }
+    const wasViewing = this.state.timeline.viewing;
+    if (this.gesture && this.gestureChanged && this.gestureHistory && this.gestureOriginal)
+      this.journal = new DocumentHistory(this.gestureOriginal, structuredClone(this.gestureHistory));
+    this.journal.append(doc, metadata);
+    this.appliedDoc = doc; this.gestureChanged = this.gesture;
+    this.publishApplied(wasViewing); this.autosave();
+  };
+  seekHistory = (step: number) => {
+    // Validate before touching gesture or visible state.
+    const doc = this.journal.seek(step);
+    this.endGesture();
+    this.patch({ doc, resolved: resolveAssembly(doc), timeline: this.journal.snapshot(step),
+      inputRevision: this.state.inputRevision + 1, placing: null, structureChoice: null,
+      structureMoveId: null, proposal: null,
+    });
+  };
+  latestHistory = () => this.seekHistory(this.journal.data.applied);
+  restoreHistory = (step = this.state.timeline.position) => {
+    const doc = this.journal.seek(step);
+    this.endGesture();
+    this.journal.append(doc, { category: 'restore', label: `Restore step ${step}` }, true);
+    this.appliedDoc = doc; this.publishApplied(true); this.autosave();
+  };
+  clearHistory = () => {
+    this.endGesture(); this.journal = new DocumentHistory(this.appliedDoc);
+    this.publishApplied(true); this.autosave();
   };
   history = (direction: "undo" | "redo") => {
     this.endGesture();
-    const source = direction === "undo" ? this.undo : this.redo,
-      target = direction === "undo" ? this.redo : this.undo;
-    const doc = source.pop();
-    if (!doc) return;
-    target.push(structuredClone(this.state.doc));
-    this.patch({
-      inputRevision: this.state.inputRevision + 1,
-      doc,
-      resolved: resolveAssembly(doc),
-      placing: null,
-      structureChoice: null,
-      canUndo: !!this.undo.length,
-      canRedo: !!this.redo.length,
-    });
-    this.autosave();
+    if (!this.journal[direction]()) return;
+    this.appliedDoc = this.journal.seek(this.journal.data.applied);
+    this.publishApplied(true); this.autosave();
   };
   /** Editing targets the owning group; selection remains a physical piece for paint. */
   ownerOf = (id: string | null) =>
@@ -459,6 +481,7 @@ export class BuilderStore {
   };
   /** Copies complete accessory owners at existing mounts; the user can then move them. */
   duplicateSelected = () => {
+    if (this.state.timeline.viewing) this.latestHistory();
     const { doc, resolved, selection } = this.state;
     const instances = resolved.filter(r => selection.includes(r.id));
     if (!instances.length || instances.some(r => r.kind !== 'accessory' || !doc.accessories.some(a => a.id === r.ownerId))) return;
@@ -546,6 +569,7 @@ export class BuilderStore {
   };
   cancelPlacement = () => this.patch({ placing: null, structureChoice: null });
   startPlacement = (part: PartId, movingId: string | null = null, physicalId = this.state.selected ?? undefined) => {
+    if (this.state.timeline.viewing) this.latestHistory();
     if (isSystemPart(part)) {
       const result = systemProposal(this.state.doc, part);
       this.patch({ selected: null, placing: null, structureChoice: null, systemChoice: part, systemParams: { ...SYSTEM_DEFAULTS[part] },
@@ -615,10 +639,13 @@ export class BuilderStore {
       : addAccessory(doc, placing.part, target, paired);
   };
   importJSON = (text: string) => {
-    const doc = validateAssembly(JSON.parse(text));
-    resolveAssembly(doc);
-    this.commit(doc);
-    this.patch({ inputRevision: this.state.inputRevision + 1 });
+    const { doc, timeline } = parseSession(JSON.parse(text));
+    if (timeline) { this.replaceWorking(doc, timeline); this.autosave(); }
+    else {
+      this.endGesture();
+      this.commit(doc, { label: 'Import rack', replacement: true });
+      this.patch({ inputRevision: this.state.inputRevision + 1 });
+    }
     this.select(null);
   };
 }
