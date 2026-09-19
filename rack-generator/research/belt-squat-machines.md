@@ -43,7 +43,7 @@ DIY belt squat 23, Tib Bar Pro 20, Single Leg Squat Roller 17, Bells of Steel 17
 - Published: 35.5 W × 15 D × 12 H in; sleeve height 6.25 in; loadable sleeves 7 in × 49 mm; footplate 14 × 4 in; pad
   14 × 7 in; 200 lb capacity; 55 lb; pillow-block bearings.
 - Estimates: pivot at 10 in, 2.75 in behind centre; sleeve 3.9 in in front of / 3.75 in below the pivot; A-frame side
-  stands (tall rear bearing post, low front brace so the sleeves pass above it); the footplate inclined 58°. Param `tilt`
+  stands (tall rear bearing post, low front brace so the sleeves pass above it); the diamond footplate inclined 55° up behind the foot to just under the pivot. Param `tilt`
   (toe raise 0/10/20°) swings the cradle and its sleeves about the bearing axis. Plates limited to 25 lb and 10 lb iron
   (a 45 lb or bumper plate would hit the floor at a 6.25 in axis).
 - Photos (10 Titan + 6 Gym Radar owner photos, incl. a Bells of Steel clone): 3/4 studio, seated use ×2, foot in cradle
@@ -62,8 +62,8 @@ DIY belt squat 23, Tib Bar Pro 20, Single Leg Squat Roller 17, Bells of Steel 17
 ## The Tib Bar Guy Tib Bar Pro — `tib-bar-guy-tib-bar-pro`
 - https://www.apexfitness.com/products/the-tib-bar-pro (thetibbarguy.com redirects there). Published only: 2 in Olympic
   plates, "tested up to 150 lbs", stainless screw-in loading bar, weight clamp, foam pads, 6.7 lb shipping weight.
-- Estimates from photos (sleeve Ø as the scale bar): 14 in foot bars, 57 mm foam pads, 4.5 in bar spacing, 62° stem, 95 mm
-  stem, 89 mm flange, 8 in loading bar, 82 × 40 mm clamp. Modelled resting on its pads as in the product and owner photos;
+- Estimates from photos (sleeve Ø as the scale bar): 14 in foot bars, 66 mm foam pads, 4.5 in bar spacing, 72° stem, 90 mm
+  stem, 95 mm flange, 8 in loading bar, 82 × 40 mm clamp. Modelled resting on its pads as in the product and owner photos;
   plates limited to 25 lb / 10 lb iron (160 mm usable before the clamp).
 - Photos (10 manufacturer + 3 Gym Radar owner): hero, infographic, bench tib raise ×2, what's included, easy setup,
   hanging leg raise, loading bar close-up, home use; owners: on the floor ×2, on a rack.

@@ -164,7 +164,7 @@ export const DIY_BELT_SQUAT = defineFloorPart({
 
 /* ---------------- The Tib Bar Guy · Tib Bar Pro ---------------- */
 /** No published dimensions: 2 in Olympic loading bar, 150 lb rating. Sizes estimated from photos (see research). */
-export const TIB_PRO = { bar: inch(14), padD: 57, barD: 32, rear: inch(4.5), elev: 62, stem: 95, flange: 6, flangeD: 89, load: inch(8), loadD: 50.8, clampD: 82, clampW: 40, capacity: 160 } as const;
+export const TIB_PRO = { bar: inch(14), padD: 66, barD: 32, rear: inch(4.5), elev: 72, stem: 90, flange: 6, flangeD: 95, load: inch(8), loadD: 50.8, clampD: 82, clampW: 40, capacity: 160 } as const;
 export function tibProLayout(p: NumericParams) {
   const r = TIB_PRO.padD / 2, a = dirYZ(TIB_PRO.elev), base: Vec3 = [0, 0, r];
   const at = (t: number): Vec3 => [0, base[1] + a[1] * t, base[2] + a[2] * t];
@@ -181,7 +181,7 @@ export const TIB_BAR_PRO = defineFloorPart({
   params: plateParams(['lb25', 'lb10'], 'lb25', 1, TIB_PRO.capacity, 'Plates loaded'),
   footprint: p => footprintOf(tibProLayout(p).box), placement: { side: 'front', gap: 300 },
   vendor: { vendor: 'APEX Fitness (The Tib Bar Guy)', url: 'https://www.apexfitness.com/products/the-tib-bar-pro', credit: 'The Tib Bar Guy / APEX Fitness — Tib Bar Pro', trademark: 'The Tib Bar Guy, Tib Bar Pro and APEX are trademarks of APEX Fitness.',
-    reconstruction: 'Independent Manifold reconstruction from 10 manufacturer and 3 owner photos. Only the 2 in Olympic loading bar and 150 lb rating are published; the 14 in foot bars, 57 mm pads, 4.5 in bar spacing, stem angle and 8 in loading bar are estimated from photo proportions; scenery only, excluded from print export.' },
+    reconstruction: 'Independent Manifold reconstruction from 10 manufacturer and 3 owner photos. Only the 2 in Olympic loading bar and 150 lb rating are published; the 14 in foot bars, 66 mm pads, 4.5 in bar spacing, stem angle and 8 in loading bar are estimated from photo proportions; scenery only, excluded from print export.' },
 });
 
 /* ---------------- Titan Single Leg Squat Roller ---------------- */

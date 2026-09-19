@@ -203,14 +203,14 @@ export function buildTibia(api: ManifoldAPI, p: NumericParams): SolidPart[] {
     K.add(INK, K.decal(K.fitText('TITAN', i(5), i(.95)), .5, [bx - .6, (b0[1] + b1[1]) / 2, (b0[2] + b1[2]) / 2], [0, along[1], along[2]], [0, along[2], -along[1]]));
     // Pivoting cradle (built about the pivot, then rotated by the toe-raise angle).
     const cr = (m: Manifold) => K.move(K.k(m.rotate([L.tilt, 0, 0])), P);
-    const side: Vec2[] = [[-i(1.2), i(1.1)], [i(1.3), i(1.1)], [i(4.2), -i(3.4)], [i(4.2), -i(7.75)], [-i(3.2), -i(7.75)], [-i(5.4), -i(5.3)], [-i(5.4), -i(2.2)]];
+    const side: Vec2[] = [[-i(1.2), i(1.6)], [i(1.7), i(1.6)], [i(2.5), i(.6)], [i(2.5), -i(.4)], [i(.1), -i(5)], [-i(1.6), -i(7.6)], [-i(4), -i(7.6)], [-i(5.4), -i(5.3)], [-i(5.4), -i(.8)]];
     for (const s of [-1, 1]) K.add(FRAME, cr(K.plate(side, i(.25), 'x', s > 0 ? i(7) : -i(7.25))));
-    K.add(FRAME, cr(K.box([-i(7), -i(3.3), -i(7.75)], [i(7), i(1.6), -i(7.5)])));
-    const plateAt = (m: Manifold) => cr(K.move(K.k(m.rotate([58, 0, 0])), [0, i(1.4), -i(7.6)]));
+    // Heel/footplate: diamond plate sloping up behind the foot to just under the pivot, meeting the pad in a V.
+    const plateAt = (m: Manifold) => cr(K.move(K.k(m.rotate([55, 0, 0])), [0, -i(.2), -i(3.2)]));
     K.add(TREAD, plateAt(K.box([-i(7), 0, -i(.19)], [i(7), i(4.6), 0])), plateAt(K.tread([0, i(2.3), 0], i(13.4), i(4), 26, 1)));
-    K.add(FRAME, cr(K.box([-i(7.25), -i(5.4), -i(2.4)], [i(7.25), -i(3.9), i(.6)])));
-    for (const x of [-i(4.5), 0, i(4.5)]) K.add(ZINC, cr(K.rod([x, -i(5.4), -i(.9)], [x, -i(5.75), -i(.9)], i(.8), 6)));
-    K.add(VINYL, cr(K.k(K.pad([0, 0, 0], i(14), i(6.6), i(2.4), 18, 9).rotate([90, 0, 0])).translate([0, -i(1.25), -i(4.4)])));
+    K.add(FRAME, cr(K.box([-i(7.25), -i(5.4), -i(2.8)], [i(7.25), -i(3.9), -i(.5)])));
+    for (const x of [-i(4.5), 0, i(4.5)]) K.add(ZINC, cr(K.rod([x, -i(5.4), -i(1.65)], [x, -i(5.75), -i(1.65)], i(.8), 6)));
+    K.add(VINYL, cr(K.k(K.pad([0, 0, 0], i(14), i(6.6), i(2.4), 18, 9).rotate([90, 0, 0])).translate([0, -i(1.5), -i(3.9)])));
     // Sleeve hub through the cradle, collars and 7 in Olympic sleeves (fixed to the cradle, so they swing with it).
     const S = L.sleeve;
     K.add(SLEEVE, K.rod([-L.collar, S[1], S[2]], [L.collar, S[1], S[2]], i(1.9), 32));
