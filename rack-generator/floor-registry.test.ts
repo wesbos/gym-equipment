@@ -6,8 +6,9 @@ import {createAssembly, validateAssembly} from './assembly.ts';
 import {definitions} from './catalog.ts';
 import {vendorAttribution} from './vendor-metadata.ts';
 import type {FloorItem} from './types.ts';
+import {FLOOR_SECTIONS, DEFAULT_FLOOR_SECTION, sectionGroups} from './catalog-sections.ts';
 test('every registered floor part is complete: catalog builder, valid defaults, footprint and attribution',()=>{
- assert.deepEqual(definitions.filter(d=>d.category==='Floor items').map(d=>d.id).sort(),[...FLOOR_PART_IDS].sort(),'register in both floor-registry.ts and catalog.ts');
+ assert.deepEqual(definitions.filter(d=>[...FLOOR_SECTIONS,DEFAULT_FLOOR_SECTION].includes(d.category as never)).map(d=>d.id).sort(),[...FLOOR_PART_IDS].sort(),'register in both floor-registry.ts and catalog.ts');
  for(const part of FLOOR_PARTS){
   const def=definitions.find(d=>d.id===part.id)!;
   assert.equal(def.name,part.title);assert.deepEqual(def.defaults,part.defaults);assert.ok(isFloorPart(part.id));
@@ -16,6 +17,8 @@ test('every registered floor part is complete: catalog builder, valid defaults, 
   const box=resolveBy(part.footprint,part.defaults);assert.ok(box.width>0 && box.depth>0,part.id);
   assert.deepEqual(vendorAttribution(part.id),part.vendor);
  }
+ assert.deepEqual(sectionGroups(FLOOR_PARTS,FLOOR_SECTIONS,DEFAULT_FLOOR_SECTION).flatMap(([,ids])=>ids).sort(),[...FLOOR_PART_IDS].sort(),'every floor part lands in exactly one sidebar section');
+ for(const part of FLOOR_PARTS)assert.equal(definitions.find(d=>d.id===part.id)!.category,part.section ?? DEFAULT_FLOOR_SECTION,part.id);
  assert.equal(floorPart('upright'),undefined);assert.equal(isFloorPart('upright'),false);
 });
 test('Nighthawk keeps its #47 document, bounds and suggested placement',()=>{

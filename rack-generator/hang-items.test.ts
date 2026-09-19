@@ -8,6 +8,7 @@ import {pegboardHoles} from './parts/pegboard.ts';
 import {addWallItem} from './wall-items.ts';
 import {createAssembly, validateAssembly, removeInstance, resolveAssembly} from './assembly.ts';
 import {definitions} from './catalog.ts';
+import {HANG_SECTIONS} from './catalog-sections.ts';
 import {vendorAttribution} from './vendor-metadata.ts';
 import {cleanDocument} from '../src/state/history.ts';
 import type {RackDoc} from './types.ts';
@@ -15,7 +16,7 @@ const api=await Module();api.setup();
 const panelDoc=(width=1219)=>{const doc=addWallItem(createAssembly(),'pegboard-panel',{wall:'back',position:[-1500,1500]});doc.wallItems![0].params.width=width;return doc;};
 test('the eight v1 attachments are registered, credited to REP and build in both poses inside their envelopes',()=>{
  assert.deepEqual(HANG_PART_IDS,['rep-lat-bar-48','rep-straight-bar-25','rep-tricep-rope','rep-d-handles','rep-triangle-row','rep-pushdown-bar','rep-curl-bar','rep-ankle-cuff']);
- assert.deepEqual(definitions.filter(d=>d.category==='Cable attachments').map(d=>d.id),HANG_PART_IDS,'register in both hang-registry.ts and catalog.ts');
+ assert.deepEqual(definitions.filter(d=>(HANG_SECTIONS as readonly string[]).includes(d.category)).map(d=>d.id),HANG_PART_IDS,'register in both hang-registry.ts and catalog.ts');
  for(const part of HANG_PARTS){
   assert.ok(isHangPart(part.id));assert.deepEqual(vendorAttribution(part.id),part.vendor);assert.match(part.vendor!.url,/^https:\/\/repfitness\.com\/products\//);
   const def=definitions.find(d=>d.id===part.id)!;assert.deepEqual(def.defaults,{hook:0});

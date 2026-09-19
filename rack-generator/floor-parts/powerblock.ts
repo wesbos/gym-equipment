@@ -42,7 +42,7 @@ export function powerBlockSelection(model: PowerBlockModel, weight: number) {
 export const POWERBLOCK_CRADLE_MARGIN = 14;
 export const POWERBLOCK_LIFT = 80;
 export const POWERBLOCK = defineFloorPart({
-  id: 'powerblock', name: 'PowerBlock dumbbell', title: 'PowerBlock adjustable dumbbells', noun: 'dumbbell',
+  id: 'powerblock', name: 'PowerBlock dumbbell', title: 'PowerBlock adjustable dumbbells', noun: 'dumbbell', section: 'Dumbbells',
   description: 'PowerBlock Elite USA 90 and Pro/Sport adjustable dumbbells. Independent reconstruction from published dimensions; PowerBlock trademarks belong to PowerBlock.',
   params: [
     { key: 'model', label: 'Model', default: 0, options: POWERBLOCK_MODELS.map((_, i) => i), format: v => POWERBLOCK_MODELS[v]?.name ?? String(v) },
