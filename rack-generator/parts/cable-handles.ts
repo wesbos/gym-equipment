@@ -216,7 +216,7 @@ export const buildRogueLatBar = attachment(ROGUE_LAT_BAR, t => {
 export const buildRogueCurlBar = attachment(ROGUE_CURL_BAR, t => {
   const d = 28.5, z = -60;
   const ctrl: P2[] = [[0, 0], [60, 0], [110, 14], [150, 20], [192, 4], [235, -30], [266, -40], [300, -26], [370, 12], [444, 48]];
-  const pts = t.curve(ctrl.map(([x, dz]) => [x, z + dz]), 6);
+  const pts = t.curve(ctrl.map(([x, dz]) => [x, z + dz]), 11);
   const parts = profiledBar(t, pts, d, x => (x > 160 && x < 240) || x > 292);
   const knurl = trimEnds(t, parts.knurl, pts, d);
   return [{ name: 'Knurled grips', solid: knurl, ...ECOAT_KNURL }, { name: 'E-coat bar', solid: parts.plain!, ...ECOAT }, ...rogueSwivel(t, z, d, ECOAT, ECOAT)];
