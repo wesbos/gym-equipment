@@ -79,7 +79,7 @@ function buildRope(s: RopeSpec, pose: number): RopeLayout {
   const fr = frames(pts, [0, 0, 1]), L = fr.at(-1)!.s, pitch = twistPitch(s), R = s.D / 2;
   const twisted = strands(R, .3), sleeve = bunch((s.D + 6) / 2);
   const twist = (f: Frame) => TAU * f.s / pitch;
-  const inset = 3, bodyFrames = fr.filter(f => f.s > inset && f.s < L - inset);
+  const inset = s.handle - 25, bodyFrames = fr.filter(f => f.s > inset && f.s < L - inset);
   const body = sweep(bodyFrames, 20, (f, phi) => s.kind === 'twisted' ? twisted(phi, twist(f)) : sleeve(f.s, phi));
   // End grips: glossy heat-shrink hugging the strands, or a moulded rubber handle with a rounded tip.
   const endSeg = (from: number, to: number) => fr.filter(f => f.s >= from - 1e-6 && f.s <= to + 1e-6);
