@@ -178,7 +178,7 @@ export const LEG_ROLLER = {
 };
 export const legRollerSpacings = (p: NumericParams) => p.version ? LEG_ROLLER.v2.spacing : [0];
 /** Standalone boxes (resting on the floor on their roller pads), measured from the build and pinned by the test. */
-export const LEG_ROLLER_BOXES = { v1: { width: 448, depth: 616.15 }, v2: { width: 586, depths: [604.72, 604.72, 604.72, 605.37, 636.37] } } as const;
+export const LEG_ROLLER_BOXES = { v1: { width: 448, depth: 616.15 }, v2: { width: 586, depths: [691.57, 691.57, 691.57, 691.44, 715.28] } } as const;
 export const REP_LEG_ROLLER = defineFloorPart({
   id: 'rep-bench-leg-roller', name: 'REP Leg Roller Attachment', title: 'REP adjustable bench leg roller attachment', noun: 'leg roller',
   section: 'Benches',

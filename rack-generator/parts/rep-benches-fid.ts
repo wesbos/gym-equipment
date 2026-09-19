@@ -5,6 +5,8 @@ import { AB3000, AB3002, AB5000 } from '../floor-parts/rep-benches.ts';
 import { MAT, benchKit, rotYZ, type BenchKit, type Material, type Pt } from './rep-benches-kit.ts';
 import { mountAttachment } from './rep-benches-attachments.ts';
 import { armStations, ladderPlates, ladderStations, linkLength, onLine, padAssembly, popPin, quadrant, type PadLayout } from './rep-benches-adjustable.ts';
+/** Frame-fixed pin angles about the AB-5000 hinge (degrees from +Y toward +Z). */
+export const BACK_PIN = 300, SEAT_PIN = 240;
 const BLUE: Material = ['Blue anodized pop-pin knobs', 'source', '#1d5fd1', .5, .35];
 const angleIndex = (list: readonly number[], v: number) => { const i = list.indexOf(v); if (i < 0) throw Error('Unsupported bench angle.'); return i; };
 /** Seat pad with the AB-3000's thick rounded nose: a 4″ bolster across the wide front edge. */
@@ -109,8 +111,7 @@ export function ab5000Layout(p: NumericParams) {
   const pads: PadLayout = { H, T, pivot: [py, H - T - 15], gap: AB5000.gap, slide: AB5000.slide, railH: 44, backLen: AB5000.backLength, backW: AB5000.padWidths[wide], seatLen: AB5000.seatLength, seatW: AB5000.seatWidths[wide], seatFrontW: AB5000.seatFronts[wide] };
   const frontFoot = -560, rearFoot = rear - 41.1, footTop = 64, beamZ = 300;
   const beamA: Pt = [py - 60, beamZ], beamB: Pt = [py + 560, beamZ];
-  const backArm = armStations(pads.pivot, 245, 188, 1, AB5000.back), seatArm = armStations(pads.pivot, 175, 232, -1, AB5000.seat);
-  return { L, W, H, T, front, rear, pads, frontFoot, rearFoot, footTop, beamA, beamB, backArm, seatArm };
+  return { L, W, H, T, front, rear, pads, frontFoot, rearFoot, footTop, beamA, beamB };
 }
 export function buildAb5000Into(t: BenchKit, p: NumericParams) {
   const g = ab5000Layout(p), ai = angleIndex(AB5000.back, p.backrestAngle), si = angleIndex(AB5000.seat, p.seatAngle);
@@ -136,13 +137,18 @@ export function buildAb5000Into(t: BenchKit, p: NumericParams) {
   t.add(MAT.frame, t.cyl([0, hA[0], hA[1]], [0, g.front + 110, hz], 32, 20));
   t.add(MAT.grip, t.cyl([0, g.front + 110, hz], [0, g.front + 12, hz], 38, 24));
   t.add(MAT.stainless, t.cyl([0, g.front + 12, hz], [0, g.front, hz], 30, 24));
-  // Stainless quadrants with laser-cut stations and blue anodized pop-pins: back arc and seat arc.
-  quadrant(t, MAT.stainless, g.pads.pivot, 220, 270, 188 - 8, 188 + 100, 34, 5, g.backArm.stations, 16);
-  quadrant(t, MAT.stainless, g.pads.pivot, 150, 200, 232 - 50, 232 + 20, -39, 5, g.seatArm.stations, 14);
-  const bp = g.backArm.stations[ai], sp = g.seatArm.stations[si];
-  t.add(MAT.frame, pa.tb(t.hull([t.span([40, py + 30, pa.railZ - 20], [46, py + 110, pa.railZ]), t.cylX(40, 46, g.backArm.rest[0], g.backArm.rest[1], 36, 16)])));
-  t.add(MAT.frame, pa.ts(t.hull([t.span([-50, pa.s1 - 120, pa.railZ - 20], [-44, pa.s1 - 40, pa.railZ]), t.cylX(-50, -44, g.seatArm.rest[0], g.seatArm.rest[1], 32, 16)])));
-  popPin(t, bp[0], bp[1], 28, 50, 12, BLUE); popPin(t, sp[0], sp[1], -32, -54, 12, BLUE);
+  // Stainless quadrants ride with their pads; the blue anodized pop-pins are fixed to the frame, so each published
+  // angle has its own hole that swings onto the pin (back arc below the hinge, small seat arc toward the front leg).
+  const polar = (r: number, a: number): Pt => [py + r * Math.cos(a * Math.PI / 180), pz + r * Math.sin(a * Math.PI / 180)];
+  const backHoles = AB5000.back.map(a => polar(245, BACK_PIN - a)), seatHoles = AB5000.seat.map(a => polar(175, SEAT_PIN + a));
+  const backArc = t.cut(t.sector(g.pads.pivot, 220, 270, BACK_PIN - 98, BACK_PIN + 8, 32, 5), backHoles.map(h => t.cylX(31, 38, h[0], h[1], 16, 16)));
+  t.add(MAT.stainless, pa.tb(backArc), pa.tb(t.hull([t.span([32, py - 20, pa.railZ - 22], [37, py + 60, pa.railZ]), t.cylX(32, 37, ...polar(235, BACK_PIN - 45), 30, 16)])));
+  const seatArc = t.cut(t.sector(g.pads.pivot, 150, 200, SEAT_PIN - 22, SEAT_PIN + 52, -37, 5), seatHoles.map(h => t.cylX(-38, -31, h[0], h[1], 14, 16)));
+  t.add(MAT.stainless, pa.ts(seatArc), pa.ts(t.hull([t.span([-37, py - 110, pa.railZ - 22], [-32, py - 20, pa.railZ]), t.cylX(-37, -32, ...polar(165, SEAT_PIN + 15), 26, 16)])));
+  const bp = polar(245, BACK_PIN), sp = polar(175, SEAT_PIN), legAt = onLine([g.frontFoot - 20, 20], g.beamA, sp[0]);
+  t.add(MAT.frame, t.hull([t.span([38, g.beamA[0] + 180, g.beamA[1] - 44], [46, g.beamA[0] + 240, g.beamA[1] - 30]), t.cylX(38, 46, bp[0], bp[1], 34, 16)]));
+  t.add(MAT.frame, t.hull([t.span([-46, legAt[0] - 25, legAt[1] - 10], [-38, legAt[0] + 25, legAt[1] + 10]), t.cylX(-46, -38, sp[0], sp[1], 30, 16)]));
+  popPin(t, bp[0], bp[1], 26, 50, 12, BLUE); popPin(t, sp[0], sp[1], -26, -54, 12, BLUE);
   // ZeroGap seat carriage: twin chrome guide rods, end plates and the slide knob.
   const rodZ = pa.railZ - 35;
   for (const x of [-1, 1]) t.add(MAT.stainless, pa.ts(t.cyl([x * 22, pa.s0 + 20, rodZ], [x * 22, pa.s1 - 30, rodZ], 20, 20)));

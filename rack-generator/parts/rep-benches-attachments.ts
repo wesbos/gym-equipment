@@ -53,10 +53,18 @@ export function buildLegRoller(api: ManifoldAPI, p: NumericParams): SolidPart[] 
   const t = benchKit(api), r = version ? LEG_ROLLER.v2.roller / 2 : LEG_ROLLER.v1.roller / 2;
   return t.finish('leg roller', () => {
     const [a, b] = legRollerGeometry(t, version, spacing, s => s);
-    // Tilt so both roller axles sit at roller radius above the floor, then centre the envelope on the origin
-    // (the metadata footprint is pinned against this by the family test).
-    // The 2.0's insert hangs below its roller line, so it rests flipped (insert and grab handle pointing up).
-    const tilt = -Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI + (version ? 180 : 0);
+    // 1.0: tilt so both roller axles sit level on the floor. 2.0: rest on the sliding rollers and the insert tip with
+    // the grab handle up, as in REP's product shot. Then centre the envelope (pinned by the family test).
+    const zAt = (q: Pt, deg: number) => q[0] * Math.sin(deg * Math.PI / 180) + q[1] * Math.cos(deg * Math.PI / 180);
+    let tilt = -Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
+    if (version) {
+      let best = Infinity;
+      for (let d = -90; d <= 90; d += .05) {
+        const end = LEG_ROLLER.v2.spacing[4] + 40, tip: Pt = [100 + end * Math.cos(-48 * Math.PI / 180), 95 + end * Math.sin(-48 * Math.PI / 180)];
+        const rollers = Math.min(zAt(a, d) - r, zAt(b, d) - r, zAt(tip, d) - 36), insert = Math.min(zAt([-250, -19], d), zAt([-250, 19], d));
+        if (zAt([60, 20 + LEG_ROLLER.v2.handle], d) > zAt([60, 20], d) && Math.abs(rollers - insert) < best && zAt(a, d) - r >= rollers - 1e-9) { best = Math.abs(rollers - insert); tilt = d; }
+      }
+    }
     t.transformAll(s => t.rot(s, [tilt, 0, 0]));
     const box = t.bounds();
     t.transformAll(s => t.move(s, [-(box.min[0] + box.max[0]) / 2, -(box.min[1] + box.max[1]) / 2, -box.min[2]]));

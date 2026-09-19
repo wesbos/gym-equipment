@@ -5,7 +5,7 @@ import {PARTS, FB5000, BLACKWING, AB4100, AB5202, AB5200, AB3100, AB3002, AB3000
 import {definitions} from './parts/rep-benches.ts';
 import {blackwingLayout} from './parts/rep-benches-adjustable.ts';
 import {AB3100_BENCH, AB4100_BENCH, AB5200_BENCH, AB5202_BENCH, ladderLayout} from './parts/rep-benches-ladder.ts';
-import {ab3000LayoutFor, ab5000Layout} from './parts/rep-benches-fid.ts';
+import {BACK_PIN, SEAT_PIN, ab3000LayoutFor, ab5000Layout} from './parts/rep-benches-fid.ts';
 import {fb5000Layout} from './parts/rep-benches-flat.ts';
 import {coerceFloorParams, resolveBy, validateFloorParams, floorOptions} from './floor-registry.ts';
 import type {FloorPart} from './floor-part.ts';
@@ -69,7 +69,8 @@ test('published envelopes and pad sizes come out of the builds',()=>{
   try{within(pad.max[1]-pad.min[1],back+seat+(part===REP_BLACKWING?45:part===PARTS[8]?AB5000.gap:(part===PARTS[2]?AB4100.gap:part===REP_AB_5200_2?AB5202.gap:part===PARTS[4]?AB3100.gap:AB5200.gap)),1,`${part.id} pad run`);}finally{free(parts);}
  }
  // Leg roller 2.0: 586 mm total width, 143.4 mm rollers; LE/LC 846 × 648.7 mm.
- {const parts=build(REP_LEG_ROLLER,{version:1,spacing:262}),r=bounds(parts),roll=bounds(parts,'Molded');try{within(r.max[0]-r.min[0],LEG_ROLLER.v2.width,.5,'leg roller 2.0 width');within(roll.max[2]-roll.min[2],LEG_ROLLER.v2.roller,.5,'roller diameter (both pairs level)');assert.ok(roll.min[2]<1,'rests on its rollers');}finally{free(parts);}}
+ {const parts=build(REP_LEG_ROLLER,{version:1,spacing:262}),r=bounds(parts),roll=bounds(parts,'Molded');try{within(r.max[0]-r.min[0],LEG_ROLLER.v2.width,.5,'leg roller 2.0 width');}finally{free(parts);}}
+ {const parts=build(REP_LEG_ROLLER,{version:0,spacing:0}),roll=bounds(parts,'Foam');try{assert.ok(roll.min[2]<1e-6&&Math.abs(roll.max[2]-roll.min[2]-LEG_ROLLER.v1.roller)<.5,'1.0 rests level on its four 4″ rollers');}finally{free(parts);}}
  {const part=PARTS[10],parts=build(part,part.defaults),b=bounds(parts);try{within(b.max[1]-b.min[1],LELC.length,.1,'LE/LC length');within(b.max[0]-b.min[0],LELC.width,.1,'LE/LC width');}finally{free(parts);}}
  // Bench pads laid flat: REP table dimensions.
  for(const [fit,pad] of BENCH_PADS.entries()){const parts=build(PARTS[11],{fit}),b=bounds(parts);
@@ -90,7 +91,11 @@ test('ladder stations come from fixed-length links: every published angle has it
  }
  for(const v2 of [true,false]){const g=ab3000LayoutFor(v2,{pad:0});check(`AB-3000 ${v2?'2.0':'1.0'} back`,g.stations,g.bracket,g.link,v2?AB3002.back:AB3000.back,g.ladderA,g.ladderB);}
  // Quadrant benches: one hole per angle, all distinct, on the arm circle.
- const q=ab5000Layout({pad:0});for(const arm of [q.backArm,q.seatArm])for(const s of arm.stations)assert.ok(Math.abs(Math.hypot(s[0]-q.pads.pivot[0],s[1]-q.pads.pivot[1])-Math.hypot(arm.rest[0]-q.pads.pivot[0],arm.rest[1]-q.pads.pivot[1]))<1e-6);
+ // AB-5000: the quadrant hole for each angle, carried by its pad, lands exactly on the frame-fixed pin.
+ const q=ab5000Layout({pad:0}),[py,pz]=q.pads.pivot,pol=(r:number,a:number)=>[py+r*Math.cos(a*Math.PI/180),pz+r*Math.sin(a*Math.PI/180)] as [number,number];
+ const rot=(p:[number,number],a:number)=>{const c=Math.cos(a*Math.PI/180),s=Math.sin(a*Math.PI/180),dy=p[0]-py,dz=p[1]-pz;return [py+dy*c-dz*s,pz+dy*s+dz*c];};
+ for(const a of AB5000.back){const h=rot(pol(245,BACK_PIN-a),a),pin=pol(245,BACK_PIN);assert.ok(Math.hypot(h[0]-pin[0],h[1]-pin[1])<1e-6,`AB-5000 back ${a}`);}
+ for(const a of AB5000.seat){const h=rot(pol(175,SEAT_PIN+a),-a),pin=pol(175,SEAT_PIN);assert.ok(Math.hypot(h[0]-pin[0],h[1]-pin[1])<1e-6,`AB-5000 seat ${a}`);}
  // AB-5200 2.0 adjustable post: decline angles lower the post top; the fixed post cannot decline.
  const g=ladderLayout(AB5202_BENCH,{pad:0,post:1});assert.ok(g.postTop(-8)<g.postTop(-4)&&g.postTop(-4)<g.postTop(0));
 });
