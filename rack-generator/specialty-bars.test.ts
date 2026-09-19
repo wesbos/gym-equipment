@@ -11,6 +11,7 @@ import { barCradles, barSpec, freeCradles, parkedPose, suggestCradle } from './b
 import { BAR, barSleeves } from './floor-parts/barbell.ts';
 import { buildPlateStack } from './parts/plates.ts';
 import type { NumericParams, SolidPart } from './types.ts';
+import {BUILD_BUDGET_MS} from './test-budget.ts';
 const api = await Module(); api.setup();
 const box = (parts: SolidPart[], name?: string | RegExp) => {
   const s = parts.filter(p => !name || (typeof name === 'string' ? p.name === name : name.test(p.name)));
@@ -198,7 +199,7 @@ test('params validate strictly, coerce for the UI, and bars add in front of the 
 test('builds stay inside the triangle and time budget', () => {
   for (const part of PARTS) {
     const t0 = performance.now(), parts = build(part.id, part.defaults), ms = performance.now() - t0, tri = parts.reduce((n, s) => n + s.solid.numTri(), 0);
-    assert.ok(tri < 80000, `${part.id} ${tri} triangles`); assert.ok(ms < 1500, `${part.id} ${ms.toFixed(0)} ms`);
+    assert.ok(tri < 80000, `${part.id} ${tri} triangles`); assert.ok(ms < BUILD_BUDGET_MS, `${part.id} ${ms.toFixed(0)} ms`);
     free(parts);
   }
 });

@@ -15,6 +15,7 @@ import { barCradles } from './barbell-cradles.ts';
 import { detectCollisions } from './assembly-collisions.ts';
 import { gridProfile } from './profiles.ts';
 import type { NumericParams, PartId, RackDoc } from './types.ts';
+import {BUILD_BUDGET_MS} from './test-budget.ts';
 const api = await Module(); api.setup();
 /** Every param combination (dependent options included), capped so large families stay fast. */
 function combos(part: RackPart, limit = 48): NumericParams[] {
@@ -63,7 +64,7 @@ test('every rack part is registered in the catalog with complete metadata, attri
 test('every rack part builds valid solids for every option, within its extent, budget and bodies', () => {
   for (const part of RACK_PARTS) for (const params of combos(part)) for (const mirror of part.handed ? [false, true] : [false]) for (const tube of [75, 76.2]) {
     const p = context(tube, params, mirror), label = `${part.id} ${JSON.stringify(p)}`, b = build(part, p);
-    assert.ok(b.tris < 80000, `${label}: ${b.tris} triangles`); assert.ok(b.ms < 1500, `${label}: ${b.ms.toFixed(0)} ms`);
+    assert.ok(b.tris < 80000, `${label}: ${b.tris} triangles`); assert.ok(b.ms < BUILD_BUDGET_MS, `${label}: ${b.ms.toFixed(0)} ms`);
     // The declared vertical extent drives the hole limits: the solids must stay inside it.
     const { below, above } = resolveBy(part.mount.extent, p);
     assert.ok(b.min[2] >= -below - 1 && b.max[2] <= above + 1, `${label}: Z ${b.min[2].toFixed(1)}..${b.max[2].toFixed(1)} outside extent -${below}..${above}`);

@@ -6,6 +6,7 @@ import {definitions} from './parts/hypers.ts';
 import {coerceFloorParams, floorOptions, resolveBy, validateFloorParams} from './floor-registry.ts';
 import {plateStackLength} from './plates.ts';
 import type {NumericParams, SolidPart} from './types.ts';
+import {BUILD_BUDGET_MS} from './test-budget.ts';
 const api=await Module();api.setup();
 const part=(id:string)=>{const p=PARTS.find(x=>x.id===id);assert.ok(p,id);return p!;};
 const build=(id:string,params:NumericParams={})=>definitions.find(d=>d.id===id)!.build(api,{...part(id).defaults,...params});
@@ -27,7 +28,7 @@ test('every hyper, GHD and back extension builds closed solids whose bounds equa
    const b=bbox(parts)!,fp=resolveBy(p.footprint,params),tris=parts.reduce((n,s)=>n+s.solid.numTri(),0);
    near(b.max[0]-b.min[0],fp.width,.5,`${tag} width`);near(b.max[1]-b.min[1],fp.depth,.5,`${tag} depth`);
    near(b.min[0],-b.max[0],.5,`${tag} centred X`);near(b.min[1],-b.max[1],.5,`${tag} centred Y`);
-   assert.ok(b.min[2]>=-1e-6,`${tag} above the floor`);assert.ok(tris<80000,`${tag} ${tris} triangles`);assert.ok(ms<3000,`${tag} ${ms.toFixed(0)} ms`);
+   assert.ok(b.min[2]>=-1e-6,`${tag} above the floor`);assert.ok(tris<80000,`${tag} ${tris} triangles`);assert.ok(ms< BUILD_BUDGET_MS,`${tag} ${ms.toFixed(0)} ms`);
    free(parts);
   }
  }

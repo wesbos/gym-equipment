@@ -11,6 +11,7 @@ import { addFloorItem } from './floor-items.ts';
 import { createAssembly } from './assembly.ts';
 import type { NumericParams, SolidPart } from './types.ts';
 import { barSpec, parkedPose } from './barbell-cradles.ts';
+import {BUILD_BUDGET_MS} from './test-budget.ts';
 const api = await Module(); api.setup();
 const inch = (v: number) => v * 25.4;
 const build = (id: string, p: NumericParams) => definitions.find(d => d.id === id)!.build(api, p);
@@ -57,7 +58,7 @@ test('every bar builds closed solids for every param extreme, bounded by its foo
     assert.ok(Math.abs(b.max[0] - b.min[0] - fp.width) < .05 && Math.abs(b.max[1] - b.min[1] - fp.depth) < .05, `${part.id} ${JSON.stringify(p)} footprint ${fp.width}×${fp.depth} vs ${(b.max[0] - b.min[0]).toFixed(2)}×${(b.max[1] - b.min[1]).toFixed(2)}`);
     assert.ok(Math.abs(b.min[0] + b.max[0]) < 1e-6 && Math.abs(b.min[1] + b.max[1]) < 1e-6 && Math.abs(b.min[2]) < 1e-6, `${part.id} centred on the floor`);
     assert.ok(tris < 80000, `${part.id} ${tris} triangles`);
-    if (p === part.defaults) assert.ok(ms < 1500, `${part.id} built in ${ms.toFixed(0)} ms`);
+    if (p === part.defaults) assert.ok(ms < BUILD_BUDGET_MS, `${part.id} built in ${ms.toFixed(0)} ms`);
     // The sleeve axis sits where barAxisZ says (the end caps are centred on it).
     const caps = parts.find(s => /end caps|tube ends|pipe ends|end badges/.test(s.name))!, cb = caps.solid.boundingBox();
     assert.ok(Math.abs((cb.min[2] + cb.max[2]) / 2 - barAxisZ(part.id, p)) < .05, `${part.id} axis at ${((cb.min[2] + cb.max[2]) / 2).toFixed(2)}`);
