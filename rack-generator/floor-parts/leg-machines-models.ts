@@ -758,21 +758,24 @@ export const TOG_QUADSEND = {
   lpFoot: { w: inch(30.5), h: inch(22) }, hsFoot: { w: inch(36), h: inch(24) }, horn: [inch(66.2), inch(50.2)], storage: inch(57.3), handles: inch(42.3), pegs: inch(50.8), frame: inch(32.5),
 };
 export function describeTogQuadsend(k: Kit, p: NumericParams) {
-  const Q = TOG_QUADSEND, frame = 'Satin black frame', panel = 'Laser-cut side panels', pads = 'Black vinyl pads', chrome = 'Chrome horns and handles', hw = 'Zinc hardware', grit = 'Grip-tape footplates';
-  k.finish(frame, f('source', '#161719', .25, .5)); k.finish(panel, f('source', '#1b1c1e', .25, .55)); k.finish(pads, f('liner', '#131415', 0, .88)); k.finish(chrome, CHROME); k.finish(hw, ZINC);
-  k.finish(grit, f('source', '#1f2022', .05, .95)); k.finish('Logo inlay', f('source', '#d9dbdd', .6, .35)); k.finish('Knurled aluminium grips', f('handle', '#b8bcc0', .85, .4)); k.finish('Rubber feet', RUBBER);
-  k.finish('Exercise placard', f('source', '#e6e6e1', 0, .6)); k.finish('Linear bearings', f('source', '#a4a8ac', .9, .3));
+  // Groups are split per side so each laid-out print object stays compact (one 256 mm plate at 1:10).
+  const Q = TOG_QUADSEND, frame = 'Satin black frame and laser-cut side panels', pads = 'Black vinyl pads', chrome = 'Chrome weight horns', grit = 'Grip-tape footplates';
+  const side = (name: string, s: number) => `${name} · ${s > 0 ? 'left' : 'right'}`, both = (name: string, fin: Finish) => { for (const s of [-1, 1]) k.finish(side(name, s), fin); };
+  k.finish(frame, f('source', '#161719', .25, .5)); k.finish(pads, f('liner', '#131415', 0, .88)); k.finish(chrome, CHROME); both('Storage horns', CHROME); both('Disengagement handles', CHROME);
+  k.finish(grit, f('source', '#1f2022', .05, .95)); both('Logo inlay', f('source', '#d9dbdd', .6, .35)); both('Knurled aluminium grips', f('handle', '#b8bcc0', .85, .4)); k.finish('Seat handle grips', f('handle', '#b8bcc0', .85, .4));
+  for (const e of ['front', 'rear']) both(`Rubber foot ${e}`, RUBBER);
+  k.finish('Exercise placard', f('source', '#e6e6e1', 0, .6)); both('Linear bearings', f('source', '#a4a8ac', .9, .3));
   const a = Q.angle * Math.PI / 180, u: V3 = [0, Math.cos(a), Math.sin(a)], n: V3 = [0, -Math.sin(a), Math.cos(a)], hack = p.mode === 1;
   const R = Q.rail, rail = (s: number, x = 0, b = 0): V3 => add(add([x, R.bottom[0], R.bottom[1]], scale(u, s)), scale(n, b)), top = rail(R.len);
-  const half = Q.frame / 2, rearY = top[1] + 120, frontY = -1215, t = 76;
+  const half = Q.frame / 2, rearY = top[1] + 95, frontY = -1195, t = 76;
   // Base rails (frame footprint 32.5"), front and rear feet, triangular side panels with the logo, rails and top frame.
   for (const s of [-1, 1]) {
     perforated(k, frame, [s * (half - t / 2), frontY, t / 2], [s * (half - t / 2), rearY, t / 2], t, t, 120, 18, Z, X, 60);
-    k.box('Rubber feet', [s * (half - t / 2) - 60, frontY - 20, 0], [s * (half - t / 2) + 60, frontY + 100, 4]);
-    k.box('Rubber feet', [s * (half - t / 2) - 60, rearY - 100, 0], [s * (half - t / 2) + 60, rearY + 20, 4]);
+    k.box(side('Rubber foot front', s), [s * (half - t / 2) - 60, frontY - 20, 0], [s * (half - t / 2) + 60, frontY + 100, 4]);
+    k.box(side('Rubber foot rear', s), [s * (half - t / 2) - 60, rearY - 100, 0], [s * (half - t / 2) + 60, rearY + 20, 4]);
     const x = s * (R.gap / 2 + R.w / 2 + 3), lo = rail(420, 0, -R.h / 2), hi = rail(R.len - 40, 0, -R.h / 2);
-    k.polygon(panel, [x - 3, 0, 0], Y, Z, [[lo[1], t], [rearY - 70, t], [rearY - 70, hi[2] - 40], [hi[1], hi[2]], [lo[1], lo[2]]], 6);
-    k.polygon('Logo inlay', [s > 0 ? x + 3 : x - 3.6, 0, 0], Y, Z, [[top[1] - 720, 560], [top[1] - 520, 900], [top[1] - 320, 560]], .6);
+    k.polygon(frame, [x - 3, 0, 0], Y, Z, [[lo[1], t], [rearY - 70, t], [rearY - 70, hi[2] - 40], [hi[1], hi[2]], [lo[1], lo[2]]], 6);
+    k.polygon(side('Logo inlay', s), [s > 0 ? x + 3 : x - 3.6, 0, 0], Y, Z, [[top[1] - 720, 560], [top[1] - 520, 900], [top[1] - 320, 560]], .6);
     k.beam(frame, [x, rearY - 60, t], [x, top[1] - 20, top[2] - 60], 80, 80, Y);
   }
   for (const y of [frontY + 50, -300, rearY - 50]) k.beam(frame, [-half + 1, y, t / 2], [half - 1, y, t / 2], t - 2, t, Z);
@@ -781,21 +784,21 @@ export function describeTogQuadsend(k: Kit, p: NumericParams) {
   k.box('Exercise placard', rail(R.len - 60, -150, 56), add(rail(R.len - 60, 150, 56), [0, 12, 110]));
   // Storage horns (five a side on the panels), band pegs, disengagement handles along the rails.
   for (const s of [-1, 1]) {
-    for (let i = 0; i < 5; i++) { const q: V3 = [s * (R.gap / 2 + R.w + 6), top[1] - 120 - i * 70, 380 + i * 190]; k.rod(chrome, q, add(q, [s * (Q.storage / 2 - R.gap / 2 - R.w - 6), 0, 0]), 50, 32); }
+    for (let i = 0; i < 5; i++) { const q: V3 = [s * (R.gap / 2 + R.w + 6), top[1] - 120 - i * 70, 380 + i * 190]; k.rod(side('Storage horns', s), q, add(q, [s * (Q.storage / 2 - R.gap / 2 - R.w - 6), 0, 0]), 50, 32); }
     for (let i = 0; i < 3; i++) { const q: V3 = [s * half, 200 + i * 90, 110]; k.rod(frame, q, add(q, [s * (Q.pegs / 2 - half), 0, 0]), 22, 16); }
     const hx = s * (Q.handles / 2 - 20);
-    bent(k, chrome, [rail(80, s * (R.gap / 2 + R.w / 2), 20), rail(80, hx, 40), rail(900, hx, 40), rail(900, s * (R.gap / 2 + R.w / 2), 20)], 30);
-    k.rod('Knurled aluminium grips', rail(100, hx, 40), rail(320, hx, 40), 36, 24);
+    bent(k, side('Disengagement handles', s), [rail(80, s * (R.gap / 2 + R.w / 2), 20), rail(80, hx, 40), rail(900, hx, 40), rail(900, s * (R.gap / 2 + R.w / 2), 20)], 30);
+    k.rod(side('Knurled aluminium grips', s), rail(100, hx, 40), rail(320, hx, 40), 36, 24);
   }
   // Front: reclining leg-press seat and back pad with handles; the hack-squat footplate frame swings down over it.
-  const seatH: V3 = [0, -850, 470];
+  const seatH: V3 = [0, -840, 470];
   k.beam(frame, [0, frontY + 60, t], [0, -700, 420], 90, 90, X);
   k.beam(frame, [0, -560, t], [0, -560, 380], 80, 80, Y);
   k.pad(pads, [0, -740, 420], X, Y, 400, 340, 80, 40, 18);
   k.push(rotX(90 - 38, seatH));
-  k.beam(frame, add(seatH, [0, -120, 0]), add(seatH, [0, -120, 780]), 70, 60, Y);
+  k.beam(frame, add(seatH, [0, -120, 0]), add(seatH, [0, -120, 560]), 70, 60, Y);
   k.pad(pads, add(seatH, [0, -10, 410]), X, Z, 420, 820, 90, 44, 18);
-  for (const s of [-1, 1]) gripHandle(k, frame, 'Knurled aluminium grips', add(seatH, [s * 60, -120, 120]), add(seatH, [s * 330, -140, 160]), 34, 110);
+  for (const s of [-1, 1]) gripHandle(k, frame, 'Seat handle grips', add(seatH, [s * 60, -120, 120]), add(seatH, [s * 330, -140, 160]), 34, 110);
   k.pop();
   if (hack) {
     const fh: V3 = [0, -470, 330];
@@ -807,7 +810,7 @@ export function describeTogQuadsend(k: Kit, p: NumericParams) {
   // Sled on linear bearings: LP footplate (leg press) or back pad + shoulder pads (hack squat); U-bracket weight horn.
   const s0 = Q.rest + Q.travel[p.sled], L = Q.sled, face = R.h / 2 + 60;
   k.push(translation(scale(u, s0)));
-  for (const s of [-1, 1]) { k.beam(frame, rail(0, s * (R.gap / 2 - 60), R.h / 2 + 20), rail(L, s * (R.gap / 2 - 60), R.h / 2 + 20), 60, 60, n); for (const at of [80, L - 80]) k.beam('Linear bearings', rail(at - 60, s * R.gap / 2, R.h / 2 + 10), rail(at + 60, s * R.gap / 2, R.h / 2 + 10), R.w + 20, 26, n); }
+  for (const s of [-1, 1]) { k.beam(frame, rail(0, s * (R.gap / 2 - 60), R.h / 2 + 20), rail(L, s * (R.gap / 2 - 60), R.h / 2 + 20), 60, 60, n); for (const at of [80, L - 80]) k.beam(side('Linear bearings', s), rail(at - 60, s * R.gap / 2, R.h / 2 + 10), rail(at + 60, s * R.gap / 2, R.h / 2 + 10), R.w + 20, 26, n); }
   for (const at of [40, L - 40]) k.beam(frame, rail(at, -R.gap / 2 + 30, R.h / 2 + 20), rail(at, R.gap / 2 - 30, R.h / 2 + 20), 60, 60, n);
   if (hack) {
     k.pad(pads, rail(L * .45, 0, face), X, u, 440, 560, 80, 40, 18);

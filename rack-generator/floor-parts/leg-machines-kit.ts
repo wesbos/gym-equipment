@@ -91,9 +91,13 @@ export class BoundsKit extends FrameKit implements Kit {
     const w = norm(sub(b, a)), pad = w.map(x => r * Math.sqrt(Math.max(0, 1 - x * x))) as V3;
     this.point(a, pad); this.point(b, pad);
   }
-  pad(_g: string, c: V3, u: V3, v: V3, w: number, l: number, t: number, r: number) {
-    const n = cross(u, v), U = rotateVec(this.m, u), V = rotateVec(this.m, v), ext = [0, 1, 2].map(i => r * Math.hypot(U[i], V[i])) as V3;
-    for (const su of [-1, 1]) for (const sv of [-1, 1]) for (const z of [0, t]) this.point(apply(this.m, add(c, add(add(scale(u, su * (w / 2 - r)), scale(v, sv * (l / 2 - r))), scale(n, z)))), ext);
+  pad(_g: string, c: V3, u: V3, v: V3, w: number, l: number, t: number, r: number, soft = 0) {
+    // Same outline as ManifoldKit.pad: corner radius rr, the top face inset by the soft edge e.
+    const n = cross(u, v), U = rotateVec(this.m, u), V = rotateVec(this.m, v), rr = Math.min(r, w / 2 - .5, l / 2 - .5), e = Math.max(0, Math.min(soft, t / 3, rr - .5));
+    for (const [z, rad] of [[0, rr], [t - e, rr], [t, rr - e]] as const) {
+      const ext = [0, 1, 2].map(i => rad * Math.hypot(U[i], V[i])) as V3;
+      for (const su of [-1, 1]) for (const sv of [-1, 1]) this.point(apply(this.m, add(c, add(add(scale(u, su * (w / 2 - rr)), scale(v, sv * (l / 2 - rr))), scale(n, z)))), ext);
+    }
   }
   plates(_name: string, plates: readonly PlateId[], origin: V3, axis: V3) {
     const o = apply(this.m, origin), a = norm(rotateVec(this.m, axis));
