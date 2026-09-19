@@ -60,7 +60,7 @@ export function buildPowerBlock(api: ManifoldAPI, p: NumericParams): SolidPart[]
       for(const sy of [-1,1]){
         const x1=x0+plateEnd/2;
         if(m.bands){
-          add('Black selector rods',lifted(bar('x',-x1,x1,rod,sy*y0,rz)),'source','#18191b',.3,.5);
+          add(m.rodColor && m.rodColor!=='#18191b'?'Selector rods':'Black selector rods',lifted(bar('x',-x1,x1,rod,sy*y0,rz)),'source',m.rodColor ?? '#18191b',.3,.5);
           for(const sx of [-1,1])add(`Selector rail · ${m.rails[i]}`,lifted(bar('x',sx>0?cage-wall-14:-(cage-wall-6),sx>0?cage-wall-6:-(cage-wall-14),rod+1.4,sy*y0,rz)),'source',m.rails[i],.1,.45);
         } else add(`Selector rail · ${m.rails[i]}`,lifted(bar('x',-x1,x1,rod,sy*y0,rz)),'source',m.rails[i],.1,.45);
       }
@@ -75,7 +75,8 @@ export function buildPowerBlock(api: ManifoldAPI, p: NumericParams): SolidPart[]
       // Ladder ribs on the inner face of each post, one between every pair of selector rods.
       for(let i=0;i<n;i++)if(rodZ(i)-3.2>cageBottom)for(const sy of [-1,1])cageParts.push(box([sx>0?cage-wall-4:-(cage-wall),sy>0?W/2-24:-(W/2-13),rodZ(i)-3.2],[sx>0?cage-wall:-(cage-wall-4),sy>0?W/2-13:-(W/2-24),rodZ(i)-1.2]));
     }
-    for(const sy of [-1,1])cageParts.push(bar('x',-(cage-wall-4),cage-wall-4,tube,sy*(W/2-tube/2-3),top-tube/2-2,32));
+    const tubes=[-1,1].map(sy=>bar('x',-(cage-wall-4),cage-wall-4,tube,sy*(W/2-tube/2-3),top-tube/2-2,32));
+    if(m.tubeColor)add('Cage top tubes',up(union(tubes)),'source',m.tubeColor,.1,.7);else cageParts.push(...tubes);
     cageParts.push(box([-(cage-wall),-(W/2-16),cageBottom],[cage-wall,W/2-16,cageBottom+4]));
     add('Handle cage',up(union(cageParts)),'source',m.cageColor,.2,.5);
     // Series badges on the cage heads: a coloured label on one head, the weight chart chips on the other.
@@ -87,11 +88,11 @@ export function buildPowerBlock(api: ManifoldAPI, p: NumericParams): SolidPart[]
     // Grip: knurled stainless or contoured TPR, with collars at the walls.
     const gz=base+m.height*.5,gripSolids=[bar('x',-(cage-wall),cage-wall,m.gripDiameter,0,gz,40)];
     if(!m.knurled)gripSolids.push(bar('x',-m.grip*.3,m.grip*.3,m.gripDiameter+5,0,gz,40));
-    add(m.knurled?'Knurled stainless grip':'Contoured TPR grip',up(union(gripSolids)),'handle',m.knurled?'#a9adb1':'#1a1b1c',m.knurled?.85:0,m.knurled?.42:.85);
+    add(m.knurled?'Knurled stainless grip':'Contoured TPR grip',up(union(gripSolids)),'handle',m.knurled?'#a9adb1':m.gripColor ?? '#1a1b1c',m.knurled?.85:0,m.knurled?.42:.85);
     add('Handle cage',up(union([-1,1].map(sx=>bar('x',sx>0?cage-wall-6:-(cage-wall),sx>0?cage-wall:-(cage-wall-6),m.gripDiameter+10,0,gz,40)))),'source',m.cageColor,.2,.5);
-    // Micro adder weights: chrome cylinders in the core under the grip.
+    // Micro adder weights: chrome cylinders in the core under the grip (Commercial Pro sets swap handles instead).
     const ad=Math.round(m.height*.17);
-    for(let a=0;a<adders;a++)add('Micro adder weights',up(bar('x',-(cage-wall-3),cage-wall-3,ad,(a?1:-1)*(ad/2+2),cageBottom+4+ad/2,32)),'handle','#dfe2e5',1,.16);
+    if(!m.swapHandle)for(let a=0;a<adders;a++)add('Micro adder weights',up(bar('x',-(cage-wall-3),cage-wall-3,ad,(a?1:-1)*(ad/2+2),cageBottom+4+ad/2,32)),'handle','#dfe2e5',1,.16);
     // Magnetic selector pin: two prongs through the wall posts just under the lowest engaged rod, fork handle at the front.
     const pz=plates ? rodZ(plates-1)-pin/2-.8 : rodZ(0)+rod+pin/2+.8,px=cage-wall/2,pinParts=[-1,1].map(sx=>bar('y',-(W/2+10),W/2-1,pin,sx*px,pz,16));
     const fork=Math.round(m.height*.17);
