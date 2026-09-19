@@ -5,16 +5,16 @@ import { addAccessory, createAssembly, resolveAssembly, setPlateStack, unpairAcc
 import { definitions } from './parts/attachments.ts';
 import { buildPlateStack } from './parts/plates.ts';
 import { swapCandidate } from './swap.ts';
-import { PLATE_GAP, PLATE_PRESETS, PLATE_SPECS, expandRuns, plateParams, plateRoom, plateRuns, platesFromParams, plateStackLength, validatePlateStack, withoutPlateParams, type PlateId } from './plates.ts';
+import { PLATE_GAP, PLATE_PRESETS, PLATE_SPECS, expandRuns, plateParams, plateRoom, plateRuns, platesFromParams, plateStackLength, validatePlateStack, withoutPlateParams, type LegacyPlateId, type PlateId } from './plates.ts';
 import { buildPrintInstance } from '../src/exports/print-build.ts';
 const api = await Module(); api.setup();
 const near = (a: number, b: number, e = .01) => assert.ok(Math.abs(a - b) < e, `${a} != ${b}`);
 const pin = (part = 'storage-pin-short', hole = 20) => addAccessory(createAssembly({ emptyAccessories: true }), part, { uprightId: 'rear-left', face: 'left', hole });
 
 test('plate table uses IWF colors, 450 mm bumpers and published Rogue widths', () => {
-  assert.deepEqual(['kg25', 'kg20', 'kg15', 'kg10'].map(id => PLATE_SPECS[id as PlateId].width), [88.9, 82.55, 66.675, 44.45]);
-  assert.ok(['kg25', 'kg20', 'kg15', 'kg10'].every(id => PLATE_SPECS[id as PlateId].diameter === 450));
-  assert.deepEqual(['lb45', 'lb35', 'lb25', 'lb10'].map(id => PLATE_SPECS[id as PlateId].diameter), [448, 360, 300, 228]);
+  assert.deepEqual(['kg25', 'kg20', 'kg15', 'kg10'].map(id => PLATE_SPECS[id as LegacyPlateId].width), [88.9, 82.55, 66.675, 44.45]);
+  assert.ok(['kg25', 'kg20', 'kg15', 'kg10'].every(id => PLATE_SPECS[id as LegacyPlateId].diameter === 450));
+  assert.deepEqual(['lb45', 'lb35', 'lb25', 'lb10'].map(id => PLATE_SPECS[id as LegacyPlateId].diameter), [448, 360, 300, 228]);
   assert.equal(new Set(Object.values(PLATE_SPECS).map(s => s.code)).size, 8);
   near(plateStackLength(['kg15', 'kg15', 'kg10']), 66.675 * 2 + 44.45 + 2 * PLATE_GAP);
 });
