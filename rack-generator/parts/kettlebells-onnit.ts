@@ -95,7 +95,7 @@ export function buildOnnitPrimal(api: ManifoldAPI, p: NumericParams): SolidPart[
     const W = o.hw / 2, D = o.hd / 2;
     const head = t.k(t.M.levelSet(([x, y, z]) => -field(x, y, z), { min: [-W - 2, -D * ONNIT_FACE_REACH - 2, -2], max: [W + 2, D + 2, o.hh + 4] }, Math.max(2.8, o.hh / 66)));
     const handle = t.move(t.tube(o.layout.path, true, 32), [0, 0, o.shift]);
-    t.add('Cast iron head and handle', t.union([head, handle]), 'source', '#2a2b2d', .08, .78);
+    t.add('Cast iron head and handle', t.union([head, handle]), 'source', '#3a3b3e', .25, .6);
     return t.finish(`Onnit ${o.animal.name} bell`);
   } catch (e) { t.release(); throw e; }
 }

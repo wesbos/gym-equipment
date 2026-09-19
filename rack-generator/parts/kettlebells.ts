@@ -28,14 +28,14 @@ function castMarkings(t: KettlebellKit, m: CastBellModel) {
   if (F.badge) {
     // Printed badge disc (Savage): white disc standing just proud of the coating, ring and numerals printed in the bell colour.
     const bd = t.k(t.C.circle(D * .27, 64));
-    badge.push(t.cut(t.faceSolid(bd, -1, R - 3, R + .45, zf), [t.sphere([0, 0, l.zc], R - .5, 72)]));
-    const shell = (s: CrossSection) => t.cut(t.meet(t.faceSolid(s, -1, R - 3, R + 1, zf), t.sphere([0, 0, l.zc], R + .75, 72)), [t.sphere([0, 0, l.zc], R, 72)]);
+    badge.push(t.cut(t.meet(t.faceSolid(bd, -1, R * .5, R + 1, zf), t.sphere([0, 0, l.zc], R + .45, 72)), [t.sphere([0, 0, l.zc], R - .5, 72)]));
+    const shell = (s: CrossSection) => t.cut(t.meet(t.faceSolid(s, -1, R * .5, R + 1, zf), t.sphere([0, 0, l.zc], R + .75, 72)), [t.sphere([0, 0, l.zc], R, 72)]);
     if (cs) ink.push(shell(cs)); if (ring) ink.push(shell(t.k(t.C.difference([t.k(t.C.circle(D * .245, 64)), t.k(t.C.circle(D * .232, 64))]))));
     return { cuts, raised, ink, badge };
   }
   if (!F.disc) {
     // Debossed straight into the sphere (Rogue, REP): cut the section 0.9 mm deep, following the curvature.
-    for (const s of [cs, ring]) if (s) cuts.push(t.cut(t.faceSolid(s, -1, R - 3, R + 6, zf), [t.sphere([0, 0, l.zc], R - 1.2, 72)]));
+    for (const s of [cs, ring]) if (s) cuts.push(t.cut(t.faceSolid(s, -1, R * .5, R + 6, zf), [t.sphere([0, 0, l.zc], R - 1.5, 72)]));
   } else {
     // Flat machined panel; CAP adds a raised disc on it. Features stay inside the sphere radius.
     const raisedDisc = F.disc === 'raised', rp = R * (raisedDisc ? .36 : .43), yp = Math.sqrt(R * R - rp * rp);
@@ -54,18 +54,22 @@ function castMarkings(t: KettlebellKit, m: CastBellModel) {
     const plate = t.roundRect(B.width, B.height, B.height * .22), zb = l.zc - R * .02;
     const txt = B.lines ? t.textBlock(B.lines, B.height * .5) : undefined;
     const withText = txt ? t.k(t.C.union([t.k(plate.translate([0, -B.height * .45])), t.k(txt.translate([0, B.height * .65]))])) : plate;
-    if (B.plate === 'deboss') cuts.push(t.cut(t.faceSolid(withText, 1, R - 3, R + 6, zb), [t.sphere([0, 0, l.zc], R - .8, 72)]));
-    else if (B.plate === 'raised') raised.push(t.cut(t.meet(t.faceSolid(withText, 1, R - 3, R + 2, zb), t.sphere([0, 0, l.zc], R + .6, 72)), [t.sphere([0, 0, l.zc], R - 1, 72)]));
-    else badge.push(t.cut(t.faceSolid(t.k(t.C.circle(B.width / 2, 64)), 1, R - 3, R + .45, zb), [t.sphere([0, 0, l.zc], R - .5, 72)]));
+    if (B.plate === 'deboss') cuts.push(t.cut(t.faceSolid(withText, 1, R * .5, R + 6, zb), [t.sphere([0, 0, l.zc], R - .8, 72)]));
+    else if (B.plate === 'raised') raised.push(t.cut(t.meet(t.faceSolid(withText, 1, R * .5, R + 2, zb), t.sphere([0, 0, l.zc], R + .6, 72)), [t.sphere([0, 0, l.zc], R - 1, 72)]));
+    else badge.push(t.cut(t.meet(t.faceSolid(t.k(t.C.circle(B.width / 2, 64)), 1, R * .5, R + 1, zb), t.sphere([0, 0, l.zc], R + .45, 72)), [t.sphere([0, 0, l.zc], R - .5, 72)]));
   }
   return { cuts, raised, ink, badge };
 }
-/** Pseudo-random marbling streaks (Savage): thin slabs at repeatable angles, clipped to a skin over the part. */
-function streaks(t: KettlebellKit, seed: number, span: number, count: number) {
+/** Pseudo-random marbling (Savage): stretched, twisted blobs scattered over the body and handle, clipped to a thin skin. */
+function streaks(t: KettlebellKit, seed: number, l: CastBellModel['layout'], count: number) {
   let s = seed * 9301 + 49297; const rnd = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
-  return t.union(Array.from({ length: count }, () => {
-    const w = 1.5 + rnd() * 6, slab = t.box([-span, -w / 2, -span], [span, w / 2, span]);
-    return t.move(t.k(slab.rotate([rnd() * 180, rnd() * 180, rnd() * 180])), [0, 0, span * .45]);
+  const handle = l.path.filter(p => p.s > 0);
+  return t.union(Array.from({ length: count }, (_, i) => {
+    let c: [number, number, number];
+    if (i % 3 === 2 && handle.length) { const p = handle[Math.floor(rnd() * handle.length)]; c = [(rnd() < .5 ? -1 : 1) * p.x, (rnd() - .5) * p.r * 2, p.z]; }
+    else { const th = rnd() * Math.PI * 2, ph = Math.acos(1 - 1.7 * rnd()); c = [l.R * Math.sin(ph) * Math.cos(th), l.R * Math.sin(ph) * Math.sin(th), l.zc + l.R * Math.cos(ph)]; }
+    const blob = t.k(t.k(t.M.sphere(1, 12)).scale([26 + rnd() * 50, 2 + rnd() * 5, 6 + rnd() * 16]));
+    return t.move(t.k(blob.rotate([rnd() * 180, rnd() * 180, rnd() * 180])), c);
   }));
 }
 export function buildCastBell(api: ManifoldAPI, m: CastBellModel, label = 'kettlebell'): SolidPart[] {
@@ -87,7 +91,7 @@ export function buildCastBell(api: ManifoldAPI, m: CastBellModel, label = 'kettl
     if (m.coat) {
       const skin = t.cut(t.union([t.sphere([0, 0, l.zc], R + .25, 64), t.tube(l.path, true, 16, .25)]), [t.sphere([0, 0, l.zc], R - .6, 48), t.tube(l.path, true, 12, -.6), t.box([-R - 2, -R - 2, -R - 5], [R + 2, R + 2, .01])]);
       const clear = t.cylY(-R - 5, R + 5, l.body * .28, 0, l.zc - R * .03, 48);
-      const marble = t.cut(t.meet(skin, streaks(t, Math.round(l.body), l.height * 1.4, 18)), [clear]);
+      const marble = t.cut(t.meet(skin, streaks(t, Math.round(l.body), l, 64)), [clear]);
       t.add('Marbled streaks', marble, 'source', m.coat.streak, 0, .72);
     }
     const out = t.finish(label);
