@@ -41,7 +41,7 @@ Put tests in `rack-generator/<family>.test.ts` and research notes in `rack-gener
 - **Wall parts:** origin at the face centre on the wall surface, X along the wall, −Y out of the wall. See `wall-part.ts`.
 - **Rack parts:** origin on the centreline of the tube it mounts to, on the axis of the target hole. +Y points **out** of the mounting face, so the mating face is `y = params.upright / 2`. X runs across the face (along the rail for crossmember tops), and Z is up. This is the same frame as `parts/darko.ts` and `parts/voltra.ts`. See [Rack attachments](#rack-attachments).
 - **Materials:** return named `SolidPart`s grouped by material, with `role` from `appearance.ts` (`'source'` for fixed factory colours, `'handle'` for grips and knurl, `'liner'` for rubber and UHMW, `'fastener'` for hardware; use `'frame'` only when the user's rack paint should recolour it). Set `color`, `metalness` and `roughness` to match the photos.
-- **Budget:** keep each part under about 80k triangles and under about 1.5 s to build its defaults. Use cylinder segments of 24–48; small bolts can use 12–16.
+- **Budget:** keep each part under about 80k triangles and under about 1.5 s to build its defaults on an idle machine. In tests, assert build time only against `BUILD_BUDGET_MS` from `rack-generator/test-budget.ts` (a runaway ceiling), never a tight wall-clock limit: many agents share this machine. Use cylinder segments of 24–48; small bolts can use 12–16.
 - Every solid must be non-empty, `status() === 'NoError'` and positive volume, for **every** param option (test the extremes and the defaults).
 
 ## Tests (required)

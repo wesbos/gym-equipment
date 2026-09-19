@@ -10,6 +10,7 @@ import {freeSlots, placeHang, validateHangItems} from './hang-items.ts';
 import {addWallItem} from './wall-items.ts';
 import {createAssembly, validateAssembly} from './assembly.ts';
 import type {SolidPart} from './types.ts';
+import {BUILD_BUDGET_MS} from './test-budget.ts';
 const api=await Module();api.setup();
 const IN=25.4;
 type Box={min:number[];max:number[]};
@@ -52,7 +53,7 @@ test('both poses build valid closed solids inside a tight envelope, anchored on 
    assert.ok(drop+own.min[2]<=12,`${part.id} envelope drop is tight`);
    assert.ok(solids.reduce((n,s)=>n+s.solid.numTri(),0)<80000,`${part.id} triangle budget`);
    // Budget is 1.5 s on an idle machine (measured ≤ 0.2 s); the full suite runs many agents at once, so only guard runaway builds.
-   assert.ok(ms<6000,`${part.id} builds in ${ms.toFixed(0)} ms`);
+   assert.ok(ms< BUILD_BUDGET_MS,`${part.id} builds in ${ms.toFixed(0)} ms`);
   }
   assert.ok(own.min[2]<0&&own.max[2]>0&&own.min[1]<0,`${part.id} straddles the anchor`);
   assert.ok(all.max[1]<=(hook?HOOK_REACH+19:HOOK_REACH),`${part.id} clears the panel face`);

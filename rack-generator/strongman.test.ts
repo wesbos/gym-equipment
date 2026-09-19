@@ -5,6 +5,7 @@ import { PARTS } from './floor-parts/strongman.ts';
 import { definitions } from './parts/strongman.ts';
 import { coerceFloorParams, floorOptions, resolveBy, validateFloorParams, type FloorPart } from './floor-registry.ts';
 import type { NumericParams, SolidPart } from './types.ts';
+import {BUILD_BUDGET_MS} from './test-budget.ts';
 
 const api = await Module(); api.setup();
 const def = (id: string) => definitions.find(d => d.id === id)!;
@@ -44,7 +45,7 @@ test('every strongman entry builds closed, bounded solids for defaults and first
       assert.ok(Math.abs(b.max[0] - b.min[0] - box.width) < .5 && Math.abs(b.max[1] - b.min[1] - box.depth) < .5, `${label} footprint ${(b.max[0] - b.min[0]).toFixed(1)} x ${(b.max[1] - b.min[1]).toFixed(1)} vs ${box.width.toFixed(1)} x ${box.depth.toFixed(1)}`);
       assert.ok(Math.abs(b.min[2]) < 1e-6 && Math.abs(b.max[0] + b.min[0]) < .5 && Math.abs(b.max[1] + b.min[1]) < .5, `${label} sits on the floor, centred`);
       assert.ok(tris < 90000, `${label} ${tris} triangles`);
-      assert.ok(ms < 4000, `${label} ${ms.toFixed(0)} ms`);
+      assert.ok(ms < BUILD_BUDGET_MS, `${label} ${ms.toFixed(0)} ms`);
       if (process.env.STRONGMAN_STATS) console.log(`${label}: ${tris} tris, ${ms.toFixed(0)} ms, h ${b.max[2].toFixed(0)}`);
       free(parts);
     }

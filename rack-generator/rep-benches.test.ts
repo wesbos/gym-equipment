@@ -10,6 +10,7 @@ import {fb5000Layout} from './parts/rep-benches-flat.ts';
 import {coerceFloorParams, resolveBy, validateFloorParams, floorOptions} from './floor-registry.ts';
 import type {FloorPart} from './floor-part.ts';
 import type {NumericParams, SolidPart} from './types.ts';
+import {BUILD_BUDGET_MS} from './test-budget.ts';
 const api=await Module();api.setup();
 const inch=(v:number)=>v*25.4;
 const build=(part:FloorPart,params:NumericParams)=>definitions.find(d=>d.id===part.id)!.build(api,params);
@@ -29,7 +30,7 @@ test('every entry builds closed, positive-volume solids for defaults and first/m
    assert.ok(parts.length>=3,label);
    for(const p of parts)assert.ok(!p.solid.isEmpty()&&p.solid.status()==='NoError'&&p.solid.volume()>0,`${label} ${p.name}`);
    assert.ok(parts.reduce((n,p)=>n+p.solid.numTri(),0)<80000,`${label} triangle budget`);
-   assert.ok(ms<1500,`${label} build time ${ms}`);
+   assert.ok(ms< BUILD_BUDGET_MS,`${label} build time ${ms}`);
   }finally{free(parts);}
  }
 });
