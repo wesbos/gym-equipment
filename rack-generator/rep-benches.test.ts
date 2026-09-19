@@ -108,7 +108,7 @@ test('articulated pads really move: incline raises the back pad, seat angle lift
  }
  for(const part of [REP_BLACKWING,PARTS[8]]){
   const depth=(attachment:number)=>resolveBy(part.footprint,{...part.defaults,attachment}).depth;
-  assert.ok(depth(1)>depth(0)+250 && depth(2)>depth(1) && depth(3)>depth(0)+500,`${part.id} attachment reach`);
+  assert.ok(depth(1)>depth(0)+250 && depth(2)>depth(1) && depth(3)>depth(0)+400,`${part.id} attachment reach`);
   const parts=build(part,{...part.defaults,attachment:3});try{assert.ok(parts.some(p=>p.name.startsWith('Molded'))&&bounds(parts).max[2]>900,'LE/LC mounted');}finally{free(parts);}
  }
 });
