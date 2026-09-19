@@ -223,7 +223,7 @@ function circus(K: Kit, c: CircusSpec, handle: number, pose: number, print?: str
     parts.push([K.move(bell, [0, s * half, 0]), 'Steel bells', FINISH.black]);
     parts.push([K.bar('y', s * (half + L - 3), s * (half + L), c.bell - 30, 0, 0, 64), 'End caps', { ...FINISH.black, roughness: .45 }]);
     parts.push([K.bar('y', s * (half + L - 5), s * (half + L), 34, 0, 0, 6), 'Bolts', FINISH.fastener]);
-    if (print) parts.push([K.cut(K.inter(K.bar('y', s * half + (s > 0 ? L * .25 : -L * .75), s * half + (s > 0 ? L * .75 : -L * .25), c.bell + 1.2, 0, 0, 72), K.box([-R * .6, -999, 0], [R * .6, 999, R])), [K.bar('y', -999, 999, c.bell - 1, 0, 0, 72)]), 'Print', { color: print, metalness: 0, roughness: .7 }]);
+    if (print) parts.push([K.cut(K.inter(K.bar('y', s * half + (s > 0 ? L * .36 : -L * .64), s * half + (s > 0 ? L * .64 : -L * .36), c.bell + 1.2, 0, 0, 72), K.box([-R * .5, -999, 0], [R * .5, 999, R])), [K.bar('y', -999, 999, c.bell - 1, 0, 0, 72)]), 'Print', { color: print, metalness: 0, roughness: .7 }]);
   }
   parts.push([K.bar('y', -half - 2, half + 2, inch(handle), 0, 0, 40), 'Handle', { ...FINISH.black, role: 'handle', roughness: .6 }]);
   for (const [m, name, f] of parts) K.add(name, pose ? K.move(K.rot(m, [90, 0, 0]), [0, 0, half + L]) : K.move(m, [0, 0, R]), f);

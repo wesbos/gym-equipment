@@ -125,7 +125,9 @@ export function buildThrowingBag(api: ManifoldAPI, p: NumericParams): SolidPart[
     const shell = (t: number) => { const m = softRevolve(K, profile, t, warp, 64); return K.k(m.scale([1, .92, 1])); };
     const bag = shell(0), big = s.d * 2;
     K.add('Bag body', bag, fabric('#d8262d'));
-    K.add('Print', layer(K, shell, 1.2, sideRegion(K, [[-R * .62, h * .72], [0, h * .6], [R * .62, h * .72], [R * .5, h * .3], [0, h * .1], [-R * .5, h * .3]], s.d, 0)), fabric('#141414', .75));
+    // Three-headed dog print as a plain shield outline (ears up, muzzle down).
+    const pw = R * 1.1, pz = h * .45, ph = h * .62;
+    K.add('Print', layer(K, shell, 1.2, sideRegion(K, [[-pw / 2, pz + ph * .5], [-pw * .18, pz + ph * .3], [0, pz + ph * .5], [pw * .18, pz + ph * .3], [pw / 2, pz + ph * .5], [pw * .42, pz - ph * .05], [0, pz - ph * .5], [-pw * .42, pz - ph * .05]], s.d, 0)), fabric('#141414', .75));
     K.add('Zipper and strap', layer(K, shell, 3, K.box([-R * .42, -26, h * .7], [R * .42, 26, big])), VELCRO);
     for (const sx of [-1, 1]) K.add('Webbing', layer(K, shell, 3, K.box([sx > 0 ? R * .45 : -big, -19, h * .3], [sx > 0 ? big : -R * .45, 19, big])), WEB);
     // Handle: webbing loop rising from the bag top, silicone grip across its crown.
@@ -175,7 +177,7 @@ export function buildSandstone(api: ManifoldAPI, p: NumericParams): SolidPart[] 
     K.add('Panel seams', layer(K, ball, 1.6, ring(-10, h * .5, R * .64)), SEAM);
     for (const a of [45, 135, 225, 315]) K.add('Panel seams', layer(K, ball, 1.6, K.rot(K.box([0, -3, h * .2], [big, 3, h * .8]), [0, 0, a])), SEAM);
     K.add('Logo band', layer(K, ball, 1.5, sideRegion(K, rectOutline(0, h * .52, R * 1.05, h * .2, 3), s.d, 0)), fabric('#141414', .75));
-    K.add('Logo print', layer(K, ball, 2, sideRegion(K, rectOutline(0, h * .52, R * .8, h * .075, 2), s.d, 0)), fabric('#e3342f', .7));
+    for (let k = 0; k < 8; k++) K.add('Logo print', layer(K, ball, 2, sideRegion(K, rectOutline((k - 3.5) * R * .1, h * .52, R * .075, h * .08, 1), s.d, 0)), fabric('#e3342f', .7));
     K.add('Hook-and-loop flap', layer(K, ball, 4, K.move(K.slab(R * .9, R * .75, big, R * .1, [0, 0, 0]), [0, R * .1, h * .72])), VELCRO);
     return K.done({ ...resolveBy(CERBERUS_SANDSTONE.footprint, p), fit: SOFT_FIT });
   });
