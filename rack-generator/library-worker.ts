@@ -11,6 +11,7 @@ import { isSystemPart } from './system-types.ts';
 import { floorPart, validateFloorParams } from './floor-registry.ts';
 import { wallPart } from './wall-registry.ts';
 import { hangPart } from './hang-registry.ts';
+import { rackPart, validateRackParams } from './rack-registry.ts';
 const ready = Module({ locateFile: () => wasmUrl }).then((api) => {
   api.setup();
   return api;
@@ -26,7 +27,10 @@ self.onmessage = async ({ data }: MessageEvent<LibraryWorkerRequest>) => {
     if (!def) throw new Error("Unknown part");
     const params = { ...def.defaults, ...data.params }, floor = floorPart(data.part) ?? wallPart(data.part) ?? hangPart(data.part);
     // Floor, wall and hang parts carry their own option lists (negative/zero values allowed where listed).
+    const rack = rackPart(data.part);
     if (floor) validateFloorParams(floor, data.params);
+    // Rack parts also receive the resolved rack context (upright, mountSpacing, holeDiameter, mirror).
+    else if (rack) validateRackParams(rack, data.params);
     else for (const [key, value] of Object.entries(params))
       if (
         !Number.isFinite(value) ||

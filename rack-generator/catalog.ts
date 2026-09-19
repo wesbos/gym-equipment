@@ -61,6 +61,23 @@ const floor: PartDefinition[] = [
 import { definitions as cableHandles } from './parts/cable-handles.ts';
 import { definitions as specialtyGrips } from './parts/specialty-grips.ts';
 import { definitions as hangingAccessories } from './parts/hanging-accessories.ts';
+// Rack attachments (rack-registry.ts): proof entries + family slots.
+import { definitions as rogueBandPegs } from './parts/rogue-band-pegs.ts';
+import { definitions as repLegRoller } from './parts/rep-leg-roller.ts';
+import { definitions as rackRollersPads } from './parts/rack-rollers-pads.ts';
+import { definitions as rackJcupsSafeties } from './parts/rack-jcups-safeties.ts';
+import { definitions as rackDipsLandmines } from './parts/rack-dips-landmines.ts';
+import { definitions as rackLeversBeltSquat } from './parts/rack-levers-belt-squat.ts';
+import { definitions as rackDigitalCable } from './parts/rack-digital-cable.ts';
+const rack: PartDefinition[] = [
+  ...rogueBandPegs,
+  ...repLegRoller,
+  ...rackRollersPads,
+  ...rackJcupsSafeties,
+  ...rackDipsLandmines,
+  ...rackLeversBeltSquat,
+  ...rackDigitalCable,
+];
 // Wall family slots.
 import { definitions as wallStorage } from './parts/wall-storage.ts';
 // Wall parts: same pattern; entries register in wall-registry.ts.
@@ -77,7 +94,7 @@ const wall: PartDefinition[] = [
 ];
 // Retain PartDefinition's builder signature, including the optional logo argument
 // when that stream integrates; vendor marks remain internal to their builders.
-export const definitions: PartDefinition[] = [...structure, ...bars, ...attachments, ...voltra, ...darko, ...cables, ...smith, ...floor, ...wall];
+export const definitions: PartDefinition[] = [...structure, ...bars, ...attachments, ...voltra, ...darko, ...rack, ...cables, ...smith, ...floor, ...wall];
 export const catalog: CADCatalog = {
   definitions,
   attribution: partAttribution,

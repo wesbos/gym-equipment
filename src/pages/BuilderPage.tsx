@@ -12,7 +12,9 @@ import { hangWarnings } from '../../rack-generator/hang-items.ts';
 import { HANG_PARTS } from '../../rack-generator/hang-registry.ts';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { FLOOR_PARTS, floorPart } from '../../rack-generator/floor-registry.ts';
-import { FLOOR_SECTIONS, WALL_SECTIONS, HANG_SECTIONS, DEFAULT_FLOOR_SECTION, DEFAULT_WALL_SECTION, DEFAULT_HANG_SECTION, sectionGroups } from '../../rack-generator/catalog-sections.ts';
+import { FLOOR_SECTIONS, WALL_SECTIONS, HANG_SECTIONS, RACK_SECTIONS, DEFAULT_FLOOR_SECTION, DEFAULT_WALL_SECTION, DEFAULT_HANG_SECTION, DEFAULT_RACK_SECTION, sectionGroups } from '../../rack-generator/catalog-sections.ts';
+import { RACK_PARTS } from '../../rack-generator/rack-registry.ts';
+import { RackPartControls } from '../components/RackPartControls.tsx';
 import { LogoControls } from '../components/LogoControls.tsx';
 import { addsStructure } from '../../rack-generator/structure-candidates.ts';
 import { VendorControls, VendorCredit } from '../components/VendorControls.tsx';
@@ -71,7 +73,8 @@ const groups: [string, readonly PartId[]][] = [
   ...sectionGroups(FLOOR_PARTS, FLOOR_SECTIONS, DEFAULT_FLOOR_SECTION),
   ...sectionGroups(WALL_PARTS, WALL_SECTIONS, DEFAULT_WALL_SECTION),
   ...sectionGroups(HANG_PARTS, HANG_SECTIONS, DEFAULT_HANG_SECTION),
-  ["Digital resistance", VOLTRA_IDS],
+  // Brand rack attachments group under their rack-registry `section`; the built-in VOLTRA mounts lead "Digital & cable".
+  ...sectionGroups<PartId>([...VOLTRA_IDS.map(id => ({ id, section: "Digital & cable" })), ...RACK_PARTS], RACK_SECTIONS, DEFAULT_RACK_SECTION),
   ["Darko Lifting", DARKO_IDS],
   [
     "Frame",
@@ -365,6 +368,7 @@ function Inspector({ store }: { store: BuilderStore }) {
             {rotationMode(doc, entry.id).supported && <button type="button" onClick={() => store.rotateMounted(selected ?? entry.id)}>{rotationMode(doc, entry.id).label} · R / scroll</button>}
           </div>}
           {entry && <VendorControls store={store} entry={entry} />}
+          {entry && <RackPartControls store={store} entry={entry} />}
           {entry && <PlateStackEditor key={entry.id} store={store} entry={entry} />}
           <VendorCredit part={part} />
           {fields.map((field) => (

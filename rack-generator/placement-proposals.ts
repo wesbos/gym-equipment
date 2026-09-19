@@ -3,6 +3,8 @@ import { partDefaults } from './reset.ts';
 import { getMounts, getPartPlacementInfo, pairedByDefault, resolveAssembly, validateAssembly, addAccessory, moveAccessory } from './assembly.ts';
 import { detectCollisions } from './assembly-collisions.ts';
 import type { RackDoc, PartId, Mount, ResolvedInstance, NumericParams } from './types.ts';
+import { rackPart, rackPlacementFor } from './rack-registry.ts';
+import { rackAutoFit } from './rack-mounts.ts';
 
 export interface PlacementProposal { doc: RackDoc; entries: ResolvedInstance[]; ownerId: string; target?: Mount; label: string }
 export interface ProposalResult { proposal: PlacementProposal | null; reason: string; evaluated: number; mounts: Mount[] }
@@ -14,11 +16,12 @@ export function scoreMount(doc: RackDoc, part: PartId, m: Mount): number {
   const row = (rear ? Math.max : Math.min)(...posts.map(p => p.y));
   const left = Math.min(...posts.filter(q => q.y === p.y).map(q => q.x));
   const outside = p.x === left ? 'left' : 'right';
-  const face = rear || part === 'landmine' ? outside : 'front';
+  const entry = rackPart(part), rack = entry && rackPlacementFor(entry, rackAutoFit(part, doc.rack)), inside = outside === 'left' ? 'right' : 'left';
+  const face = rack?.face ? (rack.face === 'outside' ? outside : rack.face === 'inside' ? inside : rack.face) : rear || part === 'landmine' ? outside : 'front';
   const hooks = doc.accessories.find(a => a.part.startsWith('j-hook'));
-  const height = part.startsWith('foot-') ? 65 : part === 'landmine' ? 165 : rear ? 365
+  const height = rack?.height ?? (part.startsWith('foot-') ? 65 : part === 'landmine' ? 165 : rear ? 365
     : part.startsWith('dip-') ? 815 : part.startsWith('safety-') || part === 'spotter-arm' ? (hooks ? 65 + hooks.target.hole * doc.rack.pitch - 250 : 815)
-    : part === 'monolift' ? 1415 : part.startsWith('pullup-') ? doc.rack.height - 200 : 1215;
+    : part === 'monolift' ? 1415 : part.startsWith('pullup-') ? doc.rack.height - 200 : 1215);
   return Math.abs(p.y - row) * 4 + (m.face === face ? 0 : 500) + Math.abs(m.position[2] - height) + (p.x === left ? 0 : 1);
 }
 function locationLabel(doc: RackDoc, id: string): string {
@@ -31,6 +34,7 @@ function locationLabel(doc: RackDoc, id: string): string {
 function proposalParams(doc: RackDoc, part: PartId, movingId: string | null): NumericParams {
   const previous = doc.accessories.find(a => a.id === movingId);
   if (previous) return previous.params;
+  if (rackPart(part)) return rackAutoFit(part, doc.rack);
   return part === 'safety-pin-pipe' ? { pinDiameter: partDefaults(doc, part).pinDiameter } : {};
 }
 /** Mount enumeration must validate the same profile defaults as the eventual preview. */
