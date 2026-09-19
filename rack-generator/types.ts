@@ -15,7 +15,7 @@ export type Vec2 = [number, number];
 export type Vec3 = [number, number, number];
 export type NumericParams = Record<string, number>;
 export type PartParams = NumericParams;
-export type PartId = SystemPartId | FloorPartId | WallPartId | HangPartId | RackPartId | 'darko-anchor' | 'darko-dock' | 'darko-j' | 'darko-double-j' | 'darko-double-decker' | 'voltra-sliding' | 'voltra-adaptive' | 'voltra-fixed' | 'upright' | 'crossmember-425' | 'crossmember-725' | 'crossmember-1075' | 'angled-crossmember' | 'offset-crossmember' | 'nameplate' | 'branded-crossmember' | 'branded-crossmember-lite' | 'foot-400' | 'foot-800' | 'pullup-straight' | 'pullup-multigrip' | 'pullup-sphere' | 'safety-box' | 'safety-pin-pipe' | 'safety-webbing' | 'j-hook-standard' | 'j-hook-roller' | 'j-hook-sandwich' | 'spotter-arm' | 'dip-horn' | 'dip-bar-adjustable' | 'landmine' | 'monolift' | 'single-bar-holder' | 'storage-pin-short' | 'storage-pin-long';
+export type PartId = SystemPartId | FloorPartId | WallPartId | HangPartId | RackPartId | 'darko-anchor' | 'darko-dock' | 'darko-j' | 'darko-double-j' | 'darko-double-decker' | 'voltra-sliding' | 'voltra-adaptive' | 'voltra-fixed' | 'upright' | 'crossmember-425' | 'crossmember-725' | 'crossmember-1075' | 'angled-crossmember' | 'offset-crossmember' | 'nameplate' | 'branded-crossmember' | 'branded-crossmember-lite' | 'profile-nameplate' | 'foot-400' | 'foot-800' | 'pullup-straight' | 'pullup-multigrip' | 'pullup-sphere' | 'safety-box' | 'safety-pin-pipe' | 'safety-webbing' | 'j-hook-standard' | 'j-hook-roller' | 'j-hook-sandwich' | 'spotter-arm' | 'dip-horn' | 'dip-bar-adjustable' | 'landmine' | 'monolift' | 'single-bar-holder' | 'storage-pin-short' | 'storage-pin-long';
 export interface SolidPart extends MaterialSource { name: string; solid: Manifold; color?: string; metalness?: number; roughness?: number }
 export interface StandardOption { value: number; label: string }
 export interface PartDefinition { standardOptions?: Record<string, readonly StandardOption[]>; id: string; name: string; category: string; defaults: NumericParams; build: (api: ManifoldAPI, params: NumericParams, logo?: ValidatedLogo) => SolidPart[]; reference?: { file: string; node: string }; description?: string; /** Laid-out 3MF: keep the builder's Z-up frame (base end down) instead of the smallest-height heuristic. */ printOrientation?: 'standing' }
@@ -24,9 +24,11 @@ export interface UprightMesh { positions: Float32Array; indices: Uint32Array; st
 export interface LibraryWorkerRequest { logo?: ValidatedLogo; id: number | string; part: string; params: NumericParams }
 export type Face = 'front' | 'back' | 'left' | 'right';
 export type UprightId = string;
-export interface UprightNode { x: number; y: number }
+/** `height` overrides the rack height for one post (e.g. a half rack's shorter rear storage posts). */
+export interface UprightNode { x: number; y: number; height?: number }
 export interface ConnectionEdge { id: string; from: string; to: string; level: "upper" | "lower" }
-export interface RackDimensions { height: number; width: number; depth: number; tube: number; holeDiameter: number; pitch: number; firstHole: number; benchStart?: number; benchEnd?: number; benchSpacing?: number }
+/** `tube` is the upright face width along X; `tubeDepth` (default `tube`) is its front-to-back size along Y for rectangular 2x3 uprights. */
+export interface RackDimensions { height: number; width: number; depth: number; tube: number; tubeDepth?: number; holeDiameter: number; pitch: number; firstHole: number; benchStart?: number; benchEnd?: number; benchSpacing?: number }
 export interface UprightTarget { orientation?: number; kind?: 'upright'; uprightId: UprightId; face: Face; hole: number }
 /** Upper rail bearing tab with a side through-bolt at an actual rail station. */
 export interface CrossmemberTopTarget { orientation?: number; kind: 'crossmember-top'; connectionId: string; station: number; side: 1 | -1; uprightId: UprightId; face: Face; hole: number }

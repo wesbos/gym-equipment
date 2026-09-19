@@ -24,7 +24,7 @@ test('sidebar systems and curated starters: confirmation, valid bay, cancellatio
     };
     await ready();
     const sidebar = page.locator('.catalog-panel');
-    await expect(sidebar.locator('[data-preset]')).toHaveCount(7);
+    await expect(sidebar.locator('[data-preset]')).toHaveCount(24);
     for (const part of ['voltra-sliding', 'voltra-adaptive', 'voltra-fixed']) await expect(sidebar.locator(`[data-part="${part}"]`)).toHaveCount(1);
     console.log('Catalog loaded');
     const initial = await doc();

@@ -68,7 +68,7 @@ export function resolveRack(doc: RackDoc, accessory: Accessory, targets: Target[
     const post = doc.uprights[t.uprightId], z = r.firstHole + t.hole * r.pitch, angle = ROTATIONS[t.face], normal = NORMALS[t.face];
     const across: Vec3 = [Math.cos(angle), Math.sin(angle), 0];
     const mounts: Mount[] = rackHoles(p, params).map(offset => ({ ...t, hole: t.hole + offset, center: [post.x, post.y, z + offset * r.pitch],
-      position: [post.x + normal[0] * r.tube / 2, post.y + normal[1] * r.tube / 2, z + offset * r.pitch], localAnchor: [0, 0, offset * r.pitch],
+      position: [post.x + normal[0] * r.tube / 2, post.y + normal[1] * (r.tubeDepth ?? r.tube) / 2, z + offset * r.pitch], localAnchor: [0, 0, offset * r.pitch],
       pinAxis: p.mount.pinAxis === 'across' ? across : [...normal] }));
     return { ...base, position: [post.x, post.y, z], rotation: [0, 0, angle], mount: mounts[0], mounts, connectedTo: [t.uprightId] };
   });
