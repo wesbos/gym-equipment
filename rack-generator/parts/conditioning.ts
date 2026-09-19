@@ -11,8 +11,8 @@ import {
 import { buildEchoSled, buildSliceSled, buildTankM1, buildTubeSled } from './conditioning-sleds.ts';
 import { buildBattleRope, buildJumpRope, buildSoftPlyoBox, buildWoodPlyoBox } from './conditioning-soft.ts';
 import type { Mat } from './conditioning-kit.ts';
-const POLY_BLACK: Mat = ['Black 3-strand poly dacron', 'source', '#1c1c1d', 0, .86];
-const HEAT_SHRINK: Mat = ['Glossy black heat-shrink grips', 'handle', '#0f1011', 0, .28];
+const POLY_BLACK: Mat = ['Black 3-strand poly dacron', 'source', '#232325', 0, .86];
+const HEAT_SHRINK: Mat = ['Glossy black heat-shrink grips', 'handle', '#0f1011', 0, .38];
 const WHITE: Mat = ['White printed grip logo', 'source', '#ecebe6', 0, .5];
 export const definitions: PartDefinition[] = [
   floorDefinition(TORQUE_TANK_M1, buildTankM1),

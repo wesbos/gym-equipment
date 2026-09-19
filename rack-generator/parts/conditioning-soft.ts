@@ -17,7 +17,7 @@ export function buildBattleRope(api: ManifoldAPI, spec: RopeSpec, pose: number, 
     if (look.tracer && lay.tracer) t.add(look.tracer, t.mesh(lay.tracer));
     if (look.label) {
       // Printed on the top of each grip, reading toward the tip; flat letters sunk to the grip's chord.
-      const R = spec.handleD / 2 * (spec.kind === 'twisted' ? .9 : 1), h = spec.handleD * .5, sag = R - Math.sqrt(R * R - (h / 2) ** 2);
+      const R = spec.handleD / 2, h = spec.handleD * .5, sag = R - Math.sqrt(R * R - (h / 2) ** 2);
       for (const f of lay.labels) {
         const cs = t.fitText(look.label.text, look.label.width, h), up = cross(f.u, f.t) as Vec3;
         const at: Vec3 = [f.p[0] + f.u[0] * R, f.p[1] + f.u[1] * R, f.p[2] + f.u[2] * R];
@@ -66,7 +66,7 @@ export function buildSoftPlyoBox(api: ManifoldAPI, dimsIn: readonly number[], he
     put(VINYL, t.hull(corners));
     for (const f of faces(half, ink)) {
       const dec = (cs: CrossSection | undefined, du: number, dv: number, mat: Mat) => put(mat, t.decal(cs, near(f, du, dv), f.u, f.v, ink * 2, ink));
-      const H = dims[labelUp(f.a)] / 25.4, fw = f.w, fh = f.h;
+      const H = Math.round(dims[labelUp(f.a)] / 25.4), fw = f.w, fh = f.h;
       if (style === 'rep') {
         // Inset border line, wordmark low-centre, height number + arrow + INCH top-left.
         const inset = 30, line = 4.5, outer = t.rounded(fw - 2 * inset, fh - 2 * inset, 6), inner = t.rounded(fw - 2 * inset - 2 * line, fh - 2 * inset - 2 * line, 3);
@@ -98,8 +98,8 @@ export function buildSoftPlyoBox(api: ManifoldAPI, dimsIn: readonly number[], he
 export function buildWoodPlyoBox(api: ManifoldAPI, dimsIn: readonly number[], heightIn: number): SolidPart[] {
   const t = conditioningKit(api), dims = dimsIn.map(inch), [X, Y, Z] = dims, ply = 19, ink = .2;
   const { m } = standUp(dims, inch(heightIn));
-  const FACE: Mat = ['A/C plywood (long faces)', 'source', '#dcc298', 0, .72], SIDE: Mat = ['A/C plywood (sides)', 'source', '#d6ba8d', 0, .74];
-  const END: Mat = ['A/C plywood (ends)', 'source', '#d1b384', 0, .76], BURN: Mat = ['Burned ROGUE branding', 'source', '#4b2e1b', 0, .85];
+  const FACE: Mat = ['A/C plywood (long faces)', 'source', '#dfc79f', 0, .72], SIDE: Mat = ['A/C plywood (sides)', 'source', '#d0b385', 0, .74];
+  const END: Mat = ['A/C plywood (ends)', 'source', '#c4a372', 0, .76], BURN: Mat = ['Burned ROGUE branding', 'source', '#4b2e1b', 0, .85];
   return t.finish('Rogue Games Box', [0, 0, inch(heightIn) / 2], () => {
     const put = (mat: Mat, s: Manifold | undefined) => s && t.add(mat, t.k(s.transform(m)));
     const x = X / 2 - ink, y = Y / 2 - ink, z = Z / 2;

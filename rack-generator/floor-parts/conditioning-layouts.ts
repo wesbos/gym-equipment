@@ -77,7 +77,7 @@ export const ropeOuter = (s: RopeSpec) => s.kind === 'sleeve' ? (s.D + 6) * 1.05
 function buildRope(s: RopeSpec, pose: number): RopeLayout {
   const outer = Math.max(ropeOuter(s), s.handleD), zc = s.handleD / 2, { pts, coil } = centreline(s, pose, outer, zc);
   const fr = frames(pts, [0, 0, 1]), L = fr.at(-1)!.s, pitch = twistPitch(s), R = s.D / 2;
-  const twisted = strands(R, .2), sleeve = bunch((s.D + 6) / 2);
+  const twisted = strands(R, .3), sleeve = bunch((s.D + 6) / 2);
   const twist = (f: Frame) => TAU * f.s / pitch;
   const inset = 3, bodyFrames = fr.filter(f => f.s > inset && f.s < L - inset);
   const body = sweep(bodyFrames, 20, (f, phi) => s.kind === 'twisted' ? twisted(phi, twist(f)) : sleeve(f.s, phi));

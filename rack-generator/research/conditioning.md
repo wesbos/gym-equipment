@@ -110,3 +110,12 @@ Titan); the TANK's nose housing is +Y. Loaded plates use `buildPlateStack` on th
   swept from each swivel down to the floor; pose param *loose loop* (single circle ahead of the handles) or *coiled*
   (three offset turns, gym-bag coil).
 - Estimates: cone/neck/eye proportions from the callout photos. Photos (12): 6 rope images + 6 PRO cable-kit images.
+
+## Visual review (renders vs photos)
+- Round 1: TANK rear hubs covered almost the whole wheel → deeper tyre section (54 mm) with a recessed zinc rim and boss;
+  Echo saddle lettering hidden behind a 57 mm runner wall → wall lowered to 22 mm so ROGUE reads through, as in the side
+  photo; Titan bolt heads stood 0.3 mm proud of the footprint → shortened.
+- Round 2: 3-strand grooves too faint and grip lettering sunk between lobes → deeper lobes (30 %), labels on the lobe
+  crest; plyo height numbers printed as floats → rounded; ply tones spread so panel joints read.
+- Round 3: pose variants (flat spiral, laid out, bar forward, post folded, coiled jump rope) checked against the Amazon
+  flat-coil, Titan laid-out, TANK guide and Slice folded-post photos. Evidence: `docs/evidence/issue-117/`.
