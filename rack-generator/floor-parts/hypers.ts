@@ -140,9 +140,9 @@ export const ROGUE_RH2 = defineFloorPart({
  * leg lean, pad size, pivot and handle beams estimated from Titan product photos. */
 export const HPND: RhSpec = {
   base: { half: inch(52.25) / 2, railX: inch(41) / 2 - inch(1.5), rail: [inch(3), inch(2)], feet: [70, 8], cross: [-inch(52.25) / 2 + 90, inch(52.25) / 2 - 90] },
-  legs: { section: [inch(2), inch(3)], front: [430, 250], rear: [-430, -250], topX: inch(26) / 2 - inch(1) - 6, topZ: 990 },
+  legs: { section: [inch(2), inch(3)], front: [430, 250], rear: [-430, -250], topX: inch(34) / 2 - inch(1) - 6, topZ: 990 },
   plate: { y: [-330, 330], z: [965, 1054], letters: 5, cut: true },
-  pad: { w: inch(26), l: 560, t: inch(3), y: 0, top: inch(44.5), r: 20, e: 16 },
+  pad: { w: inch(34), l: 580, t: inch(3), y: 0, top: inch(44.5), r: 20, e: 16 },
   pend: { pivot: [-40, 950], arm: [inch(2), inch(2)], bottom: 205, post: 330, horn: inch(10), sleeve: 49, collar: 14, capacity: 700, strap: { top: 160, bottom: 92, r: 70, w: 50 } },
   holes: true, collars: 'spring', crossBrace: -250,
   handles: { kind: 'titan', x: 150, y0: -60, y1: 720, z: 1005, beam: inch(2), gripLen: 210, d: 32 },
@@ -160,9 +160,9 @@ export const TITAN_HPND = defineFloorPart({
  * eight handle positions. */
 export const ECON_HPND: RhSpec = {
   base: { half: inch(55) / 2, railX: inch(39) / 2 - inch(1), rail: [inch(2), inch(2)], feet: [60, 8], cross: [-inch(55) / 2 + 60, inch(55) / 2 - 60] },
-  legs: { section: [inch(2), inch(2)], front: [470, 300], rear: [-470, -300], topX: inch(24) / 2 - inch(1), topZ: 1000 },
+  legs: { section: [inch(2), inch(2)], front: [470, 300], rear: [-470, -300], topX: inch(31) / 2 - inch(1), topZ: 1000 },
   plate: { y: [-330, 330], z: [975, 1054], letters: 0, cut: false, badge: true },
-  pad: { w: inch(24), l: 560, t: inch(3), y: 0, top: inch(44.5), r: 20, e: 16 },
+  pad: { w: inch(31), l: 560, t: inch(3), y: 0, top: inch(44.5), r: 20, e: 16 },
   pend: { pivot: [-40, 955], arm: [inch(2), inch(2)], bottom: 215, post: 335, horn: inch(10), sleeve: 49, collar: 12, capacity: 550, strap: { top: 165, bottom: 95, r: 70, w: 45 } },
   holes: true, collars: 'spring', crossBrace: -250,
   handles: { kind: 'titan', x: 130, y0: -60, y1: 760, z: 1010, beam: inch(2), gripLen: 200, d: 32 },
