@@ -5,7 +5,7 @@ import { createGymBackdrop } from './gym-backdrop.ts';
 import { PointerGesture } from './pointer-gesture.ts';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { isFloorPart } from '../../rack-generator/floor-registry.ts';
-import { freeCradles, parkedPose, parksInCradles, type BarCradle } from '../../rack-generator/barbell-cradles.ts';
+import { barSpec, freeCradles, parkedPose, parksInCradles, type BarCradle } from '../../rack-generator/barbell-cradles.ts';
 import { isWallPart, wallPart } from '../../rack-generator/wall-registry.ts';
 import { roomOf, wallWarnings } from '../../rack-generator/wall-items.ts';
 import { wallFrames, wallHit, wallPlaneHit, type WallId } from '../../rack-generator/walls.ts';
@@ -319,8 +319,8 @@ export function createBuilderScene(
     releaseCradles(); releaseCradles = () => {};
   }
   async function showCradles() {
-    const base = snapshot.proposal?.entries[0], serial = ++cradleSerial;
-    cradles = freeCradles(snapshot.resolved, snapshot.doc.floorItems, snapshot.placing?.movingId);
+    const base = snapshot.proposal?.entries[0], serial = ++cradleSerial, bar = barSpec(base?.part ?? snapshot.placing?.part, base?.params);
+    cradles = freeCradles(snapshot.resolved, snapshot.doc.floorItems, snapshot.placing?.movingId, bar);
     if (!base || !cradles.length) return;
     const release = cache.pin([geometryKey(base)]);
     try {
@@ -328,7 +328,7 @@ export function createBuilderScene(
       if (disposed || serial !== cradleSerial) return;
       releaseCradles = release;
       for (const cradle of cradles) {
-        const g = transformed(model, { ...base, ...parkedPose(cradle) });
+        const g = transformed(model, { ...base, ...parkedPose(cradle, bar) });
         g.traverse(o => { if (o instanceof THREE.Mesh) { o.castShadow = o.receiveShadow = false; disposeMaterial(o.material); o.material = new THREE.MeshBasicMaterial({ color: '#e2a248', transparent: true, opacity: 0.24, depthWrite: false }); o.renderOrder = 9; } });
         g.userData = {}; cradleRoot.add(g);
       }

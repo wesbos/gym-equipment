@@ -3,7 +3,7 @@ import { systemProposal } from '../../rack-generator/system-proposal.ts';
 import { isSystemPart, SYSTEM_DEFAULTS, type SystemPartId } from '../../rack-generator/system-types.ts';
 import { addFloorItem, resolveFloorItems, floorWarnings, moveFloorGroup } from '../../rack-generator/floor-items.ts';
 import { floorPart, isFloorPart } from '../../rack-generator/floor-registry.ts';
-import { freeCradles, parkedPose, parksInCradles, settleBarbells, suggestCradle, type BarCradle } from '../../rack-generator/barbell-cradles.ts';
+import { barSpecOf, freeCradles, parkedPose, parksInCradles, settleBarbells, suggestCradle, type BarCradle } from '../../rack-generator/barbell-cradles.ts';
 import { addWallItem, resolveWallItems, wallWarnings, clampWallPosition, roomOf } from '../../rack-generator/wall-items.ts';
 import { isWallPart } from '../../rack-generator/wall-registry.ts';
 import { isHangPart } from '../../rack-generator/hang-registry.ts';
@@ -645,7 +645,7 @@ export class BuilderStore {
     return { proposal:{doc,entries,ownerId:items[0].id,label:parks ? 'Park barbell' : 'Floor placement'}, placementText:parks ? `${cradle ? `Suggested: ${cradle.label} · ` : ''}Click a highlighted cradle or the floor · ESC cancels` : 'Click floor to place · R rotates · Alt disables snap' };
   }
   private parkItem(item: FloorItem, cradle: BarCradle) {
-    const { position } = parkedPose(cradle);
+    const { position } = parkedPose(cradle, barSpecOf(item));
     Object.assign(item, { cradle: cradle.key, position: [position[0], -position[1]], rotation: cradle.yaw });
   }
   /** Parking parts: stage the bar in a free cradle (one bar per cradle; the moving bar's own cradle counts as free). */
@@ -657,7 +657,7 @@ export class BuilderStore {
     if (!cradle || item.cradle === key) return;
     this.parkItem(item, cradle);
     const [entry] = resolveFloorItems([item]);
-    this.patch({ proposal: { ...proposal, doc, entries: [{ ...entry, ...parkedPose(cradle) }] }, placementText: `${cradle.label} · Click to park · ESC cancels` });
+    this.patch({ proposal: { ...proposal, doc, entries: [{ ...entry, ...parkedPose(cradle, barSpecOf(item)) }] }, placementText: `${cradle.label} · Click to park · ESC cancels` });
   };
   previewFloor = (position?: [number,number], rotationDelta = 0) => {
     const proposal=this.state.proposal;

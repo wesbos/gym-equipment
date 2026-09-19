@@ -4,6 +4,13 @@ import type { VendorAttribution } from './vendor-metadata.ts';
 import { DEFAULT_FLOOR_SECTION, type FloorSection } from './catalog-sections.ts';
 /** Local floor rectangle in mm: width along the part's X, depth along its floor Z, centre offset from its origin. */
 export interface FloorBox { width: number; depth: number; offset?: Vec2 }
+/** A parking bar's own geometry (barbell-cradles.ts, plate stacks): local X along the bar, origin on the floor under
+ * its centre. Parts without one use the men's Olympic bar (DEFAULT_BAR_SPEC in floor-parts/barbell.ts). */
+export interface BarSpec {
+  /** Shaft diameter where it rests in a cradle, mm */ shaft: number; /** Centre to the inner collar face (half the grip span) */ shaftHalf: number;
+  /** Centre to the start of the loadable sleeve */ sleeveStart: number; sleeveLength: number; sleeveDiameter: number;
+  /** Bar axis height when the bar lies on the floor (its collars on the ground) */ axisZ: number;
+}
 type ByParams<T> = T | ((params: NumericParams) => T);
 export interface FloorParam { key: string; label: string; default: number; options: ByParams<readonly number[]>; format?: (value: number) => string }
 export interface FloorPartSpec<Id extends string = string> {
@@ -16,6 +23,7 @@ export interface FloorPartSpec<Id extends string = string> {
   /** Pairable: "Add matching pair" places a second unit `gap` mm beside the first along local X. */ pair?: { gap: number };
   colors?: readonly (readonly [string, string])[]; colorLabel?: string; vendor?: VendorAttribution;
   /** Parks in rack bar cradles (barbell-cradles.ts); floor placement is the fallback. */ parks?: boolean;
+  /** Parking bars: own shaft/sleeve/axis geometry; omitted means the 20 kg Olympic bar. */ bar?: ByParams<BarSpec>;
 }
 export interface FloorPart<Id extends string = string> extends FloorPartSpec<Id> { defaults: NumericParams }
 /** The param contract shared by floor and wall parts (wall-part.ts). */
