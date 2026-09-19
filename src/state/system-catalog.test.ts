@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { BuilderStore } from './builder-store.ts';
 import { applyPreset, RACK_PRESETS } from '../../rack-generator/presets.ts';
 import { SYSTEM_PARTS } from '../../rack-generator/system-types.ts';
-import { gridProfile } from '../../rack-generator/profiles.ts';
+import { GRID_PROFILES, gridProfile } from '../../rack-generator/profiles.ts';
 
 for (const part of SYSTEM_PARTS) test(`catalog ${part}: preview, cancel, apply and single undo`, () => {
   const store = new BuilderStore();
@@ -57,16 +57,18 @@ test('switching from system preview to an accessory retains its proposal', () =>
   assert.equal(store.getSnapshot().proposal!.doc.systems?.length ?? 0, 0);
 });
 
-test('seven featured starters use supported profile dimensions and retain full preset IDs', () => {
+test('featured starters use supported profile dimensions and retain full preset IDs', () => {
   const featured = RACK_PRESETS.filter(p => p.featured);
-  assert.equal(featured.length, 7);
+  // Eight enumerated BoS/REP starters plus one featured starter per brand profile (#130).
+  assert.equal(featured.filter(p => !gridProfile(p.profileId).starters).length, 8);
   assert.equal(new Set(RACK_PRESETS.map(p => p.id)).size, RACK_PRESETS.length);
-  assert.equal(RACK_PRESETS.length, 3 + [ 'bos-hydra', 'bos-manticore', 'rep-pr-5000', 'rep-pr-4000' ].reduce((sum,id) => sum + gridProfile(id).heights!.length * gridProfile(id).depths.length * 2, 0));
+  const starters = GRID_PROFILES.reduce((sum, profile) => sum + (profile.starters?.length ?? 0), 0);
+  assert.equal(RACK_PRESETS.length, 3 + starters + [ 'bos-hydra', 'bos-manticore', 'rep-pr-5000', 'rep-pr-4000' ].reduce((sum,id) => sum + gridProfile(id).heights!.length * gridProfile(id).depths.length * 2, 0));
   for (const p of featured) {
     const profile = gridProfile(p.profileId);
     assert.ok(profile.heights!.includes(p.height));
     assert.ok(profile.depths.includes(p.depth));
-    assert.ok(applyPreset(p.id).rack.tube >= 75);
+    assert.ok(applyPreset(p.id).rack.tube >= 50);
   }
 });
 

@@ -557,7 +557,8 @@ test('108-inch Kraken raises only selected bay side beams, leaving unrelated ext
 });
 
 test('all manufacturer preset heights and depths enforce family fit on the selected bay', () => {
-  for (const p of RACK_PRESETS.filter(p => p.profileId !== 'generic-75')) {
+  // Enumerated BoS/REP presets; brand starters (#130) have no system families yet.
+  for (const p of RACK_PRESETS.filter(p => ['bos-hydra', 'bos-manticore', 'rep-pr-5000', 'rep-pr-4000'].includes(p.profileId))) {
     const doc = applyPreset(p.id);
     if (p.profileId.startsWith('bos-')) {
       const installed = validateAssembly(withSystem(doc, 'cable-kraken'));
