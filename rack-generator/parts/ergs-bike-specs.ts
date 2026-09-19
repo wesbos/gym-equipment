@@ -61,7 +61,7 @@ export function assaultClassic(): AirBikeSpec {
     drive: { y: -222, z: 256, d: 280, t: 100, color: '#161718' },
     crank: 170, crankAngle: 25,
     seat: { post: [[0, -339, 590], [0, -352, 742]], slider: [-557, -213, 760], saddle: [-303, 873], saddleColor: '#141516' },
-    arms: { path: [[115, 332, 330], [115, 300, 435], [150, 240, 1000], [238, 200, 1140]], grip: [[238, 200, 1140], [W / 2 - 18, 118, H - 18]], d: 38, gripD: 36,
+    arms: { path: [[115, 332, 330], [115, 300, 435], [150, 305, 1040], [205, 285, 1165]], grip: [[205, 285, 1165], [W / 2 - 18, 190, H - 18]], d: 38, gripD: 36,
       link: [[115, 332, 330], [70, -70, 300]] },
     console: { mast: [[0, 300, 806], [0, 290, 1000]], at: [0, 282, 1062], size: [220, 150, 60], tilt: 45, screen: '#a2b3a4' },
     pegs: { y: 300, z: 500, x0: 100, x1: 230 },
@@ -105,7 +105,7 @@ export function strive(): AirBikeSpec {
   const { length: L, width: W, height: H } = AIR_BIKES.strive, front = L / 2, rear = -L / 2, fan = { d: 720, y: front - 361.5, z: 480 };
   return {
     label: 'REP Strive Air Bike', L, W, H, frame: '#2a2b2e', accent: '#2a2b2e', roughness: .45,
-    fan: { ...fan, width: 150, blades: 10, bladeD: 660, bladeW: 100, guard: 'perforated', spokes: 0, rings: 0, bands: 12, guardColor: '#1c1d1f', bladeColor: '#1d1e20', rim: '#303236' },
+    fan: { ...fan, width: 150, blades: 10, bladeD: 660, bladeW: 100, guard: 'perforated', spokes: 0, rings: 0, bands: 12, guardColor: '#1c1d1f', bladeColor: '#1d1e20', rim: '#5a5d61' },
     feet: { front: { y: 352, w: 640, wheel: 100, wheelY: 478 }, rear: { y: rear + 35, w: 600 } },
     tubes: [
       { pts: [[91, 352, 50], [91, 332, 562]], rect: [26, 66], mirror: true },
@@ -164,7 +164,7 @@ export function airdyneAd7(): AirBikeSpec {
 export function airdyneAd6(): AirBikeSpec {
   const { length: L, width: W, height: H } = AIR_BIKES.ad6, front = L / 2, rear = -L / 2, fan = { d: 620, y: front - 311.5, z: 450 };
   return {
-    label: 'Schwinn Airdyne AD6', L, W, H, frame: '#6b7075', accent: '#5c6064', black: '#1a1b1c', roughness: .4,
+    label: 'Schwinn Airdyne AD6', L, W, H, frame: '#626970', accent: '#5c6064', black: '#1a1b1c', roughness: .4,
     fan: { ...fan, width: 150, blades: 8, bladeD: 566, bladeW: 120, guard: 'wire', spokes: 40, rings: 5, bands: 8, guardColor: '#161718', bladeColor: '#1a1b1c' },
     feet: { front: { y: 360, w: 600, wheel: 60, wheelY: 440 }, rear: { y: rear + 35, w: 600 } },
     tubes: [

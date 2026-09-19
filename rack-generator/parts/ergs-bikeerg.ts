@@ -29,8 +29,8 @@ export function buildBikeErg(api: ManifoldAPI, p: NumericParams): SolidPart[] {
     K.add('Damper lever', F('#232427', .6), K.bar([hw2 / 2 + 4, hub[1] - 160, hub[2] + 140], [hw2 / 2 + 4, hub[1] - 120, hub[2] + 185], 10, 22, 3));
     // ---- Main frame: deep box beam with the concept2 panel, rear triangle to the seat tube and rear foot.
     K.add('Frame', black, K.span([-35, -505, 155], [35, hub[1] - 150, 362]));
-    K.add('Frame', black, K.hull([K.box([70, 60, 2], [0, -470, 362]), K.box([60, 56, 2], [0, -488, 700])]));
-    K.add('Frame', black, K.bar([0, -470, 200], [0, rear + 32, 40], 60, 55, 4));
+    K.add('Frame', black, K.hull([K.box([70, 70, 2], [0, -430, 362]), K.box([60, 56, 2], [0, -488, 700])]));
+    K.add('Frame', black, K.bar([0, -440, 220], [0, rear + 32, 40], 60, 55, 4));
     K.add('Frame', black, K.bar([0, hub[1] - 60, 140], [0, 520, 40], 60, 55, 4));
     K.add('Frame', black, K.span([-30, hub[1] - 170, 150], [30, hub[1] - 20, 260]));
     for (const s of [-1, 1]) K.add('Decal · white', F(WHITE, .5), K.span([s * 35 - (s > 0 ? 0 : .8), -60, 270], [s * 35 + (s > 0 ? .8 : 0), 120, 312]));

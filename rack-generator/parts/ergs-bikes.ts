@@ -101,7 +101,7 @@ export function buildAirBike(api: ManifoldAPI, s: AirBikeSpec): SolidPart[] {
     // Drive: crank shroud disc on both sides of the bottom bracket, crank arms and platform pedals.
     const dr = s.drive;
     K.add('Drive shroud', F(dr.color, .6, .1), K.disc([0, dr.y, dr.z], 'x', dr.d, dr.t, 48));
-    if (dr.shroud) K.add('Drive shroud', F(dr.color, .6, .1), K.plate(dr.shroud, -dr.t / 2 + 8, dr.t - 16, 20));
+    if (dr.shroud) K.add('Drive shroud', F(dr.color, .6, .1), K.plate(dr.shroud, -dr.t / 2 + 8, dr.t - 16, 55));
     const ca = (s.crankAngle ?? 20) * Math.PI / 180, cr = s.crank;
     for (const x of [-1, 1]) {
       const pin: Vec3 = [x * (dr.t / 2 + 22), dr.y + x * cr * Math.cos(ca), dr.z + x * cr * Math.sin(ca)];
