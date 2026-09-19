@@ -265,9 +265,10 @@ export function buildTB2(api: ManifoldAPI): SolidPart[] {
       k.add('Sleeve collars', 'sleeve', MAT.texturedBlack, k.cx(X(TB2.collarX), X(TB2.collarX + TB2.collarWidth), TB2.collarDia / 2, 0, A, 48));
       // Flush handle across the frame (knurled centre) and the raised U grip over it.
       const hx = X(TB2.handleX);
-      plain.push(k.cyl([hx, -yR, A], [hx, -140, A], hr), k.cyl([hx, 140, A], [hx, yR, A], hr)); knurl.push(k.cyl([hx, -140, A], [hx, 140, A], hr));
-      // Legs land on the side rails, offset above the flush handle so the two tubes never share a surface.
-      const u = filletPath([[-yR + 6, A + 8], [-TB2.uHalf, A + TB2.rise], [TB2.uHalf, A + TB2.rise], [yR - 6, A + 8]], 45, 10).pts.map(([y, z]) => [hx, y, z] as Vec3);
+      // Tubes never share a surface or cross another round tube (print export subtracts overlaps): the flush handle stops
+      // 3 mm into each rail, the knurl sleeve is 0.25 mm proud, and the U legs land on the rail tops outboard of it.
+      plain.push(k.cyl([hx, -(yR - 16), A], [hx, -138, A], hr), k.cyl([hx, 138, A], [hx, yR - 16, A], hr)); knurl.push(k.cyl([hx, -140, A], [hx, 140, A], hr + .25));
+      const u = filletPath([[-yR - 2, A + t / 2 - .05], [-yR - 2, A + 50], [-TB2.uHalf, A + TB2.rise], [TB2.uHalf, A + TB2.rise], [yR + 2, A + 50], [yR + 2, A + t / 2 - .05]], 45, 10).pts.map(([y, z]) => [hx, y, z] as Vec3);
       raised.push(k.sweep(u, hr, [1, 0, 0], 32)); knurl.push(k.cyl([hx, -110, A + TB2.rise], [hx, 110, A + TB2.rise], hr + .25, 32));
     }
     k.add('1.5" square-tube hex frame', 'source', MAT.texturedBlack, frame);
