@@ -65,10 +65,11 @@ Published: 36″ H × 48″ L × 24″ D, 75 lb; 11 ga shelves with a 1″ lip; 
 colours Metallic Black, Red, Blue, Matte Black; sized for the REP 5–50 lb rubber hex set.
 
 Estimates: end frame = 2.25″ × 2.5″ foot with tapered rubber caps, an angled 2″ front leg and near-vertical rear post meeting
-under a top cap, a 10″ tall logo gusset (REP lettering) between them at the foot; three 10″ trays tilted 12° (rear up) at 7.5 /
-19.5 / 31.5″, their front edges 3.9 / 6 / 7.5″ ahead of the front leg so the 15″ long 50 lb heads stay inside the feet; bracket
-plates bolted to the inside of each leg. Loaded pairs lie across X (across-corners widths from the REP hex table) with 3 mm
-gaps: 50/45/40 bottom, 35/30/25 middle, 20–5 top; dumbbells longer than the tray bridge the two lips.
+under a top cap, a 10″ tall logo gusset (REP lettering) between them at the foot; each tier is a front and a rear formed
+channel with the published 4.5″ grab gap between them (10″ resting depth), tilted 12° (rear up) at 7.5 / 19.5 / 31.5″, front
+edges 3.9 / 6 / 7.5″ ahead of the front leg so the 15″ long 50 lb heads stay inside the feet; end plates tie both channels and
+bolt to the inside of each leg. Loaded pairs lie across X (across-corners widths from the REP hex table) with 3 mm gaps:
+50/45/40 bottom, 35/30/25 middle, 20–5 top; each head bridges the lips of its channel.
 Params: colour, dumbbells (empty / 5–25 lb pairs / 5–50 lb pairs).
 
 ## 4. Titan Portable Weight Plate & Barbell Storage Tree (51) — `titan-portable-plate-barbell-tree`
@@ -133,7 +134,8 @@ Published (Tech Specs): two-tier 51.41″ × 23.25″ × 30.84″, three-tier 51
 frame; flat shelves (not angled); moulded plastic liners; set range double KB set 4–24 kg.
 
 Estimates: 2 × 3″ zig-zag frame tube from each foot through a support arm under every shelf; shelves 49″ long with
-0.75″ rolled lips and 1.2″ end caps carrying REP lettering; two-tier shelves 11.4″ deep at 14.5/30.1″, three-tier 8.25″ at
+0.75″ rolled lips and 1.2″ end caps carrying REP lettering; two-tier shelves 12.5″ deep at 14.5/30.1″ (the depth at which the
+published double 4–24 kg set fits two staggered rows), three-tier 8.25″ at
 7/20.1/32.85″. `packBells` puts the heaviest bells on the bottom shelf and staggers front/back rows where the shelf is deep enough;
 both the single (11) and double (22) 4–24 kg sets fit either rack.
 

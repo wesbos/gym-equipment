@@ -25,6 +25,8 @@ export const REP_RACK_LEGS = { front: [[-5.5 * IN, 2.5 * IN], [3.3 * IN, 35 * IN
 const along = (line: Vec2[], z: number) => line[0][0] + (line[1][0] - line[0][0]) * (z - line[0][1]) / (line[1][1] - line[0][1]);
 /** Tray front edge distance ahead of the front leg, bottom → top (the long 45–50 lb heads stay inside the feet). */
 export const REP_TRAY_OFFSETS = [3.9 * IN, 6 * IN, 7.5 * IN];
+/** Published space where the hand grabs the handle, between the front and rear channels. */
+export const REP_GRAB = 4.5 * IN;
 /** Tray i: front bottom corner (y, z) and the along-tray / up unit vectors for the 12° tilt (rear higher). */
 export function repTray(i: number) {
   const R = REP_DB_RACK, z = R.trays[i], y = along(REP_RACK_LEGS.front, z) - REP_TRAY_OFFSETS[i], a = rad(R.tilt);
@@ -59,18 +61,20 @@ export function buildRepDumbbellRack(api: ManifoldAPI, p: NumericParams): SolidP
     const xi = xFrame - t / 2 - 5, T = R.tray, st = R.steel;
     for (let i = 0; i < R.trays.length; i++) {
       const { y, z, u, n } = repTray(i), pt = (a: number, b: number): Vec2 => [y + u[0] * a + n[0] * b, z + u[1] * a + n[1] * b];
-      const section = [pt(0, 0), pt(T, 0), pt(T, R.lip), pt(T - st, R.lip), pt(T - st, st), pt(st, st), pt(st, R.lip), pt(0, R.lip)];
-      k.add(trays, prism(k, section, 2 * xi, 'yz', -xi));
+      // Each tier is a front and a rear formed channel with the 4.5″ grab gap between them (10″ total resting depth).
+      const c = (T - REP_GRAB) / 2, channel = (u0: number): Vec2[] => [pt(u0, 0), pt(u0 + c, 0), pt(u0 + c, R.lip), pt(u0 + c - st, R.lip), pt(u0 + c - st, st), pt(u0 + st, st), pt(u0 + st, R.lip), pt(u0, R.lip)];
+      for (const u0 of [0, T - c]) k.add(trays, prism(k, channel(u0), 2 * xi, 'yz', -xi));
       for (const side of [-1, 1]) {
-        const bx = side > 0 ? xi : -xi - 5, legY = along(REP_RACK_LEGS.front, z + 1 * IN), plate: Vec2[] = [pt(T * .55, 0), [legY + t / 2 + 8, z - .5 * IN], [legY + t / 2 + 8, z + 3.4 * IN], pt(T * .55, R.lip)];
+        // End plate tying both channels, with an ear reaching back to the leg's bolts.
+        const bx = side > 0 ? xi : -xi - 5, legY = along(REP_RACK_LEGS.front, z + 1 * IN), plate: Vec2[] = [pt(0, 0), pt(T, 0), [Math.max(legY + t / 2 + 8, y + T + 4), z + 3.4 * IN], pt(0, R.lip)];
         k.add(trays, prism(k, plate, 5, 'yz', bx));
         for (const dz of [.2, 2.4]) bolt(k, [side * (xFrame + t / 2), legY, z + dz * IN], [side, 0, 0], 8);
       }
     }
-    // REP rubber hex dumbbells bridging the lips (longer than the 10″ tray) or lying in the tray (short ones).
+    // REP rubber hex dumbbells: every head bridges the lips of its channel, the handle over the grab gap.
     for (const slot of repRackLayout(p.loaded)) {
-      const shape = dumbbellShape('rep-hex-dumbbell', { weight: slot.weight }) as HexShape, L = 2 * shape.L + shape.grip;
-      const { y, z, u, n } = repTray(slot.tier), onLips = L > T - 2 * st, a = T / 2, b = onLips ? R.lip : st;
+      const shape = dumbbellShape('rep-hex-dumbbell', { weight: slot.weight }) as HexShape;
+      const { y, z, u, n } = repTray(slot.tier), a = T / 2, b = R.lip;
       const at: Vec3 = [slot.x, y + u[0] * a + n[0] * b, z + u[1] * a + n[1] * b];
       adopt(k, buildFixedDumbbell(api, { ...shape, label: { ...shape.label, left: '', right: '' } }), tiltX(R.tilt, at), q => `Stored REP hex dumbbells · ${q.name}`);
     }
@@ -82,7 +86,8 @@ const inchPts = (pts: number[][]) => pts.map(([y, z]) => [y * IN, z * IN] as Vec
 /** 3/8″ end plate outline (y, z inches): front and rear foot legs over an arched opening, a straight front edge rising from
  * the bottom tier to the top one (the tier rails bolt along it) and a vertical rear edge. */
 export const ROGUE_PLATE_OUTLINE = inchPts([[-14.2, 0], [-10.6, 0], [-8.6, 4.2], [8.6, 4.2], [10.6, 0], [14.2, 0], [13.2, 33], [1.2, 33], [-14.2, 9.6]]);
-export const ROGUE_PLATE_WINDOWS = [inchPts([[-11, 10.2], [-2, 10.2], [-2, 16.8], [-8.2, 16.8]]), inchPts([[1.5, 8.6], [9.6, 8.6], [9.8, 16.5], [1.5, 16.5]]), inchPts([[5.8, 21.3], [10, 21.3], [10.2, 28.2], [5.8, 28.2]])];
+/** Two large cut-outs between the tiers leave a ladder of bands carrying each tier's rails and divider. */
+export const ROGUE_PLATE_WINDOWS = [inchPts([[-11.2, 10.4], [10.4, 10.4], [10.5, 16.8], [-8, 16.8]]), inchPts([[-4.2, 22.3], [10.5, 22.3], [10.6, 28.2], [-.4, 28.2]])];
 const SADDLE = finish('Black plastic dumbbell saddles', 'liner', '#1a1b1d', 0, .55);
 export function buildRogueDumbbellRack(api: ManifoldAPI, p: NumericParams): SolidPart[] {
   want([0, 1, 2].includes(p.loaded), 'dumbbell rack load');

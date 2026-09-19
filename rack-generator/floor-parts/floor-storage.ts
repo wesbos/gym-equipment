@@ -121,7 +121,7 @@ export const TITAN_HOLDER_SIZES = [
   { label: '5 sleeves · 12″ × 12″', side: inch(12), grid: 'x5' as const, pitch: inch(3.25) },
   { label: '9 sleeves · 19″ × 19″', side: inch(19), grid: '3x3' as const, pitch: inch(5.5) },
 ] as const;
-export const TITAN_HOLDER = { height: inch(9), bore: 51, tube: inch(2.375), base: inch(.2391), wall: inch(.1495), rim: 11, rimD: 74, notch: [inch(5), inch(.6)] as [number, number] } as const;
+export const TITAN_HOLDER = { height: inch(9), bore: 51, tube: inch(2.375), base: inch(.2391), wall: inch(.1495), rim: 15, rimD: 68, notch: [inch(5), inch(.6)] as [number, number] } as const;
 const holderSize = (p: NumericParams) => { const s = TITAN_HOLDER_SIZES[p.size]; if (!s) throw Error('Unsupported barbell holder size.'); return s; };
 /** Sleeve centres (x, y); centre first so a single stored bar stands in the middle. */
 export function titanHolderSleeves(p: NumericParams): [number, number][] {
