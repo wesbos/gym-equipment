@@ -8,6 +8,7 @@ import {
 import { buildMachinePart, definitions } from './parts/belt-squat-machines.ts';
 import { coerceFloorParams, floorOptions, resolveBy, validateFloorParams } from './floor-registry.ts';
 import { PLATE_SPECS } from './plates.ts';
+import { BUILD_BUDGET_MS } from './test-budget.ts';
 import type { FloorPart } from './floor-part.ts';
 import type { NumericParams, SolidPart } from './types.ts';
 const api = await Module(); api.setup();
@@ -61,7 +62,7 @@ test('every entry builds valid closed solids at every param extreme, centred and
       assert.ok(b.min[2] >= -1e-6 && b.min[2] < 1, `${label} rests on the floor (${b.min[2]})`);
       assert.ok(parts.reduce((n, p) => n + p.solid.numTri(), 0) < 120000, `${label} triangle budget`);
     });
-    assert.ok(performance.now() - t0 < 6000, `${label} build time`);
+    assert.ok(performance.now() - t0 < BUILD_BUDGET_MS, `${label} build time`);
   }
 });
 
