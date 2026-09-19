@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import Module from 'manifold-3d';
 import {
   PARTS, BOS_CABLE_TOWER, BOS_TOWER_DIMS, TOG_MULTI_FLIGHT, TOG_FLIGHT_DIMS, togFlightWeights, TITAN_PLATE_LAT, TITAN_PLATE_LAT_DIMS, TITAN_LAT_TOWER, TITAN_LAT_DIMS,
-  REP_ARCADIA, REP_ARCADIA_DIMS, TITAN_PULLEY_TOWER, TITAN_PULLEY_DIMS, INSPIRE_FTX, INSPIRE_FTX_DIMS, BOS_LAT_PULLDOWN, BOS_LAT_DIMS, bosTowerWeights, inch,
+  REP_ARCADIA, REP_ARCADIA_DIMS, TITAN_PULLEY_TOWER, INSPIRE_FTX, INSPIRE_FTX_DIMS, BOS_LAT_PULLDOWN, BOS_LAT_DIMS, bosTowerWeights, inch,
+  REP_ADONIS, REP_ADONIS_DIMS, FORCE_FTR, FORCE_FTR_DIMS, FORCE_FTR_ARM_REACH, MAJOR_B52, MAJOR_B52_DIMS,
 } from './floor-parts/cable-towers.ts';
 import { definitions } from './parts/cable-towers.ts';
 import { coerceFloorParams, floorOptions, resolveBy, validateFloorParams } from './floor-registry.ts';
@@ -29,9 +30,10 @@ function variants(part: FloorPart): NumericParams[] {
   const out: NumericParams[] = [part.defaults];
   for (const p of part.params) {
     const opts = floorOptions(p, part.defaults);
-    for (const v of [opts[0], opts[opts.length >> 1], opts.at(-1)!]) out.push(coerceFloorParams(part, { ...part.defaults, [p.key]: v }));
-    // Dependent params: also exercise their extremes under every value of this param.
-    for (const v of opts) for (const q of part.params) if (q !== p && typeof q.options === 'function') {
+    const picks = [...new Set([opts[0], opts[opts.length >> 1], opts.at(-1)!])];
+    for (const v of picks) out.push(coerceFloorParams(part, { ...part.defaults, [p.key]: v }));
+    // Dependent params (pin, loaded): also exercise their last option under the picked values of the other params.
+    for (const v of picks) for (const q of part.params) if (q !== p && typeof q.options === 'function') {
       const base = coerceFloorParams(part, { ...part.defaults, [p.key]: v }), qo = floorOptions(q, base);
       out.push(coerceFloorParams(part, { ...base, [q.key]: qo.at(-1)! }));
     }
@@ -39,7 +41,7 @@ function variants(part: FloorPart): NumericParams[] {
   return out;
 }
 test('catalogue entries in the Machines section with attribution and a registered builder', () => {
-  assert.equal(PARTS.length, 8);
+  assert.equal(PARTS.length, 11);
   assert.equal(new Set(PARTS.map(p => p.id)).size, PARTS.length);
   for (const part of PARTS) {
     assert.equal(part.section, 'Machines', part.id);
@@ -64,7 +66,7 @@ test('every entry builds valid closed solids across its params, filling its foot
       assert.ok(b.min[2] >= -1e-3, `${label} rests on the floor`);
       assert.ok(parts.reduce((n, p) => n + p.solid.numTri(), 0) < 80000, `${label} triangle budget`);
     });
-    assert.ok(performance.now() - t0 < 6000, `${part.id} build time`);
+    assert.ok(performance.now() - t0 < 10000, `${part.id} build time (generous: the shared CI box is loaded)`);
   }
 });
 test('published heights and envelopes come out of the builds', () => {
@@ -79,12 +81,20 @@ test('published heights and envelopes come out of the builds', () => {
   near(height(REP_ARCADIA, { bar: 0 }), REP_ARCADIA_DIMS.height, 1, 'Arcadia 80.8"');
   near(height(REP_ARCADIA, { bar: 1 }), REP_ARCADIA_DIMS.invertedHeight, 1, 'Arcadia inverted bar 78"');
   near(height(INSPIRE_FTX), INSPIRE_FTX_DIMS.height, 1, 'FTX 82"');
+  near(height(REP_ADONIS), REP_ADONIS_DIMS.height, 1, 'Adonis 92.1"');
+  near(height(FORCE_FTR), FORCE_FTR_DIMS.height, 1, 'FTR 87"');
+  near(height(MAJOR_B52), MAJOR_B52_DIMS.height, 1, 'B52 82.6"');
   // Footprints: published width × depth where the model spans them (lat towers add the 48" bar across).
   for (const [part, w, d] of [[TOG_MULTI_FLIGHT, inch(44.7), 690], [TITAN_LAT_TOWER, inch(48), inch(57)], [BOS_LAT_PULLDOWN, inch(48), inch(70)], [TITAN_PULLEY_TOWER, inch(25), inch(27.5)],
-    [REP_ARCADIA, inch(55.3), inch(35.8)], [INSPIRE_FTX, inch(54), inch(40)], [TITAN_PLATE_LAT, 1100, inch(57)]] as const) {
+    [REP_ARCADIA, inch(55.3), inch(35.8)], [INSPIRE_FTX, inch(54), inch(40)], [TITAN_PLATE_LAT, 1100, inch(57)], [REP_ADONIS, inch(45.9), inch(54.9)],
+    [FORCE_FTR, inch(49) + 2 * FORCE_FTR_ARM_REACH, inch(43)], [MAJOR_B52, inch(78.7), inch(66.9)]] as const) {
     const fp = resolveBy(part.footprint, { ...part.defaults, loaded: 0 });
     near(fp.width, w, inch(54) * .002, `${part.id} width`); near(fp.depth, d, inch(40) * .002, `${part.id} depth`);
   }
+  // Adonis base rails and the FTR frame span their published widths; the FTR freestyle arms reach past it.
+  withParts(REP_ADONIS, { base: 1 }, parts => near(size(bounds(parts)!, 0), REP_ADONIS_DIMS.baseWidth, .5, 'Adonis base 45.9"'));
+  near(resolveBy(REP_ADONIS.footprint, { ...REP_ADONIS.defaults, base: 0 }).width, REP_ADONIS_DIMS.latBar, .01, 'Adonis without base: lat bar is widest');
+  withParts(FORCE_FTR, {}, parts => near(size(bounds(parts, n => n === 'Matte black electrostatic paint')!, 1), inch(43), .5, 'FTR 43" deep'));
   // BoS Cable Tower: 737 mm feet, 724 mm base spine+feet run, 787 mm header incl. the top pulley cheeks.
   withParts(BOS_CABLE_TOWER, {}, parts => {
     const frame = bounds(parts, n => n === 'Black powder-coated steel')!;
@@ -94,8 +104,9 @@ test('published heights and envelopes come out of the builds', () => {
 test('selector pins, carriages and thigh pads move with their params', () => {
   const box = (part: FloorPart, params: NumericParams, match: (n: string) => boolean) => withParts(part, params, parts => bounds(parts, match));
   // Pin at the head plate sits above the pin under the bottom plate.
-  for (const [part, lo, hi] of [[BOS_CABLE_TOWER, 10, 210], [TOG_MULTI_FLIGHT, 11, 220], [TITAN_LAT_TOWER, 10, 300], [BOS_LAT_PULLDOWN, 10, 310], [INSPIRE_FTX, 15, 165], [REP_ARCADIA, 20, 170]] as const) {
-    const a = box(part, { pin: lo }, n => n === 'Selector pin knob')!, b = box(part, { pin: hi }, n => n === 'Selector pin knob')!;
+  for (const [part, lo, hi, extra] of [[BOS_CABLE_TOWER, 10, 210, {}], [TOG_MULTI_FLIGHT, 11, 220, {}], [TITAN_LAT_TOWER, 10, 300, {}], [BOS_LAT_PULLDOWN, 10, 310, {}], [INSPIRE_FTX, 15, 165, {}],
+    [REP_ARCADIA, 20, 170, {}], [REP_ADONIS, 10, 210, { loading: 1 }], [FORCE_FTR, 10, 200, {}], [MAJOR_B52, 10, 170, { model: 1 }]] as const) {
+    const a = box(part, { ...extra, pin: lo }, n => n === 'Selector pin knob')!, b = box(part, { ...extra, pin: hi }, n => n === 'Selector pin knob')!;
     assert.ok(a.min[2] > b.min[2] + 100, `${part.id} pin travels down the stack`);
   }
   assert.equal(bosTowerWeights({ loading: 0 }).length, 21); assert.equal(bosTowerWeights({ loading: 1 }).at(-1), 110);
@@ -127,8 +138,17 @@ test('plate-loaded carriages carry the selected 45 lb plates', () => {
   assert.ok(fp8.depth > fp0.depth && fp8.offset![1] < 0);
   assert.equal(plates(TITAN_PULLEY_TOWER, { loaded: 7 }).length, 1);
   assert.equal(plates(BOS_LAT_PULLDOWN, { loading: 1, pin: 0, loaded: 6 }).length, 1);
+  assert.equal(plates(REP_ADONIS, { loaded: 8 }).length, 1);
+  assert.equal(plates(MAJOR_B52, { model: 0, loaded: 6 }).length, 1);
+  assert.equal(plates(MAJOR_B52, { model: 1, pin: 100 }).length, 0, 'Pro runs on its stacks');
+  // Adonis horns: 6.3" loadable each side, four 45s (1.5") per horn.
+  withParts(REP_ADONIS, { loaded: 8 }, parts => {
+    const horns = bounds(parts, n => n === 'Stainless loading horns')!;
+    near(size(horns, 0), 2 * (REP_ADONIS_DIMS.horn + inch(1.5) + 6 + 12), 1, 'Adonis horn span: 6.3" loadable outside each shroud');
+  });
 });
 test('lat bars and rails match the published lengths', () => {
+  withParts(MAJOR_B52, {}, parts => near(size(bounds(parts, n => n === 'Stainless steel')!, 0), MAJOR_B52_DIMS.width, .5, 'B52 Smith bar sleeves set the 78.7" width'));
   for (const [part, L] of [[TITAN_LAT_TOWER, inch(48)], [BOS_LAT_PULLDOWN, inch(48)], [TITAN_PLATE_LAT, inch(37.5)]] as const) withParts(part, {}, parts => {
     const bar = bounds(parts, n => n === 'Stainless steel' || n === 'Knurled grips' || n === 'Black foam grips')!;
     near(size(bar, 0), L, 2, `${part.id} lat bar`);

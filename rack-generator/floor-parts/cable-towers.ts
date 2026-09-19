@@ -171,7 +171,7 @@ export const REP_ARCADIA = defineFloorPart({
 // ------------------------------------------------------------------------------------------------ Inspire FTX
 /** Inspire Fitness FTX Functional Trainer (FTX.2PK): 54" W × 40" D × 82" H, V-corner layout, 2 × 165 lb stacks (15 lb selector +
  * fifteen 10 lb plates, owner's manual step 2B), 2:1, 30 swivel-pulley positions, built-in pull-up bar, matte black. */
-export const INSPIRE_FTX_DIMS = { height: inch(82), width: 1371.8, depth: 1014.4, positions: 30, angle: 26 } as const;
+export const INSPIRE_FTX_DIMS = { height: inch(82), width: inch(54), depth: 1016.7, positions: 30, angle: 20 } as const;
 export const inspireFtxWeights = stackWeights(15, 10, 165);
 export const INSPIRE_FTX = defineFloorPart({
   id: 'inspire-ftx-functional-trainer', name: 'Inspire FTX', title: 'Inspire FTX Functional Trainer', noun: 'functional trainer', section: 'Machines',
@@ -186,4 +186,69 @@ export const INSPIRE_FTX = defineFloorPart({
   vendor: { vendor: 'Inspire Fitness', url: 'https://inspirefitness.com/products/ftx-functional-trainer', credit: 'Inspire Fitness — FTX Functional Trainer', trademark: 'Inspire Fitness and FTX are trademarks of Health in Motion LLC.', reconstruction: 'Independent Manifold reconstruction from the published 54 × 40 × 82 in envelope, 2 × 165 lb stacks and 30 pulley positions, the FTX owner\'s manual assembly drawings and 9 product photos. Tower angle, tube sections and cable routing estimated; scenery only, excluded from print export.' },
 });
 
-export const PARTS = [BOS_CABLE_TOWER, TOG_MULTI_FLIGHT, TITAN_PLATE_LAT, TITAN_LAT_TOWER, REP_ARCADIA, TITAN_PULLEY_TOWER, INSPIRE_FTX, BOS_LAT_PULLDOWN] as const satisfies readonly FloorPart[];
+// ------------------------------------------------------------------------------------------------ REP Adonis
+/** REP Fitness Adonis Cable Tower (MT-5000): 92.1" H × 54.9" D (footplate retracted) × 45.5" W with base; base 45.9" × 23.5" × 14.4";
+ * 3" × 3" 11 ga uprights, 1" holes on 2" centres; 34 trolley positions from 14" to 79"; 2:1 trolley, 1:1 lat/row; 6.3" loadable
+ * horns; optional 210 lb selector stack (10 lb steps); metallic black; aluminium pulleys. */
+export const REP_ADONIS_DIMS = { height: inch(92.1), depth: inch(54.9), baseWidth: inch(45.9), baseDepth: inch(23.5), baseHeight: inch(14.4), positions: 34, low: inch(14), high: inch(79), horn: inch(6.3), latBar: inch(41), maxPlates: 8, stack: stackWeights(10, 10, 210) } as const;
+export const REP_ADONIS_LOADING = ['Plate-loaded', 'Plate-loaded + selectorized'] as const;
+export const REP_ADONIS = defineFloorPart({
+  id: 'rep-adonis-cable-tower', name: 'REP Adonis', title: 'REP Adonis Cable Tower', noun: 'cable tower', section: 'Machines',
+  description: `REP Fitness Adonis Cable Tower: 3" × 3" tower with REP shroud panels, 34-position 2:1 trolley, forward lat arm and footplate for 1:1 pulldowns and rows, plate-loaded carriage (6.3" horns) with the optional 210 lb selector stack, and the storage base. ${TAIL}; REP Fitness trademarks belong to REP Fitness.`,
+  params: [
+    { key: 'loading', label: 'Loading', default: 0, options: [0, 1], format: v => REP_ADONIS_LOADING[v] ?? String(v) },
+    { key: 'pin', label: 'Selector pin', default: 0, options: p => p.loading ? REP_ADONIS_DIMS.stack : [0], format: v => v ? pounds(v) : 'Plate loaded' },
+    { key: 'loaded', label: 'Loaded plates', default: 2, options: range(0, REP_ADONIS_DIMS.maxPlates), format: v => v ? `${v} × 45 lb (${v * 45} lb)` : 'Empty' },
+    holeParam('carriage', 'Trolley position', REP_ADONIS_DIMS.positions, 20),
+    { key: 'base', label: 'Base', default: 1, options: [0, 1], format: v => v ? 'Adonis base' : 'No base (rack or wall anchored)' },
+  ],
+  footprint: p => ({ width: p.base ? REP_ADONIS_DIMS.baseWidth : REP_ADONIS_DIMS.latBar, depth: REP_ADONIS_DIMS.depth }),
+  placement: { side: 'right', gap: 300 },
+  vendor: { vendor: 'REP Fitness', url: 'https://repfitness.com/products/adonis-cable-tower', credit: 'REP Fitness — Adonis Cable Tower (MT-5000)', trademark: 'REP, REP Fitness and Adonis are trademarks of REP Fitness.', reconstruction: 'Independent Manifold reconstruction from the published 92.1 in height, 54.9 in depth, 45.5/45.9 in base width, 14–79 in trolley range, 6.3 in horns and 210 lb stack, with 29 product photos. Upright spacing, shroud and arm outlines, lat bar length and cable routing estimated; scenery only, excluded from print export.' },
+});
+
+// ------------------------------------------------------------------------------------------------ Force USA Functional Trainer Rack
+/** Force USA Functional Trainer Rack (FTR, F-FTR-JH-SA): exterior 49" W × 43" D × 87" H, interior 43" × 33" × 81"; 3" × 3" 11 ga
+ * uprights, 1" holes on 2" spacing; dual 200 lb stacks (250/300 lb upgrades), 2:1 freestyle pulley arms on reversible trolleys,
+ * polished aluminium pulleys, matte black with hex-pattern plates, pegboard and shelf storage. */
+export const FORCE_FTR_DIMS = { height: inch(87), frameWidth: inch(49), depth: inch(43), tube: inch(3), holes: 33, stacks: [200, 250, 300] } as const;
+export const forceFtrWeights = (p: NumericParams) => stackWeights(10, 10, FORCE_FTR_DIMS.stacks[p.stack] ?? 200);
+/** The freestyle arms project past the 49" frame at their resting angle; the model's X extent includes them. */
+export const FORCE_FTR_ARM_REACH = 337.9;
+export const FORCE_FTR = defineFloorPart({
+  id: 'force-usa-functional-trainer-rack', name: 'Force USA FTR', title: 'Force USA Functional Trainer Rack', noun: 'functional trainer', section: 'Machines',
+  description: `Force USA Functional Trainer Rack (FTR): 3" × 3" half-rack frame with twin 200 lb stacks (250/300 lb upgrades) in the rear bays, freestyle pulley arms on 2:1 trolleys up the front uprights, hex-pattern FORCE USA side plates, pegboard, shelf and suspension anchor. ${TAIL}; Force USA trademarks belong to Johnson Health Tech.`,
+  params: [
+    { key: 'stack', label: 'Weight stacks', default: 0, options: [0, 1, 2], format: v => `2 × ${FORCE_FTR_DIMS.stacks[v] ?? v} lb` },
+    { key: 'pin', label: 'Selector pins', default: 60, options: forceFtrWeights, format: pounds },
+    holeParam('left', 'Left trolley', FORCE_FTR_DIMS.holes, 32),
+    holeParam('right', 'Right trolley', FORCE_FTR_DIMS.holes, 32),
+  ],
+  footprint: { width: inch(49) + 2 * FORCE_FTR_ARM_REACH, depth: inch(43) },
+  placement: { side: 'back', gap: 300 },
+  vendor: { vendor: 'Force USA', url: 'https://www.forceusa.com/products/functional-trainer-rack', credit: 'Force USA — Functional Trainer Rack (FTR)', trademark: 'Force USA is a trademark of Johnson Health Tech.', reconstruction: 'Independent Manifold reconstruction from the published 49 × 43 × 87 in exterior and 43 × 33 × 81 in interior dimensions, 3 × 3 in uprights with 1 in holes on 2 in spacing, 200/250/300 lb stacks and 9 product images including front and side dimension drawings. Bay spacing, arm and cap outlines and cable routing estimated; scenery only, excluded from print export.' },
+});
+
+// ------------------------------------------------------------------------------------------------ Major Fitness B52
+/** Major Fitness Spirit B52 All-In-One Home Gym (B52BL / B52PRO): 78.7" W × 66.9" D × 82.6" H, interior 43.0" × 55.2";
+ * 2" × 3" 14 ga uprights (Pro: 12 ga front, 2" × 2" middle); Smith bar (10 positions), 17 cable positions, 2:1; Standard is
+ * plate-loaded with plastic pulleys, Pro adds dual weight stacks and aluminium pulleys. Tactical Black, Recon Desert, Patriot Blue. */
+export const MAJOR_B52_DIMS = { width: inch(78.7), depth: inch(66.9), height: inch(82.6), interior: inch(43), cable: 17, stack: stackWeights(10, 10, 170), maxPlates: 6 } as const;
+export const MAJOR_B52_COLORS = [['Tactical Black', '#1c1d1f'], ['Recon Desert', '#b59f7c'], ['Patriot Blue', '#2c5da8']] as const;
+export const MAJOR_B52 = defineFloorPart({
+  id: 'major-fitness-b52', name: 'Major Fitness B52', title: 'Major Fitness B52 All-In-One Home Gym', noun: 'home gym', section: 'Machines',
+  description: `Major Fitness Spirit B52 all-in-one: 2" × 3" power rack with a Smith bar, J-hooks, safety arms, multi-grip pull-up top, 17-position 2:1 cable columns fed by plate-loaded carriages (Standard) or twin weight stacks (Pro), low-row footplate, landmine and plate storage, in Tactical Black, Recon Desert or Patriot Blue. ${TAIL}; Major Fitness trademarks belong to Major Fitness.`,
+  params: [
+    { key: 'model', label: 'Model', default: 0, options: [0, 1], format: v => v ? 'B52 Pro (weight stacks)' : 'B52 Standard (plate loaded)' },
+    { key: 'color', label: 'Colour', default: 0, options: [0, 1, 2], format: v => MAJOR_B52_COLORS[v]?.[0] ?? String(v) },
+    { key: 'pin', label: 'Selector pins', default: 0, options: p => p.model ? MAJOR_B52_DIMS.stack : [0], format: v => v ? pounds(v) : 'Plate loaded' },
+    { key: 'loaded', label: 'Loaded plates', default: 2, options: p => p.model ? [0] : range(0, MAJOR_B52_DIMS.maxPlates), format: v => v ? `${v} × 45 lb (${v * 45} lb)` : 'Empty' },
+    holeParam('carriage', 'Cable position', MAJOR_B52_DIMS.cable, 15),
+    { key: 'smith', label: 'Smith bar', default: 8, options: range(1, 10), format: v => `Hook ${v}` },
+  ],
+  footprint: { width: MAJOR_B52_DIMS.width, depth: MAJOR_B52_DIMS.depth },
+  placement: { side: 'back', gap: 300 },
+  vendor: { vendor: 'Major Fitness', url: 'https://www.majorfitness.com/products/all-in-one-home-gym-smith-machine-spirit-b52', credit: 'Major Fitness — Spirit B52 All-In-One Home Gym Smith Machine (Standard and Pro)', trademark: 'Major Fitness and Spirit B52 are trademarks of Major Fitness.', reconstruction: 'Independent Manifold reconstruction from the published 78.7 × 66.9 × 82.6 in envelope, 43 × 55.2 in interior, 2 × 3 in tube, 17 cable and 10 Smith positions and 28 product renders across models and colourways. Upright spacing, attachment outlines, stack plate size and cable routing estimated; scenery only, excluded from print export.' },
+});
+
+export const PARTS = [BOS_CABLE_TOWER, TOG_MULTI_FLIGHT, TITAN_PLATE_LAT, TITAN_LAT_TOWER, REP_ARCADIA, TITAN_PULLEY_TOWER, REP_ADONIS, INSPIRE_FTX, BOS_LAT_PULLDOWN, FORCE_FTR, MAJOR_B52] as const satisfies readonly FloorPart[];

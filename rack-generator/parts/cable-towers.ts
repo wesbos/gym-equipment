@@ -3,7 +3,7 @@
  * Build frame: X across, Y from the user side (-Y) to the back, Z up. The kit recentres the finished XY bounding box on the origin. */
 import type { Manifold, ManifoldAPI, NumericParams, PartDefinition, SolidPart, Vec3 } from '../types.ts';
 import { floorDefinition } from '../floor-part.ts';
-import { BOS_CABLE_TOWER, BOS_LAT_DIMS, INSPIRE_FTX, INSPIRE_FTX_DIMS, inspireFtxWeights, REP_ARCADIA, REP_ARCADIA_DIMS, repArcadiaWeights, BOS_LAT_PULLDOWN, BOS_TOWER_DIMS, TITAN_LAT_DIMS, TITAN_LAT_TOWER, TITAN_PLATE_LAT, TITAN_PLATE_LAT_DIMS, TITAN_PULLEY_DIMS, TITAN_PULLEY_TOWER, TOG_FLIGHT_DIMS, TOG_MULTI_FLIGHT, bosTowerWeights, inch, ironPlates, pinIndex, togFlightWeights, type LatTowerDims } from '../floor-parts/cable-towers.ts';
+import { BOS_CABLE_TOWER, BOS_LAT_DIMS, MAJOR_B52, MAJOR_B52_COLORS, MAJOR_B52_DIMS, FORCE_FTR, FORCE_FTR_ARM_REACH, FORCE_FTR_DIMS, forceFtrWeights, REP_ADONIS, REP_ADONIS_DIMS, INSPIRE_FTX, INSPIRE_FTX_DIMS, inspireFtxWeights, REP_ARCADIA, REP_ARCADIA_DIMS, repArcadiaWeights, BOS_LAT_PULLDOWN, BOS_TOWER_DIMS, TITAN_LAT_DIMS, TITAN_LAT_TOWER, TITAN_PLATE_LAT, TITAN_PLATE_LAT_DIMS, TITAN_PULLEY_DIMS, TITAN_PULLEY_TOWER, TOG_FLIGHT_DIMS, TOG_MULTI_FLIGHT, bosTowerWeights, inch, ironPlates, pinIndex, togFlightWeights, type LatTowerDims } from '../floor-parts/cable-towers.ts';
 import { MAT, mat, towerKit, type Mat, type TowerKit } from './cable-towers-kit.ts';
 import { STRIPE, cableEnd, dHandle, latBar, swivelPulley, weightStack } from './cable-towers-components.ts';
 const BLACK = mat('Black powder-coated steel', '#1b1c1e', .3, .5);
@@ -493,7 +493,7 @@ export function buildRepArcadia(api: ManifoldAPI, p: NumericParams): SolidPart[]
 export function buildInspireFtx(api: ManifoldAPI, p: NumericParams): SolidPart[] {
   const t = towerKit(api), D = INSPIRE_FTX_DIMS, H = D.height, F = mat('Matte black powder coat', '#1d1e20', .2, .62);
   const RED = mat('Red lock levers', '#d0282e', .1, .45), WHITE = mat('White INSPIRE logo', '#ecebe7', 0, .5);
-  const a = D.angle * Math.PI / 180, tx = 344, ty = 0, pitch = inch(2), z1 = 330;
+  const a = D.angle * Math.PI / 180, tx = 328.5, ty = 0, pitch = inch(2), z1 = 330;
   /** Tower-local point (outer side = +x) to the build frame, as the solids are transformed below. */
   const pt = (e: number, [x, y, z]: Vec3): Vec3 => { const lx = e * x, th = -e * a; return [lx * Math.cos(th) - y * Math.sin(th) + e * tx, lx * Math.sin(th) + y * Math.cos(th) + ty, z]; };
   return t.finish('Inspire FTX', () => {
@@ -504,8 +504,8 @@ export function buildInspireFtx(api: ManifoldAPI, p: NumericParams): SolidPart[]
         const top = H - 95;
         // Base frame, sled foot with its upturned toe, the two black uprights and the chrome carriage tube.
         t.add(F, t.box([-215, 20, 0], [170, 130, 40]));
-        t.add(F, t.beam([-20, 150, 22], [-20, -300, 22], 70, 44), t.beam([-20, -300, 22], [60, -578, 22], 70, 44));
-        t.add(MAT.rubber, t.rbox([60, -580], 90, 50, 0, 44, 22));
+        t.add(F, t.beam([-20, 150, 22], [-20, -300, 22], 70, 44), t.beam([-20, -300, 22], [230, -515, 22], 70, 44));
+        t.add(MAT.rubber, t.rbox([232, -517], 90, 50, 0, 44, 22));
         t.add(F, t.box([-205, 40, 40], [-155, 115, top]), t.box([95, 40, 40], [145, 115, top]));
         t.add(MAT.chrome, t.cyl('z', 60, top, 60, [195, 0, 0], 32));
         t.add(F, t.box([-5 + 195 - 60, -30, 40], [195 + 30, 40, 70]));
@@ -549,7 +549,226 @@ export function buildInspireFtx(api: ManifoldAPI, p: NumericParams): SolidPart[]
     for (const b of [barL, barR]) t.add(F, t.cyl('z', H - 95, H - 16, 40, [b[0], b[1], 0], 20));
   });
 }
+// ------------------------------------------------------------------------------------------------ REP Adonis
+export function buildRepAdonis(api: ManifoldAPI, p: NumericParams): SolidPart[] {
+  const t = towerKit(api), D = REP_ADONIS_DIMS, H = D.height, U = inch(3), F = mat('Metallic black powder coat', '#252629', .5, .38);
+  const SHROUD = mat('Black shroud panels', '#1b1c1e', .35, .45), BEIGE = mat('REP shroud lettering', '#b9ad9c', .2, .5), GREY = mat('Grey tread footplate', '#5a5d61', .5, .5);
+  return t.finish('REP Adonis', () => {
+    const cc = 700, back = cc + U / 2, front = back - D.depth, mid = cc / 2, pw = U / 2 + 6, pitch = (D.high - D.low) / (D.positions - 1);
+    // Uprights (1" holes on 2" centres), top crossmember and the lat arm forward from the top.
+    for (const y of [0, cc]) t.add(F, t.upright(0, y, 8, H - U, U, U, { dia: 25.4, pitch: inch(2), start: D.low, count: 40, faces: 'xy', seg: 14 }));
+    t.add(F, t.box([-U / 2, -U / 2, H - U], [U / 2, back, H]));
+    const tipY = -430;
+    t.add(F, t.box([-U / 2, tipY - 40, H - U], [U / 2, -U / 2, H]));
+    for (const e of [-1, 1]) t.add(F, t.box([e > 0 ? U / 2 : -U / 2 - 6, tipY - 60, H - U - 90], [e > 0 ? U / 2 + 6 : -U / 2, tipY + 80, H]));
+    t.add(MAT.alu, t.sheave([0, tipY, H - U - 40], 'x', 110, 22));
+    // Shroud panels on both sides with the central slot, vertical REP lettering and perforated patches.
+    const slot0 = mid - 110, slot1 = mid + 110;
+    for (const e of [-1, 1]) {
+      const x0 = e > 0 ? U / 2 : -pw, x1 = e > 0 ? pw : -U / 2;
+      t.add(SHROUD, t.cut(t.box([x0, U / 2, 140], [x1, cc - U / 2, H - U - 30]), [t.box([x0 - 1, slot0, 220], [x1 + 1, slot1, H - U - 160])]));
+      t.add(BEIGE, t.label('REP', 520, 170, 1.5, [e * (pw + (e > 0 ? 0 : 1.5)), 150, 1500], [0, 0, 1], [0, -e, 0]));
+      for (let i = 0; i < 6; i++) for (let j = 0; j < 10; j++) t.add(F, t.cyl('x', e > 0 ? pw - .5 : -pw - .8, e > 0 ? pw + .8 : -pw + .5, 9, [0, slot1 + 40 + i * 30, 300 + j * 36], 6));
+    }
+    t.add(MAT.chrome, t.cyl('z', 140, H - U - 30, 32, [0, mid - 60, 0], 20));
+    // Plate-loaded carriage on the guide rod (or the selector stack with horns on its head plate), horns through both slots.
+    let hornZ: number;
+    if (p.loading) {
+      const pin = pinIndex(D.stack, p.pin);
+      const top = weightStack(t, { x: 0, y: mid + 20, z0: 140, w: U - 4, d: 190, t: 30, gap: 1.2, n: D.stack.length - 1, head: 60, face: '+x', rodSep: 150, rodD: 18, rodTop: H - U - 30, pin, bumper: 30, labelW: 90,
+        stripe: () => STRIPE.white });
+      t.add(mat('REP 2.5 lb micro disc', '#141516', .3, .5), t.cyl('x', pw, pw + 18, 120, [0, mid + 20, top + 60], 36));
+      hornZ = top + 60;
+    } else {
+      t.add(MAT.rubber, t.cyl('z', 140, 250, 44, [0, mid - 60, 0], 20));
+      t.add(F, t.cyl('z', 250, 560, 56, [0, mid - 60, 0], 24), t.box([-U / 2 + 4, mid - 90, 300], [U / 2 - 4, mid + 90, 520]));
+      hornZ = 400;
+    }
+    const hornY = mid;
+    t.add(F, t.cyl('x', -pw - 12, pw + 12, 80, [0, hornY, hornZ], 32));
+    t.add(mat('Stainless loading horns', '#c4c8cb', .9, .3), t.cyl('x', -pw - 12 - D.horn, pw + 12 + D.horn, 49, [0, hornY, hornZ], 32));
+    t.add(F, t.cyl('x', pw + 12 + D.horn, pw + 22 + D.horn, 60, [0, hornY, hornZ], 28), t.cyl('x', -pw - 22 - D.horn, -pw - 12 - D.horn, 60, [0, hornY, hornZ], 28));
+    const right = Math.ceil(p.loaded / 2);
+    t.plates(ironPlates(right), [pw + 13, hornY, hornZ], [1, 0, 0]);
+    t.plates(ironPlates(p.loaded - right), [-pw - 13, hornY, hornZ], [-1, 0, 0]);
+    // Trolley on the front upright: sleeve, knurled pop-pin handle, twin hex-cut pulley plates, swivel pulley and handle.
+    const zc = D.low + (p.carriage - 1) * pitch;
+    t.add(F, t.cut(t.box([-52, -52, zc - 130], [52, 52, zc + 130]), [t.box([-U / 2 - 1, -U / 2 - 1, zc - 131], [U / 2 + 1, U / 2 + 1, zc + 131])]));
+    t.add(MAT.grip, t.cyl('x', 52, 110, 30, [0, 0, zc + 60], 20));
+    for (const e of [-1, 1]) {
+      const plate = t.hull([t.cyl('x', e * 26 - 3, e * 26 + 3, 130, [0, -110, zc + 60], 36), t.cyl('x', e * 26 - 3, e * 26 + 3, 130, [0, -110, zc - 50], 36)]);
+      const hx = [[0, 60], [0, -50], [35, 5], [-35, 5], [35, 95], [-35, 95], [35, -85], [-35, -85]].map(([dy, dz]) => t.cyl('x', e * 26 - 5, e * 26 + 5, 24, [0, -110 + dy, zc + dz + 5], 6));
+      t.add(F, t.cut(plate, [t.union(hx)]));
+    }
+    t.add(F, t.box([-29, -60, zc - 100], [29, -52, zc + 110]));
+    t.add(MAT.alu, t.sheave([0, -110, zc + 60], 'x', 110, 20), t.sheave([0, -110, zc - 50], 'x', 110, 20));
+    const eye = swivelPulley(t, [0, -150, zc - 118], [0, -1, 0], 70, F, MAT.alu);
+    hangHandle(t, cableEnd(t, eye, 60), 330);
+    // Footplate with the low-row pulley and straight row handle; lat bar under the arm tip.
+    t.add(F, t.box([-U / 2, front + 100, 8], [U / 2, -U / 2, 60]));
+    t.add(GREY, t.cut(t.box([-230, front, 0], [230, front + 110, 200]), [t.box([-60, front - 1, 80], [60, front + 111, 201]), t.box([-231, front + 15, 12], [231, front + 111, 201])]));
+    t.add(F, t.label('REP', 90, 30, 1, [0, front + 1, 40], [1, 0, 0], [0, 0, 1]));
+    t.add(MAT.alu, t.sheave([0, front + 60, 140], 'x', 90, 20));
+    t.add(MAT.stainless, t.cyl('x', -300, 300, 28, [0, front + 60, 215], 20));
+    t.add(MAT.cable, t.cable([[0, -120, zc + 115], [0, -120, H - U - 60], [0, -U / 2 - 10, H - U - 20], [0, mid - 60, H - U - 20]]), t.cable([[0, tipY - 55, H - U - 40], [0, tipY - 55, H - U - 200]]));
+    latBar(t, cableEnd(t, [0, tipY - 55, H - U - 200], 60), D.latBar, 200, 110, 25.4, MAT.stainless, MAT.grip);
+    // Storage base (two 3" rails across, levelling feet, storage posts) or the anchored tower's foot plates.
+    if (p.base) {
+      const bw = D.baseWidth / 2, bd = D.baseDepth / 2;
+      for (const y of [mid - bd + U / 2, mid + bd - U / 2]) t.add(F, t.cut(t.box([-bw, y - U / 2, 30], [bw, y + U / 2, 30 + U]), [t.union(Array.from({ length: 16 }, (_, i) => t.cyl('y', y - U, y + U, 25.4, [-bw + 70 + i * ((2 * bw - 140) / 15), 0, 30 + U / 2], 12)))]));
+      for (const e of [-1, 1]) {
+        t.add(F, t.box([e * bw - (e > 0 ? U : 0), mid - bd + U, 30], [e * bw + (e > 0 ? 0 : U), mid + bd - U, 30 + U]));
+        for (const y of [mid - bd + U / 2, mid + bd - U / 2]) t.add(MAT.rubber, t.cyl('z', 0, 30, 70, [e * (bw - U / 2), y, 0], 20));
+        t.add(F, t.cyl('z', 30 + U, D.baseHeight, 60, [e * (bw - 150), mid, 0], 24));
+      }
+    } else for (const y of [0, cc]) t.add(F, t.box([-U / 2 - 40, y - U / 2, 0], [U / 2 + 40, y + U / 2, 8]));
+  });
+}
+// ------------------------------------------------------------------------------------------------ Force USA Functional Trainer Rack
+export function buildForceFtr(api: ManifoldAPI, p: NumericParams): SolidPart[] {
+  const t = towerKit(api), D = FORCE_FTR_DIMS, H = D.height, U = D.tube, F = mat('Matte black electrostatic paint', '#1e1f21', .25, .6);
+  const HEX = mat('Hex-pattern aluminium plates', '#b7babd', .8, .32);
+  return t.finish('Force USA FTR', () => {
+    const ux = D.frameWidth / 2 - U / 2, yM = 420, yR = 760, back = yR + U / 2, front = back - D.depth, capZ = 1960;
+    const holes = { dia: 25.4, pitch: inch(2), start: 150, count: 42, faces: 'xy' as const, seg: 10 };
+    const weights = forceFtrWeights(p), pin = pinIndex(weights, p.pin);
+    for (const e of [-1, 1]) {
+      const x = e * ux;
+      // Side foot with the angled front toe, three uprights (front trolley upright, stack bay pair).
+      t.add(F, t.prismYZ([[front, 0], [back, 0], [back, U], [front + 90, U], [front, 30]], x - U / 2, x + U / 2));
+      t.add(MAT.rubber, t.box([x - U / 2 - 3, front, 0], [x + U / 2 + 3, front + 60, 6]));
+      t.add(F, t.upright(x, 0, U, H - U, U, U, holes), t.upright(x, yM, U, capZ, U, U, { ...holes, faces: 'x' }), t.upright(x, yR, U, capZ, U, U, { ...holes, faces: 'x' }));
+      t.add(F, t.box([x - U / 2, U / 2, H - U], [x + U / 2, yM - U / 2, H]));
+      // Stack bay cap: sloped black shroud with the hex-pattern FORCE USA plate on the outside.
+      const cap = t.prismYZ([[yM - U / 2, capZ], [back, capZ], [back, H - 170], [yM + 60, H], [yM - U / 2, H]], x - U / 2 - 20, x + U / 2 + 20);
+      t.add(F, cap);
+      const hx = x + e * (U / 2 + 20);
+      t.add(HEX, t.prismYZ([[yM - U / 2 + 10, capZ + 12], [yR, capZ + 12], [yR, H - 150], [yM + 55, H - 12], [yM - U / 2 + 10, H - 12]], e > 0 ? hx : hx - 2, e > 0 ? hx + 2 : hx));
+      t.add(F, t.label('FORCE USA', 250, 55, 1, [hx + e * 2, yM + 170, capZ + 115], [0, e, 0], [0, 0, 1]));
+      // Stack in the rear bay, labels outboard, guide rods to the cap.
+      weightStack(t, { x, y: (yM + yR) / 2, z0: U, w: 100, d: 250, t: 22, gap: 1.4, n: weights.length - 1, head: 50, face: e < 0 ? '-x' : '+x', rodSep: 210, rodD: 22, rodTop: capZ, pin, bumper: 30, labelW: 110, stripe: () => STRIPE.white });
+      // Low pulleys by the front of the stack bay, and the trolley with its freestyle arm.
+      for (const z of [180, 330]) t.add(MAT.alu, t.sheave([x, yM - 90, z], 'x', 90, 20));
+      t.add(F, t.box([x - 16, yM - 140, 120], [x - 12, yM - U / 2, 380]), t.box([x + 12, yM - 140, 120], [x + 16, yM - U / 2, 380]));
+      const zc = 300 + ((e < 0 ? p.left : p.right) - 1) * inch(2);
+      t.add(F, t.cut(t.box([x - 52, -52, zc - 120], [x + 52, 52, zc + 120]), [t.box([x - U / 2 - 1, -U / 2 - 1, zc - 121], [x + U / 2 + 1, U / 2 + 1, zc + 121])]));
+      t.add(MAT.grip, t.cyl('y', -52, -110, 30, [x, 0, zc - 60], 20));
+      const a = 35 * Math.PI / 180, piv: Vec3 = [x + e * 70, -10, zc], L = 177, tip: Vec3 = [piv[0] + e * L * Math.cos(a), -10, zc + L * Math.sin(a)];
+      t.add(F, t.cyl('x', e > 0 ? x + 52 : x - 70, e > 0 ? x + 70 : x - 52, 90, [0, -10, zc], 28));
+      t.add(HEX, t.cut(t.beam(piv, tip, 16, 120, [-e * Math.sin(a), 0, Math.cos(a)]), [t.union([.25, .5, .75].map(u => t.cyl('y', -30, 10, 42, [piv[0] + (tip[0] - piv[0]) * u, 0, piv[2] + (tip[2] - piv[2]) * u], 6)))]));
+      t.add(F, t.hull([t.cyl('y', -30, -24, 150, [tip[0], 0, tip[2]], 32), t.cyl('y', 4, 10, 150, [tip[0], 0, tip[2]], 32)]));
+      t.add(MAT.alu, t.sheave([tip[0], -10, tip[2]], 'y', 120, 22));
+      const eye = swivelPulley(t, [tip[0] + e * 40, -10, tip[2] - 60], [e, 0, 0], 60, F, MAT.alu);
+      hangHandle(t, cableEnd(t, eye, 50), 300);
+      t.add(MAT.cable, t.cable([[x, -60, zc - 120], [x, -60, 330], [x, yM - 90, 285]]));
+    }
+    // Front top crossmember with the suspension ring and pull-up grips; rear crossmembers, sign, pegboard, shelf.
+    t.add(F, t.cut(t.box([-ux, -U / 2, H - U], [ux, U / 2, H]), [t.union(Array.from({ length: 13 }, (_, i) => t.cyl('y', -U, U, 25.4, [-ux + 120 + i * ((2 * ux - 240) / 12), 0, H - U / 2], 12)))]));
+    t.add(MAT.zinc, t.cut(t.cyl('y', -6, 6, 70, [0, 0, H - U - 40], 24), [t.cyl('y', -8, 8, 50, [0, 0, H - U - 40], 24)]));
+    for (const e of [-1, 1]) t.add(F, t.cyl('y', -U / 2, -170, 32, [e * 260, 0, H - 30], 20), t.box([e * 260 - 25, -190, H - 60], [e * 260 + 25, -170, H - 5]));
+    for (const e of [-1, 1]) t.add(MAT.grip, t.cyl('y', -80, -165, 36, [e * 260, 0, H - 30], 20));
+    t.add(F, t.box([-ux, yR - U / 2, 0], [ux, yR + U / 2, U]), t.box([-ux, yR - U / 2, capZ - U], [ux, yR + U / 2, capZ]));
+    t.add(F, t.box([-ux, yM - U / 2, 650], [ux, yM + U / 2, 650 + U]), t.box([-ux, yM - U / 2, capZ - U], [ux, yM + U / 2, capZ]));
+    t.add(F, t.box([-260, yM - 6, 1640], [260, yM, 1860]));
+    t.add(HEX, t.label('FORCE USA', 440, 90, 1.5, [0, yM - 6, 1750], [1, 0, 0], [0, 0, 1]));
+    const keys: Manifold[] = [];
+    for (let i = 0; i < 6; i++) for (let j = 0; j < 3; j++) keys.push(t.hull([t.cyl('y', yM - 10, yM + 6, 16, [-200 + i * 80, 0, 1560 - j * 90], 10), t.cyl('y', yM - 10, yM + 6, 8, [-200 + i * 80, 0, 1540 - j * 90], 8)]));
+    t.add(F, t.cut(t.box([-240, yM - 6, 1330], [240, yM, 1620]), [t.union(keys)]));
+    t.add(F, t.box([-260, yM - 150, 1150], [260, yM, 1162]), t.box([-260, yM - 150, 1162], [260, yM - 140, 1200]));
+  });
+}
+// ------------------------------------------------------------------------------------------------ Major Fitness B52
+export function buildMajorB52(api: ManifoldAPI, p: NumericParams): SolidPart[] {
+  const t = towerKit(api), D = MAJOR_B52_DIMS, F = BLACK, [cname, ccolor] = MAJOR_B52_COLORS[p.color] ?? MAJOR_B52_COLORS[0];
+  const UP = p.color ? mat(`${cname} powder-coated uprights`, ccolor, .3, .5) : F, PUL = p.model ? MAT.alu : MAT.nylon;
+  return t.finish('Major Fitness B52', () => {
+    const ux = 584, TX = 76.2, TY = 50.8, yM = 300, yR = 940, back = 1000, front = back - D.depth, top = 2046, inner = D.interior / 2, H = D.height;
+    const holes = { dia: 22, pitch: inch(2), start: 250, count: 34, faces: 'xy' as const, seg: 10 };
+    // Base: side rails, front and rear crossbars, diagonal braces, landmine and low-row footplate.
+    for (const e of [-1, 1]) {
+      t.add(F, t.box([e * ux - TX / 2, -420, 0], [e * ux + TX / 2, back, TY]));
+      t.add(F, t.beam([e * (inner - 250), 0, TY], [e * inner, 0, 380], 40, 40, [0, 1, 0]));
+      for (const y of [-420, back - 60]) t.add(MAT.rubber, t.box([e * ux - TX / 2 - 4, y, 0], [e * ux + TX / 2 + 4, y + 60, 8]));
+    }
+    t.add(F, t.box([-inner, -TY / 2, 0], [inner, TY / 2, TY]), t.box([-inner, yR - TY / 2, 0], [inner, yR + TY / 2, TY]));
+    t.add(F, t.cyl('z', TY, 140, 70, [-ux, -380, 0], 24));
+    t.add(mat('Black landmine sleeve', '#1f2022', .45, .45), t.cyl('y', -380, front, 50, [-ux, 0, 110], 28));
+    t.add(MAT.zinc, t.cyl('x', -ux - 60, -ux + 60, 14, [0, -380, 110], 12));
+    t.add(F, t.box([150, -330, 0], [450, -TY / 2, 30]));
+    t.add(MAT.tread, t.hull([t.rbox([300, -300], 320, 10, 30, 40, 5), t.rbox([300, -220], 320, 10, 200, 210, 5)]));
+    t.add(PUL, t.sheave([300, -60, 90], 'y', 90, 20));
+    // Uprights: 2" × 3" front and rear, 2" × 2" middle; top frame, multi-grip pull-up handles, rear logo plate.
+    for (const e of [-1, 1]) {
+      const x = e * ux;
+      t.add(UP, t.upright(x, 0, TY, top - TY, TX, TY, holes), t.upright(x, yM, TY, top - TY, TY, TY, { ...holes, faces: 'y' }), t.upright(x, yR, TY, top - TY, TX, TY, { ...holes, faces: 'x' }));
+      for (let n = 3; n <= 27; n += 2) t.add(mat('White upright numbers', '#e3e3df', 0, .6), t.label(String(n), 16, 12, .5, [x + e * 22, -TY / 2 - .5, holes.start + (n - 1) * inch(2) / 2 + 30], [1, 0, 0], [0, 0, 1]));
+      t.add(F, t.box([x - TX / 2, -TY / 2, top - TY], [x + TX / 2, yR + TY / 2, top]));
+      t.add(F, t.prismYZ([[yR - 150, top], [yR + TY / 2, top], [yR + TY / 2, top - 260], [yR - 20, top - 260]], x - 6, x + 6));
+      // Outer foam pull-up handles and the pulley cheeks on top of the front uprights.
+      t.add(F, t.box([x - 20, -30, top], [x + 20, 30, top + 30]));
+      t.add(MAT.foam, t.cyl('x', e > 0 ? x + TX / 2 : -870, e > 0 ? 870 : x - TX / 2, 38, [0, 0, top + 14], 20));
+      for (const s of [-1, 1]) t.add(F, t.hull([t.cyl('x', x + s * 18 - 3, x + s * 18 + 3, 100, [0, -20, top + 2], 28), t.box([x + s * 18 - 3, -TY / 2, top - 60], [x + s * 18 + 3, TY / 2, top])]));
+      t.add(PUL, t.sheave([x, -20, top + 2], 'x', 90, 20));
+      // Smith guide rod, spring, catch-tooth plate and the carriage; J-hook, dip arm and plate storage pegs.
+      const rodY = 160;
+      t.add(MAT.chrome, t.cyl('z', TY, top - TY, 38, [x, rodY, 0], 20));
+      t.add(MAT.zinc, t.cyl('z', TY, 220, 52, [x, rodY, 0], 12));
+      const teeth: [number, number][] = [[yM - TY / 2 - 40, 400]];
+      for (let i = 0; i < 10; i++) { const z = 400 + i * 150; teeth.push([yM - TY / 2 - 40, z + 60], [yM - TY / 2 - 12, z + 110], [yM - TY / 2 - 12, z + 150]); }
+      teeth.push([yM - TY / 2, 1950], [yM - TY / 2, 400]);
+      t.add(F, t.prismYZ(teeth, x - e * 20 - 5, x - e * 20 + 5));
+      t.add(F, t.box([x - e * TX / 2 - (e > 0 ? 60 : 0), -TY / 2, 1300], [x - e * TX / 2 + (e < 0 ? 60 : 0), TY / 2, 1400]), t.box([x - e * TX / 2 - (e > 0 ? 60 : 0), -TY / 2 - 50, 1300], [x - e * TX / 2 + (e < 0 ? 60 : 0), -TY / 2, 1340]));
+      t.add(F, t.box([e > 0 ? inner - 150 : -inner, -TY / 2, 880], [e > 0 ? inner : -inner + 150, TY / 2, 930]));
+      for (const dx of [50, 110]) t.add(MAT.foam, t.cyl('y', -TY / 2 - 60, -TY / 2, 34, [e * (inner - dx), 0, 905], 16));
+      for (const z of [480, 1080]) t.add(mat('Black plate storage pegs', '#1f2022', .45, .45), t.cyl('x', e > 0 ? x + TX / 2 : -860, e > 0 ? 860 : x - TX / 2, 50, [0, yR, z], 24));
+      // Weight: Pro stack in the rear bay (blue weight labels), or the Standard plate-loaded carriage on its guide rod.
+      const bayY = (yM + yR) / 2;
+      let loadTop: number;
+      if (p.model) {
+        loadTop = weightStack(t, { x, y: bayY, z0: TY, w: 100, d: 250, t: 25, gap: 1.4, n: D.stack.length - 1, head: 50, face: e < 0 ? '-x' : '+x', rodSep: 210, rodD: 22, rodTop: top - TY, pin: pinIndex(D.stack, p.pin), bumper: 30, labelW: 100, pinKnob: '#c8302c', stripe: () => STRIPE.blue });
+      } else {
+        const rz = 320;
+        t.add(MAT.chrome, t.cyl('z', TY, top - TY, 32, [x, bayY, 0], 20));
+        t.add(MAT.rubber, t.cyl('z', TY, rz - 110, 50, [x, bayY, 0], 20));
+        t.add(F, t.cyl('z', rz - 110, rz + 130, 62, [x, bayY, 0], 24));
+        t.add(mat('Black loading horns', '#1f2022', .45, .45), t.cyl('x', x - 250, x + 250, 49, [0, bayY, rz], 28));
+        t.add(F, t.cyl('x', x - 50, x - 40, 80, [0, bayY, rz], 24), t.cyl('x', x + 40, x + 50, 80, [0, bayY, rz], 24));
+        const n = p.loaded, outer = Math.ceil(n / 2);
+        t.plates(ironPlates(outer), [x + e * 51, bayY, rz], [e, 0, 0]);
+        t.plates(ironPlates(n - outer), [x - e * 51, bayY, rz], [-e, 0, 0]);
+        loadTop = rz + 130;
+      }
+      t.add(PUL, t.sheave([x, bayY, top - TY - 50], 'x', 90, 20));
+      // Cable trolley on the front upright's outer face: sleeve, pop pin, twin pulleys, swivel and handle.
+      const zc = 500 + (p.carriage - 1) * inch(3);
+      t.add(F, t.cut(t.box([x - 60, -48, zc - 120], [x + 60, 48, zc + 120]), [t.box([x - TX / 2 - 1, -TY / 2 - 1, zc - 121], [x + TX / 2 + 1, TY / 2 + 1, zc + 121])]));
+      t.add(mat('Red pop-pin knob', '#c8302c', .1, .45), t.cyl('y', -48, -85, 26, [x, 0, zc - 80], 16));
+      for (const dz of [60, -30]) t.add(PUL, t.sheave([x + e * 80, 0, zc + dz], 'x', 90, 20));
+      t.add(F, t.box([e > 0 ? x + 60 : x - 104, -40, zc - 80], [e > 0 ? x + 104 : x - 60, 40, zc + 110].map(v => v) as Vec3));
+      const eye = swivelPulley(t, [x + e * 80, -70, zc - 90], [0, -1, 0], 70, F, PUL);
+      hangHandle(t, cableEnd(t, eye, 60), 300);
+      t.add(MAT.cable, t.cable([[x + e * 80, -45, zc + 105], [x + e * 80, -45, top - 20], [x, 30, top + 30], [x, bayY - 45, top - TY - 50], [x, bayY - 45, loadTop + 20]]));
+    }
+    t.add(F, t.cut(t.box([-inner, -TY / 2, top - TY], [inner, TY / 2, top]), [t.union(Array.from({ length: 5 }, (_, i) => t.cyl('y', -TY, TY, 18, [-40 + i * 20, 0, top - TY / 2], 10)))]));
+    for (const e of [-1, 1]) for (const x of [140, 420]) t.add(MAT.grip, t.rod([e * x, -TY / 2, top - 20], [e * (x + 40), -220, top + 36], 32, 16));
+    t.add(F, t.box([-inner, yR - TY / 2, top - TY], [inner, yR + TY / 2, top]));
+    t.add(F, t.box([-inner, yR - TY / 2 - 6, 1640], [inner, yR - TY / 2, 1860]), t.box([-inner, yR - TY / 2, 1600], [inner, yR + TY / 2, 1640]));
+    t.add(mat('White MAJOR FITNESS lettering', '#e3e3df', 0, .6), t.label('MAJOR FITNESS', 420, 70, 1, [30, yR - TY / 2 - 6, 1750], [1, 0, 0], [0, 0, 1]));
+    for (const x of [-300, -100, 100, 300]) t.add(MAT.zinc, t.cyl('z', 1540, 1600, 10, [x, yR - 40, 0], 8));
+    // Smith bar at the selected hook: carriages on the guide rods, knurled shaft, sleeves out to the published width.
+    const zs = 400 + (p.smith - 1) * 150 + 60, bw = D.width / 2;
+    for (const e of [-1, 1]) {
+      t.add(F, t.box([e * ux - 42, 120, zs - 90], [e * ux + 42, 200, zs + 90]), t.box([e * ux - 42, 100, zs - 30], [e * ux + 42, 120, zs + 30]));
+      t.add(MAT.stainless, t.cyl('x', e > 0 ? ux + 42 : -bw, e > 0 ? bw : -ux - 42, 50, [0, 110, zs], 28));
+      t.add(MAT.stainless, t.cyl('x', e > 0 ? ux + 42 : -ux - 60, e > 0 ? ux + 60 : -ux - 42, 64, [0, 110, zs], 28));
+    }
+    t.add(MAT.chrome, t.cyl('x', -ux + 42, ux - 42, 30, [0, 110, zs], 24));
+  });
+}
 export const definitions: PartDefinition[] = [
+  floorDefinition(MAJOR_B52, buildMajorB52),
+  floorDefinition(FORCE_FTR, buildForceFtr),
+  floorDefinition(REP_ADONIS, buildRepAdonis),
   floorDefinition(INSPIRE_FTX, buildInspireFtx),
   floorDefinition(REP_ARCADIA, buildRepArcadia),
   floorDefinition(TITAN_PULLEY_TOWER, buildTitanPulleyTower),
