@@ -169,8 +169,8 @@ const RAIL_MATS: Record<string, Material> = {};
 export const AB3100_BENCH: LadderBench = {
   label: 'AB-3100', L: AB3100.length, W: AB3100.width, back: AB3100.back, seat: AB3100.seat,
   pads: () => pad(AB3100.height, AB3100.padThick, -626.4 + AB3100.seatLength + AB3100.gap / 2, AB3100.gap, [AB3100.backLength, AB3100.backWidth, AB3100.backHead], [AB3100.seatLength, AB3100.seatWidth, AB3100.seatFront]),
-  frontFoot: [-580, 16], J: [-400, 280], frontStyle: 'plate', frontFootWidth: 130,
-  handle: { y: -560 + 160 * 104 / 264, z: 120, length: 250, d: 30, mat: MAT.grip, mount: 'leg' },
+  frontFoot: [-580, 16], J: [-330, 290], frontStyle: 'plate', frontFootWidth: 130,
+  handle: { y: -580 + 250 * 104 / 274, z: 120, length: 250, d: 30, mat: MAT.grip, mount: 'leg' },
   rearFoot: 545.35, footTop: 72, wheels: 'behind', rearPost: { y: 545.35 },
   backLadder: { from: -120, to: 440, lift: 50, flatY: 380, bracket: 280, drop: 36, style: open([-31, 31], 80, 40) },
   seatLadder: { offset: 44, from: .2, to: .75, flat: .45, bracket: 140, drop: 34, style: open([-30, 30], 28, 34) },

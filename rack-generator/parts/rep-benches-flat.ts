@@ -6,7 +6,7 @@ import { MAT, benchKit, inch, type BenchKit, type Pt } from './rep-benches-kit.t
 export function fb5000Layout(p: NumericParams) {
   const L = FB5000.length, W = FB5000.width, H = FB5000.height, t = FB5000.tube, padW = FB5000.padWidths[p.pad ? 1 : 0];
   if (!padW) throw Error('Unsupported bench pad width.');
-  const front = -L / 2, rear = L / 2, wheelD = 76, wheelY = rear - wheelD / 2, rearPost = rear - 170, loopR = 113, loopZ = 160;
+  const front = -L / 2, rear = L / 2, wheelD = 76, wheelY = rear - wheelD / 2, rearPost = rear - 170, loopR = 95, loopZ = 172;
   const frontPost = front + loopR + 16 + t / 2 + 7, padFront = front + 36, padRear = padFront + FB5000.padLength;
   const padBottom = H - FB5000.padThick, beamTop = padBottom - 6, beamBottom = beamTop - t;
   return { L, W, H, t, padW, front, rear, wheelD, wheelY, rearPost, frontPost, loopR, loopZ, padFront, padRear, padBottom, beamTop, beamBottom };
@@ -51,7 +51,11 @@ export function buildFB5000(api: ManifoldAPI, p: NumericParams): SolidPart[] {
     const pad = t.pad(t.roundRect(g.padW, FB5000.padLength, 22), g.padBottom, FB5000.padThick, 20, 12);
     const at = (s: typeof pad.vinyl) => t.move(s, [0, (g.padFront + g.padRear) / 2, 0]);
     t.add(MAT.vinyl, at(pad.vinyl)); t.add(MAT.piping, at(pad.piping)); t.add(MAT.board, at(pad.backing));
-    for (const s of [-1, 1]) t.add(MAT.logo, t.span([s > 0 ? g.padW / 2 - .5 : -g.padW / 2 - 1, -420, g.padBottom + 38], [s > 0 ? g.padW / 2 + 1 : -g.padW / 2 + .5, -265, g.padBottom + 70]));
+    // Three white letter blocks stand in for the printed REP wordmark on each pad side (no logo artwork).
+    for (const s of [-1, 1]) for (const [i, w] of [42, 40, 40].entries()) {
+      const y0 = -425 + i * 52;
+      t.add(MAT.logo, t.span([s > 0 ? g.padW / 2 - .5 : -g.padW / 2 - 1, y0, g.padBottom + 40], [s > 0 ? g.padW / 2 + 1 : -g.padW / 2 + .5, y0 + w, g.padBottom + 72]));
+    }
   });
 }
 /** Loose replacement pads laid on the floor: back pad toward −Y, seat toward +Y. */

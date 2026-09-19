@@ -83,12 +83,12 @@ export function blackwingLayout(p: NumericParams) {
   const L = BLACKWING.length, W = BLACKWING.width, H = BLACKWING.height, T = BLACKWING.padThick;
   const front = -L / 2, rear = L / 2, seatFront = -700, gap = 45, py = seatFront + BLACKWING.seatLength + gap / 2;
   const pads: PadLayout = { H, T, pivot: [py, H - T - 15], gap, backLen: BLACKWING.backLength, backW: BLACKWING.padWidths[p.pad ? 1 : 0], seatLen: BLACKWING.seatLength, seatW: BLACKWING.padWidths[p.pad ? 1 : 0], seatFrontW: BLACKWING.seatFront, slide: 38, railH: 44 };
-  const J: Pt = [-440, 292], rearFoot = rear - 170, footTop = 72, spineEnd: Pt = [rearFoot, footTop];
+  const J: Pt = [-360, 300], rearFoot = rear - 170, footTop = 72, spineEnd: Pt = [rearFoot, footTop];
   // Ladder line parallel to the spine axis, pins riding 20 mm above the tube.
   const lift = (q: Pt): Pt => [q[0], q[1] + 58];
-  const ladderA = lift(onLine(J, spineEnd, -150)), ladderB = lift(onLine(J, spineEnd, 560));
+  const ladderA = lift(onLine(J, spineEnd, -250)), ladderB = lift(onLine(J, spineEnd, 400));
   const bracketLocal: Pt = [py + 300, H - T - 30 - 42], bracket = (a: number) => rotYZ(bracketLocal, pads.pivot, a);
-  const link = linkLength(bracket(0), onLine(ladderA, ladderB, 440));
+  const link = linkLength(bracket(0), onLine(ladderA, ladderB, 330));
   const stations = ladderStations(bracket, link, ladderA, ladderB, BLACKWING.back);
   const seatArm = armStations(pads.pivot, 225, 218, -1, BLACKWING.seat);
   return { L, W, H, T, front, rear, pads, J, rearFoot, footTop, spineEnd, ladderA, ladderB, bracket, link, stations, seatArm, handleY: front + 15 };
@@ -135,7 +135,7 @@ export function buildBlackWingInto(t: BenchKit, p: NumericParams) {
   t.add(MAT.frame, pa.ts(t.member(0, [pa.s0 + 40, pa.railZ - 45], [pa.s1 - 30, pa.railZ - 45], 60, 60)));
   t.add(MAT.stainless, pa.ts(t.cut(t.span([30, pa.s0 + 50, pa.railZ - 67], [32.5, pa.s0 + 300, pa.railZ - 23]), Array.from({ length: 8 }, (_, i) => t.cylX(29, 34, pa.s0 + 175 + i * 15, pa.railZ - 45, 7, 10)))));
   t.add(MAT.stainless, pa.ts(t.cylX(-50, -32, pa.s1 - 60, pa.railZ - 45, 34, 20)));
-  for (const y of [-80, 210, 480]) { const z = onLine(g.ladderA, g.ladderB, y)[1] - 70; t.boltX(38, y, z, 1); t.boltX(-38, y, z, -1); }
+  for (const y of [-190, 80, 340]) { const z = onLine(g.ladderA, g.ladderB, y)[1] - 70; t.boltX(38, y, z, 1); t.boltX(-38, y, z, -1); }
   return { g, pa };
 }
 export function buildBlackWing(api: ManifoldAPI, p: NumericParams): SolidPart[] {
