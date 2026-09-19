@@ -32,7 +32,7 @@ part were added (noted per product).
   [Buddy Set](https://angles90.com/products/grips-buddy-set) (19 images) and Pink/Power Couple listings, [Amazon B0F2Z3R1QP](https://www.amazon.com/dp/B0F2Z3R1QP) (10 images).
 - Published: sold in pairs, two-layer TPU (soft grippy skin over a durable core), 180 kg per handle, 278 g, pull-through slits for
   ERGO/POWER methods, strap shortener slits, finger groove. No dimensions published.
-- Estimated from hand photos: 165 mm long, arched 20 mm, rounded-trapezoid prism section ≈ 40 × 34 mm tapering 30% to the ends,
+- Estimated from hand photos: 165 mm long, arched 26 mm, rounded prism section ≈ 42 × 36 mm (upper and lower ellipsoid hull) tapering 30% to the ends,
   22 mm black webbing loop through the top slits (≈ 175 mm above the grip) and a short shortener loop underneath. Orange, black
   "ANGLES90" print on the front face. Both grips hang on one peg, one behind the other.
 
@@ -54,7 +54,7 @@ part were added (noted per product).
   acetal barbell liner, steel or plastic logo plates.
 - Built: Shorty 577.8 × 127.0 mm, Longy 823.0 × 127.0 mm. Longy holes at 28.8 mm pitch from 74.4 mm, so one pair sits 10.4″ apart
   and another 24″ apart.
-- Estimated: bar depth 38 mm, 49 mm arc drop, Ø17 holes (Shorty 27 mm pitch), clover hub plates 12 mm with four socket bolts,
+- Estimated: bar depth 38 mm, 41 mm arc drop, Ø17 holes (Shorty 27 mm pitch), clover hub plates 12 mm with four socket bolts,
   Ø56/50 liner, eye tab Ø14 hole, white D plates 24 × 44 mm. Hero: black.
 
 ## Mutant Metals ARC Cable Attachment (85) — `mutant-metals-arc-cable-attachment`
@@ -65,7 +65,7 @@ part were added (noted per product).
 - Published: 5° centre assembly 10.75″ W × 5.75″ H × 1.75″ D; with 8″ handles 26.5″ overall and 5.5″ tall; 35 mm handles in 5″,
   8″ and 12″; frame 5.1 lb; aluminium handles in black, gun metal, blue, red, pink and green.
 - Modelled: 5° standard frame (no landmine sleeve) with 8″ black aluminium handles. Built 679.6 mm wide.
-- Estimated: plate radius 100 mm, 1/4″ plate, triangular window, three cable slots, MM mark cut-out, weld beads, 1.75″ barrel bent 5°.
+- Estimated: plate radius 112 mm, 1/4″ plate, triangular window, three cable slots, MM mark cut-out, weld beads, 1.75″ barrel bent 5°.
 
 ## MAG grips (Maximum Advantage Grip) — `mag-*` (6 entries)
 
@@ -75,24 +75,24 @@ part were added (noted per product).
     (58), Wide Grip WG007 (53, the neutral wide bar), Close Grip Neutral CN001 (46).
 - Published: MS/MP/MN approx. 22″ middle finger to middle finger; CS approx. 5″; WG approx. 38″; CN none (sized like CS).
 - One builder (`magGrip`): 19 mm rubber-coated steel frame band traced from the front photos, Ø34 apex boss with a Ø13 carabiner
-  hole, rounded rubber grip blocks placed at the published spacing, yellow MAG mark. Supinate/pronate turn the grips ±25° about Z;
-  close grips use larger winged (CS, 28° tilt, 32° turn) or horn (CN, 52° tilt) blocks.
-- Built widths: medium 650 mm, wide 1016 mm, close 244–270 mm. Frame curves, band widths and grip block sizes are estimates.
+  hole, rounded 80 × 62 × 42 mm rubber grip blocks raised 20° outward at the published spacing, yellow MAG mark. Supinate/pronate turn the grips ±30° about Z;
+  close grips use larger winged (CS, 115 mm long axis raised 28° and turned 20°) or horn (CN, 85 mm tall slabs leaning 12°) blocks.
+- Built widths: medium 674 mm, wide 1052 mm, close 244–247 mm; grip centres at 22″, 38″ and 5″ (tested). Frame curves, band widths and grip block sizes are estimates.
 
 ## Darko Lifting Danglers (84) — `darko-lifting-danglers`
 
 - Source: [darkolifting.com/products/danglers](https://darkolifting.com/products/danglers) (3 images) + duplicate listing (1). Only four
   photos exist; all were used.
 - Published: 2″ × 2″ × 3.5″, sold as a pair, 16 colours. Hero: black.
-- Estimated: stainless eye bolt ring Ø27 (5 mm wire) with hex collar; avocado profile as the hull of a Ø30 top and a Ø51 base.
-  The pair splay ±16° on one peg.
+- Estimated: stainless eye bolt ring Ø30.5 (5.5 mm wire) with hex collar; avocado profile as the hull of a Ø25 top and a Ø51 base.
+  The pair splay ±19° on one peg.
 
 ## KORIKAHM MSP-Paddle Grip (70) — `korikahm-msp-paddle-grip`
 
 - Source: Gym Radar links [Amazon B09G6MG821](https://www.amazon.com/dp/B09G6MG821) (colour "SP-PADDLE GRIP"; 14 images incl. a
   dimension drawing). korikahm.com does not resolve.
 - Published: 7.7″ tall, 8.6″ wide, 5.5″ paddle, alloy steel and rubber, 4.2 lb.
-- Built one handle, 194.5 × 215.5 mm. Estimated: arc radius 108 mm, six slots, pivot block 34 × 40 × 50, Ø33 grip with a 42 mm fin.
+- Built one handle, 213 × 198 mm. Estimated: arc radius 96 mm, six slots, black pivot block 34 × 40 × 50, one 165 mm trapezoid rubber paddle 40 mm deep.
 
 ## PRIME Fitness KAZ Handles (69) — `prime-fitness-kaz-handles`
 
@@ -115,8 +115,8 @@ part were added (noted per product).
 - Source: [primefitnessusa.com/products/prime-ro-t8-handles](https://primefitnessusa.com/products/prime-ro-t8-handles) (1 image) plus the
   RO-T8 family, bar, multi-grip and trap-bar bundles and the grip replacement listing (8 more images of the same handle).
 - Published: none beyond the pair and 6 lb shipping weight. Dimensions scaled against the KORIKAHM clone's 8.6″ drawing.
-- Built the right handle, 202.5 × 229.5 mm: black arc plate (R 118, four slots), dark pivot block with the green PRIME badge, rotating
-  Ø33 grip and 48 mm paddle fin.
+- Built one handle, 202.5 × 169 mm (the grip roughly as long as the handle is tall, as in the studio photo): black arc plate (R 76,
+  three slots), dark pivot block with the green PRIME badge, rotating Ø33 grip and 42 mm paddle fin.
 
 ## REP × Kleva Built Atlas Multi-Grip (61) — `rep-kleva-atlas-multi-grip`
 
@@ -150,7 +150,7 @@ part were added (noted per product).
   [swissies-max](https://kensuifitness.com/products/swissies-max) (16) + [Amazon B0DKY64JGD](https://www.amazon.com/dp/B0DKY64JGD) (11).
 - Published: V1 32 mm knurled handle, fits 25–34 mm bars, nylon-fibreglass, 800 lb, 0.8 lb pair (black or teal); V2 MAX bars up to
   64 mm, carabiner eyelet, fin-shaped palm support, 1.5 lb pair. Modelled: black V1, black neutral V2 MAX.
-- V1 hangs by its rubber-lined seat on the peg; V2 MAX by its eyelet. Body outlines, handle length (107 mm) and fin size estimated.
+- V1 hangs by its rubber-lined seat on the peg; V2 MAX by its eyelet. Body outlines, handle length (100 mm) and fin size estimated.
 
 ## Beyond Power CarbonFlex Bar (43) — `beyond-power-carbonflex-bar-48`, `beyond-power-carbonflex-bar-24`
 

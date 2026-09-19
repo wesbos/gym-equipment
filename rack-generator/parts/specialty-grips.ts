@@ -142,20 +142,19 @@ export const buildEclipse = attachment(PORTER_ECLIPSE, t => {
 // ————— Angles90 A90 grips —————
 /** One A90 grip: curved (arched) TPU prism 165 mm long, strap loop over the rod through the top slits, shortener loop below. */
 function a90Grip(t: Kit, y: number, top: number): Manifold[][] {
-  const L = 165, sag = 20, sec: Manifold[] = [];
+  const L = 165, sag = 26, sec: Manifold[] = [];
   const zAt = (x: number) => top - 22 - sag * (x / (L / 2)) ** 2;
   const samples = Array.from({ length: 11 }, (_, i) => -L / 2 + 8 + (L - 16) * i / 10);
   for (const x of samples) {
     const f = 1 - .3 * (Math.abs(x) / (L / 2)) ** 2, z = zAt(x), a = Math.atan(-2 * sag * x / (L / 2) ** 2);
-    // Rounded trapezoid section (broad top, narrower bottom), leaning with the arch.
-    const corners: [number, number, number][] = [[-1, 13, 12], [1, 13, 12], [-1, 9.5, -15], [1, 9.5, -15]];
-    sec.push(t.hull(corners.map(([s, hy, hz]) => { const dz = hz * f, dx = -Math.sin(a) * dz; return t.sphere([x + dx, y + s * hy * f, z + dz * Math.cos(a)], 14 * f, 14); })));
+    // Rounded prism section (broad top, narrower bottom), leaning with the arch: an upper and a lower ellipsoid.
+    sec.push(t.hull([[5, 18, 11], [-9, 13, 10]].map(([dz, ry, rz]) => t.k(t.ellipsoid([0, 0, 0], [9, ry * f, rz * f], 18).rotate([0, a * 180 / Math.PI, 0]).translate([x - Math.sin(a) * dz * f, y, z + Math.cos(a) * dz * f])))));
   }
   const body = t.union(sec.slice(1).map((s, i) => t.hull([sec[i], s])));
   const strapTop = zAt(30) + 10;
   const loop = t.ribbon(t.curve([[-30, strapTop - 6], [-22, -70], [-8, -8], [0, HOOK_ROD / 2 + 1.2], [8, -8], [22, -70], [30, strapTop - 6]], 6), 22, 2.4, y);
   const under = t.ribbon(t.curve([[-19, zAt(19) - 12], [-14, zAt(0) - 34], [0, zAt(0) - 40], [14, zAt(0) - 34], [19, zAt(19) - 12]], 5), 20, 2.4, y);
-  const print = t.box([80, .8, 8], [0, y - 20.2, zAt(0) + 3]);
+  const print = t.box([70, .8, 6], [0, y - 18.1, zAt(0) + 4]);
   return [[body], [loop, under], [print]];
 }
 export const buildAngles90 = attachment(ANGLES90_GRIPS, t => {
@@ -263,23 +262,23 @@ function magGrip(part: HangPart, spec: MagSpec) {
   });
 }
 const medium: P2[] = [[0, -22], [42, -44], [150, -102], [212, -138], [252, -151], [290, -147], [312, -128], [318, -98]];
-export const buildMagMs = magGrip(MAG_MS, { half: medium, band: 38, grip: { at: [279, -106], size: [38, 120, 46], roll: 18, yaw: 25 }, logo: { at: [-110, -70], angle: -27, w: 66 } });
-export const buildMagMp = magGrip(MAG_MP, { half: medium, band: 38, grip: { at: [279, -106], size: [38, 120, 46], roll: 18, yaw: -25 }, logo: { at: [-110, -70], angle: -27, w: 66 } });
-export const buildMagMn = magGrip(MAG_MN, { half: medium, band: 38, grip: { at: [279, -106], size: [38, 120, 46], roll: 18, yaw: 0 }, logo: { at: [-110, -70], angle: -27, w: 66 } });
-export const buildMagWg = magGrip(MAG_WG, { half: [[0, -20], [46, -42], [150, -90], [250, -112], [440, -114], [492, -112], [504, -96], [506, -74]], band: 32, grip: { at: [483, -84], size: [30, 96, 44], roll: 0, yaw: 0 }, logo: { at: [-110, -62], angle: -24, w: 62 } });
+export const buildMagMs = magGrip(MAG_MS, { half: medium, band: 38, grip: { at: [279, -106], size: [80, 62, 42], roll: 20, yaw: 30 }, logo: { at: [-110, -70], angle: -27, w: 66 } });
+export const buildMagMp = magGrip(MAG_MP, { half: medium, band: 38, grip: { at: [279, -106], size: [80, 62, 42], roll: 20, yaw: -30 }, logo: { at: [-110, -70], angle: -27, w: 66 } });
+export const buildMagMn = magGrip(MAG_MN, { half: medium, band: 38, grip: { at: [279, -106], size: [80, 62, 42], roll: 20, yaw: 0 }, logo: { at: [-110, -70], angle: -27, w: 66 } });
+export const buildMagWg = magGrip(MAG_WG, { half: [[0, -20], [46, -42], [150, -90], [250, -112], [440, -114], [492, -112], [504, -96], [506, -74]], band: 40, grip: { at: [483, -88], size: [30, 96, 78], roll: 0, yaw: 0 }, logo: { at: [-110, -62], angle: -24, w: 62 } });
 const close: P2[] = [[0, -24], [0, -62], [14, -98], [44, -122], [80, -120], [102, -104]];
-export const buildMagCs = magGrip(MAG_CS, { half: close, band: 40, grip: { at: [66, -78], size: [44, 118, 58], roll: 28, yaw: 32 }, logo: { at: [0, -92], angle: 0, w: 32 } });
-export const buildMagCn = magGrip(MAG_CN, { half: close, band: 40, grip: { at: [72, -74], size: [40, 104, 70], roll: 52, yaw: 0 }, logo: { at: [0, -92], angle: 0, w: 32 } });
+export const buildMagCs = magGrip(MAG_CS, { half: close, band: 40, grip: { at: [66, -76], size: [115, 44, 48], roll: 28, yaw: 20 }, logo: { at: [0, -92], angle: 0, w: 32 } });
+export const buildMagCn = magGrip(MAG_CN, { half: close, band: 40, grip: { at: [74, -72], size: [42, 100, 85], roll: 12, yaw: 0 }, logo: { at: [0, -92], angle: 0, w: 32 } });
 
 // ————— Darko Lifting Danglers —————
 export const buildDanglers = attachment(DARKO_DANGLERS, t => {
   const rings: Manifold[] = [], collars: Manifold[] = [], eggs: Manifold[] = [];
   for (const [s, y] of [[-1, -4], [1, 4]] as const) {
-    const R = 11, wire = 5, cz = hangZ(R - wire / 2), a = s * 19;
+    const R = 12.5, wire = 5.5, cz = hangZ(R - wire / 2), a = s * 19;
     const tilt = (m: Manifold) => t.k(m.rotate([0, a, 0]));
     rings.push(tilt(t.ring([0, y, cz], R, wire, 32)));
     collars.push(tilt(t.union([t.k(t.k(t.M.cylinder(7, 7, 7, 6)).translate([0, y, cz - R - 9])), t.cylinder([0, y, cz - R - 3], [0, y, cz - R - 2], 9, 16)])));
-    eggs.push(tilt(t.hull([t.sphere([0, y, -40], 30, 28), t.ellipsoid([0, y, -86], [25.5, 25.5, 27], 28)])));
+    eggs.push(tilt(t.hull([t.sphere([0, y, -37], 25, 28), t.ellipsoid([0, y, -86], [25.5, 25.5, 27], 28)])));
   }
   return [
     { name: 'Stainless eye bolts', solid: t.union(rings), ...STAINLESS },
@@ -289,7 +288,7 @@ export const buildDanglers = attachment(DARKO_DANGLERS, t => {
 });
 
 // ————— Arc paddle handles (KORIKAHM MSP, PRIME RO-T8) —————
-interface ArcSpec { R: number; end: number; slots: number[]; slot: number; grip: number; fin: number; plate: Material; block: Material; badge?: Material }
+interface ArcSpec { R: number; end: number; slots: number[]; slot: number; grip: number; fin: number; plate: Material; block: Material; badge?: Material; /** one trapezoid rubber paddle instead of a round bar with a fin */ paddle?: boolean }
 function arcHandle(part: HangPart, spec: ArcSpec) {
   return attachment(part, t => {
     const holeR = 5, cz = hangZ(holeR), c: P2 = [0, cz - spec.R], band = 24, th = 6.35;
@@ -299,22 +298,24 @@ function arcHandle(part: HangPart, spec: ArcSpec) {
     const plate = t.flat(plate2, th);
     const bx = P[0] + 2, bz = P[1] - 16, gz = bz - 10, gx0 = bx - 18, gx1 = gx0 - spec.grip;
     const block = t.union([t.box([34, 40, 50], [bx, 0, bz]), t.cylinder([bx + 17, 0, gz], [bx + 26, 0, gz], 16, 20), t.cylinder([bx + 26, 0, gz], [bx + 30, 0, gz], 20, 20), t.cylinder([bx - 4, -22, bz - 30], [bx - 4, 22, bz - 30], 14, 20)]);
-    const grip = t.union([t.cylinder([gx0 + 4, 0, gz], [gx1 + 12, 0, gz], 33, 36), t.sphere([gx1 + 12, 0, gz], 33, 32)]);
+    const grip = spec.paddle
+      ? t.hull([t.k(t.roundBox([spec.grip, 36, 26], 11).translate([(gx0 + gx1) / 2, 0, gz])), t.k(t.roundBox([spec.grip - 34, 26, 8], 3.5).translate([(gx0 + gx1) / 2 + 6, 0, gz - spec.fin]))])
+      : t.union([t.cylinder([gx0 + 4, 0, gz], [gx1 + 12, 0, gz], 33, 36), t.sphere([gx1 + 12, 0, gz], 33, 32)]);
     // Paddle fin under the grip bar: trapezoid in XZ, thickest at the bar.
     const fin = t.hull([t.roundBox([spec.grip - 8, 26, 8], 3.5), t.k(t.roundBox([spec.grip - 44, 18, 6], 2.5).translate([6, 0, -spec.fin + 4]))]);
     const finPlaced = t.k(fin.translate([(gx0 + gx1) / 2 + 2, 0, gz - 6]));
     const out: Piece[] = [
       { name: 'Slotted arc plate', solid: plate, ...spec.plate },
       { name: 'Pivot block', solid: block, ...spec.block },
-      { name: 'Rotating paddle grip', solid: t.union([grip, finPlaced]), ...mat('handle', '#1f2022', 0, .85) },
+      { name: 'Rotating paddle grip', solid: spec.paddle ? grip : t.union([grip, finPlaced]), ...mat('handle', '#1f2022', 0, .85) },
     ];
     if (spec.badge) out.push({ name: 'PRIME badge', solid: t.box([22, .8, 30], [bx, -20.4, bz + 4]), ...spec.badge });
     return out;
   });
 }
 const LIME = mat('source', '#84c341', .25, .5);
-export const buildKorikahm = arcHandle(KORIKAHM_PADDLE, { R: 96, end: -12, slots: [80, 66, 52, 38, 24, 10], slot: 7, grip: 142, fin: 36, plate: LIME, block: LIME });
-export const buildRot8 = arcHandle(PRIME_ROT8, { R: 118, end: -10, slots: [72, 50, 28, 8], slot: 12, grip: 150, fin: 48, plate: BLACK_POWDER, block: mat('source', '#2a2c2f', .35, .6), badge: mat('source', '#8dc63f', .1, .5) });
+export const buildKorikahm = arcHandle(KORIKAHM_PADDLE, { R: 96, end: -12, slots: [80, 66, 52, 38, 24, 10], slot: 7, grip: 165, fin: 40, plate: LIME, block: mat('source', '#1a1b1d', .3, .55), paddle: true });
+export const buildRot8 = arcHandle(PRIME_ROT8, { R: 76, end: -6, slots: [70, 46, 22], slot: 13, grip: 150, fin: 42, plate: BLACK_POWDER, block: mat('source', '#2a2c2f', .35, .6), badge: mat('source', '#8dc63f', .1, .5) });
 
 // ————— PRIME KAZ handles —————
 /** Tapered ribbed aluminium spool (small: 2.25″ top to 1.70″ bottom), end flanges, square nut on top, nylon strap loop to the hook. */
@@ -343,8 +344,8 @@ export const buildKaz = attachment(PRIME_KAZ, t => {
 // ————— Belt Fed Strength BFAS —————
 export const buildBfas = attachment(BELT_FED_BFAS, t => {
   const R = 22, wire = 6, cz = hangZ(R - wire / 2), w = 1.625 * IN, th = 7.6, rivZ = -186;
-  const legs = [-1, 1].map(s => [[s * 8, cz - R + 5], [s * 34, -110], [s * 62, rivZ + 6]] as P2[]);
-  const loops = [-1, 1].map(s => t.curve([[s * 62, rivZ + 4], [s * 62 + 30, -236], [s * 62 + 33, -320], [s * 62, -372], [s * 62 - 33, -320], [s * 62 - 30, -236]].map(p => p as P2), 6).slice(0, -1));
+  const legs = [-1, 1].map(s => [[s * 8, cz - R + 5], [s * 32, -110], [s * 55, rivZ + 6]] as P2[]);
+  const loops = [-1, 1].map(s => t.curve([[s * 55, rivZ + 4], [s * 55 + 24, -236], [s * 55 + 26, -320], [s * 55, -372], [s * 55 - 26, -320], [s * 55 - 24, -236]].map(p => p as P2), 6).slice(0, -1));
   const wrap = t.curve([[-10, cz - R - 4], [0, cz - R - wire / 2 - 2], [10, cz - R - 4]], 3);
   const face2 = t.union2([...legs.map(p => t.band2(p, w)), ...loops.map(p => t.band2(p, w, true)), t.band2(wrap, w)]);
   const edge2 = t.union2([...legs.map(p => t.band2(p, w + 5)), ...loops.map(p => t.band2(p, w + 5, true)), t.band2(wrap, w + 5)]);
@@ -354,8 +355,8 @@ export const buildBfas = attachment(BELT_FED_BFAS, t => {
     ...loops.flatMap(p => [-1, 1].map(d => t.band2(offsetPath(p, d * (w / 2 - 4), true), 1.2, true))),
   ]);
   const stitch = t.flat(stitch2, th + 1);
-  const rivets = t.union([-1, 1].flatMap(s => [-1, 1].flatMap(d => [-1, 1].map(f => t.hull([t.cylinder([s * 62 + d * 9, f * th / 2, rivZ], [s * 62 + d * 9, f * (th / 2 + 1.2), rivZ], 11, 16), t.cylinder([s * 62 + d * 9, f * th / 2, rivZ], [s * 62 + d * 9, f * (th / 2 + 2.2), rivZ], 7, 16)])))));
-  const logo = t.cylinder([46, -th / 2 - .5, -130], [46, -th / 2 + .5, -130], 22, 28);
+  const rivets = t.union([-1, 1].flatMap(s => [-1, 1].flatMap(d => [-1, 1].map(f => t.hull([t.cylinder([s * 55 + d * 9, f * th / 2, rivZ], [s * 55 + d * 9, f * (th / 2 + 1.2), rivZ], 11, 16), t.cylinder([s * 55 + d * 9, f * th / 2, rivZ], [s * 55 + d * 9, f * (th / 2 + 2.2), rivZ], 7, 16)])))));
+  const logo = t.cylinder([41, -th / 2 - .5, -130], [41, -th / 2 + .5, -130], 22, 28);
   return [
     { name: 'Steel O-ring', solid: t.ring([0, 0, cz], R, wire), ...STAINLESS },
     { name: 'Natural leather strap', solid: leather, ...mat('source', '#b98556', 0, .72) },
@@ -371,7 +372,7 @@ export const buildBfas = attachment(BELT_FED_BFAS, t => {
 export const buildAtlasMulti = attachment(KLEVA_ATLAS_MULTI, t => {
   const yc = -15, gap = 6 * IN / 2, th = 9.5, X = 16 * IN - 21, zAt = (x: number) => -190 - 22 * Math.abs(x) / X, sz = -72, eyeR = 7;
   const railPath: P2[] = [[-X, zAt(X)], [0, zAt(0)], [X, zAt(X)]];
-  const tower = t.union2([t.hull2([t.circle2([0, sz], 48, 48), t.rect2([0, zAt(0) + 8], 190, 10)]), ...[-1, 1].map(s => t.circle2([s * 42, -36], 16))]);
+  const tower = t.union2([t.hull2([t.circle2([0, sz], 44, 48), t.rect2([0, zAt(0) + 8], 112, 10)]), ...[-1, 1].map(s => t.circle2([s * 42, -36], 16))]);
   const rail2 = t.k(t.union2([t.band2(railPath, 42), t.circle2([-X, zAt(X)], 21, 32), t.circle2([X, zAt(X)], 21, 32), tower]).subtract(t.circle2([0, sz], 30, 48)));
   const rails = [-1, 1].map(s => t.flat(rail2, th, yc + s * (gap + th / 2)));
   const rungX = [4, 8, 9.5, 11, 15].map(v => v * IN);
@@ -393,13 +394,13 @@ export const buildAtlasMulti = attachment(KLEVA_ATLAS_MULTI, t => {
 });
 /** Angled Atlas close grip: front and rear T-plates, 29 mm × 6″ handles splayed 12.5° in plan, grey sleeve tube and eye. */
 export const buildAtlasAngled = attachment(KLEVA_ANGLED_CLOSE, t => {
-  const yc = -16, gap = 6 * IN / 2, th = 10, hz = -175, sz = -62, splay = gap * Math.tan(12.5 * DEG), hx = 4 * IN;
-  const plate = (xh: number) => t.k(t.union2([
-    t.hull2([t.circle2([-xh, hz], 23, 36), t.circle2([xh, hz], 23, 36)]),
+  const yc = -16, gap = 6 * IN / 2, th = 10, hz = -170, sz = -62, splay = gap * Math.tan(12.5 * DEG), hx = 4 * IN;
+  const plate = (xh: number, r: number) => t.k(t.union2([
+    t.hull2([t.circle2([-xh, hz], r, 36), t.circle2([xh, hz], r, 36)]),
     t.hull2([t.rect2([0, hz + 18], 120, 10), t.circle2([0, sz], 40, 40)]),
     t.circle2([0, sz], 44, 48), ...[-1, 1].map(s => t.circle2([s * 40, sz + 22], 14)), t.circle2([0, sz - 42], 13),
   ]).subtract(t.circle2([0, sz], 30, 48)));
-  const front = t.flat(plate(hx - splay), th, yc - gap - th / 2), rear = t.flat(plate(hx + splay), th, yc + gap + th / 2);
+  const front = t.flat(plate(hx - splay, 29), th, yc - gap - th / 2), rear = t.flat(plate(hx + splay, 23), th, yc + gap + th / 2);
   const sleeve = t.k(t.cylinder([0, yc - gap - 2, sz], [0, yc + gap + 2, sz], 66, 48).subtract(t.cylinder([0, yc - 99, sz], [0, yc + 99, sz], 52, 48)));
   const tab = t.flat(eyeTab(t, 6.5, 12, sz + 30, 30), 10, yc);
   const handles = [-1, 1].map(s => t.cylinder([s * (hx - splay), yc - gap, hz], [s * (hx + splay), yc + gap, hz], 29, 32));
@@ -418,7 +419,7 @@ export const buildAtlasAngled = attachment(KLEVA_ANGLED_CLOSE, t => {
 // ————— Dynepic Spiral Strength Dually —————
 export const buildDually = attachment(SPIRAL_DUALLY, t => {
   const holeR = 6, cz = hangZ(holeR), sheaveZ = -44;
-  const cheek2 = t.k(t.hull2([t.circle2([0, cz], 12.5, 32), t.circle2([-10, sheaveZ - 8], 17), t.circle2([10, sheaveZ - 8], 17)]).subtract(t.circle2([0, cz], holeR, 24)));
+  const cheek2 = t.k(t.hull2([t.circle2([0, cz], 12.5, 32), t.circle2([-12, sheaveZ - 8], 19), t.circle2([12, sheaveZ - 8], 19)]).subtract(t.circle2([0, cz], holeR, 24)));
   const cheeks = [-1, 1].map(s => t.flat(cheek2, 4, s * 8));
   const sheave = t.k(t.cylinder([0, -6, sheaveZ], [0, 6, sheaveZ], 42, 40).subtract(t.ring([0, 0, sheaveZ], 21, 9, 40)));
   const axle = t.cylinder([0, -12, sheaveZ], [0, 12, sheaveZ], 11, 20);
@@ -441,12 +442,12 @@ export const buildDually = attachment(SPIRAL_DUALLY, t => {
 /** Swissies V1: "?"-shaped nylon-fibreglass hook, rubber-lined seat on the rod, stem down into a 32 mm knurled handle along X. */
 function swissie(t: Kit, y: number) {
   const seat = 17, c: P2 = [0, HOOK_ROD / 2 - seat], R = seat + 11, th = 26;
-  const arcPts = arc(c, R, 215, 0, 8), stem = t.curve([[R, c[1]], [R, -60], [R - 4, -100], [R - 22, -121]], 5);
+  const arcPts = arc(c, R, 215, 0, 8), stem = t.curve([[R, c[1]], [R - 2, -50], [R - 10, -98], [R - 26, -122]], 5);
   const body2 = t.union2([t.band2([...arcPts, ...stem.slice(1)], 22), t.circle2(arcPts[0], 11, 24)]);
   const body = t.flat(body2, th, y);
   const lining = t.flat(t.band2(arc(c, seat + 2, 190, -8, 8), 4), th + .6, y);
-  const hz = -127, handle = t.union([t.cylinder([R - 22, y, hz], [-82, y, hz], 32, 36), t.sphere([R - 22, y, hz], 32, 32)]);
-  const cap = t.cylinder([-82, y, hz], [-84, y, hz], 29, 32);
+  const hz = -127, handle = t.union([t.cylinder([R - 26, y, hz], [-96, y, hz], 32, 36), t.sphere([R - 26, y, hz], 32, 32)]);
+  const cap = t.cylinder([-96, y, hz], [-98, y, hz], 29, 32);
   return { body, lining, handle, cap };
 }
 export const buildSwissies = attachment(KENSUI_SWISSIES, t => {
@@ -461,7 +462,7 @@ export const buildSwissies = attachment(KENSUI_SWISSIES, t => {
 /** Swissies V2 MAX: peaked hook hung by its carabiner eyelet, rubber-lined roof, stem into a knurled fin-shaped palm support. */
 function swissieMax(t: Kit, y: number) {
   const holeR = 5, cz = hangZ(holeR), th = 32;
-  const centre: P2[] = [[-62, -104], [-62, -76], [-8, -24], [0, -20], [8, -24], [48, -64], [48, -126]];
+  const centre: P2[] = [[-62, -86], [-62, -70], [-8, -24], [0, -20], [8, -24], [48, -64], [48, -126]];
   const path = t.curve(centre, 5);
   const body2 = t.union2([t.band2(path, 22), t.circle2(centre[0], 11, 24), t.hull2([t.circle2([0, cz], 10.5, 28), t.rect2([0, -24], 26, 8)])]);
   const body = t.flat(t.k(body2.subtract(t.circle2([0, cz], holeR, 20))), th, y);
@@ -488,7 +489,7 @@ function carbonFlex(part: HangPart, lengthIn: number) {
     const logo = t.ellipsoid([0, -18, z + 2], [5, 1.2, 9], 16);
     const bar = t.cylinder([-half + 7, 0, z], [half - 7, 0, z], 28, 36);
     const caps = t.union([-1, 1].map(s => t.cylinder([s * (half - 7), 0, z], [s * half, 0, z], 29, 36)));
-    const grips = t.union([-1, 1].map(s => t.cylinder([s * (half - 157), 0, z], [s * (half - 7), 0, z], 31, 36)));
+    const grips = t.union([-1, 1].map(s => t.cylinder([s * (half - 172), 0, z], [s * (half - 7), 0, z], 31, 36)));
     return [
       { name: 'Carbon-fibre tube', solid: bar, ...mat('source', '#1c1d20', .45, .3) },
       { name: 'Wave-pattern PE grips', solid: grips, ...mat('handle', '#141517', 0, .8) },

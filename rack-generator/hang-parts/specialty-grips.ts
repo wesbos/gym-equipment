@@ -20,7 +20,7 @@ export const PORTER_ECLIPSE = part({ id: 'porter-physed-eclipse-grip', name: 'Ec
   vendor: credit('Porter PhysEd', 'https://porterpef.com/products/eclipse-grip', 'Eclipse Grip (black)', 'Porter PhysEd and Eclipse Grip are trademarks of Porter PhysEd.', '38 mm billet aluminium handle, 3″ base, 360° bearing swivel, mountain knurl, 1.4 lb', 'Handle length, swivel eye and hex sizes and the base dome scaled from the 38 mm handle in product photos') });
 export const ANGLES90_GRIPS = part({ id: 'angles90-grips', name: 'A90 grips (pair)', title: 'Angles90 A90 grips (pair)', noun: 'A90 grips',
   description: `Angles90 A90 Grips, the pair on one hook: curved orange two-layer TPU prism handles with a finger groove, pull-through slits and black automotive webbing loops. ${ending('Angles90')}`,
-  envelope: { width: 170, above, drop: 235 },
+  envelope: { width: 175, above, drop: 235 },
   vendor: credit('Angles90', 'https://angles90.com/products/angles90-grips', 'A90 Grips (pair, orange)', 'Angles90 and A90 are trademarks of Angles90 GmbH.', 'sold as a pair, TPU two-layer grip, 180 kg per handle, 278 g', 'Grip length, section, curvature and strap loop length estimated from product and hand photos') });
 export const TRAKHANDLE_SPORT = part({ id: 'trakfitness-trakhandle-sport', name: 'TrakHandle Sport', title: 'TrakFitness TrakHandle Sport', noun: 'TrakHandle',
   description: `TrakFitness TrakHandle Sport (sold in pairs; one shown): black crescent hub with a swivel eye and printed TrakHandle Sport mark, twin steel cables to a rotating dumbbell-style grip with round end discs (3-axis rotation). ${ending('TrakFitness')}`,
@@ -58,11 +58,11 @@ export const PRIME_KAZ = part({ id: 'prime-fitness-kaz-handles', name: 'KAZ hand
   vendor: prime('kaz-handles-pair-copy', 'KAZ Handles (pair, Small 1.70″–2.25″)', 'Small taper 1.70″ to 2.25″ (XS 1.25″–1.77″, L 2.0″–2.5″), sold as a pair', 'Grip length, flange sizes, groove count and strap loop estimated from product photos') });
 export const BELT_FED_BFAS = part({ id: 'belt-fed-strength-bfas', name: 'BFAS leather accessory strap', title: 'Belt Fed Strength BFAS', noun: 'accessory strap',
   description: `Belt Fed Strength BFAS: 30″ natural leather accessory strap bound in brown water buffalo, folded through a steel O-ring into two riveted 7.5″ hand loops. ${ending('Belt Fed Strength')}`,
-  envelope: { width: 245, above, drop: 400 },
+  envelope: { width: 215, above, drop: 400 },
   vendor: credit('Belt Fed Strength', 'https://www.beltfedstrength.com/product-page/bfas', 'BFAS (natural leather)', 'Belt Fed Strength is a trademark of Belt Fed Strength.', '30″ overall length, 7.5″ hand loops, 1-5/8″ width, ≈ 0.3″ thick', 'Ring size, rivet spacing and leg splay estimated from product photos; strap modelled flat-laid facing out') });
 export const PRIME_ROT8 = part({ id: 'prime-fitness-ro-t8-handles', name: 'RO-T8 handle', title: 'PRIME RO-T8 handles', noun: 'RO-T8 handle',
-  description: `PRIME Fitness RO-T8 Handles (sold in pairs; right handle shown): black slotted arc plate with a carabiner hole, pivot block with the green PRIME badge and a rotating textured paddle grip. ${ending('PRIME Fitness')}`,
-  envelope: { width: 300, above, drop: 225 },
+  description: `PRIME Fitness RO-T8 Handles (sold in pairs; one shown): black slotted arc plate with a carabiner hole, pivot block with the green PRIME badge and a rotating textured paddle grip. ${ending('PRIME Fitness')}`,
+  envelope: { width: 220, above, drop: 160 },
   vendor: prime('prime-ro-t8-handles', 'RO-T8 Handles (pair)', 'swivel paddle handle pair, 6 lb shipping weight', 'All dimensions scaled from product photos against the 8.6″ KORIKAHM clone') });
 const repKleva = (handle: string, product: string, published: string, estimated: string) =>
   credit('REP Fitness × Kleva Built', `https://repfitness.com/products/${handle}`, product, 'REP is a trademark of REP Fitness; Kleva Built and Atlas are trademarks of Kleva Built Corp.', published, estimated);
@@ -72,7 +72,7 @@ export const KLEVA_ATLAS_MULTI = part({ id: 'rep-kleva-atlas-multi-grip', name: 
   vendor: repKleva('rep-x-kleva-built-cable-attachment-bundles', 'Atlas Multi-Grip Landmine/Cable Attachment (black; Kleva spec page klevabuilt.com/products/atlasattachment)', '32″ length, 6.75″ depth, 9.75″ height, 6″ × 29 mm knurled aluminium grips at 8″, 16–22″ and 30″, fits 50 mm sleeves, under 8 lb', 'Rail profile, tower outline and exact rung positions estimated from product photos; hung pushed back along the peg so the 6.75″ depth clears the panel') });
 export const MAG_CS = part({ id: 'mag-close-grip-supinate', name: 'MAG close supinated grip', title: 'MAG close grip supinate (CS003)', noun: 'MAG grip',
   description: magBlurb('Close Grip Supinate (CS003), about 5″ middle finger to middle finger, winged grips'),
-  envelope: { width: 245, above, drop: 145 }, vendor: mag('close-grip-supinate-cs003', 'Close Grip Supinate (CS003)', 'approx. 5″ wide, middle finger to middle finger') });
+  envelope: { width: 250, above, drop: 145 }, vendor: mag('close-grip-supinate-cs003', 'Close Grip Supinate (CS003)', 'approx. 5″ wide, middle finger to middle finger') });
 export const MAG_MP = part({ id: 'mag-medium-grip-pronate', name: 'MAG medium pronated grip', title: 'MAG medium grip pronate (MP005)', noun: 'MAG grip',
   description: magBlurb('Medium Grip Pronate (MP005), about 22″ middle finger to middle finger, grips turned toward pronation'),
   envelope: { width: 675, above, drop: 175 }, vendor: mag('medium-grip-pronate-mp005', 'Medium Grip Pronate (MP005)', 'approx. 22″ wide, middle finger to middle finger') });
@@ -87,11 +87,11 @@ const kensui = (handle: string, product: string, published: string, estimated: s
   credit('Kensui Fitness', `https://kensuifitness.com/products/${handle}`, product, 'Kensui and Swissies are trademarks of Kensui Fitness.', published, estimated);
 export const KENSUI_SWISSIES = part({ id: 'kensui-swissies', name: 'Swissies (pair)', title: 'Kensui Swissies (pair)', noun: 'Swissies',
   description: `Kensui Swissies (black), the pair on one hook: nylon-fibreglass neutral-grip hooks with rubber-lined seats and 32 mm knurled handles with KENSUI end caps. ${ending('Kensui Fitness')}`,
-  envelope: { width: 170, above, drop: 145 },
+  envelope: { width: 200, above, drop: 145 },
   vendor: kensui('swissies', 'Swissies (pair, black)', '32 mm knurled handle, fits 25–34 mm bars, nylon-fibreglass body, 800 lb capacity, 0.8 lb pair', 'Body outline and handle length estimated from product photos') });
 export const MAG_WG = part({ id: 'mag-wide-grip', name: 'MAG wide neutral grip', title: 'MAG wide grip (WG007)', noun: 'MAG grip',
   description: magBlurb('Wide Grip (WG007), about 38″ middle finger to middle finger, neutral end grips'),
-  envelope: { width: 1045, above, drop: 135 }, vendor: mag('wide-grip-wg007', 'Wide Grip (WG007)', 'approx. 38″ wide, middle finger to middle finger') });
+  envelope: { width: 1055, above, drop: 140 }, vendor: mag('wide-grip-wg007', 'Wide Grip (WG007)', 'approx. 38″ wide, middle finger to middle finger') });
 export const DARKO_LONGY = part({ id: 'darko-lifting-longy-bar', name: 'The Longy Bar', title: 'Darko Lifting The Longy Bar', noun: 'Longy Bar',
   description: `Darko Lifting The Longy Bar: 32.4″ curved 3/8″ black steel bar with D-handle holes (24″ and 10.4″ pairs for REP Ares-style cable spreads), clover hub with acetal landmine liner, swivel eye tab and D logo plates. ${ending('Darko Lifting')}`,
   envelope: { width: 825, above, drop: 120 },
