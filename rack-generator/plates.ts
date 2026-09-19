@@ -22,7 +22,7 @@ export interface PlateSpec {
 export const PLATE_BORE = 50.4;
 /** Visual clearance between neighbouring plates; counted in stack length. */
 export const PLATE_GAP = 0.5;
-export const PLATE_SPECS: Readonly<Record<LegacyPlateId, Readonly<PlateSpec>>> = Object.freeze({
+const LEGACY_SPECS: Readonly<Record<LegacyPlateId, Readonly<PlateSpec>>> = Object.freeze({
   kg25: { label: '25 kg', weight: 25, unit: 'kg', style: 'bumper', diameter: 450, width: 88.9, color: '#c8202f', code: 1, line: 'standard-kg', key: '25' },
   kg20: { label: '20 kg', weight: 20, unit: 'kg', style: 'bumper', diameter: 450, width: 82.55, color: '#1f58b5', code: 2, line: 'standard-kg', key: '20' },
   kg15: { label: '15 kg', weight: 15, unit: 'kg', style: 'bumper', diameter: 450, width: 66.675, color: '#f2c318', code: 3, line: 'standard-kg', key: '15' },
@@ -33,8 +33,8 @@ export const PLATE_SPECS: Readonly<Record<LegacyPlateId, Readonly<PlateSpec>>> =
   lb10: { label: '10 lb', weight: 10, unit: 'lb', style: 'iron', diameter: 228, width: 30.988, color: '#1d1f21', code: 8, line: 'standard-lb', key: '10' },
 });
 /** The eight original ids (the default lines). */
-export const PLATE_IDS = Object.freeze(Object.keys(PLATE_SPECS) as LegacyPlateId[]);
-const LEGACY = new Map(PLATE_IDS.map(id => [`${PLATE_SPECS[id].line}:${PLATE_SPECS[id].key}`, id]));
+export const PLATE_IDS = Object.freeze(Object.keys(LEGACY_SPECS) as LegacyPlateId[]);
+const LEGACY = new Map(PLATE_IDS.map(id => [`${LEGACY_SPECS[id].line}:${LEGACY_SPECS[id].key}`, id]));
 const LINES = new Map(PLATE_LINES.map(l => [l.id, l]));
 export const plateLine = (id: string): PlateLine | undefined => LINES.get(id);
 /** Canonical id for a line weight (and optional finish); the default lines resolve to their legacy ids. */
@@ -47,7 +47,7 @@ export function plateId(line: string, key: string, finish?: string): PlateId {
 }
 /** Parse any plate id to its line, weight entry and finish. */
 export function plateParts(id: string): { line: PlateLine; weight: PlateWeight; finish?: PlateFinish } | undefined {
-  if (Object.hasOwn(PLATE_SPECS, id)) { const s = PLATE_SPECS[id as LegacyPlateId]; const line = LINES.get(s.line!)!; return { line, weight: line.weights.find(w => w.key === s.key)! }; }
+  if (Object.hasOwn(LEGACY_SPECS, id)) { const s = LEGACY_SPECS[id as LegacyPlateId]; const line = LINES.get(s.line!)!; return { line, weight: line.weights.find(w => w.key === s.key)! }; }
   const m = /^([a-z0-9-]+):([0-9a-z.]+)(?:@([a-z0-9-]+))?$/.exec(id);
   if (!m) return undefined;
   const line = LINES.get(m[1]);
@@ -64,7 +64,7 @@ const lineCode = (line: PlateLine, w: PlateWeight) => 100 + line.code * 40 + lin
 const SPECS = new Map<string, PlateSpec>();
 /** Spec for any plate id, or undefined when the id is unknown. */
 export function plateSpec(id: string): Readonly<PlateSpec> | undefined {
-  if (Object.hasOwn(PLATE_SPECS, id)) return PLATE_SPECS[id as LegacyPlateId];
+  if (Object.hasOwn(LEGACY_SPECS, id)) return LEGACY_SPECS[id as LegacyPlateId];
   const cached = SPECS.get(id);
   if (cached) return cached;
   const parts = plateParts(id);
@@ -79,6 +79,13 @@ export function plateSpec(id: string): Readonly<PlateSpec> | undefined {
   SPECS.set(id, spec);
   return spec;
 }
+/** Spec table indexed by any plate id. Own keys are the eight default ids (so `Object.keys`/`Object.hasOwn` still
+ * enumerate the defaults), while `PLATE_SPECS[id]` and `id in PLATE_SPECS` also resolve every brand-line id. Read-only. */
+export const PLATE_SPECS: Readonly<Record<PlateId, Readonly<PlateSpec>>> = new Proxy({ ...LEGACY_SPECS } as Record<string, Readonly<PlateSpec>>, {
+  get: (target, key) => typeof key === 'string' ? plateSpec(key) : Reflect.get(target, key),
+  has: (target, key) => typeof key === 'string' ? !!plateSpec(key) : Reflect.has(target, key),
+  set: () => false, defineProperty: () => false, deleteProperty: () => false,
+}) as Readonly<Record<PlateId, Readonly<PlateSpec>>>;
 const specOf = (id: string) => { const s = plateSpec(id); if (!s) throw Error(`Unknown plate ${id}.`); return s; };
 export const isPlateId = (v: unknown): v is PlateId => typeof v === 'string' && v.length < 80 && !!plateSpec(v);
 /** Every selectable plate id of a line (its default finish), heaviest first. */
@@ -170,7 +177,7 @@ export function plateParams(plates: readonly PlateId[] | undefined): NumericPara
   }
   return params;
 }
-const BY_CODE = new Map<number, { line: PlateLine; weight: PlateWeight } | LegacyPlateId>(PLATE_IDS.map(id => [PLATE_SPECS[id].code, id]));
+const BY_CODE = new Map<number, { line: PlateLine; weight: PlateWeight } | LegacyPlateId>(PLATE_IDS.map(id => [LEGACY_SPECS[id].code, id]));
 for (const line of PLATE_LINES) if (!line.legacy) for (const w of line.weights) BY_CODE.set(lineCode(line, w), { line, weight: w });
 export function platesFromParams(params: NumericParams): PlateId[] {
   const plates: PlateId[] = [];
