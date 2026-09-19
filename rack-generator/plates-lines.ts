@@ -73,8 +73,8 @@ const WHITE = '#f4f5f2', BLACK = '#141517';
 const ROGUE = { vendor: 'Rogue Fitness', trademark: 'Rogue trademarks belong to Rogue Fitness.' };
 /** Rogue bumper markings: typeset ROGUE arcs top and bottom (180° symmetric) and the weight left and right. */
 const rogueBumper = (style: PlateMarking['style'] = 'print', unit = 'LB', color?: string): PlateMarking[] => [
-  { text: 'ROGUE', at: 90, r: .7, h: .15, arc: 'out', style, color, back: true },
-  { text: 'ROGUE', at: 270, r: .7, h: .15, arc: 'out', style, color, back: true },
+  { text: 'ROGUE', at: 90, r: .7, h: .16, sx: 1.12, arc: 'out', style, color, back: true },
+  { text: 'ROGUE', at: 270, r: .7, h: .16, sx: 1.12, arc: 'out', style, color, back: true },
   { text: `{w}${unit}`, at: 180, r: .66, h: .066, sx: .72, style, color, back: true },
   { text: `{w}${unit}`, at: 0, r: .66, h: .066, sx: .72, rot: 180, style, color, back: true },
 ];
@@ -121,7 +121,7 @@ export const PLATE_LINES: readonly PlateLine[] = [
   },
   {
     id: 'rogue-fleck', code: 6, brand: 'Rogue', name: 'Fleck Plates', unit: 'lb', group: 'Bumper plates', ...ROGUE,
-    material: 'rubber', color: BLACK, ink: WHITE, accent: '#8f959b', pattern: { kind: 'fleck', density: .45 },
+    material: 'rubber', color: BLACK, ink: WHITE, accent: '#8f959b', pattern: { kind: 'fleck', density: .6 },
     face: { kind: 'bumper', insert: 74, inner: .44, innerDepth: 1.6, edge: 3.5 }, markings: rogueBumper(),
     weights: [Wm(10, 450, .85, { accent: '#8e9398' }), Wm(15, 450, 1.2, { accent: '#e8e9e6' }), Wm(25, 450, 1.6, { accent: '#2fa13c' }), Wm(35, 450, 2.08, { accent: '#e8c21a' }), Wm(45, 450, 2.76, { accent: '#1d63c4' }), Wm(55, 450, 3.02, { accent: '#d3232f' })],
     url: 'https://www.roguefitness.com/rogue-fleck-plates',
@@ -132,8 +132,8 @@ export const PLATE_LINES: readonly PlateLine[] = [
     material: 'rubber', color: '#18191b', ink: '#18191b',
     face: { kind: 'bumper', insert: 76, inner: .45, innerDepth: 2.4, lip: .07, lipDepth: 1, edge: 4 },
     markings: [
-      { text: 'ROGUE', at: 90, r: .7, h: .13, arc: 'out', style: 'raised', back: true }, { text: 'ROGUE', at: 270, r: .7, h: .13, arc: 'out', style: 'raised', back: true },
-      { text: 'HG\n{w}\nKG', at: 180, r: .69, h: .05, style: 'raised', back: true }, { text: 'HG\n{w}\nKG', at: 0, r: .69, h: .05, rot: 180, style: 'raised', back: true },
+      { text: 'ROGUE', at: 90, r: .7, h: .13, sx: 1.12, arc: 'out', style: 'raised', back: true }, { text: 'ROGUE', at: 270, r: .7, h: .13, sx: 1.12, arc: 'out', style: 'raised', back: true },
+      { text: 'HG\n{w}\nKG', at: 180, r: .69, h: .062, style: 'raised', back: true, spacing: .25 }, { text: 'HG\n{w}\nKG', at: 0, r: .69, h: .062, rot: 180, style: 'raised', back: true, spacing: .25 },
     ],
     weights: [M(25, 450, inch(3.5)), M(20, 450, inch(3.25)), M(15, 450, inch(2.625)), M(10, 450, inch(1.75)), M(5, 450, inch(1))],
     url: 'https://www.roguefitness.com/kg-rogue-bumpers',
@@ -144,8 +144,8 @@ export const PLATE_LINES: readonly PlateLine[] = [
     material: 'rubber', color: '#18191b', ink: '#18191b',
     face: { kind: 'bumper', insert: 76, inner: .45, innerDepth: 2.4, lip: .07, lipDepth: 1, edge: 4 },
     markings: [
-      { text: 'ROGUE', at: 90, r: .7, h: .13, arc: 'out', style: 'raised', back: true }, { text: 'ROGUE', at: 270, r: .7, h: .13, arc: 'out', style: 'raised', back: true },
-      { text: 'HG\n{w}\nLB', at: 180, r: .69, h: .05, style: 'raised', back: true }, { text: 'HG\n{w}\nLB', at: 0, r: .69, h: .05, rot: 180, style: 'raised', back: true },
+      { text: 'ROGUE', at: 90, r: .7, h: .13, sx: 1.12, arc: 'out', style: 'raised', back: true }, { text: 'ROGUE', at: 270, r: .7, h: .13, sx: 1.12, arc: 'out', style: 'raised', back: true },
+      { text: 'HG\n{w}\nLB', at: 180, r: .69, h: .062, style: 'raised', back: true, spacing: .25 }, { text: 'HG\n{w}\nLB', at: 0, r: .69, h: .062, rot: 180, style: 'raised', back: true, spacing: .25 },
     ],
     weights: [Wm(10, 450, 1), Wm(15, 450, 1.37), Wm(25, 450, 2), Wm(35, 450, 2.75), Wm(45, 450, 3.25), Wm(55, 450, 3.75)],
     url: 'https://www.roguefitness.com/rogue-hg-2-0-bumper-plates',
@@ -154,11 +154,11 @@ export const PLATE_LINES: readonly PlateLine[] = [
   {
     id: 'rogue-lb-competition', code: 9, brand: 'Rogue', name: 'LB Competition Plates', unit: 'lb', group: 'Calibrated & competition', ...ROGUE,
     material: 'rubber', color: IWF.green, ink: WHITE,
-    face: { kind: 'competition', disc: .5, discDepth: 4, insert: 64, edge: 4 },
+    face: { kind: 'competition', disc: .5, discDepth: 4, insert: 64, edge: 4, lip: .04, lipDepth: .9 },
     markings: [
-      { text: 'ROGUE', at: 90, r: .77, h: .12, arc: 'out', style: 'raised', color: WHITE }, { text: 'ROGUE', at: 270, r: .77, h: .12, arc: 'out', style: 'raised', color: WHITE },
-      { text: '{w}', at: 184, r: .745, h: .065, style: 'raised', color: WHITE }, { text: '{w}', at: 4, r: .745, h: .065, rot: 180, style: 'raised', color: WHITE },
-      { text: 'COMPETITION\nLB', at: 196, r: .745, h: .026, style: 'raised', color: WHITE, spacing: .4 }, { text: 'COMPETITION\nLB', at: 16, r: .745, h: .026, rot: 180, style: 'raised', color: WHITE, spacing: .4 },
+      { text: 'ROGUE', at: 90, r: .77, h: .12, sx: 1.12, arc: 'out', style: 'raised', color: WHITE }, { text: 'ROGUE', at: 270, r: .77, h: .12, sx: 1.12, arc: 'out', style: 'raised', color: WHITE },
+      { text: '{w}', at: 185, r: .745, h: .1, sx: .9, style: 'raised', color: WHITE }, { text: '{w}', at: 5, r: .745, h: .1, sx: .9, rot: 180, style: 'raised', color: WHITE },
+      { text: 'COMPETITION\nLB', at: 199, r: .745, h: .03, style: 'raised', color: WHITE, spacing: .4 }, { text: 'COMPETITION\nLB', at: 19, r: .745, h: .03, rot: 180, style: 'raised', color: WHITE, spacing: .4 },
     ],
     weights: [Wm(25, 450, 1.25, { color: '#2a9a47' }), Wm(35, 450, 1.7, { color: '#f2c51a' }), Wm(45, 450, 2.15, { color: '#1f5db6' }), Wm(55, 450, 2.5, { color: '#c7262f' })],
     url: 'https://www.roguefitness.com/rogue-competition-plates',
@@ -170,7 +170,7 @@ export const PLATE_LINES: readonly PlateLine[] = [
     material: 'cast', color: '#1b1c1e', ink: '#1b1c1e',
     face: { kind: 'iron', lip: .11, dish: .62, boss: 96, edge: 2.5, spokes: { n: 4, w: 13, minD: 440, deg: 45 } },
     markings: [
-      { text: 'ROGUE', at: 90, r: .66, h: .13, arc: 'out', style: 'raised' }, { text: 'ROGUE', at: 270, r: .66, h: .13, arc: 'out', style: 'raised' },
+      { text: 'ROGUE', at: 90, r: .66, h: .13, sx: 1.12, arc: 'out', style: 'raised' }, { text: 'ROGUE', at: 270, r: .66, h: .13, sx: 1.12, arc: 'out', style: 'raised' },
       { text: '{w}', at: 180, r: .58, h: .13, style: 'raised' }, { text: '{w}', at: 0, r: .58, h: .13, rot: 180, style: 'raised' },
       { text: 'MADE IN USA', at: 90, r: .42, h: .04, arc: 'out', style: 'raised', minD: 270 },
     ],
@@ -183,7 +183,7 @@ export const PLATE_LINES: readonly PlateLine[] = [
     material: 'cast', color: '#1b1c1e', ink: '#1b1c1e',
     face: { kind: 'iron', lip: .11, dish: .62, boss: 96, edge: 2.5, spokes: { n: 4, w: 13, deg: 45 }, medallions: { n: 2, r: .5, size: .2, deg: 90 } },
     markings: [
-      { text: 'ROGUE', at: 90, r: .72, h: .12, arc: 'out', style: 'raised' }, { text: 'ROGUE', at: 270, r: .72, h: .12, arc: 'out', style: 'raised' },
+      { text: 'ROGUE', at: 90, r: .72, h: .12, sx: 1.12, arc: 'out', style: 'raised' }, { text: 'ROGUE', at: 270, r: .72, h: .12, sx: 1.12, arc: 'out', style: 'raised' },
       { text: '{w}', at: 180, r: .56, h: .13, style: 'raised' }, { text: '{w}', at: 0, r: .56, h: .13, rot: 180, style: 'raised' },
     ],
     weights: [M(45, 450, 50)],
@@ -195,13 +195,13 @@ export const PLATE_LINES: readonly PlateLine[] = [
     material: 'painted', color: IWF.red, ink: WHITE,
     face: { kind: 'calibrated', lip: .035, boss: 88, spokes: { n: 4, w: 9, minD: 300, deg: 45 }, edge: 1.2 },
     markings: [
-      { text: 'ROGUE', at: 90, r: .75, h: .11, arc: 'out', style: 'raised', color: WHITE }, { text: 'ROGUE', at: 270, r: .75, h: .11, arc: 'out', style: 'raised', color: WHITE },
-      { text: '{w}', at: 186, r: .6, h: .15, sx: .85, style: 'raised', color: WHITE }, { text: '{w}', at: 6, r: .6, h: .15, sx: .85, rot: 180, style: 'raised', color: WHITE },
+      { text: 'ROGUE', at: 90, r: .75, h: .11, sx: 1.12, arc: 'out', style: 'raised', color: WHITE }, { text: 'ROGUE', at: 270, r: .75, h: .11, sx: 1.12, arc: 'out', style: 'raised', color: WHITE },
+      { text: '{w}', at: 186, r: .6, h: .18, sx: .82, style: 'raised', color: WHITE }, { text: '{w}', at: 6, r: .6, h: .18, sx: .82, rot: 180, style: 'raised', color: WHITE },
       { text: 'KG', at: 207, r: .64, h: .06, style: 'raised', color: WHITE }, { text: 'KG', at: 27, r: .64, h: .06, rot: 180, style: 'raised', color: WHITE },
       { text: 'EST. 2006', at: 90, r: .5, h: .04, style: 'raised', color: WHITE, minD: 300 },
     ],
     weights: [
-      M(50, 450, 54, { color: '#1b1c1f', est: 'width' }), M(25, 450, 27, { color: '#c3202d' }), M(20, 450, 22.5, { color: '#1c4fa0' }), M(15, 400, 21, { color: '#e6b91e' }), M(10, 325, 21, { color: '#23874a' }),
+      M(50, 450, 54, { color: '#1b1c1f', est: 'width' }), M(25, 450, 27, { color: '#9c1c29' }), M(20, 450, 22.5, { color: '#1c4fa0' }), M(15, 400, 21, { color: '#e6b91e' }), M(10, 325, 21, { color: '#23874a' }),
       M(5, 228, 16, { color: '#eceeea', ink: '#141517', est: 'width' }), M(2.5, 190, 13, { color: '#1b1c1f', est: 'width' }), M(1.25, 160, 10, { metal: 'chrome', ink: '#141517', est: 'width' }),
       M(.5, 134, 7, { metal: 'chrome', ink: '#141517', est: 'width' }), M(.25, 112, 5, { metal: 'chrome', ink: '#141517', est: 'width' }),
     ],
@@ -213,13 +213,13 @@ export const PLATE_LINES: readonly PlateLine[] = [
     material: 'painted', color: IWF.red, ink: WHITE,
     face: { kind: 'calibrated', lip: .035, boss: 88, spokes: { n: 4, w: 9, minD: 300, deg: 45 }, edge: 1.2 },
     markings: [
-      { text: 'ROGUE', at: 90, r: .75, h: .11, arc: 'out', style: 'raised', color: WHITE }, { text: 'ROGUE', at: 270, r: .75, h: .11, arc: 'out', style: 'raised', color: WHITE },
-      { text: '{w}', at: 186, r: .6, h: .15, sx: .85, style: 'raised', color: WHITE }, { text: '{w}', at: 6, r: .6, h: .15, sx: .85, rot: 180, style: 'raised', color: WHITE },
+      { text: 'ROGUE', at: 90, r: .75, h: .11, sx: 1.12, arc: 'out', style: 'raised', color: WHITE }, { text: 'ROGUE', at: 270, r: .75, h: .11, sx: 1.12, arc: 'out', style: 'raised', color: WHITE },
+      { text: '{w}', at: 186, r: .6, h: .18, sx: .82, style: 'raised', color: WHITE }, { text: '{w}', at: 6, r: .6, h: .18, sx: .82, rot: 180, style: 'raised', color: WHITE },
       { text: 'LB', at: 207, r: .64, h: .06, style: 'raised', color: WHITE }, { text: 'LB', at: 27, r: .64, h: .06, rot: 180, style: 'raised', color: WHITE },
       { text: 'EST. 2006', at: 90, r: .5, h: .04, style: 'raised', color: WHITE, minD: 300 },
     ],
     weights: [
-      M(55, 450, 27, { color: '#c3202d', est: 'width' }), M(45, 450, 22.5, { color: '#1c4fa0', est: 'width' }), M(35, 400, 21, { color: '#e6b91e', est: 'width' }), M(25, 325, 21, { color: '#23874a', est: 'width' }),
+      M(55, 450, 27, { color: '#931b28', est: 'width' }), M(45, 450, 22.5, { color: '#1c4fa0', est: 'width' }), M(35, 400, 21, { color: '#e6b91e', est: 'width' }), M(25, 325, 21, { color: '#23874a', est: 'width' }),
       M(10, 228, 17, { color: '#eceeea', ink: '#141517', est: 'width' }), M(5, 190, 14, { color: '#1b1c1f', est: 'width' }), M(2.5, 160, 11, { metal: 'chrome', ink: '#141517', est: 'width' }),
       M(1, 134, 8, { metal: 'chrome', ink: '#141517', est: 'width' }), M(.5, 112, 6, { metal: 'chrome', ink: '#141517', est: 'width' }), M(.25, 90, 5, { metal: 'chrome', ink: '#141517', est: 'width' }),
     ],
@@ -231,7 +231,7 @@ export const PLATE_LINES: readonly PlateLine[] = [
     material: 'rubber', color: WHITE, ink: '#18191b',
     face: { kind: 'change', insert: 66, inner: .62, innerDepth: .8, edge: 2 },
     markings: [
-      { text: 'ROGUE', at: 90, r: .77, h: .15, arc: 'out', back: true }, { text: 'ROGUE', at: 270, r: .77, h: .15, arc: 'out', back: true },
+      { text: 'ROGUE', at: 90, r: .77, h: .15, sx: 1.12, arc: 'out', back: true }, { text: 'ROGUE', at: 270, r: .77, h: .15, sx: 1.12, arc: 'out', back: true },
       { text: '{w}\nLB', at: 180, r: .75, h: .085, back: true, spacing: .5 }, { text: '{w}\nLB', at: 0, r: .75, h: .085, rot: 180, back: true, spacing: .5 },
     ],
     weights: [M(10, 230, 26, { color: '#f1f2ef' }), M(5, 190, 19, { color: '#1f5db7', ink: WHITE }), M(2.5, 162, 15, { color: '#2ea64a', ink: WHITE }), M(1.25, 133.3, 10, { color: '#f1f2ef' })],
@@ -243,7 +243,7 @@ export const PLATE_LINES: readonly PlateLine[] = [
     material: 'rubber', color: '#151618', ink: WHITE,
     face: { kind: 'bumper', insert: 80, inner: .42, innerDepth: 3, edge: 6, pockets: { n: 4, deg: 18, depth: 16, r: .085 } },
     markings: [
-      { text: 'ROGUE', at: 90, r: .72, h: .13, arc: 'out', back: true }, { text: 'ROGUE', at: 270, r: .72, h: .13, arc: 'out', back: true },
+      { text: 'ROGUE', at: 90, r: .72, h: .13, sx: 1.12, arc: 'out', back: true }, { text: 'ROGUE', at: 270, r: .72, h: .13, sx: 1.12, arc: 'out', back: true },
       { text: '{w}\nLB', at: 180, r: .56, h: .07, back: true, spacing: .45 }, { text: '{w}\nLB', at: 0, r: .56, h: .07, rot: 180, back: true, spacing: .45 },
     ],
     weights: [W(70, 26, 3.97)],
@@ -268,7 +268,7 @@ export const PLATE_LINES: readonly PlateLine[] = [
   {
     id: 'cap-olympic-iron', code: 17, brand: 'CAP Barbell', name: '2" Olympic Plate', unit: 'lb', group: 'Iron plates',
     vendor: 'CAP Barbell', trademark: 'CAP trademarks belong to CAP Barbell.',
-    material: 'hammertone', color: '#7b7e81', ink: '#c9ccce',
+    material: 'hammertone', color: '#56595c', ink: '#c9ccce',
     face: { kind: 'iron', lip: .09, dish: .5, boss: 92, edge: 2.5, back: .3, spokes: { n: 4, w: 14, minD: 350, deg: 45 } },
     markings: [
       { text: 'STANDARD', at: 90, r: .72, h: .1, arc: 'out', style: 'raised', color: '#c4c7c9' }, { text: 'BARBELL', at: 270, r: .72, h: .1, arc: 'in', style: 'raised', color: '#c4c7c9', minD: 350 },
@@ -276,7 +276,7 @@ export const PLATE_LINES: readonly PlateLine[] = [
       { text: '{w}LBS  {k}KGS', at: 270, r: .72, h: .1, arc: 'in', style: 'raised', color: '#c4c7c9', maxD: 349 },
     ],
     weights: [W(45, 17.75, 1.5), W(35, 14, 1.5), W(25, 11, 1.5), W(10, 9, 1), W(5, 8, .75), W(2.5, 6.5, .5), W(100, 17.75, 2.5)],
-    finishes: [{ id: 'gray', label: 'Gray (OPG)', color: '#7b7e81', ink: '#c9ccce' }, { id: 'black', label: 'Black (OP)', color: '#232427', ink: '#b9bcbe' }],
+    finishes: [{ id: 'gray', label: 'Gray (OPG)', color: '#56595c', ink: '#c9ccce' }, { id: 'black', label: 'Black (OP)', color: '#232427', ink: '#b9bcbe' }],
     url: 'https://capbarbell.com/products/cap-barbell-cast-iron-olympic-weight-plate',
     reconstruction: 'Diameters and thicknesses per weight from Iron Company\'s CAP OPG#2 table (2.5 lb 6.5 × 0.5" to 100 lb 17.75 × 2.5"). Hammertone finish, silver-painted raised STANDARD/BARBELL lettering, rib (spoke) and dish depth estimated from CAP photos.',
   },
@@ -332,7 +332,7 @@ export const PLATE_LINES: readonly PlateLine[] = [
   {
     id: 'ivanko-om', code: 21, brand: 'Ivanko', name: 'OM Series Olympic Machined Plates', unit: 'lb', group: 'Iron plates',
     vendor: 'Ivanko Barbell Company', trademark: 'Ivanko trademarks belong to Ivanko Barbell Company.',
-    material: 'hammertone', color: '#6c737b', ink: '#b9bec2',
+    material: 'hammertone', color: '#4a5159', ink: '#c3c7ca',
     face: { kind: 'iron', lip: .085, dish: .45, boss: 92, edge: 1.2, spokes: { n: 3, w: 16, minD: 290, deg: 270 } },
     markings: [
       { text: 'IVANKO', at: 90, r: .77, h: .11, arc: 'out', style: 'raised', color: '#b9bec2' },
@@ -363,9 +363,9 @@ export const PLATE_LINES: readonly PlateLine[] = [
     id: 'rep-change', code: 23, brand: 'REP Fitness', name: 'Change Plates (LB)', unit: 'lb', group: 'Change & fractional plates',
     vendor: 'REP Fitness', trademark: 'REP trademarks belong to REP Fitness.',
     material: 'rubber', color: WHITE, ink: '#18191b',
-    face: { kind: 'change', insert: 86, inner: .5, innerDepth: .8, edge: 2.5, insertColor: '#b9bec2' },
+    face: { kind: 'change', insert: 80, inner: .5, innerDepth: .8, edge: 2.5, insertColor: '#b9bec2' },
     markings: [
-      { text: 'REP FITNESS', at: 90, r: .72, h: .12, arc: 'out', back: true }, { text: 'REP FITNESS', at: 270, r: .72, h: .12, arc: 'out', back: true },
+      { text: 'REP FITNESS', at: 90, r: .74, h: .1, arc: 'out', back: true }, { text: 'REP FITNESS', at: 270, r: .74, h: .1, arc: 'out', back: true },
       { text: '{w}\nLB', at: 180, r: .74, h: .085, back: true, spacing: .45 }, { text: '{w}\nLB', at: 0, r: .74, h: .085, rot: 180, back: true, spacing: .45 },
     ],
     weights: [W(10, 8.75, 1, { color: '#f0f1ee' }), W(5, 8.25, .75, { color: '#153e8a', ink: WHITE }), W(2.5, 6.25, .6, { color: '#3fb14b', ink: WHITE }), W(1.25, 5.25, .5, { color: '#f0f1ee' })],
@@ -408,9 +408,10 @@ export const PLATE_LINES: readonly PlateLine[] = [
     face: { kind: 'bumper', insert: 74, inner: .5, innerDepth: 1.8, edge: 5, lip: .06, lipDepth: 2 },
     markings: [
       { text: 'FRINGE SPORT', at: 90, r: .72, h: .11, arc: 'out', back: true }, { text: 'FRINGE SPORT', at: 270, r: .72, h: .11, arc: 'out', back: true },
-      { text: '{w}\nTRAINING\nLB', at: 0, r: .66, h: .055, back: true, spacing: .3 }, { text: '{w}\nTRAINING\nLB', at: 180, r: .66, h: .055, rot: 180, back: true, spacing: .3 },
+      { text: '{w}', at: 5, r: .74, h: .085, back: true }, { text: 'TRAINING', at: -3.5, r: .74, h: .028, back: true }, { text: 'LB', at: -9, r: .74, h: .045, back: true },
+      { text: '{w}', at: 185, r: .74, h: .085, rot: 180, back: true }, { text: 'TRAINING', at: 176.5, r: .74, h: .028, rot: 180, back: true }, { text: 'LB', at: 171, r: .74, h: .045, rot: 180, back: true },
     ],
-    weights: [Wm(10, 445, 1.05, { color: '#8c9196' }), Wm(15, 450, 1.2, { color: '#e2702a' }), Wm(25, 450, 1.87, { color: '#2a9a3f' }), Wm(35, 450, 2.35, { color: '#e9c21d' }), Wm(45, 450, 2.9, { color: '#1f5db4', est: 'width' }), Wm(55, 450, 3.2, { color: '#c3292f' })],
+    weights: [Wm(10, 445, 1.05, { color: '#8c9196', accent: '#3d4145' }), Wm(15, 450, 1.2, { color: '#e2702a', accent: '#6b2f0d' }), Wm(25, 450, 1.87, { color: '#2a9a3f', accent: '#0f3a18' }), Wm(35, 450, 2.35, { color: '#e9c21d', accent: '#5c4a06' }), Wm(45, 450, 2.9, { color: '#1f5db4', est: 'width', accent: '#0b1f45' }), Wm(55, 450, 3.2, { color: '#c3292f', accent: '#4a0c10' })],
     url: 'https://www.fringesport.com/products/savage-bumper-plate-pairs',
     reconstruction: 'Published 450 mm (10 lb 445 mm) diameter, 50.3 mm hooked steel insert, deeper lip and widths 10 lb 1.05" to 55 lb 3.2". Savage lists 45 lb at 2.35" (a duplicate of the 35 lb figure); the Fringe black bumper 2.9" is used. Marble streaks are a deterministic stand-in pattern.',
   },
@@ -421,7 +422,8 @@ export const PLATE_LINES: readonly PlateLine[] = [
     face: { kind: 'bumper', insert: 74, inner: .5, innerDepth: 1.8, edge: 6, lip: .045, lipDepth: 1 },
     markings: [
       { text: 'FRINGE SPORT', at: 90, r: .72, h: .11, arc: 'out', style: 'raised', back: true }, { text: 'FRINGE SPORT', at: 270, r: .72, h: .11, arc: 'out', style: 'raised', back: true },
-      { text: '{w}\nTRAINING\nLB', at: 0, r: .66, h: .055, style: 'raised', back: true, spacing: .3 }, { text: '{w}\nTRAINING\nLB', at: 180, r: .66, h: .055, rot: 180, style: 'raised', back: true, spacing: .3 },
+      { text: '{w}', at: 5, r: .74, h: .085, style: 'raised', back: true }, { text: 'TRAINING', at: -3.5, r: .74, h: .028, style: 'raised', back: true }, { text: 'LB', at: -9, r: .74, h: .045, style: 'raised', back: true },
+      { text: '{w}', at: 185, r: .74, h: .085, rot: 180, style: 'raised', back: true }, { text: 'TRAINING', at: 176.5, r: .74, h: .028, rot: 180, style: 'raised', back: true }, { text: 'LB', at: 171, r: .74, h: .045, rot: 180, style: 'raised', back: true },
     ],
     weights: [Wm(10, 445, 1.05), Wm(15, 450, 1.2), Wm(25, 450, 1.87), Wm(35, 450, 2.35), Wm(45, 450, 2.9), Wm(55, 450, 3.2)],
     url: 'https://www.fringesport.com/products/onefitwonder-black-bumper-plates-pairs',
@@ -447,7 +449,7 @@ export const PLATE_LINES: readonly PlateLine[] = [
     face: { kind: 'bumper', insert: 66, inner: .45, innerDepth: 1.5, edge: 4 },
     markings: [
       { text: 'EVERYDAY', at: 90, r: .74, h: .11, arc: 'out', back: true }, { text: 'ESSENTIALS', at: 270, r: .74, h: .11, arc: 'in', back: true },
-      { text: '{w}\nLB', at: 0, r: .66, h: .065, back: true, spacing: .3 }, { text: '{k2}\nKG', at: 180, r: .66, h: .065, back: true, spacing: .3 },
+      { text: '{w}\nLB', at: 180, r: .66, h: .065, back: true, spacing: .3 }, { text: '{k2}\nKG', at: 0, r: .66, h: .065, back: true, spacing: .3 },
     ],
     weights: [W(10, 17.75, 1.09, { ink: '#c9cdd1' }), W(15, 17.75, 1.18, { ink: '#e4812e' }), W(25, 17.75, 1.93, { ink: '#39b54a' }), W(35, 17.75, 2.05, { ink: '#f2c21b' }), W(45, 17.75, 2.83, { ink: '#3b9ad9' }), W(55, 17.75, 3.66, { ink: '#e0302f' })],
     url: 'https://vminnovations.com/products/balancefrom-fitness-370-pound-olympic-bumper-strength-training-weight-plate-set',
@@ -476,8 +478,8 @@ export const PLATE_LINES: readonly PlateLine[] = [
     material: 'painted', color: '#1c1d1f', ink: '#1c1d1f',
     face: { kind: 'flat', edge: .8 },
     markings: [
-      { text: 'MICRO\nGAINZ', at: 90, r: .8, h: .1, style: 'raised', spacing: .2, maxD: 100 }, { text: '{w}\nLB', at: 270, r: .82, h: .07, style: 'raised', spacing: .2, maxD: 100 },
-      { text: 'MICRO GAINZ', at: 90, r: .55, h: .07, style: 'print', color: '#d6d8d9', minD: 101 }, { text: '{w} LB', at: 270, r: .55, h: .09, style: 'print', color: '#d6d8d9', minD: 101 },
+      { text: 'MICRO\nGAINZ', at: 90, r: .8, h: .1, style: 'deboss', spacing: .2, maxD: 100 }, { text: '{w}\nLB', at: 270, r: .82, h: .07, style: 'deboss', spacing: .2, maxD: 100 },
+      { text: 'MICRO GAINZ', at: 90, r: .55, h: .07, style: 'print', color: '#8f9396', minD: 101 }, { text: '{w} LB', at: 270, r: .55, h: .09, style: 'print', color: '#8f9396', minD: 101 },
     ],
     weights: [M(1.25, 88.9, 20.7), M(1, 88.9, 16.54), M(.75, 88.9, 12.22), M(.5, 88.9, 8.2), M(.25, 88.9, 4.17), M(2.5, 177.8, 6.35)],
     finishes: [{ id: 'black', label: 'Black', color: '#1c1d1f' }, { id: 'color', label: 'Multi-colour', color: '#1c1d1f', colors: { '1.25': '#2f9a45', '1': '#e7c11c', '0.75': '#1f5fb8', '0.5': '#c7282f', '0.25': '#56595d' } }],
@@ -488,8 +490,8 @@ export const PLATE_LINES: readonly PlateLine[] = [
     id: 'titan-wagon-wheel', code: 32, brand: 'Titan Fitness', name: 'Wagon Wheel Pulling Blocks', unit: 'lb', group: 'Wagon wheels',
     vendor: 'Titan Fitness', trademark: 'Titan trademarks belong to Titan Fitness.',
     material: 'painted', color: '#18191b', ink: '#18191b',
-    face: { kind: 'wagon-steel', plate: 9.525, band: 6.35, insert: 76, grips: { kind: 'wedge', n: 9, r: .6, size: .6, deg: 90 } },
-    markings: [{ text: 'TITAN', at: 90, r: .215, h: .085, style: 'deboss' }, { text: '{w}  LB', at: 270, r: .215, h: .06, style: 'deboss' }],
+    face: { kind: 'wagon-steel', plate: 9.525, band: 6.35, insert: 76, grips: { kind: 'wedge', n: 9, r: .65, size: .54, deg: 90 } },
+    markings: [{ text: 'TITAN', at: 90, r: .23, h: .085, sx: 1.1, style: 'deboss' }, { text: '{w}  LB', at: 270, r: .24, h: .055, style: 'deboss' }],
     weights: [W(45, 26, 2)],
     url: 'https://www.titan.fitness/products/45-lb-pair-wagon-wheel-pulling-blocks',
     reconstruction: 'Published 26" diameter, 0.375" laser-cut steel, 51 mm collar and 2" carrying lip, 45 lb each. Nine wedge windows, collar size and the cut-through TITAN / 45 LB lettering estimated from Titan photos.',

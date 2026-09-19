@@ -1,6 +1,6 @@
 import { useState, type KeyboardEvent } from 'react';
 import { setPlateStack } from '../../rack-generator/assembly.ts';
-import { PLATE_LINES, PLATE_PRESETS, expandRuns, lineSet, linePlates, plateFits, plateLine, platePeg, plateRoom, plateRuns, plateSpec, plateStackLength, plateTotalLabel, type PlateId } from '../../rack-generator/plates.ts';
+import { PLATE_LINES, PLATE_PRESETS, expandRuns, lineSet, linePlates, plateFits, plateLine, plateParts, platePeg, plateRoom, plateRuns, plateSpec, plateStackLength, plateTotalLabel, type PlateId } from '../../rack-generator/plates.ts';
 import type { Accessory } from '../../rack-generator/types.ts';
 import type { BuilderStore } from '../state/builder-store.ts';
 import './plate-stack.css';
@@ -8,6 +8,8 @@ const round = (v: number) => Math.round(v * 10) / 10;
 const GROUPS = [...new Set(PLATE_LINES.map(l => l.group))];
 const lineLabel = (id: string) => { const l = plateLine(id)!; return l.legacy ? `${l.name} (default)` : `${l.brand} ${l.name}`; };
 const spec = (id: PlateId) => plateSpec(id)!;
+/** Weight label without the finish (the finish has its own select). */
+const weightLabel = (id: PlateId) => { const p = plateParts(id)!; return p.weight.label ?? `${p.weight.weight} ${p.line.unit}`; };
 /** Storage-pin plate loading: pick a brand line, then a weight (and finish), as weight × count rows from the peg root outward. */
 export function PlateStackEditor({ store, entry }: { store: BuilderStore; entry: Accessory }) {
   const plates = entry.plates ?? [], last = plates.at(-1);
@@ -79,7 +81,7 @@ export function PlateStackEditor({ store, entry }: { store: BuilderStore; entry:
       </label>}
       <div className="plate-add">
         <select aria-label="Plate weight" value={selected} onChange={e => setPlate(e.target.value as PlateId)}>
-          {options.map(id => <option key={id} value={id}>{spec(id).label} · Ø{round(spec(id).diameter)} × {round(spec(id).width)} mm</option>)}
+          {options.map(id => <option key={id} value={id} title={`Ø${round(spec(id).diameter)} × ${round(spec(id).width)} mm`}>{weightLabel(id)} · {round(spec(id).width)} mm</option>)}
         </select>
         <span>×</span>
         <input aria-label="Plate count" type="number" min={1} max={16} step={1} value={count} onKeyDown={noSubmit}

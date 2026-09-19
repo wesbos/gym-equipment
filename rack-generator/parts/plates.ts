@@ -50,11 +50,11 @@ function frame(axis: Vec3, at: Vec3): Mat4 {
 type Look = { color: string; metalness: number; roughness: number };
 const LOOK: Record<PlateLine['material'], Omit<Look, 'color'>> = {
   rubber: { metalness: 0, roughness: .82 }, urethane: { metalness: .05, roughness: .5 }, cast: { metalness: .55, roughness: .62 },
-  hammertone: { metalness: .62, roughness: .5 }, painted: { metalness: .3, roughness: .42 }, chrome: { metalness: 1, roughness: .12 }, steel: { metalness: .85, roughness: .35 },
+  hammertone: { metalness: .45, roughness: .6 }, painted: { metalness: .3, roughness: .42 }, chrome: { metalness: 1, roughness: .12 }, steel: { metalness: .85, roughness: .35 },
 };
 const CHROME: Look = { color: '#dfe3e6', metalness: 1, roughness: .12 };
 /** Brushed/satin chrome for large flat discs, which read black as mirror chrome without an environment map. */
-const SATIN: Look = { color: '#d3d7da', metalness: .8, roughness: .3 };
+const SATIN: Look = { color: '#b7bcc1', metalness: .92, roughness: .2 };
 const STAINLESS: Look = { color: '#c9ccce', metalness: .9, roughness: .3 };
 const RAW: Look = { color: '#8d9093', metalness: .85, roughness: .38 };
 const INK = { metalness: 0, roughness: .55 };
@@ -126,8 +126,8 @@ function markingText(m: PlateMarking, line: PlateLine, w: PlateWeight) {
 function rng(seed: number) { let s = seed >>> 0 || 1; return () => ((s = Math.imul(s ^ (s >>> 15), 2246822519) ^ Math.imul(s ^ (s >>> 13), 3266489917)) >>> 0) / 4294967296; }
 function patternLoops(kind: 'fleck' | 'speck' | 'marble', density: number, r0: number, r1: number, seed: number): Vec2[][] {
   const next = rng(seed), area = Math.PI * (r1 * r1 - r0 * r0), loops: Vec2[][] = [];
-  const blob = kind === 'fleck' ? 420 : kind === 'speck' ? 9 : 260;
-  const count = Math.min(kind === 'speck' ? 90 : kind === 'fleck' ? 80 : 30, Math.round(area * density / blob));
+  const blob = kind === 'fleck' ? 150 : kind === 'speck' ? 9 : 260;
+  const count = Math.min(kind === 'speck' ? 90 : kind === 'fleck' ? 130 : 22, Math.round(area * density / blob));
   for (let i = 0; i < count; i++) {
     const rr = Math.sqrt(r0 * r0 + next() * (r1 * r1 - r0 * r0)), th = next() * Math.PI * 2, cx = Math.cos(th) * rr, cy = Math.sin(th) * rr;
     const pts: Vec2[] = [];
@@ -139,7 +139,7 @@ function patternLoops(kind: 'fleck' | 'speck' | 'marble', density: number, r0: n
       for (let k = 0; k < n; k++) pts.push(side(k, 1));
       for (let k = n - 1; k >= 0; k--) pts.push(side(k, -1));
     } else {
-      const size = kind === 'fleck' ? 8 + next() * 16 : 1.4 + next() * 2.4, n = kind === 'fleck' ? 7 : 4, a0 = next() * 6.28;
+      const size = kind === 'fleck' ? 4 + next() * 9 : 1.4 + next() * 2.4, n = kind === 'fleck' ? 7 : 4, a0 = next() * 6.28;
       for (let k = 0; k < n; k++) { const a = a0 + k * Math.PI * 2 / n, rad = size * (.55 + next() * .45); pts.push([cx + Math.cos(a) * rad, cy + Math.sin(a) * rad]); }
     }
     // Counter-clockwise so overlapping blobs merge under the NonZero fill rule.
@@ -215,14 +215,14 @@ function buildLinePlate(api: ManifoldAPI, id: PlateId, segments: number, simple:
         const sp = face.spokes;
         if (sp && !plain && D >= (sp.minD ?? 0)) {
           const bars = Array.from({ length: sp.n }, (_, i) => bar(((sp.deg ?? 0) + i * 360 / sp.n) * Math.PI / 180, sp.w, boss - 2, R - rim + 1.5));
-          extra.push(prism(bars, W - dish - .5, W - dish * .12));
-          if (bk) extra.push(prism(bars, bk * .12, bk + .5));
+          reliefs.push(prism(bars, W - dish - .5, W - dish * .12));
+          if (bk) reliefs.push(prism(bars, bk * .12, bk + .5));
         }
         const md = face.medallions;
         if (md) for (let i = 0; i < md.n; i++) {
           const [cx, cy] = polar(md.r * R, (md.deg + i * 360 / md.n) * Math.PI / 180), rx = md.size * R * .38, ry = md.size * R * .5;
           const oval = (sx: number, sy: number) => Array.from({ length: 28 }, (_, j) => { const t = j / 28 * Math.PI * 2; return [cx + Math.cos(t) * sx, cy + Math.sin(t) * sy] as Vec2; });
-          extra.push(prism([oval(rx, ry)], W - dish - .5, W - dish * .55), prism([oval(rx * .55, ry * .7)], W - dish * .56, W - dish * .3));
+          reliefs.push(prism([oval(rx, ry)], W - dish - .5, W - dish * .55), prism([oval(rx * .55, ry * .7)], W - dish * .56, W - dish * .3));
         }
         break;
       }
@@ -230,7 +230,7 @@ function buildLinePlate(api: ManifoldAPI, id: PlateId, segments: number, simple:
         const rim = Math.max(lip, 3), boss = Math.max(r0 + 2, Math.min((face.boss ?? 88) / 2, b + .3 * (R - b))), field = Math.min(1.4, W * .08);
         front = [[r0, 0], [boss, field], [R - rim, 0]];
         const sp = face.spokes;
-        if (sp && D >= (sp.minD ?? 0)) extra.push(prism(Array.from({ length: sp.n }, (_, i) => bar(((sp.deg ?? 0) + i * 360 / sp.n) * Math.PI / 180, sp.w, boss - 1, R - rim + 1)), W - field - .3, W - .25));
+        if (sp && D >= (sp.minD ?? 0)) reliefs.push(prism(Array.from({ length: sp.n }, (_, i) => bar(((sp.deg ?? 0) + i * 360 / sp.n) * Math.PI / 180, sp.w, boss - 1, R - rim + 1)), W - field - .3, W - .25));
         break;
       }
       case 'flat': break;
@@ -259,14 +259,14 @@ function buildLinePlate(api: ManifoldAPI, id: PlateId, segments: number, simple:
           holes.push(pts);
         } else {
           // Tri-grip kidneys and wagon-wheel wedges: annular windows between constant-width spokes.
-          const r1 = (g.r + g.size / 2) * R, rin = (g.r - g.size / 2) * R, half = Math.PI / g.n, sw = (g.kind === 'wedge' ? .075 : .6) * R, n = 10, pts: Vec2[] = [];
+          const r1 = (g.r + g.size / 2) * R, rin = (g.r - g.size / 2) * R, half = Math.PI / g.n, sw = (g.kind === 'wedge' ? .09 : .6) * R, n = 10, pts: Vec2[] = [];
           const lim = (rho: number) => Math.max(.05, half - Math.asin(Math.min(.95, sw / 2 / rho)));
           for (let j = 0; j <= n; j++) pts.push(polar(r1, a - lim(r1) + 2 * lim(r1) * j / n));
           for (let j = n; j >= 0; j--) pts.push(polar(rin, a - lim(rin) + 2 * lim(rin) * j / n));
           holes.push(pts);
         }
       }
-      const cutter = k(new C(holes, 'EvenOdd')), round = g.kind === 'slot' ? 0 : .025 * R;
+      const cutter = k(new C(holes, 'EvenOdd')), round = g.kind === 'slot' ? 0 : g.kind === 'wedge' ? .035 * R : .025 * R;
       const shaped = round ? k(k(cutter.offset(-round, 'Round', 2, 12)).offset(round, 'Round', 2, 12)) : cutter;
       through.push(k(k(shaped.extrude(W + 4)).translate([0, 0, -2])));
     }
@@ -344,7 +344,7 @@ function buildLinePlate(api: ManifoldAPI, id: PlateId, segments: number, simple:
       // Cast/moulded lettering in the body colour, a touch glossier where it wears, so it reads like the photos.
       let merged = union(reliefs);
       if (through.length) merged = k(merged.subtract(union(through)));
-      if (!merged.isEmpty()) out.splice(1, 0, { suffix: ' lettering', solid: merged, look: { ...body, roughness: Math.max(.18, body.roughness - .3), metalness: Math.min(1, body.metalness + .1) } });
+      if (!merged.isEmpty()) out.splice(1, 0, { suffix: ' lettering', solid: merged, look: { ...body, roughness: Math.max(.2, body.roughness - .14), metalness: Math.min(1, body.metalness + .05) } });
     }
     if (insertR > b) {
       const rec = face.insertRecess ?? 0;
