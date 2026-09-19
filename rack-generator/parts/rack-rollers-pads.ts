@@ -23,7 +23,9 @@ const DEG = Math.PI / 180;
 
 /** Shared solids on top of the vendorSolid scope. */
 function kit(v: Scope) {
-  const { M, C, keep: k } = v;
+  const { M, C } = v;
+  /** Idempotent keep: every handle is owned (and deleted) exactly once, including the scope's own box/cylinder results. */
+  const k = <T extends Manifold | CrossSection>(x: T): T => { if (!v.owned.includes(x)) v.keep(x); return x; };
   const add = (name: string, solid: Manifold, f: Finish) => v.add(name, solid, f.role ?? 'source', f.color, f.metalness, f.roughness);
   /** Revolved solid along +Y (axis at x, z) from y0 to y1, chamfered c0/c1 at its ends. */
   const alongY = (x: number, z: number, y0: number, y1: number, r: number, c0 = 0, c1 = 0, seg = 48) =>
@@ -43,7 +45,7 @@ function kit(v: Scope) {
   /** Along +X from x0 (section X becomes -Z... section Y stays Y). */
   const prismX = (s: CrossSection, x0: number, len: number, y = 0, z = 0) => k(k(k(s.extrude(len)).rotate([0, 90, 0])).translate([x0, y, z]));
   /** Flat plate from a YZ outline, `thick` across X centred on x. */
-  const plateYZ = (pts: [number, number][], thick: number, x: number) => k(k(k(k(new C([pts.map(([y, z]) => [y, z] as [number, number])])).extrude(thick)).rotate([90, 0, 90])).translate([x - thick / 2, 0, 0]));
+  const plateYZ = (pts: [number, number][], thick: number, x: number) => k(k(k(k(new C([pts.map(([y, z]) => [y, z] as [number, number])], 'NonZero')).extrude(thick)).rotate([90, 0, 90])).translate([x - thick / 2, 0, 0]));
   /** Rectangular tube polyline in the YZ plane: `w` across X, `h` in-plane; corners filled by hulls of the end slabs. */
   const beam = (pts: [number, number][], w: number, h: number, x = 0) => {
     const slab = (at: [number, number], deg: number) => k(k(k(M.cube([w, .5, h], true)).rotate([deg, 0, 0])).translate([x, at[0], at[1]]));
@@ -76,7 +78,7 @@ function kit(v: Scope) {
   const stitchX = (x: number, r: number, y = 0, z = 0) => k(alongX(y, z, x - .7, x + .7, r + .5).subtract(alongX(y, z, x - 1, x + 1, r - 1.5)));
   /** Frame of a YZ-plane rotation: local (u along, w up) about `origin` by `deg`. */
   const rotYZ = (m: Manifold, deg: number, origin: [number, number]) => k(k(m.rotate([deg, 0, 0])).translate([0, origin[0], origin[1]]));
-  return { ...v, add, alongY, alongX, alongZ, knurled, star, prismY, prismX, plateYZ, beam, pillow, roundedPoly, gathers, stitchY, stitchX, rotYZ };
+  return { ...v, k, add, alongY, alongX, alongZ, knurled, star, prismY, prismX, plateYZ, beam, pillow, roundedPoly, gathers, stitchY, stitchX, rotYZ };
 }
 type Kit = ReturnType<typeof kit>;
 const build = (api: ManifoldAPI, fn: (s: Kit) => void) => vendorSolid(api, v => fn(kit(v)));
@@ -209,7 +211,7 @@ export function buildSealRowPad(api: ManifoldAPI, params: NumericParams): SolidP
     s.add('Clamp nut and washer', s.k(s.k(s.alongY(0, g.clampZ, -g.face - 2.5, -g.face, pinR + 9, 0, 0, 32)).add(s.alongY(0, g.clampZ, -g.face - 14, -g.face - 2, pinR + 6, 1, 0, 6))), ZINC);
     s.add('BOS logo plate', s.box([.8, 46, 18], [side + wall / 2 + .3, 0, g.bottom + 30]), F('#2e2f33', .3, .6));
     // Selector wheel plates outside the bracket walls: 7-hole arc around the pivot bolt.
-    const [py, pz] = g.pivot, plateX = side + wall / 2 + 3.4, outline: [number, number][] = [[g.face + 2, pz + 98], [py + 12, pz + 98], [g.face + S.wheelDepth, pz + 40], [g.face + S.wheelDepth, pz - 60], [py + 20, pz - 112], [g.face + 2, pz - 112]];
+    const [py, pz] = g.pivot, plateX = side + wall / 2 + 3.4, [up, down] = S.wheel, outline: [number, number][] = [[g.face + 2, pz + up], [py + 12, pz + up], [g.face + S.wheelDepth, pz + 40], [g.face + S.wheelDepth, pz - 60], [py + 20, pz + down], [g.face + 2, pz + down]];
     const holes = S.angles.map((a, i) => s.alongX(py + 64 * Math.cos((180 - a) * DEG), pz + 64 * Math.sin((180 - a) * DEG), -plateX - 8, plateX + 8, 9.5, 0, 0, 20));
     s.add('Selector wheel plates', s.k(s.k(s.M.union([-1, 1].map(x => s.plateYZ(outline, 6.35, x * plateX)))).subtract(s.k(s.M.union(holes)))), BOS_BLACK);
     s.add('Pivot bolt', s.k(s.M.union([s.alongX(py, pz, -plateX - 8, plateX + 8, 9.5, 1, 1, 24), ...[-1, 1].map(x => s.alongX(py, pz, x < 0 ? -plateX - 12 : plateX + 3, x < 0 ? -plateX - 3 : plateX + 12, 15, .8, .8, 6))])), ZINC);
@@ -309,7 +311,7 @@ export function buildProdigy(api: ManifoldAPI, params: NumericParams): SolidPart
     s.add('Pad pivot block', swing(s.box([aw + 8, 40, ah + 12], [0, reach + 6, P.armZ])), PRIME_BLACK);
     s.add('Pad angle pop-pin', swing(s.k(s.k(s.alongX(reach + 6, P.armZ, aw / 2 + 2, aw / 2 + 12, 6, 0, 0, 16)).add(s.alongX(reach + 6, P.armZ, aw / 2 + 8, aw / 2 + 26, 14, 1, 3, 32)))), GREEN);
     // Half-moon pad: flat back on the bracket plate, rounded face out; 13-3/4 in along its long axis.
-    const [padL, padW, padD] = P.pad, outline = s.k(s.C.hull([s.k(s.C.square([padW, 16], true)).translate([0, 8]) as CrossSection, s.k(s.k(s.C.circle(padW / 2, 64)).translate([0, padD - padW / 2]))]));
+    const [padL, padW, padD] = P.pad, outline = s.k(s.k(s.k(s.k(s.C.circle(1, 64)).scale([padW / 2, padD - 8])).translate([0, 8])).intersect(s.k(s.k(s.C.square([padW + 2, padD], true)).translate([0, padD / 2]))));
     const padAt = (m: Manifold) => s.k(s.k(s.k(m.rotate([0, 0, -(g.swing + g.padAngle)])).translate([g.end[0], g.end[1], P.armZ])));
     const long = (m: Manifold) => p.orientation ? s.k(m.rotate([0, 90, 0])) : m;
     s.add('Pad back plate', padAt(long(s.box([padW - 20, 8, padL - 30], [0, 26, 0]))), PRIME_BLACK);

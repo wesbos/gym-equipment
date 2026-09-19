@@ -4,12 +4,16 @@
  * (face at y = upright / 2), X across the face, Z up. Layout helpers below are shared by the builders, the collision
  * bodies and the extents so the three always agree. */
 import { defineRackPart, PIN_1IN, PIN_5_8IN, type RackPart } from '../rack-part.ts';
-import type { LocalBox, NumericParams, Vec3 } from '../types.ts';
+import type { LocalBox, NumericParams, RackDimensions, Vec3 } from '../types.ts';
 export const inch = (v: number) => v * 25.4;
 const faceOf = (p: NumericParams) => (p.upright ?? 75) / 2;
 const pitchOf = (p: NumericParams) => p.mountSpacing ?? 50;
 const box = (min: Vec3, max: Vec3): LocalBox => ({ min, max });
 const DESCRIPTION_END = (brand: string) => `Independent reconstruction; ${brand} trademarks belong to ${brand}.`;
+/** Every product here is sold for square 3 x 3 in uprights (the 75 mm BOS tube is the nearest stand-in); 2x2 and 2x3 posts are refused. */
+const threeByThree = (noun: string) => (rack: RackDimensions) => {
+  if (rack.tube < 74 || rack.tube > 77.5 || Math.abs((rack.tubeDepth ?? rack.tube) - rack.tube) > .01) throw Error(`The ${noun} only fits 3 x 3 in uprights.`);
+};
 
 // ───────────────────────────── Single-pin leg rollers ─────────────────────────────
 
@@ -64,7 +68,7 @@ export const REP_LEG_ROLLER_2 = defineRackPart({
     vendor: 'REP Fitness', url: 'https://repfitness.com/products/leg-roller-2-0', credit: 'REP Fitness — Leg Roller 2.0 (PRA-5713)', trademark: 'REP Fitness and CleanGrip are trademarks of REP Fitness.',
     reconstruction: 'Published 21.74 in un-installed length, 18.04 in extension, 15.08 in x 5.65 in pad and 1 in hardware. Shoulder collar, pad hub, end caps and the securing knob are estimated from the 11 REP photos; physical fit unverified.',
   },
-  mount: { pin: PIN_1IN, extent: { below: REP_LR2.padDiameter / 2, above: REP_LR2.padDiameter / 2 } },
+  mount: { pin: PIN_1IN, extent: { below: REP_LR2.padDiameter / 2, above: REP_LR2.padDiameter / 2 }, validate: threeByThree('REP Leg Roller 2.0') },
   bodies: p => { const g = repLr2(p); return [rollerBody(REP_LR2.padDiameter / 2, g.pad0, g.pad1)]; },
   pair: { default: false },
   // Knee height on the front face for Bulgarian split squats; Nordics use a low hole.
@@ -78,7 +82,7 @@ export const ROGUE_MONSTER_SINGLE_LEG_ROLLER_2 = defineRackPart({
     vendor: 'Rogue Fitness', url: 'https://www.roguefitness.com/rogue-monster-single-leg-roller-2-0', credit: 'Rogue Fitness — Monster Single Leg Roller 2.0 (RA1670) · Assembled in Columbus, Ohio', trademark: 'Rogue and Monster are trademarks of Rogue Fitness.',
     reconstruction: 'Published 22 in total, 16 in x 4.25 in pad and 1 in threaded rod. Collar and nut sizes and the pad gathers are estimated from the five Rogue photos; physical fit unverified.',
   },
-  mount: { pin: PIN_1IN, extent: { below: ROGUE_SLR2.nut[0] / 2, above: ROGUE_SLR2.nut[0] / 2 } },
+  mount: { pin: PIN_1IN, extent: { below: ROGUE_SLR2.padDiameter / 2, above: ROGUE_SLR2.padDiameter / 2 }, validate: threeByThree('Monster Single Leg Roller') },
   bodies: p => { const g = rogueSlr2(p); return [rollerBody(ROGUE_SLR2.padDiameter / 2, g.pad0, g.pad1)]; },
   pair: { default: false },
   placement: { height: 515, face: 'front' },
@@ -94,6 +98,9 @@ export const ROGUE_MONSTER_LITE_LEG_ROLLER = defineRackPart({
   mount: {
     pin: PIN_5_8IN,
     extent: p => ({ below: -rogueMlRoller(p).bottom, above: ROGUE_ML_ROLLER.plateTop }),
+    // The detent pin needs a side hole whole stations below the top pin, so bench half holes are refused.
+    mainStations: true,
+    validate: threeByThree('Monster Lite leg roller'),
   },
   bodies: p => { const g = rogueMlRoller(p), r = ROGUE_ML_ROLLER.padDiameter / 2, z = ROGUE_ML_ROLLER.shaftZ; return [box([-r, g.pad0, z - r], [r, g.pad1, z + r])]; },
   pair: { default: false },
@@ -107,7 +114,7 @@ export const BELLS_OF_STEEL_SPLIT_SQUAT_LEG_ROLLER = defineRackPart({
     vendor: 'Bells of Steel', url: 'https://bellsofsteel.us/products/split-squat-leg-roller-attachment', credit: 'Bells of Steel — Split Squat Leg Roller Rack Attachment (BSS2-RA-HDR / SSQ2-RA-MTC)', trademark: 'Bells of Steel, Hydra and Manticore are trademarks of Bells of Steel.',
     reconstruction: 'Published 4 in pad diameter, 16 in pad and 22-3/4 in total. The open bracket, zinc bushings and chrome star knob are estimated from the 11 Bells of Steel photos and the BSS3-RA manual cover; the 2.3 in version does not fit a 3 in tube and is not modelled; physical fit unverified.',
   },
-  mount: { pin: p => p.hardware ? PIN_1IN : PIN_5_8IN, extent: { below: BOS_ROLLER.bracket[0] / 2, above: BOS_ROLLER.bracket[0] / 2 } },
+  mount: { pin: p => p.hardware ? PIN_1IN : PIN_5_8IN, extent: { below: BOS_ROLLER.padDiameter / 2, above: BOS_ROLLER.padDiameter / 2 }, validate: threeByThree('split squat leg roller') },
   bodies: p => { const g = bosRoller(p); return [rollerBody(BOS_ROLLER.padDiameter / 2, g.pad0, g.pad1)]; },
   pair: { default: false },
   placement: { height: 515, face: 'front' },
@@ -150,6 +157,7 @@ export const ROGUE_MONSTER_PRITCHETT_PAD = defineRackPart({
   mount: {
     pin: p => p.series ? PIN_5_8IN : PIN_1IN,
     extent: p => { const g = pritchettLayout(p); return { below: -PRITCHETT.channel.bottom + 2, above: Math.max(...g.corners.map(c => c[1])) + 2 }; },
+    validate: threeByThree('Pritchett pad'),
   },
   bodies: p => {
     const g = pritchettLayout(p), a = PRITCHETT.arm / 2, [p0, p1, p2, p3] = g.points, w = PRITCHETT.pad[2] / 2;
@@ -158,7 +166,8 @@ export const ROGUE_MONSTER_PRITCHETT_PAD = defineRackPart({
       box([-a, p0[0], p0[1] - a], [a, p1[0] + a, p1[1] + a]),
       box([-a, p1[0], p1[1] - a], [a, p2[0] + a * .6, p2[1] + a * .6]),
       box([-a, p2[0] - a * .6, p2[1]], [a, p3[0] + a * .4, p3[1]]),
-      box([-w, Math.min(...ys), Math.min(...zs)], [w, Math.max(...ys), Math.max(...zs)]),
+      // Inset past the pad's rounded corners so the box stays inside the solids.
+      box([-w + 20, Math.min(...ys) + 16, Math.min(...zs) + 16], [w - 20, Math.max(...ys) - 16, Math.max(...zs) - 16]),
     ];
   },
   // Low on the front face so the pad sits at chest height for landmine and dumbbell rows.
@@ -175,7 +184,7 @@ export const SEAL_ROW = {
   angles: [-15, 0, 15, 30, 45, 60, 75] as const, pivot: [118, -52] as [number, number],
   /** Arm in its own frame (from the pivot, before rotation): dog-leg down then out; the pad sits on the second leg. */
   arm: [[0, 0], [120, -58], [300, -58]] as [number, number][], armSize: [inch(2), inch(3)] as const, padStart: 70, board: 12,
-  clampStations: 4,
+  clampStations: 4, /** Selector wheel plate reach above / below the pivot. */ wheel: [98, -112] as const,
 } as const;
 export const SEAL_ROW_HARDWARE = ['Hydra · 3 x 3 in, 5/8 in holes', 'Manticore · 3 x 3 in, 1 in holes'] as const;
 const rot2 = ([y, z]: [number, number], deg: number): [number, number] => { const t = deg * Math.PI / 180; return [y * Math.cos(t) - z * Math.sin(t), y * Math.sin(t) + z * Math.cos(t)]; };
@@ -187,7 +196,9 @@ export function sealRowLayout(p: NumericParams) {
   const legZ = SEAL_ROW.arm[2][1], a = SEAL_ROW.armSize[1] / 2, [, L, W] = [0, SEAL_ROW.pad[1], SEAL_ROW.pad[0]];
   const padLocal: [number, number][] = [[SEAL_ROW.padStart, legZ + a], [SEAL_ROW.padStart + L, legZ + a], [SEAL_ROW.padStart, legZ + a + SEAL_ROW.board + SEAL_ROW.pad[2]], [SEAL_ROW.padStart + L, legZ + a + SEAL_ROW.board + SEAL_ROW.pad[2]]];
   const pad = padLocal.map(at), arm = SEAL_ROW.arm.map(at);
-  return { face, pitch, angle, clampZ, top, bottom, pivot, at, pad, arm, width: W };
+  // Collision box inset past the rounded pad edges and the tombstone end.
+  const padBody = [SEAL_ROW.padStart + 20, SEAL_ROW.padStart + L - 50].flatMap(u => [legZ + a, legZ + a + SEAL_ROW.board + SEAL_ROW.pad[2] - 14].map(w => at([u, w])));
+  return { face, pitch, angle, clampZ, top, bottom, pivot, at, pad, padBody, arm, width: W };
 }
 export const BELLS_OF_STEEL_SEAL_ROW_PAD = defineRackPart({
   id: 'bells-of-steel-seal-row-pad', name: 'Bells of Steel Seal Row Pad', title: 'Bells of Steel Seal Row Pad Rack Attachment', noun: 'seal row pad', section: 'Rollers & pads',
@@ -203,10 +214,11 @@ export const BELLS_OF_STEEL_SEAL_ROW_PAD = defineRackPart({
   mount: {
     pin: p => p.hardware ? PIN_1IN : PIN_5_8IN,
     holes: [0, -SEAL_ROW.clampStations],
-    extent: p => { const g = sealRowLayout(p), zs = [...g.pad, ...g.arm].map(q => q[1]); return { below: Math.max(-g.bottom, -Math.min(...zs) + SEAL_ROW.armSize[1] / 2 + 6), above: Math.max(g.top, Math.max(...zs) + 6) + 1 }; },
+    validate: threeByThree('seal row pad'),
+    extent: p => { const g = sealRowLayout(p), zs = [...g.pad, ...g.arm].map(q => q[1]); return { below: Math.max(-g.bottom, -(g.pivot[1] + SEAL_ROW.wheel[1]), -Math.min(...zs) + SEAL_ROW.armSize[1] / 2 + 6), above: Math.max(g.top, g.pivot[1] + SEAL_ROW.wheel[0], Math.max(...zs) + 6) + 1 }; },
   },
   bodies: p => {
-    const g = sealRowLayout(p), ys = g.pad.map(q => q[0]), zs = g.pad.map(q => q[1]), w = g.width / 2;
+    const g = sealRowLayout(p), ys = g.padBody.map(q => q[0]), zs = g.padBody.map(q => q[1]), w = g.width / 2 - 30;
     return [box([-w, Math.max(g.face + 2, Math.min(...ys)), Math.min(...zs)], [w, Math.max(...ys), Math.max(...zs)]), box([-SEAL_ROW.armSize[0] / 2, g.face + 60, Math.min(...g.arm.map(q => q[1])) - 20], [SEAL_ROW.armSize[0] / 2, Math.max(...g.arm.map(q => q[0])), g.pivot[1] + 20])];
   },
   placement: { height: 815, face: 'front' },
@@ -224,7 +236,7 @@ export const PEGASUS = {
   seat: [inch(13.6), inch(11), inch(7.5), inch(2.5)] as const, seatAngles: [0, 12.5, 25, 40, 55, 70, 90] as const, armAngles: [0, 12.5, 25, 40] as const,
   rollerHeights: [3, 4, 5, 6, 7, 8] as const, rollerDiameter: inch(5.8), post: inch(2),
   /** Arm pivot at the sleeve front and seat pivot under the seat centre, [y from the face, z]. */ armPivot: [22, -120] as [number, number],
-  frame: 6.35, seatLift: 30, arcRadius: 88, postY: 48,
+  frame: 6.35, seatLift: 30, arcRadius: 88, postY: 88,
 } as const;
 /** Carry-handle loop top above the roller axle. */
 export const PEGASUS_HANDLE = 92;
@@ -242,9 +254,13 @@ export function pegasusLayout(p: NumericParams) {
   const axleZ = seatTop0 + inch(rise) + PEGASUS.rollerDiameter / 2, sleeveH = PEGASUS.sleeve[p.series ?? 0];
   const seatCorners = [-L / 2, L / 2].flatMap(u => [PEGASUS.seatLift, PEGASUS.seatLift + PEGASUS.frame + PEGASUS.seat[3]].map(w => seatAt(u, w)));
   const arc = [-1, 1].flatMap(s => [0, -PEGASUS.arcRadius].map(w => armAt(seatPivot0[0] - A[0] + s * PEGASUS.arcRadius, w)));
-  const zs = [...seatCorners, ...arc].map(c => c[1]);
-  return { face, alpha, beta, A, S, seatAngle, seatAt, armAt, axleZ, sleeveTop: PEGASUS.sleeveTop, sleeveBottom: PEGASUS.sleeveTop - sleeveH, seatCorners, arc,
-    armLength: seatPivot0[0] - A[0], low: Math.min(...zs, PEGASUS.sleeveTop - sleeveH, -150), high: Math.max(...zs, axleZ + PEGASUS.rollerDiameter / 2, axleZ + PEGASUS_HANDLE) };
+  // Main arm tube (2x3 in, centreline 20 mm below the pivot) and the fixed pivot plates under the sleeve.
+  const armEnds = [0, seatPivot0[0] - A[0] + 70].flatMap(u => [-20 - inch(1.5), -20 + inch(1.5)].map(w => armAt(u, w)));
+  /** Seat box for collisions, inset past the pad's rounded edges so it stays inside the solids. */
+  const seatBody = [-L / 2 + 16, L / 2 - 16].flatMap(u => [PEGASUS.seatLift, PEGASUS.seatLift + PEGASUS.frame + PEGASUS.seat[3] - 16].map(w => seatAt(u, w)));
+  const zs = [...seatCorners, ...arc, ...armEnds].map(c => c[1]);
+  return { face, alpha, beta, A, S, seatAngle, seatAt, armAt, axleZ, sleeveTop: PEGASUS.sleeveTop, sleeveBottom: PEGASUS.sleeveTop - sleeveH, seatCorners, seatBody, arc,
+    armLength: seatPivot0[0] - A[0], low: Math.min(...zs, PEGASUS.sleeveTop - sleeveH, PEGASUS.armPivot[1] - 56), high: Math.max(...zs, axleZ + PEGASUS.rollerDiameter / 2, axleZ + PEGASUS_HANDLE) };
 }
 export const REP_PEGASUS = defineRackPart({
   id: 'rep-pegasus', name: 'REP Pegasus', title: 'REP Fitness Pegasus Attachment', noun: 'pegasus seat', section: 'Rollers & pads',
@@ -262,11 +278,12 @@ export const REP_PEGASUS = defineRackPart({
   mount: {
     pin: p => p.series ? PIN_5_8IN : PIN_1IN,
     // The magnetic pin crosses the sleeve side plates and the upright's side holes.
-    pinAxis: 'across',
+    pinAxis: 'across', mainStations: true,
+    validate: threeByThree('Pegasus'),
     extent: p => { const g = pegasusLayout(p); return { below: -g.low + 2, above: g.high + 2 }; },
   },
   bodies: p => {
-    const g = pegasusLayout(p), ys = g.seatCorners.map(c => c[0]), zs = g.seatCorners.map(c => c[1]), w = PEGASUS.seat[1] / 2, r = PEGASUS.rollerDiameter / 2;
+    const g = pegasusLayout(p), ys = g.seatBody.map(c => c[0]), zs = g.seatBody.map(c => c[1]), w = PEGASUS.seat[2] / 2, r = PEGASUS.rollerDiameter / 2 - 4;
     return [
       box([-w, Math.max(g.face + 4, Math.min(...ys)), Math.min(...zs)], [w, Math.max(...ys), Math.max(...zs)]),
       box([-PEGASUS.width / 2, g.face + PEGASUS.postY - r, g.axleZ - r], [PEGASUS.width / 2, g.face + PEGASUS.postY + r, g.axleZ + r]),
@@ -295,7 +312,8 @@ export function prodigyLayout(p: NumericParams) {
   const reach = length - PRODIGY.pivotY - PRODIGY.pad[2] - 30, end: [number, number] = [pivot[0] + dir[0] * reach, pivot[1] + dir[1] * reach];
   const halfH = (p.orientation ?? 0) ? PRODIGY.pad[1] / 2 : PRODIGY.pad[0] / 2, halfW = (p.orientation ?? 0) ? PRODIGY.pad[0] / 2 : PRODIGY.pad[1] / 2;
   const pt = (swing + padAngle) * Math.PI / 180, padDir: [number, number] = [Math.sin(pt), Math.cos(pt)], across: [number, number] = [Math.cos(pt), -Math.sin(pt)];
-  const padCorners = [-1, 1].flatMap(s => [0, 30 + PRODIGY.pad[2]].map(d => [end[0] + s * halfW * across[0] + d * padDir[0], end[1] + s * halfW * across[1] + d * padDir[1]] as [number, number]));
+  // Pad footprint corners (flat back 30 mm off the bracket; stops short of the rounded face so the box stays inside the pad).
+  const padCorners = [-1, 1].flatMap(s => [32, 30 + PRODIGY.pad[2] * .5].map(d => [end[0] + s * halfW * .7 * across[0] + d * padDir[0], end[1] + s * halfW * .7 * across[1] + d * padDir[1]] as [number, number]));
   return { face, length, swing, padAngle, dir, pivot, reach, end, halfH, halfW, padDir, across, padCorners };
 }
 export const PRIME_PRODIGY_STABILITY_PAD = defineRackPart({
@@ -314,14 +332,14 @@ export const PRIME_PRODIGY_STABILITY_PAD = defineRackPart({
   mount: {
     pin: PIN_1IN,
     extent: p => { const g = prodigyLayout(p); return { below: Math.max(-PRODIGY.pivotZ[0], -PRODIGY.armZ + g.halfH) + 2, above: Math.max(PRODIGY.pivotZ[1], PRODIGY.armZ + g.halfH) + 2 }; },
-    validate: rack => { if (Math.abs(rack.pitch - 50.8) > 1.5) throw Error('Stability pad needs 2 in hole spacing.'); },
+    validate: rack => { threeByThree('stability pad')(rack); if (Math.abs(rack.pitch - 50.8) > 1.5) throw Error('The stability pad needs 2 in hole spacing.'); },
   },
   bodies: p => {
     const g = prodigyLayout(p), a = PRODIGY.arm[0] / 2, xs = g.padCorners.map(c => c[0]), ys = g.padCorners.map(c => c[1]);
     const ax = [g.pivot[0] + g.dir[0] * 60, g.end[0]], ay = [g.pivot[1] + g.dir[1] * 60, g.end[1]];
     return [
       box([Math.min(...ax) - a, Math.max(g.face + 2, Math.min(...ay) - a), PRODIGY.armZ - PRODIGY.arm[1] / 2], [Math.max(...ax) + a, Math.max(...ay) + a, PRODIGY.armZ + PRODIGY.arm[1] / 2]),
-      box([Math.min(...xs), Math.max(g.face + 2, Math.min(...ys)), PRODIGY.armZ - g.halfH], [Math.max(...xs), Math.max(...ys), PRODIGY.armZ + g.halfH]),
+      box([Math.min(...xs), Math.max(g.face + 2, Math.min(...ys)), PRODIGY.armZ - g.halfH + 12], [Math.max(...xs), Math.max(...ys), PRODIGY.armZ + g.halfH - 12]),
     ];
   },
   placement: { height: 1015, face: 'front' },
