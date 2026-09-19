@@ -64,10 +64,11 @@ function buildHex(api: ManifoldAPI, s: HexShape): SolidPart[] {
         const letters = across ? t.fitText(str, pw * .78, pl * .5) : t.fitText(str, pl * .78, pw * .62);
         const lu: Vec3 = across ? [1, 0, 0] : u, lv: Vec3 = across ? [0, 1, 0] : v;
         (s.label.panel ? inks : raised).push(floor);
-        if (letters) (s.label.panel ? inks : raised).push(t.place(t.k(letters.extrude(1.3)), [0, mid, top - 1.5], lu, lv));
+        if (letters) raised.push(t.place(t.k(letters.extrude(1.3)), [0, mid, top - 1.5], lu, lv));
       } else if (s.label.kind === 'frame') {
         const outer = t.rounded(panelW, panelL, 3), ring = t.k(outer.subtract(t.rounded(panelW - 5, panelL - 5, 1.8)));
         inks.push(t.place(t.k(ring.extrude(2.4)), [0, mid, top - 1], [1, 0, 0], [0, 1, 0]));
+        if (s.label.panel) t.add(mat(s.label.panel), t.place(t.k(t.rounded(panelW - 4, panelL - 4, 2).extrude(1.25)), [0, mid, top - 1], [1, 0, 0], [0, 1, 0]));
         const letters = t.fitText(str, panelL * .7, (panelW - 5) * .72);
         if (letters) inks.push(t.place(t.k(letters.extrude(2.2)), [0, mid, top - 1], u, v));
       } else {
@@ -92,7 +93,7 @@ function buildUrethane(api: ManifoldAPI, s: UrethaneShape): SolidPart[] {
   return t.finish(s.head.name, [0, 0, 0], () => {
     const fi = Math.min(3, s.L / 5), fo = Math.min(7, s.L / 3.2), rs = .4 * s.D, step = 1;
     for (const side of [-1, 1]) {
-      const pts: Vec2[] = [[0, yIn], [R - fi, yIn], ...arc([R - fi, yIn + fi], fi, -90, 0, 4), ...arc([R - fo, yOut - fo], fo, 0, 90, 8), [rs + 1.5, yOut], [rs, yOut - step], [0, yOut - step]];
+      const pts: Vec2[] = [[0, yIn], [R - fi, yIn], ...arc([R - fi, yIn + fi], fi, -90, 0, 4), ...arc([R - fo, yOut - fo], fo, 0, 90, 8), [rs, yOut], [rs, yOut - step], [0, yOut - step]];
       const head = t.revolveY(side > 0 ? pts : pts.map(([r, y]) => [r, -y] as Vec2), z, 96);
       // White pad print on the face: wordmark over a boxed weight, reading upright from the end.
       const eu: Vec3 = [-side, 0, 0], ev: Vec3 = [0, 0, 1], face = side * (yOut - step);
@@ -169,7 +170,7 @@ function castProfile(s: CastShape, y0: number, grow = 0): Vec2[] {
     const p = 3.1, n = 48; for (let i = 0; i <= n; i++) { const v = -1 + 2 * i / n, u = (1 - Math.abs(v) ** p) ** (1 / p); pts.push([Math.max(0, R * u), y0 + W / 2 + (W / 2 + grow) * v]); }
     return pts;
   }
-  const crown = .045 * s.D, f = .085 * s.D, n = 16, rim = (y: number) => R - crown * ((y - y0 - W / 2) / (W / 2)) ** 2;
+  const crown = .045 * s.D, f = Math.min(.12 * s.D, .3 * W), n = 16, rim = (y: number) => R - crown * ((y - y0 - W / 2) / (W / 2)) ** 2;
   pts.push([0, y0 - grow], [rim(y0 + f) - f, y0 - grow]);
   pts.push(...arc([rim(y0 + f) - f, y0 + f], f + grow, -90, -10, 6).map(([r, y]) => [r, Math.max(y0 - grow, y)] as Vec2));
   for (let i = 1; i < n; i++) { const y = y0 + f + (W - 2 * f) * i / n; pts.push([rim(y), y]); }
@@ -180,7 +181,7 @@ function castProfile(s: CastShape, y0: number, grow = 0): Vec2[] {
 function buildCast(api: ManifoldAPI, s: CastShape): SolidPart[] {
   const t = dumbbellKit(api), R = s.D / 2, z = R, yIn = s.grip / 2;
   return t.finish(s.head.name, [0, 0, 0], () => {
-    const relief = Math.max(1.2, s.D * .012);
+    const relief = Math.max(1.6, s.D * .016);
     for (const side of [-1, 1]) {
       const prof = castProfile(s, yIn), flip = (p: Vec2[]) => side > 0 ? p : p.map(([r, y]) => [r, -y] as Vec2);
       const head = t.revolveY(flip(prof), z, 96), grown = t.revolveY(flip(castProfile(s, yIn, relief)), z, 96);
@@ -220,7 +221,7 @@ function buildFatbell(api: ManifoldAPI, s: FatbellShape): SolidPart[] {
     if (rogue) flat.push(t.place(t.k(rogue.extrude(R * .6)), [R * .5, 0, R * .08], [0, 1, 0], [0, 0, 1]));
     bell = t.cut(bell, [t.meet(t.place(t.k(t.rounded(R * 1.05, R * .36, 6).extrude(R * .6)), [R * .5, 0, R * .08], [0, 1, 0], [0, 0, 1]), t.cut(ball(R + 3), [ball(R - depth)]))]);
     const skin = t.cut(ball(R), [ball(R - depth - 1)]), letters = flat.map(f => t.meet(f, skin));
-    t.add(['Black powder-coated cast iron', 'source', '#2a2b2d', .35, .66], bell, ...letters);
+    t.add(['Black powder-coated cast iron', 'source', '#353638', .35, .66], bell, ...letters);
     t.add(['Colour-coded weight stripe', 'source', s.stripe, .1, .5], t.revolveZ([[a, s.zTop - .1], [a + 7, s.zTop - .1], [a + 7, s.zTop + .6], [a, s.zTop + .6]], 96));
     t.add(['Ergo handle, powder-coated', 'handle', '#2e2f31', .35, .6], t.cylY(-rc - 6, rc + 6, s.handleD, 0, 0, 40));
   });

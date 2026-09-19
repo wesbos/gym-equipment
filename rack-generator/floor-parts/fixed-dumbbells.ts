@@ -95,7 +95,7 @@ function capRubberShape(p: NumericParams): HexShape {
   const [lb, L, af, d] = row(CAP_RUBBER, p.weight, 'CAP rubber hex'), heavy = lb >= 50;
   return { kind: 'hex', lb, L, af, grip: 128, head: FINISH.rubber, bevel: L * .1, endScale: .9, edge: 2.5,
     handle: { style: heavy ? 'straight' : 'ergo', d, finish: p.handle ? FINISH.blackOxide : FINISH.chrome, knurl: heavy ? 'bands' : 'ergo', collar: { d: d + 12, w: 4, finish: p.handle ? FINISH.blackOxide : FINISH.chrome } },
-    label: { kind: 'recess', left: String(lb), right: String(lb), panel: fin('Moulded weight panels', '#27282b', 0, .5) } };
+    label: { kind: 'recess', left: String(lb), right: String(lb), panel: fin('Smooth moulded weight panels', '#2c2d30', .05, .4) } };
 }
 // ---------------------------------------------------------------- CAP Barbell cast iron hex, black (SDB2)
 /** CAP per-weight dimension graphics (L, corners, Ø) with 30/35/50/55 lb interpolated; head length = (L − 5.08")/2. */
@@ -139,7 +139,7 @@ const REP_HEX: readonly HexRow[] = [
 function repHexShape(p: NumericParams): HexShape {
   const [lb, L, af, d] = row(REP_HEX, p.weight, 'REP hex');
   return { kind: 'hex', lb, L, af, grip: 132, head: FINISH.rubber, bevel: L * .18, endScale: .67, edge: 2,
-    handle: { style: 'straight', d, finish: FINISH.chrome, knurl: 'full' }, label: { kind: 'recess', left: 'REP', right: String(lb), read: 'across', panel: fin('Moulded REP / weight panels', '#2a2b2e', 0, .45) } };
+    handle: { style: 'straight', d, finish: FINISH.chrome, knurl: 'full' }, label: { kind: 'recess', left: 'REP', right: String(lb), read: 'across', panel: fin('Smooth moulded REP / weight panels', '#2e2f32', .05, .4) } };
 }
 // ---------------------------------------------------------------- Amazon Basics rubber encased hex
 /** Amazon item dimensions (overall × corners) per variant, cm graphic for 10 lb, 40 lb bundle title for flats;
@@ -151,7 +151,7 @@ function amazonHexShape(p: NumericParams): HexShape {
   const [lb, L, af, d] = row(AMAZON_HEX, p.weight, 'Amazon hex');
   return { kind: 'hex', lb, L, af, grip: 122, head: FINISH.rubber, bevel: L * .1, endScale: .88, edge: 2.5,
     handle: { style: 'ergo', d, finish: FINISH.chrome, knurl: 'ergo', collar: { d: d + 10, w: 4, finish: FINISH.chrome } },
-    label: { kind: 'recess', left: `${lb}LB`, right: `${lb}LB`, panel: fin('Moulded weight panels', '#27282b', 0, .5) } };
+    label: { kind: 'recess', left: `${lb}LB`, right: `${lb}LB`, panel: fin('Smooth moulded weight panels', '#2c2d30', .05, .4) } };
 }
 // ---------------------------------------------------------------- Body-Solid cast iron hex (SDX)
 /** Body-Solid's published head size per weight (2–8", read as across corners); overall length, grip and Ø estimated
@@ -165,7 +165,7 @@ function bodySolidShape(p: NumericParams): HexShape {
   const [lb, L, af, d] = row(BODY_SOLID, p.weight, 'Body-Solid hex'), cast = lb <= 12;
   return { kind: 'hex', lb, L, af, grip: 127, head: FINISH.grayIron, bevel: L * .08, endScale: .9, edge: 3,
     handle: cast ? { style: 'cast', d, finish: FINISH.grayIron, knurl: 'none' } : { style: 'straight', d, finish: fin('Gray knurled steel handle', '#8e9092', .8, .38), knurl: 'full' },
-    label: { kind: 'frame', left: String(lb), right: String(lb), ink: FINISH.silver } };
+    label: { kind: 'frame', left: String(lb), right: String(lb), ink: FINISH.silver, panel: fin('Black enamel label panels', '#1c1d1f', .3, .55) } };
 }
 // ---------------------------------------------------------------- Amazon Basics neoprene
 /** Amazon item dimensions per variant: [lb, overall length, head width across corners] (inches); 7 lb interpolated. Colour per weight from the listings. */
@@ -268,7 +268,7 @@ function yorkBunGlobeShape(p: NumericParams): CastShape {
   const lb = p.weight; if (!YORK_BUN_GLOBE_WEIGHTS.includes(lb)) throw Error('Unsupported York bun or globe weight.');
   const solid = lb <= 12, globe = lb >= 50, grip = solid ? 90 + lb * 2 : lb === 55 || lb === 65 ? 114 : 127;
   const { D, W, d } = globe ? castHead(lb, 25.4, grip, 1, Math.PI / 6 / (Math.PI / 4)) : castHead(lb, solid ? 24 : 25.4, grip, .62, .78, solid);
-  const head = fin('Cast iron with aged black patina', '#3f3831', .45, .7);
+  const head = fin('Cast iron with aged black patina', '#564c40', .45, .72);
   return { kind: 'cast', lb, style: globe ? 'globe' : 'bun', D, W: globe ? D : W, grip, head, brand: 'YORK', number: String(lb), frame: false,
     handle: solid ? { style: 'cast', d, finish: head, knurl: 'none' } : { style: 'straight', d, finish: FINISH.bareSteel, knurl: 'none' } };
 }
