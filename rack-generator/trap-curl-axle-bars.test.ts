@@ -112,7 +112,7 @@ test('published lengths, sleeves and shaft diameters come out of the builds', ()
     const s = MULTI_GRIP_SPECS[id], parts = build(id, { ...floorPart(id)!.defaults, ...p }), all = bounds(parts);
     tol(all.max[0] - all.min[0], len, 10, `${id} length`); tol(multiGripLength(s, p), all.max[0] - all.min[0], .1, `${id} analytic length`);
     const frame = bounds(parts, parts.find(q => /frame/.test(q.name))!.name);
-    tol(frame.max[1] - frame.min[1], s.width, .1, `${id} frame width`);
+    tol(frame.max[1] - frame.min[1], s.width, .7, `${id} frame width`); // end blocks stand 0.3 mm proud of the rails
     free(parts);
   }
   tol(multiGripSleeve(MULTI_GRIP_SPECS['rogue-mg-4cn-multi-grip-camber-bar'], {}), inch(15.5), .01, 'MG-4CN sleeve');

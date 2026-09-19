@@ -179,8 +179,8 @@ export const multiGripSleeve = (s: MultiGripSpec, p: NumericParams = {}) => s.sl
 export const multiGripLength = (s: MultiGripSpec, p: NumericParams = {}) => 2 * (s.collarX + s.collarWidth + multiGripSleeve(s, p));
 /** Camber up, resting on the sleeves, collars and end blocks. */
 export function multiGripEnvelope(s: MultiGripSpec, p: NumericParams = {}) {
-  const railHalf = s.rail.kind === 'round' ? s.rail.t / 2 : s.rail.h / 2, low = Math.max(s.collarDia / 2, s.stubDia / 2, s.sleeveDia / 2, s.end.h / 2, railHalf);
-  return { width: multiGripLength(s, p), depth: Math.max(s.width + 2 * (s.handleCaps ?? 0), s.collarDia), axisZ: low };
+  const railHalf = s.rail.kind === 'round' ? s.rail.t / 2 : s.rail.h / 2, low = Math.max(s.collarDia / 2, s.stubDia / 2, s.sleeveDia / 2, s.end.h / 2 + (s.end.kind === 'block' ? .3 : 0), railHalf);
+  return { width: multiGripLength(s, p), depth: Math.max(s.width + 2 * (s.handleCaps ?? 0), s.collarDia, s.end.kind === 'block' && !s.ring ? s.width + .6 : 0), axisZ: low };
 }
 
 /** Cradle geometry (#139) for the rackable bars: the diameter that rests in the cradle (shaft, or the sleeve stub

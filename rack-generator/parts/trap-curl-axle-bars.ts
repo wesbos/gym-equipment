@@ -210,16 +210,16 @@ export function buildOpenTrap(api: ManifoldAPI, s: OpenTrapSpec, p: NumericParam
       // Handles and brackets. Handles run along Z in the jack pose (fore-aft once flat).
       const hx = X(l.hx), gz0 = A - h.span / 2, gz1 = A + h.span / 2;
       if (h.bracket === 'loop') {
-        const rr = (l.yLow - l.yHigh) / 2, yc = (l.yLow + l.yHigh) / 2, loop: Vec3[] = [];
+        // One swept loop, starting and ending (0.5 mm apart) mid-way up the high grip, so no booleans between tube pieces.
+        const rr = (l.yLow - l.yHigh) / 2, yc = (l.yLow + l.yHigh) / 2, zm = A, loop: Vec3[] = [[hx, l.yHigh, zm + .25]];
         for (let j = 0; j <= 12; j++) { const a = Math.PI * j / 12; loop.push([hx, yc - rr * Math.cos(a), gz1 - rr + rr * Math.sin(a)]); }
         for (let j = 0; j <= 12; j++) { const a = Math.PI * j / 12; loop.push([hx, yc + rr * Math.cos(a), gz0 + rr - rr * Math.sin(a)]); }
-        loop.push(loop[0]);
-        grips.push(k.sweep(loop.slice(0, 13), h.dia / 2, [1, 0, 0], 32), k.sweep(loop.slice(13, 26), h.dia / 2, [1, 0, 0], 32));
-        grips.push(k.cyl(loop[12], loop[13], h.dia / 2, 32), k.cyl(loop[25], loop[0], h.dia / 2, 32));
+        loop.push([hx, l.yHigh, zm - .25]);
+        grips.push(k.sweep(loop, h.dia / 2, [1, 0, 0], 32));
         // Struts: axis-level bar to the sleeve mount, diagonal brace from the loop top to the frame leg.
         steel.push(k.cyl([hx, l.yLow, A], [X(px0 + 2), l.yLow * .3, A], 11, 32));
         const zz = gz1 - rr, legAt = fr.legX - (zz - A) / fr.height * (fr.legX - fr.topHalf);
-        steel.push(k.cyl([hx, yc, gz1], [X(legAt), 0, zz], 10, 32));
+        steel.push(k.cyl([hx, yc, gz1 + 2], [X(legAt), 0, zz], 10, 32));
       } else {
         const inX = l.hx - h.dia / 2 - 14, y0 = l.yHigh - h.dia / 2 - 14, y1 = l.yLow + h.dia / 2 + 14, th = 10;
         const outline: Vec2[] = h.bracket === 'gusset'
@@ -255,7 +255,7 @@ export function buildOpenTrap(api: ManifoldAPI, s: OpenTrapSpec, p: NumericParam
 // ─── Rogue TB-2 ────────────────────────────────────────────────────────────────────────────────
 export function buildTB2(api: ManifoldAPI): SolidPart[] {
   return run(api, k => {
-    const A = TB2.axisZ, t = TB2.tube, yR = TB2.outline[3][1], hr = TB2.handleDia / 2, frame: Manifold[] = [], plain: Manifold[] = [], knurl: Manifold[] = [];
+    const A = TB2.axisZ, t = TB2.tube, yR = TB2.outline[3][1], hr = TB2.handleDia / 2, frame: Manifold[] = [], plain: Manifold[] = [], raised: Manifold[] = [], knurl: Manifold[] = [];
     frame.push(k.ring(mirrorQuarter(TB2.outline), t, t, A));
     const ex = TB2.outline[0][0] + t / 2;
     for (const d of [-1, 1]) {
@@ -266,11 +266,14 @@ export function buildTB2(api: ManifoldAPI): SolidPart[] {
       // Flush handle across the frame (knurled centre) and the raised U grip over it.
       const hx = X(TB2.handleX);
       plain.push(k.cyl([hx, -yR, A], [hx, -140, A], hr), k.cyl([hx, 140, A], [hx, yR, A], hr)); knurl.push(k.cyl([hx, -140, A], [hx, 140, A], hr));
-      const u = filletPath([[-yR + 14, A], [-TB2.uHalf, A + TB2.rise], [TB2.uHalf, A + TB2.rise], [yR - 14, A]], 45, 10).pts.map(([y, z]) => [hx, y, z] as Vec3);
-      plain.push(k.sweep(u, hr, [1, 0, 0], 32)); knurl.push(k.cyl([hx, -110, A + TB2.rise], [hx, 110, A + TB2.rise], hr + .25, 32));
+      // Legs land on the side rails, offset above the flush handle so the two tubes never share a surface.
+      const u = filletPath([[-yR + 6, A + 8], [-TB2.uHalf, A + TB2.rise], [TB2.uHalf, A + TB2.rise], [yR - 6, A + 8]], 45, 10).pts.map(([y, z]) => [hx, y, z] as Vec3);
+      raised.push(k.sweep(u, hr, [1, 0, 0], 32)); knurl.push(k.cyl([hx, -110, A + TB2.rise], [hx, 110, A + TB2.rise], hr + .25, 32));
     }
     k.add('1.5" square-tube hex frame', 'source', MAT.texturedBlack, frame);
     k.add('Handle tube', 'source', MAT.texturedBlack, plain);
+    // Raised U grips stay a separate solid: unioning two crossing round tubes leaves float32 sliver triangles.
+    k.add('Raised U grips', 'source', MAT.texturedBlack, raised);
     k.add('Knurled handles', 'handle', MAT.knurlBlack, knurl);
     k.add('Logo plate', 'source', MAT.badgeWhite, k.box([-95, -yR - 11, A + t / 2 - .01], [95, -yR + 11, A + t / 2 + .8]));
     endCaps(k, TB2.length / 2, 19, MAT.rubber, 'Open pipe ends', A);
@@ -320,7 +323,8 @@ export function buildMultiGrip(api: ManifoldAPI, id: MultiGripId, p: NumericPara
       } else if (e.kind === 'box') {
         const [x0, x1] = ax(s.ring ? e.x1 - 20 : e.x0 - 10, e.x1), [w0, w1] = ax(e.x0 + 8, e.x1 - 10);
         rails.push(k.cut(k.box([x0, -W, -e.h / 2], [x1, W, e.h / 2]), [k.box([w0, -W + 8, -e.h / 2 - 1], [w1, W - 8, e.h / 2 + 1])]));
-      } else { const [x0, x1] = ax(s.ring ? e.x1 - 20 : e.x0, e.x1); const bw = s.ring ? 45 : W; rails.push(k.box([x0, -bw, -e.h / 2], [x1, bw, e.h / 2])); }
+      } else { // Oversized by 0.3 mm so no block face is coplanar with a rail face.
+        const [x0, x1] = ax(s.ring ? e.x1 - 20 : e.x0 - .3, s.ring ? e.x1 + .3 : e.x1); const bw = s.ring ? 45 : W + .3; rails.push(k.box([x0, -bw, -e.h / 2 - .3], [x1, bw, e.h / 2 + .3])); }
       let stub0 = e.x1 - 1;
       if (s.extras.includes('flange')) {
         zinc.push(k.cx(X(e.x1 - 1), X(e.x1 + 8), 30, 0, 0, 48)); stub0 = e.x1 + 7;
