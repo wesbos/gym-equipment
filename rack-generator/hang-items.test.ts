@@ -14,11 +14,11 @@ import {cleanDocument} from '../src/state/history.ts';
 import type {RackDoc} from './types.ts';
 const api=await Module();api.setup();
 const panelDoc=(width=1219)=>{const doc=addWallItem(createAssembly(),'pegboard-panel',{wall:'back',position:[-1500,1500]});doc.wallItems![0].params.width=width;return doc;};
-test('the eight v1 attachments are registered, credited to REP and build in both poses inside their envelopes',()=>{
- assert.deepEqual(HANG_PART_IDS,['rep-lat-bar-48','rep-straight-bar-25','rep-tricep-rope','rep-d-handles','rep-triangle-row','rep-pushdown-bar','rep-curl-bar','rep-ankle-cuff']);
- assert.deepEqual(definitions.filter(d=>(HANG_SECTIONS as readonly string[]).includes(d.category)).map(d=>d.id),HANG_PART_IDS,'register in both hang-registry.ts and catalog.ts');
+test('the eight v1 attachments lead the registry, every hang part is credited and builds in both poses inside their envelopes',()=>{
+ assert.deepEqual(HANG_PART_IDS.slice(0,8),['rep-lat-bar-48','rep-straight-bar-25','rep-tricep-rope','rep-d-handles','rep-triangle-row','rep-pushdown-bar','rep-curl-bar','rep-ankle-cuff']);
+ assert.deepEqual(definitions.filter(d=>(HANG_SECTIONS as readonly string[]).includes(d.category)).map(d=>d.id).sort(),[...HANG_PART_IDS].sort(),'register in both hang-registry.ts and catalog.ts');
  for(const part of HANG_PARTS){
-  assert.ok(isHangPart(part.id));assert.deepEqual(vendorAttribution(part.id),part.vendor);assert.match(part.vendor!.url,/^https:\/\/repfitness\.com\/products\//);
+  assert.ok(isHangPart(part.id));assert.deepEqual(vendorAttribution(part.id),part.vendor);if(part.id.startsWith('rep-'))assert.match(part.vendor!.url,/^https:\/\/repfitness\.com\/products\//);else assert.match(part.vendor!.url,/^https:\/\//);
   const def=definitions.find(d=>d.id===part.id)!;assert.deepEqual(def.defaults,{hook:0});
   for(const hook of [0,1]){
    const solids=def.build(api,{hook}),min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];
