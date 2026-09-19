@@ -9,7 +9,7 @@ function flatPad(kit: Kit, pad: FlatPad, z0: number) {
   const r = pad.t > 80 ? 30 : 22, e = pad.t > 80 ? 22 : 14;
   kit.add(pad.color === 'textured' ? 'Pad · textured foam' : 'Pad · grabber vinyl', VINYL(pad.color === 'textured' ? '#202123' : '#131416'),
     kit.pad(kit.rectPts(pad.w, pad.len), pad.t, r, e, z0));
-  if (pad.logo) for (const x of [-1, 1]) kit.add('Pad print', { color: '#c8102e', role: 'source', metalness: 0, roughness: .6 }, kit.box([.6, pad.len * .42, pad.t * .42], [x * (pad.w / 2 + .2), 0, z0 + pad.t * .45]));
+  if (pad.logo) for (const x of [-1, 1]) kit.add('Pad print', { color: '#c8102e', role: 'source', metalness: 0, roughness: .6 }, kit.box([.6, pad.len * .38, pad.t * .3], [x * (pad.w / 2 + .2), -pad.len * .08, z0 + pad.t * .45]));
   kit.add('Pad substrate', STEEL('#0f1011', .8, 0), kit.planSlab(kit.rectPts(pad.w - 14, pad.len - 14), z0 - 6, 6, 16));
 }
 /** Rogue Flat Utility Bench 2.0: single-piece notched-and-formed 2×3 frame with raked legs and rubber-footed 14 in feet. */

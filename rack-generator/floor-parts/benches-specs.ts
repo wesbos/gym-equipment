@@ -261,7 +261,7 @@ export function ironmasterAttachment(s: IronmasterSpec, which: number): Attachme
       };
     }
     case 'Preacher Curl Pad': return {
-      tubes: [{ pts: [...stub, [0, E + 60, Zt + 240]], d: 46, finish: 'chrome' },
+      tubes: [{ pts: [...stub, [0, E + 60, Zt + 230], [0, E + 104, Zt + 296]], d: 46, finish: 'chrome' },
         { pts: [[-70, E + 30, Zt + 210], [-70, E + 10, Zt + 230], [-70, E + 16, Zt + 262]], d: 14, finish: 'chrome' },
         { pts: [[70, E + 30, Zt + 210], [70, E + 10, Zt + 230], [70, E + 16, Zt + 262]], d: 14, finish: 'chrome' }],
       rollers: [], pads: [{ c: [E + 130, Zt + 330], len: inch(12), t: inch(2), w: inch(24), tilt: -45, e: 22 }],
