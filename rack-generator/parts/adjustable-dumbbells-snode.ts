@@ -1,9 +1,9 @@
 /** Adjustable dumbbells family: Snode AD80 builder. */
 import type { Manifold, ManifoldAPI, NumericParams, PartDefinition } from '../types.ts';
-import { floorDefinition, validateFloorParams } from '../floor-part.ts';
+import { floorDefinition } from '../floor-part.ts';
 import { DUMBBELL_LIFT } from '../floor-parts/adjustable-dumbbells-common.ts';
 import { SNODE as S, SNODE_AD80, snodePlates } from '../floor-parts/adjustable-dumbbells-snode.ts';
-import { dumbbellKit, type Mat, type Pt } from './adjustable-dumbbells-kit.ts';
+import { builderParams, dumbbellKit, type Mat, type Pt } from './adjustable-dumbbells-kit.ts';
 const MAT = {
   carried: ['Selected plates · matte black cast iron', 'source', '#1f2022', .25, .8],
   resting: ['Plates left in cradle · matte black cast iron', 'source', '#1f2022', .25, .8],
@@ -22,7 +22,7 @@ const GRIP = S.grip / 2, HUB0 = GRIP + S.cone, PLATE0 = HUB0 + S.hub, GAP = 1;
 /** Outer face station of the carried stack (hub face when no plate is selected). */
 export const snodeCarriedEnd = (n: number) => PLATE0 + n * S.pitch - (n && n < S.plates ? GAP : 0);
 export function buildSnodeAd80(api: ManifoldAPI, input: NumericParams) {
-  const p = validateFloorParams(SNODE_AD80, input), n = snodePlates(p.weight), lift = p.pose ? 0 : DUMBBELL_LIFT;
+  const p = builderParams(SNODE_AD80, input), n = snodePlates(p.weight), lift = p.pose ? 0 : DUMBBELL_LIFT;
   const t = dumbbellKit(api), zc = SNODE_CENTER, R = S.plate / 2;
   return t.finish('Snode AD80', () => {
     const carried: [Mat, Manifold][] = [], fixed: [Mat, Manifold][] = [];

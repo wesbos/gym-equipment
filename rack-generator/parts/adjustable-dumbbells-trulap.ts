@@ -1,9 +1,9 @@
 /** Adjustable dumbbells family: Trulap 8592 G4 builder. */
 import type { Manifold, ManifoldAPI, NumericParams, PartDefinition } from '../types.ts';
-import { floorDefinition, validateFloorParams } from '../floor-part.ts';
+import { floorDefinition } from '../floor-part.ts';
 import { DUMBBELL_LIFT } from '../floor-parts/adjustable-dumbbells-common.ts';
 import { TRULAP as T, TRULAP_8592, trulapPlates } from '../floor-parts/adjustable-dumbbells-trulap.ts';
-import { dumbbellKit, type Mat } from './adjustable-dumbbells-kit.ts';
+import { builderParams, dumbbellKit, type Mat } from './adjustable-dumbbells-kit.ts';
 const MAT = {
   carried: ['Selected plates · chrome-plated cast iron', 'source', '#e8eaec', .62, .26],
   resting: ['Plates left in dock · chrome-plated cast iron', 'source', '#e8eaec', .62, .26],
@@ -19,7 +19,7 @@ const MAT = {
 export const TRULAP_CENTER = T.plateBottom + T.plate / 2;
 const GRIP = T.grip / 2, CORE0 = GRIP + T.hub, PLATE0 = CORE0 + T.core, GAP = .8, CHORD = T.plate / 2 - 17, COMB = 50;
 export function buildTrulap8592(api: ManifoldAPI, input: NumericParams) {
-  const p = validateFloorParams(TRULAP_8592, input), lift = p.pose ? 0 : DUMBBELL_LIFT, carriedCount = trulapPlates(p.weight);
+  const p = builderParams(TRULAP_8592, input), lift = p.pose ? 0 : DUMBBELL_LIFT, carriedCount = trulapPlates(p.weight);
   const t = dumbbellKit(api), zc = TRULAP_CENTER, R = T.plate / 2;
   return t.finish('Trulap 8592 G4', () => {
     const carried: [Mat, Manifold][] = [], fixed: [Mat, Manifold][] = [];

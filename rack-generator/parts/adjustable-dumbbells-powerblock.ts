@@ -1,11 +1,11 @@
 /** PowerBlock Large Column Stand and Large Compact Stand builders. A loaded pair reuses buildPowerBlock at the model's
  * full weight (every plate on the pin), minus its floor cradle, with each selector-pin fork facing outboard. */
 import type { Manifold, ManifoldAPI, NumericParams, PartDefinition, SolidPart, Vec3 } from '../types.ts';
-import { floorDefinition, validateFloorParams } from '../floor-part.ts';
+import { floorDefinition } from '../floor-part.ts';
 import { COLUMN_STAND as CS, COMPACT_STAND as KS, POWERBLOCK_COLUMN_STAND, POWERBLOCK_COMPACT_STAND } from '../floor-parts/adjustable-dumbbells-powerblock.ts';
 import { POWERBLOCK_MODELS } from '../floor-parts/powerblock.ts';
 import { buildPowerBlock } from './powerblock.ts';
-import { dumbbellKit, type DumbbellKit, type Mat } from './adjustable-dumbbells-kit.ts';
+import { builderParams, dumbbellKit, type DumbbellKit, type Mat } from './adjustable-dumbbells-kit.ts';
 const SILVER: Mat = ['Brushed silver powder-coated steel', 'source', '#b8bbbe', .55, .38];
 const MATS: Mat = ['Adhesive grip tray mats', 'liner', '#1f2021', 0, .95];
 const INSERTS: Mat = ['Micro-weight holder inserts', 'liner', '#101112', 0, .8];
@@ -38,7 +38,7 @@ function channel(t: DumbbellKit, width: number, rise: number, depth: number, hol
   return { body, cups, mat };
 }
 export function buildColumnStand(api: ManifoldAPI, p: NumericParams): SolidPart[] {
-  validateFloorParams(POWERBLOCK_COLUMN_STAND, p);
+  builderParams(POWERBLOCK_COLUMN_STAND, p);
   const t = dumbbellKit(api), D = CS.trayDepth, W = CS.trayWidth, tilt = CS.tilt, rad = tilt * Math.PI / 180;
   const column: Mat = p.finish ? ['Black powder-coated steel column', 'source', '#151618', .35, .3] : ['Brushed silver steel column', 'source', '#b8bbbe', .55, .38];
   // Tray plane through the centre at height zc, rising toward the back (+Y); the channel's back top edge sets the 28" height.
@@ -70,7 +70,7 @@ const tube = (t: DumbbellKit, a: Vec3, b: Vec3, d: number) => {
   return t.move(t.rot(t.cylZ(0, len, 0, 0, d, 20), [0, pitch, yaw]), a);
 };
 export function buildCompactStand(api: ManifoldAPI, p: NumericParams): SolidPart[] {
-  validateFloorParams(POWERBLOCK_COMPACT_STAND, p);
+  builderParams(POWERBLOCK_COMPACT_STAND, p);
   const t = dumbbellKit(api), W = KS.width, D = KS.trayDepth, top = KS.height - KS.channelRise, d = KS.tube;
   const BLACK: Mat = ['Black powder-coated steel', 'source', '#18191b', .35, .45], FEET: Mat = ['Rubber feet', 'liner', '#0f1011', 0, .85];
   const at = (s: Manifold) => t.move(s, [0, 0, top]);

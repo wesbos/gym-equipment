@@ -3,7 +3,8 @@
  * `finish` merges each material group into one SolidPart, turns the part a quarter turn so the long axis runs along
  * floor depth (pairs then sit side by side, as racked) and recentres the footprint on the origin. Every intermediate
  * Manifold/CrossSection is released, also when a build throws. */
-import type { CrossSection, Manifold, ManifoldAPI, SolidPart, Vec3 } from '../types.ts';
+import type { CrossSection, Manifold, ManifoldAPI, NumericParams, SolidPart, Vec3 } from '../types.ts';
+import { validateFloorParams, type FloorPart } from '../floor-part.ts';
 export type Pt = [number, number];
 /** Material group: [name, role, color, metalness, roughness]. */
 export type Mat = readonly [string, SolidPart['role'], string, number, number];
@@ -57,3 +58,5 @@ export function dumbbellKit(api: ManifoldAPI) {
   return {M,C,k,move,rot,box,boxC,union,cut,inter,hull,cylX,cylY,cylZ,poly,rrect,circle,extrudeX,extrudeY,extrudeZ,lathe,mirrorX,add,both,finish};
 }
 export type DumbbellKit = ReturnType<typeof dumbbellKit>;
+/** Strict params for a builder: the part's own keys only (exports inject extras such as printMinFeature), validated. */
+export const builderParams = (part: FloorPart, input: NumericParams) => validateFloorParams(part, Object.fromEntries(part.params.map(p => [p.key, input[p.key] ?? part.defaults[p.key]])));
