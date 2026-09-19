@@ -13,7 +13,7 @@ export function extendUpright(input: RackDoc, from: string, direction: Direction
   const doc = validateAssembly(input), anchor = doc.uprights[from];
   if (!anchor || doc.removed.includes(from)) throw new Error('Choose an existing upright.');
   const id = nextId(doc, 'upright'), [dx, dy] = directions[direction];
-  const span = nearest(clear, gridProfile(doc.profileId).depths) + doc.rack.tube;
+  const span = nearest(clear, gridProfile(doc.profileId).depths) + (dy ? doc.rack.tubeDepth ?? doc.rack.tube : doc.rack.tube);
   doc.uprights[id] = { x: anchor.x + dx * span, y: anchor.y + dy * span };
   if (connect) for (const level of ['upper', 'lower'] as const) doc.connections.push({ id: nextId(doc, 'connection'), from, to: id, level });
   return validateAssembly(doc);

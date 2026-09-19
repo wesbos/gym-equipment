@@ -202,7 +202,7 @@ test('manufacturer nameplates: coloured plates without artwork, only on profiles
     const plate = parts.find(p => p.name === 'Manufacturer nameplate plate')!;
     assert.equal(plate.color, '#c8102e'); assert.equal(plate.role, 'source');
     const b = plate.solid.boundingBox();
-    assert.ok(Math.abs(b.max[2] - b.min[2] - 9 * IN) < 0.5);
+    assert.ok(Math.abs(b.max[2] - b.min[2] - 11 * IN) < 0.5);
   } finally { parts.forEach(p => p.solid.delete()); }
   assert.throws(() => replaceStructurePart(doc('rogue-rml-3-four-2295.525-762'), 'rear-crossmember', 'profile-nameplate'), /no manufacturer nameplate/);
   for (const style of [1, 2, 3]) {

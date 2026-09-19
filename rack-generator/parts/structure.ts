@@ -220,7 +220,7 @@ function profileNameplate(api: ManifoldAPI,p: NumericParams) {return construct(a
     // Hanging plate whose lower edge arches up between deeper end tabs.
     const n=24;
     loop.push([span/2,top-h]);
-    for(let i=1;i<n;i++){const u=i/n;loop.push([span/2-span*u,top-h+h*.42*Math.sin(Math.PI*u)]);}
+    for(let i=1;i<n;i++){const u=i/n;loop.push([span/2-span*u,top-h+h*.3*Math.sin(Math.PI*u)]);}
     loop.push([-span/2,top-h]);
   } else {
     const c=h*.35;
@@ -337,6 +337,8 @@ const references: Record<string, [string, string]> = {
   nameplate: ['panel', 'Nameplate panel'],
   'branded-crossmember': ['front', 'Riot nameplate crossmember 2100.013'],
   'branded-crossmember-lite': ['front', 'Riot nameplate crossmember lite 2100.013'],
+  // The beam and flanges are the source crossmember; the colour plate is a vendor reconstruction (#130).
+  'profile-nameplate': ['front', 'Riot 1075 crossmember left top 1800.002'],
   'foot-800': ['front', 'Riot long foot left.002'],
   'foot-400': ['front', 'Riot short leg left.002'],
 };

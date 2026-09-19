@@ -78,7 +78,7 @@ export const GRID_PROFILES: readonly GridProfile[] = [
   { id: 'rogue-rm-monster-2', label: 'Rogue Monster Rack 2.0 (RM-3/RM-4/RM-6)', vendor: 'Rogue Fitness', tube: inch(3), wall: 3.04,
     widths: [inch(43)], depths: [inch(24), inch(30), inch(43)], heights: [inch(80.375), inch(90.375), inch(100.375), inch(108.375)],
     pitch: inch(2), holeDiameter: inch(1 + 1 / 16), firstHole: inch(2.5), numbered: true,
-    base: ROGUE_BOLT_DOWN, nameplate: { style: 'arch', color: '#c8102e', height: inch(9) }, decal: ROGUE_DECAL, color: ROGUE_BLACK, storageDepth: inch(24),
+    base: ROGUE_BOLT_DOWN, nameplate: { style: 'arch', color: '#c8102e', height: inch(11) }, decal: ROGUE_DECAL, color: ROGUE_BLACK, storageDepth: inch(24),
     source: 'https://www.roguefitness.com/rogue-rm-4-bolt-together-monster-rack-2-0',
     starters: [
       { kind: 'four', height: inch(90.375), depth: inch(43), label: 'Rogue RM-4 Monster Rack 2.0 · 90″ · 43″ deep', featured: true, pullups: [31.75] },

@@ -9,7 +9,7 @@ api.setup();
 const definitions = [...structure, ...attachments, ...bars];
 test("catalog has unique IDs and source references", () => {
   assert.equal(new Set(definitions.map((d) => d.id)).size, definitions.length);
-  assert.equal(definitions.length, 28);
+  assert.equal(definitions.length, 29);
   for (const d of definitions) assert.ok(d.reference?.node);
 });
 for (const def of definitions)
