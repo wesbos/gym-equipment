@@ -42,15 +42,21 @@ export function buildPowerBar(api: ManifoldAPI, id: string, p: NumericParams): S
     for (const [a, b] of zones) { smooth.push([at, a]); at = b; }
     smooth.push([at, half + 1]);
     add(`${m.shaft} mm shaft`, 'rod', finish.shaft, ...smooth.filter(([a, b]) => b - a > .05).map(([a, b]) => cyl(a, b, r)));
-    // Knurl: revolved ring relief (peaks just proud of the shaft, valleys cut into it), chamfered into each smooth edge.
-    const pitch = m.knurl.pitch * 2, depth = m.knurl.depth, peak = r + depth * .45, valley = r - depth * .55;
+    // Knurl: a diamond grid of pyramids, the intersection of a ring-ribbed lathe (circumferential cuts) and a fluted
+    // prism (axial cuts). Depth follows the model's grade; the pitch is coarsened to 4.2–5 mm so it reads at bar scale
+    // and each bar stays under ~80k triangles.
+    const pitch = Math.min(5, Math.max(4.2, m.knurl.pitch * 2)), depth = m.knurl.depth * 1.8, peak = r + depth * .4, valley = r - depth * .6;
+    const flutes = Math.max(16, Math.round(Math.PI * m.shaft / pitch * .85));
+    const star: Vec2[] = []; for (let i = 0; i < 2 * flutes; i++) { const t = i * Math.PI / flutes, rad = i % 2 ? valley : peak + .4; star.push([rad * Math.cos(t), rad * Math.sin(t)]); }
+    const prism = (a: number, b: number) => k(k(k(k(new C([star])).extrude(b - a)).rotate([0, 90, 0])).translate([a, 0, z]));
     const band = ([a, b]: [number, number]) => {
       const pts: Vec2[] = [[a, 0], [a, valley]];
       for (let x = a + pitch / 2, i = 0; x < b - pitch / 4; x += pitch / 2, i++) pts.push([x, i % 2 ? valley : peak]);
       pts.push([b, valley], [b, 0]);
-      return lathe(pts, 32);
+      return k(lathe(pts, flutes * 2).intersect(prism(a - 1, b + 1)));
     };
-    const knurlMat: Mat = [shade(finish.shaft[0], .8), finish.shaft[1] * .9, Math.min(.95, finish.shaft[2] + .25)];
+    // Knurl reads lighter than a dark coating (the cut points catch light) and a touch darker than bright metal.
+    const lum = parseInt(finish.shaft[0].slice(1, 3), 16), knurlMat: Mat = [lum < 80 ? shade(finish.shaft[0], 1.9) : shade(finish.shaft[0], .78), finish.shaft[1] * .9, Math.min(.9, finish.shaft[2] + .3)];
     add(`${product.name} knurl${m.knurl.center ? ', centre knurl' : ''} and ring marks`, 'handle', knurlMat, ...zones.map(band));
     // Shoulders (collars) with their inner-face treatment; sleeves with an end pocket holding the cap.
     const D = m.collarDiameter / 2, ch = m.collarStyle === 'classic' ? 3 : Math.min(2, collar / 5);
@@ -62,7 +68,7 @@ export function buildPowerBar(api: ManifoldAPI, id: string, p: NumericParams): S
       add('Recessed TIG weld bead', 'source', WELD, ...both(lathe([[s0 - 2.2, R - .2], [s0 - 2.2, R + 2.6], [s0 - .6, R + 2.6], [s0 - .6, R - .2]], 40)));
     } else add(m.collarStyle === 'classic' ? 'Classic thick collars' : 'Sleeve shoulders', 'sleeve', finish.sleeve, ...both(shoulder));
     if (product.vendor !== 'REP Fitness' && m.collarStyle !== 'weld')
-      add('Bronze bushing thrust washers', 'source', BRONZE, ...both(lathe([[half - .8, r + .3], [half - .8, r + 4.5], [half + 1, r + 4.5], [half + 1, r + .3]], 40)));
+      add('Bronze bushing thrust washers', 'source', BRONZE, ...both(lathe([[half - 1.6, r + .3], [half - 1.6, r + 5.5], [half + 1, r + 5.5], [half + 1, r + .3]], 40)));
     const cap = m.cap, pocket = cap.bronze ? R - 6 : R - 2.5, capR = cap.bronze ? pocket - 4 : pocket, recess = cap.recess, deep = recess + 3;
     const sleeve = lathe([[s0, 0], [s0, R - .6], [s0 + .6, R], [L - 1, R], [L, R - 1], [L, pocket], [L - deep, pocket], [L - deep, 0]]);
     add(`${Math.round(m.sleeve)} mm loadable sleeves`, 'sleeve', finish.sleeve, ...both(sleeve));
