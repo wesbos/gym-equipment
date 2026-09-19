@@ -84,8 +84,11 @@ function buildRope(s: RopeSpec, pose: number): RopeLayout {
   // End grips: glossy heat-shrink hugging the strands, or a moulded rubber handle with a rounded tip.
   const endSeg = (from: number, to: number) => fr.filter(f => f.s >= from - 1e-6 && f.s <= to + 1e-6);
   const Rh = s.handleD / 2, shrink = strands(Rh, .1);
-  const grip = (fs: Frame[], tipAt: number) => sweep(fs, 24, (f, phi) => {
-    if (s.kind === 'twisted') return shrink(phi, twist(f));
+  // Grip rings are turned half a facet (7.5°) so the printed label's edges (at ±30° across the crown) fall mid-facet:
+  // coincident edges collapse to zero-area slivers in the print export's overlap cut.
+  const half = Math.PI / 24, turn = (f: Frame): Frame => ({ ...f, u: add(mul(f.u, Math.cos(half)), mul(f.v, Math.sin(half))), v: add(mul(f.v, Math.cos(half)), mul(f.u, -Math.sin(half))) });
+  const grip = (fs: Frame[], tipAt: number) => sweep(fs.map(turn), 24, (f, phi) => {
+    if (s.kind === 'twisted') return shrink(phi + half, twist(f));
     const d = Math.abs(f.s - tipAt); return d < 6 ? Rh - 6 + Math.sqrt(36 - (6 - d) ** 2) : Rh;
   });
   const startSeg = endSeg(0, s.handle), endSegF = endSeg(L - s.handle, L);

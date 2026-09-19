@@ -21,7 +21,7 @@ export function buildBattleRope(api: ManifoldAPI, spec: RopeSpec, pose: number, 
       for (const f of lay.labels) {
         const cs = t.fitText(look.label.text, look.label.width, h), up = cross(f.u, f.t) as Vec3;
         const at: Vec3 = [f.p[0] + f.u[0] * R, f.p[1] + f.u[1] * R, f.p[2] + f.u[2] * R];
-        t.add(look.label.mat, t.decal(cs, at, f.t as Vec3, up, sag + .5, sag + .1));
+        t.add(look.label.mat, t.decal(cs, at, f.t as Vec3, up, sag + 2.4, sag + 2));
       }
     }
   });
