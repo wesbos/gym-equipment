@@ -35,7 +35,7 @@ try {
       let field = page.locator(`#fields [name="${key}"]`).first();
       // Preset-button params keep a hidden input; open "Custom" to get the numeric field.
       if (await field.getAttribute('type') === 'hidden') {
-        await page.locator('#fields label', { has: field }).locator('.custom-size').click();
+        await page.locator('#fields label', { has: page.locator(`[name="${key}"]`) }).locator('.custom-size').click();
         field = page.locator(`#fields input[name="${key}"]:not([type="hidden"])`).first();
       }
       if (await field.evaluate(el => el.tagName) === 'SELECT') await field.selectOption(value); else { await field.fill(value); await field.press('Enter'); }
