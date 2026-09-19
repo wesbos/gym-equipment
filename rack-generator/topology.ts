@@ -1,6 +1,6 @@
 import type { RackDimensions, UprightNode, ConnectionEdge, RackDoc } from './types.ts';
 export function legacyGraph(r: RackDimensions): { uprights: Record<string, UprightNode>; connections: ConnectionEdge[] } {
-  const x = (r.width + r.tube) / 2, y = (r.depth + r.tube) / 2;
+  const x = (r.width + r.tube) / 2, y = (r.depth + (r.tubeDepth ?? r.tube)) / 2;
   return { uprights: {
     'front-left': { x: -x, y: -y }, 'front-right': { x, y: -y },
     'rear-left': { x: -x, y }, 'rear-right': { x, y },
@@ -19,6 +19,7 @@ export function validateGraph(input: Record<string, unknown>): { uprights: Recor
   for (const [id, node] of entries) {
     if (!validId(id) || !node || !Number.isFinite(node.x) || !Number.isFinite(node.y) || Math.max(Math.abs(node.x), Math.abs(node.y)) > 15000) throw new Error('Invalid upright coordinates or ID.');
     if (entries.some(([other, p]) => other !== id && Math.hypot(p.x - node.x, p.y - node.y) < 75)) throw new Error('Uprights overlap.');
+    if (node.height !== undefined && (!Number.isFinite(node.height) || node.height < 1000 || node.height > 4000)) throw new Error('Upright height must be between 1000 and 4000.');
   }
   const ids = new Set(entries.map(([id]) => id));
   if (input.connections.length > 128) throw new Error('Too many connections.');

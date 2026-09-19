@@ -2,6 +2,8 @@
 .builder-page .rack-presets summary { cursor: pointer; font-size: 12px; margin: 10px 0; }
 .builder-page .featured-presets { display: grid; gap: 6px; }
 .builder-page .featured-presets button { text-align: left; font-size: 10px; line-height: 1.5; padding: 8px; }
+.builder-page .brand-presets { margin: 4px 0; }
+.builder-page .brand-presets summary { margin: 6px 0; font-size: 11px; }
 .builder-page .more-presets select { width: 100%; margin: 8px 0; }
 .builder-page .more-presets p { font-size: 10px; }
 .builder-page .system-hint { display: block; color: #66765c; font-size: 9px; margin-top: 4px; }

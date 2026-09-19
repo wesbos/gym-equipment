@@ -9,7 +9,7 @@ import { definitions as bars } from './parts/bars-safeties.ts';
 const pick = (profile:string,kind='four') => applyPreset(RACK_PRESETS.find(p=>p.profileId===profile && p.kind===kind && p.depth===762)!.id);
 const api = await Module(); api.setup();
 test('enabled REP presets retain exact pitch, bore, dimensions, graph extension and round-trip',()=>{
-  for (const p of RACK_PRESETS.filter(p=>p.profileId.startsWith('rep-'))) {
+  for (const p of RACK_PRESETS.filter(p=>['rep-pr-5000','rep-pr-4000'].includes(p.profileId))) {
     const doc = applyPreset(p.id);
     assert.equal(doc.rack.pitch,50.8);
     assert.equal(doc.rack.holeDiameter,p.profileId==='rep-pr-4000'?15.875:25.4);

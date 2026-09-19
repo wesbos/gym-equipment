@@ -39,8 +39,8 @@ function geometry(api: ManifoldAPI, logo?: ValidatedLogo, minFeature=0) {
   const rounded=(a: number,b: number,r: number)=>{
     const s=keep(C.square([a-2*r,b-2*r],true));return keep(s.offset(r,'Round',2,40));
   };
-  const tube=(length: number,width: number,wall: number,r=3)=>{
-    const out=rounded(width,width,r),inside=rounded(width-2*wall,width-2*wall,Math.max(.1,r-wall));
+  const tube=(length: number,width: number,wall: number,r=3,depth=width)=>{
+    const out=rounded(width,depth,r),inside=rounded(width-2*wall,depth-2*wall,Math.max(.1,r-wall));
     return keep(keep(out.subtract(inside)).extrude(length));
   };
   return {logo,minFeature,owned,M,C,keep,move,rotate,box,union,difference,cylinder,hole,profile,rounded,tube};
@@ -105,26 +105,129 @@ function crossmember(api: ManifoldAPI,p: NumericParams) {return construct(api,p,
   if(p.length<150||p.spacing<=p.holeDiameter)throw Error('Check length and hole spacing.');
   return [part('Rounded hollow crossmember with four-face holes',beamSolid(g,p)),...endFlanges(g,p)];
 });}
+// Worker params must be positive and at most 4000, so colours travel as channel+1 triplets (e.g. panelR/G/B).
+const channel=(v: number|undefined,fallback: number)=>Math.max(0,Math.min(255,Math.round((v??fallback+1)-1)));
+const rgb=(p: NumericParams,prefix: string,fallback: number)=>'#'+[16,8,0].map(shift=>channel(p[prefix+'RGB'[[16,8,0].indexOf(shift)]],(fallback>>shift)&255).toString(16).padStart(2,'0')).join('');
+const hasColor=(p: NumericParams,prefix: string)=>p[prefix+'R']!==undefined;
+const rubber='#161718', uhmw='#101112', detent='#e0762b';
+/** Upright base styles (see rack-generator/profiles.ts `base`): 0 BOS three-hole plate,
+ * 1 welded bolt-down plate, 2 floor foot tube (flat-foot racks, half racks and squat stands),
+ * 3 fold-back wall arms and brackets. Local frame: tube centre at [cx,0], +x points into the rack. */
+function uprightBase(g: Geometry,p: NumericParams,cx: number,w: number,d: number): SolidPart[] {
+  const style=Math.round(p.baseStyle??0), out: SolidPart[]=[];
+  if(style===1) {
+    const t=p.plateThickness, x0=cx-w/2-p.plateOut, x1=cx+w/2+(p.plateIn??0), fore=p.plateFore;
+    let plate=g.box([x1-x0,d+2*fore,t],[(x0+x1)/2,0,t/2]);
+    const holes=[];
+    if(p.plateOut>=30) for(const y of [-1,1])holes.push(g.hole(t+4,Math.min(17.5,p.plateOut*.55),'z',[cx-w/2-p.plateOut/2,y*Math.max(0,d/2-14),t/2]));
+    if(fore>=30) for(const y of [-1,1])holes.push(g.hole(t+4,Math.min(17.5,fore*.55),'z',[cx,y*(d/2+fore/2),t/2]));
+    out.push(part('Welded bolt-down floor plate',g.difference(plate,holes)));
+  } else if(style===2) {
+    const fw=p.footWidth, fh=p.footHeight, minus=p.footMinus, plus=p.footPlus, wall=Math.min(p.footWall??3,fw/4,fh/4);
+    let foot=g.move(g.rotate(g.tube(minus+plus,fw,wall,2,fh),[-90,0,0]),[cx,-minus,fh/2]);
+    const cuts=[], clear=d/2+(p.gussetLength??0)+p.holeDiameter;
+    for(let y=-minus+p.spacing;y<plus-p.spacing/2;y+=p.spacing) if(Math.abs(y)>clear && fh>p.holeDiameter+8) cuts.push(g.hole(fw+4,Math.min(p.holeDiameter,fh*.45),'x',[cx,y,fh/2]));
+    foot=g.difference(foot,cuts);
+    const solids=[foot];
+    // Open ends meet the neighbouring post's half of a shared foot; outer ends are capped.
+    const ends=[[-minus,!p.footOpenMinus],[plus,!p.footOpenPlus]] as const;
+    for(const [end,cap] of ends) if(cap) solids.push(g.box([fw,3,fh],[cx,end-Math.sign(end)*1.5,fh/2]));
+    if((p.crossIn??0)>0) solids.push(g.move(g.rotate(g.tube(p.crossIn,fh,wall,2,fw),[0,90,0]),[cx,(p.crossY??0)*(p.crossBack?-1:1),fh/2]));
+    out.push(part('Flat foot base tube',g.union(solids)));
+    if((p.gussetHeight??0)>0) {
+      const gt=6.35, gl=p.gussetLength, gh=p.gussetHeight;
+      const loop: Vec2[]=[[-d/2-gl,fh],[d/2+gl,fh],[d/2,fh+gh],[-d/2,fh+gh]];
+      const plates=[g.profile([loop],gt,'x',[cx+w/2,0,0]),g.profile([loop],gt,'x',[cx-w/2-gt,0,0])];
+      out.push(part('Bolted triangle gusset plates',g.union(plates)));
+      const heads=[];
+      for(const x of [cx-w/2-gt-3,cx+w/2+gt+3])for(const [y,z] of [[-d/2-gl*.55,fh/2],[d/2+gl*.55,fh/2],[0,fh+gh*.62]])heads.push(g.cylinder(6,12,'x',[x,y,z],6));
+      out.push(part('Gusset bolts and nuts',g.union(heads),zinc,'fastener'));
+    }
+    if(p.footCaps) {
+      const pads=[];
+      for(const [end,cap] of ends) if(cap) pads.push(g.box([fw+6,44,fh+3],[cx,end-Math.sign(end)*18,(fh+3)/2]));
+      if(pads.length) out.push(part('Rubber foot end caps',g.union(pads),rubber,'liner'));
+    }
+  } else if(style===3) {
+    // wallDepth runs from the post's back face to the wall; the 1.5-inch channel bracket sits inside it.
+    const sgn=p.armFlip?-1:1, reach=p.wallDepth, arm=p.armSize, wallY=sgn*(d/2+reach), bracket=38, armLength=Math.max(20,reach-bracket-22);
+    const arms=[], pins=[], brackets=[];
+    for(const z of [p.armLow,p.armHigh]) {
+      arms.push(g.move(g.rotate(g.tube(armLength,arm,Math.min(3,arm/4),2,arm),[-90,0,0]),[cx,sgn>0?d/2:-d/2-armLength,z]));
+      arms.push(g.cylinder(arm+36,19,'z',[cx,wallY-sgn*(bracket+22),z],32));
+      const reachIn=p.bracketIn??0;
+      brackets.push(g.box([w+p.bracketOut+reachIn,bracket,p.bracketHeight],[cx-w/2-p.bracketOut+(w+p.bracketOut+reachIn)/2,wallY-sgn*bracket/2,z]));
+      pins.push(g.cylinder(46,5,'z',[cx+arm/2+14,wallY-sgn*(bracket+60),z+arm/2+18],16),g.box([34,8,8],[cx+arm/2+14,wallY-sgn*(bracket+60),z+arm/2+44]));
+    }
+    out.push(part('Fold-back swing arms and hinge knuckles',g.union(arms)));
+    out.push(part('Wall-mount hinge brackets',g.union(brackets)));
+    out.push(part('Detent locking pins',g.union(pins),detent,'source'));
+    out.push(part('UHMW floor pad',g.box([w,d,p.padThickness??6],[cx,0,(p.padThickness??6)/2]),uhmw,'liner'));
+  } else {
+    out.push(part('Asymmetric rounded three-hole floor plate',g.profile(mapProfiles(mountingBores(measuredProfiles.base,p.holeDiameter,10),([x,y])=>[x*p.baseWidth/105,y*p.baseDepth/135]),p.baseThickness)));
+  }
+  return out;
+}
 function upright(api: ManifoldAPI,p: NumericParams) {return construct(api,p,(g,p)=>{
   if(p.height<200||p.height>4000||p.spacing<=p.holeDiameter||p.benchSpacing<=p.holeDiameter)throw Error('Check upright height or hole spacing.');
-  const cx=p.baseWidth*15/105;
-  let s=g.move(g.tube(p.height-p.baseThickness,p.width,p.wall,p.cornerRadius),[cx,0,p.baseThickness]);
+  const cx=p.baseWidth*15/105, w=p.width, d=p.depth??p.width, style=Math.round(p.baseStyle??0), stride=Math.max(1,Math.round(p.sideStride??1));
+  const bottom=style===1?p.plateThickness:style===2?p.footHeight:style===3?(p.padThickness??6):p.baseThickness;
+  if(d<w*.5||d>w*2)throw Error('Upright depth must stay within a rectangular tube section.');
+  let s=g.move(g.tube(p.height-bottom,w,p.wall,p.cornerRadius,d),[cx,0,bottom]);
   const cuts=[];
-  for(let z=p.firstHole;z<p.height-p.holeDiameter/2;z+=p.spacing)cuts.push(g.hole(p.width+4,p.holeDiameter,'x',[cx,0,z]),g.hole(p.width+4,p.holeDiameter,'y',[cx,0,z]));
-  for(let z=p.benchStart;z<Math.min(p.height-p.holeDiameter/2,p.benchEnd)+.01;z+=p.benchSpacing)cuts.push(g.hole(p.width+4,p.holeDiameter,'y',[cx,0,z]));
+  // Side faces (normal ±x) may be drilled on a coarser stride than the front/back faces.
+  for(let z=p.firstHole,station=0;z<p.height-p.holeDiameter/2;z+=p.spacing,station++){
+    if(station%stride===0)cuts.push(g.hole(w+4,p.holeDiameter,'x',[cx,0,z]));
+    cuts.push(g.hole(d+4,p.holeDiameter,'y',[cx,0,z]));
+  }
+  for(let z=p.benchStart;z<Math.min(p.height-p.holeDiameter/2,p.benchEnd)+.01;z+=p.benchSpacing)cuts.push(g.hole(d+4,p.holeDiameter,'y',[cx,0,z]));
   const labels=measuredProfiles.uprightLabels.map(loop=>{
     const middle=(Math.min(...loop.map(q=>q[1]))+Math.max(...loop.map(q=>q[1])))/2;
     const station=Math.round((middle-65)/50);
     const dz=p.firstHole+station*p.spacing-(65+station*50);
-    return loop.map(([x,z]): Vec2=>[(x-15)*p.width/75+cx,z+dz]);
+    return loop.map(([x,z]): Vec2=>[(x-15)*w/75+cx,z+dz]);
   });
-  const fitting=labels.filter(l=>Math.max(...l.map(pt=>pt[1]))<p.height-5);
+  const fitting=labels.filter(l=>Math.max(...l.map(pt=>pt[1]))<p.height-5 && Math.min(...l.map(pt=>pt[1]))>bottom+5);
   // Laser-cut station numbers, traced from the actual face contours. Print
   // builds omit them: ~5 mm digits are sub-nozzle slivers at 1:10 (#89).
-  if(fitting.length&&!g.minFeature)cuts.push(g.profile(fitting,p.width+2,'y',[0,p.width/2+1,0]));
+  if(!p.unnumbered&&fitting.length&&!g.minFeature)cuts.push(g.profile(fitting,d+2,'y',[0,d/2+1,0]));
   s=g.difference(s,cuts);
-  const base=g.profile(mapProfiles(mountingBores(measuredProfiles.base,p.holeDiameter,10),([x,y])=>[x*p.baseWidth/105,y*p.baseDepth/135]),p.baseThickness);
-  return [part('Numbered 75 mm upright',s),part('Asymmetric rounded three-hole floor plate',base)];
+  const out=[part(w===75&&d===75?'Numbered 75 mm upright':'Numbered rectangular upright',s),...uprightBase(g,p,cx,w,d)];
+  if(hasColor(p,'decal') && p.decalLength>0 && p.decalLength<p.height-bottom-20) {
+    // Five plain blocks read as a vertical word mark without reproducing any lettering.
+    const n=5, cell=p.decalLength/n, blocks=[];
+    for(let i=0;i<n;i++)blocks.push(g.box([.6,Math.min(d-8,p.decalWidth),cell*.8],[cx-w/2-.3,0,p.height-p.decalTop-cell*(i+.5)]));
+    out.push(part('Upright decal word mark',g.union(blocks),rgb(p,'decal',0xe6e7e8),'source'));
+  }
+  return out;
+});}
+/** Manufacturer nameplate crossmember: the ordinary bolted beam plus a flat
+ * coloured plate (panelStyle 1 badge, 2 arched hanging plate, 3 chamfered panel).
+ * Plates are plain colour fields; no manufacturer artwork is reproduced. */
+function profileNameplate(api: ManifoldAPI,p: NumericParams) {return construct(api,p,(g,p)=>{
+  if(p.length<150||p.spacing<=p.holeDiameter)throw Error('Check length and hole spacing.');
+  const out=[part('Rounded hollow crossmember with four-face holes',beamSolid(g,p)),...endFlanges(g,p)];
+  const style=Math.round(p.panelStyle??2), color=rgb(p,'panel',0xb3141f);
+  const top=p.plateHeight/2-p.width/2, span=p.length-2*p.plateThickness-6, t=6.35;
+  if(style===1) {
+    const x=p.badgeCenter?0:-p.length/2+p.plateThickness+100, bw=Math.min(p.badgeWidth??150,p.length/3), bh=Math.min(34,p.width-10);
+    out.push(part('Manufacturer badge',g.box([bw,1.2,bh],[x,-p.width/2-.6,p.plateHeight/2]),color,'source'));
+    if(hasColor(p,'accent'))out.push(part('Badge accent',g.box([bh,1.6,bh],[x+bw/2-bh/2,-p.width/2-.8,p.plateHeight/2]),rgb(p,'accent',0xd21f26),'source'));
+    return out;
+  }
+  const h=Math.min(p.panelHeight,600), loop: Vec2[]=[[-span/2,top],[span/2,top]];
+  if(style===2) {
+    // Hanging plate whose lower edge arches up between deeper end tabs.
+    const n=24;
+    loop.push([span/2,top-h]);
+    for(let i=1;i<n;i++){const u=i/n;loop.push([span/2-span*u,top-h+h*.42*Math.sin(Math.PI*u)]);}
+    loop.push([-span/2,top-h]);
+  } else {
+    const c=h*.35;
+    loop.push([span/2,top-h+c],[span/2-c,top-h],[-span/2+c,top-h],[-span/2,top-h+c]);
+  }
+  out.push(part('Manufacturer nameplate plate',g.profile([loop],t,'y',[0,t/2,0]),color,'source'));
+  return out;
 });}
 function shapedCrossmember(api: ManifoldAPI,p: NumericParams,angled: boolean) {return construct(api,p,(g,p)=>{
   if(angled) {
@@ -220,6 +323,7 @@ export const definitions: PartDefinition[] = [
   { id: 'nameplate', name: 'Nameplate panel', category: 'Structure', defaults: { length: 1075, height: 175, thickness: 5.0524, holeDiameter: 25 }, build: nameplate },
   { id: 'branded-crossmember', name: 'BOS STRENGTH nameplate crossmember', category: 'Structure', defaults: { ...beamDefaults, panelHeight: 300 }, build: branded },
   { id: 'branded-crossmember-lite', name: 'BOS STRENGTH nameplate crossmember lite', category: 'Structure', defaults: { ...beamDefaults, panelHeight: 150 }, build: branded },
+  { id: 'profile-nameplate', name: 'Manufacturer nameplate crossmember', category: 'Structure', defaults: { ...beamDefaults, length: 1092.2, width: 76.2, holeDiameter: 17.4625, spacing: 50.8, plateHeight: 151.6, boltDiameter: 16.6625, panelStyle: 2, panelHeight: 200, panelR: 201, panelG: 17, panelB: 32 }, build: profileNameplate },
   ...[400, 800].map(length => ({ id: `foot-${length}`, name: `${length === 400 ? 'Short' : 'Long'} stabilizer foot`, category: 'Structure', defaults: { length, width: 75, wall: 3, baseThickness: 8, padWidth: 95, padDepth: 215, plateThickness: 6, holeDiameter: 25 }, build: foot })),
 ];
 
