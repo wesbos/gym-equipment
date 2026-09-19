@@ -6,7 +6,9 @@ import { massProperties, rotX, support, inch } from './floor-parts/specialty-bar
 import { buildSpecialtyBar } from './parts/specialty-bars.ts';
 import { coerceFloorParams, floorOptions, resolveBy, validateFloorParams } from './floor-registry.ts';
 import { addFloorItem, floorWarnings } from './floor-items.ts';
-import { createAssembly } from './assembly.ts';
+import { createAssembly, resolveAssembly, validateAssembly } from './assembly.ts';
+import { barCradles, barSpec, freeCradles, parkedPose, suggestCradle } from './barbell-cradles.ts';
+import { BAR } from './floor-parts/barbell.ts';
 import type { NumericParams, SolidPart } from './types.ts';
 const api = await Module(); api.setup();
 const box = (parts: SolidPart[], name?: string | RegExp) => {
@@ -49,6 +51,24 @@ test('floor rest is a stable roll, and the shaft axis the cradles hold stays on 
     const parts = build(part.id, p), axisPart = parts.some(s => s.name === 'Bar shaft') ? 'Bar shaft' : parts.some(s => s.name === 'Top shaft') ? 'Top shaft' : 'Loadable sleeves', b = box(parts, axisPart);
     near((b.min[1] + b.max[1]) / 2, 0, .5, `${part.id} axis y`); near((b.min[2] + b.max[2]) / 2, pose.axisZ, .5, `${part.id} axis height`);
     assert.ok(pose.axisZ >= 15 && pose.axisZ < 120, `${part.id} axis height ${pose.axisZ}`);
+    free(parts);
+  }
+});
+
+test('bars park on the J-cups at their true shaft height, with sleeves from the built geometry', () => {
+  const doc = createAssembly(), [jcups] = barCradles(resolveAssembly(doc));
+  for (const part of PARTS) {
+    const spec = barSpec(part.id), pose = specialtyBarPose(part.id, part.defaults);
+    assert.equal(spec.axisZ, pose.axisZ);
+    const next = addFloorItem(doc, part.id), item = next.floorItems!.at(-1)!, cradle = suggestCradle(freeCradles(resolveAssembly(doc), next.floorItems, item.id))!;
+    assert.equal(cradle?.key, jcups.key, `${part.id} fits the default J-cup span`); item.cradle = cradle.key;
+    const parked = resolveAssembly(validateAssembly(next)).find(e => e.part === part.id)!;
+    // The shaft bottom sits where the 28.5 mm reference shaft's does, so a thicker shaft rides higher by the radius difference.
+    near(parked.position[2] + spec.axisZ - spec.shaft / 2, jcups.center[2] - BAR.shaft / 2, 1e-6, `${part.id} shaft rests on the cup floor`);
+    assert.deepEqual(parked.position, parkedPose(jcups, spec).position);
+    // Sleeves: the loadable length measured in the build, from the collar/bearing face to the end cap.
+    const parts = build(part.id, part.defaults), sleeve = box(parts, 'Loadable sleeves'), cap = box(parts, 'Sleeve end caps');
+    near(spec.sleeveStart + spec.sleeveLength, sleeve.max[0], .5, `${part.id} sleeve end`); near(spec.sleeveDiameter, Math.min(sleeve.max[2] - sleeve.min[2], 60), .6, `${part.id} sleeve diameter`); assert.ok(spec.sleeveStart + spec.sleeveLength <= cap.max[0]);
     free(parts);
   }
 });

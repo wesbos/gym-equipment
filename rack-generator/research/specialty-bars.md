@@ -12,7 +12,7 @@ Each product is a list of ideal prims in `floor-parts/specialty-bars.ts` (geomet
 
 Mesh vertices lie on or inside the ideal surfaces, so the built bounds come within about 0.3 mm of the footprint and never go below the floor. The tests check this.
 
-**Parking.** `parks: true` uses the default cradle geometry. `barbell-cradles.ts` currently assumes the Olympic bar's 28 mm axis height, while these bars' axes sit 19–104 mm up in their floor pose (a yoke pad cannot clear the floor on a 28 mm axis). Until a per-bar axis height is available, a parked specialty bar rides that difference above or below the cup. The bar keeps its floor roll when parked, so SSB handles and cambers point towards the rack front.
+**Parking.** Each entry declares a `bar` spec (`specialtyBarSpec`, the #139 contract): the rackable section's diameter and half-length, the loadable sleeves read from the same prims, and the floor-pose axis height. A parked bar's shaft therefore rests on the cup floor at its real radius and keeps its floor roll, so SSB handles and cambers point towards the rack front. The contract has no sleeve offset, so plate stacks on S-camber, CB-1 and Transformer sleeves centre on the shaft axis instead of the dropped sleeves; a `sleeveOffset` field would fix that. The bowed bars' sleeves are on the axis, so they are exact.
 
 ## Titan Fitness Safety Squat Bar (162)
 

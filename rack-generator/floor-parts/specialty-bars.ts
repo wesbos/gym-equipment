@@ -4,7 +4,7 @@
  * Each product is described once as ideal prims (specialty-bars-geometry.ts) in the worn frame; the floor pose (the
  * stable roll on the floor), footprint and shaft-axis height all derive from those prims, and the builder meshes
  * the same prims. Dimensions and estimates: rack-generator/research/specialty-bars.md. */
-import { defineFloorPart, type FloorBox, type FloorPart } from '../floor-part.ts';
+import { defineFloorPart, type BarSpec, type FloorBox, type FloorPart } from '../floor-part.ts';
 import type { NumericParams } from '../types.ts';
 import type { MaterialRole } from '../appearance.ts';
 import {
@@ -272,8 +272,11 @@ function acgPrims(): Prim[] {
 }
 
 // ---------------------------------------------------------------- catalog entries
-/** `rest`: preferred floor roll (radians); the stable rest nearest it is used (camber/handles towards the front, logos up). */
-interface Model { prims: (p: NumericParams) => Prim[]; palette: (p: NumericParams) => Palette; rest: number }
+/** `rest`: preferred floor roll (radians); the stable rest nearest it is used (camber/handles towards the front, logos up).
+ * `rack`: the straight section rack cradles hold: its diameter and half its usable length (to the camber bends, hub
+ * housings, CB-1 top-bar ends, or inner collars of the bowed bars and the ACG). */
+interface Model { prims: (p: NumericParams) => Prim[]; palette: (p: NumericParams) => Palette; rest: number; rack: { shaft: number; shaftHalf: number } }
+const bowCollar = (s: BowSpec) => s.length / 2 - s.cap.len - s.sleeve.len - s.collar.len;
 const FRONT = -Math.PI / 2, BOW_FRONT = Math.PI / 2;
 const SSB_PALETTE = (shaft: Finish, extra: Palette = {}): Palette => ({
   shaft, collar: CHROME, sleeve: CHROME, cap: f('#56595d', .8, .35), pad: VINYL, logo: WHITE, logoRed: f('#d8412b', 0, .55),
@@ -281,11 +284,13 @@ const SSB_PALETTE = (shaft: Finish, extra: Palette = {}): Palette => ({
 });
 const MODELS: Record<string, Model> = {
   'titan-safety-squat-bar': {
+    rack: { shaft: TITAN.shaft, shaftHalf: TITAN.between / 2 },
     rest: FRONT,
     prims: () => { const out = ssbFrame(TITAN); handles(out, TITAN, { kind: 'straight', post: 24, postD: 30, grip: 135, gripD: 35, cap: 7 }); return out; },
     palette: () => SSB_PALETTE(f('#d9dee2', 1, .16, 'rod'), { cap: f('#b3262d', .3, .45) }),
   },
   'elitefts-ss-yoke-bar': {
+    rack: { shaft: ELITE_YOKE.shaft, shaftHalf: ELITE_YOKE.between / 2 },
     rest: FRONT,
     prims: () => { const out = ssbFrame(ELITE_YOKE); handles(out, ELITE_YOKE, { kind: 'straight', post: 28, postD: 25, grip: 150, gripD: 36, cap: 4, ribs: 4 }); return out; },
     palette: p => {
@@ -294,16 +299,19 @@ const MODELS: Record<string, Model> = {
     },
   },
   'rep-safety-squat-bar': {
+    rack: { shaft: REP.shaft, shaftHalf: REP.between / 2 },
     rest: FRONT,
     prims: () => { const out = ssbFrame(REP); handles(out, REP, { kind: 'straight', post: 30, postD: 34, grip: 148, gripD: 38, cap: 4 }); return out; },
     palette: () => SSB_PALETTE(f('#2c2d30', .55, .38, 'rod'), { handlePost: f('#e6e9ec', 1, .12), grip: f('#c9cdd1', 1, .42, 'handle'), handleCap: f('#e6e9ec', 1, .12), cap: CHROME }),
   },
   'bells-of-steel-ss4-safety-squat-bar': {
+    rack: { shaft: SS4.shaft, shaftHalf: SS4.between / 2 },
     rest: FRONT,
     prims: p => { const out = ssbFrame(SS4); handles(out, SS4, SS4_HANDLE_STYLES[p.handles]); return out; },
     palette: () => { const ti = f('#34363a', .85, .3, 'rod'); return SSB_PALETTE(ti, { collar: ti, sleeve: { ...ti, role: 'sleeve' }, cap: f('#2a2b2e', .8, .35), handlePost: f('#2a2b2e', .8, .35), grip: f('#232426', .7, .6, 'handle'), handleCap: f('#2a2b2e', .8, .35) }); },
   },
   'kabuki-transformer-bar': {
+    rack: { shaft: TRANSFORMER.shaft, shaftHalf: TRANSFORMER.brackets / 2 - TRANSFORMER.block.len },
     rest: FRONT,
     prims: transformerPrims,
     palette: () => ({
@@ -313,6 +321,7 @@ const MODELS: Record<string, Model> = {
     }),
   },
   'kabuki-duffalo-bar': {
+    rack: { shaft: DUFFALO.shaft, shaftHalf: bowCollar(DUFFALO) },
     rest: BOW_FRONT,
     prims: () => bowPrims(DUFFALO, { d: 36, mat: 'badge' }),
     palette: p => {
@@ -321,16 +330,19 @@ const MODELS: Record<string, Model> = {
     },
   },
   'elitefts-american-cambered-grip-bar': {
+    rack: { shaft: ACG.shaft, shaftHalf: ACG.collarAt },
     rest: 0,
     prims: acgPrims,
     palette: () => ({ frame: f('#1c1d1f', .2, .62), grip: f('#1c1d1f', .2, .62, 'handle'), shaft: f('#1c1d1f', .2, .62, 'rod'), logo: WHITE, collar: f('#232426', .4, .55, 'sleeve'), sleeve: f('#262729', .5, .5, 'sleeve'), cap: f('#1a1b1d', .4, .6) }),
   },
   'rogue-cb-4-camber-bar': {
+    rack: { shaft: CB4.shaft, shaftHalf: bowCollar(CB4) },
     rest: BOW_FRONT,
     prims: () => bowPrims(CB4, { d: 34, mat: 'badge', inner: { d: 25, mat: 'cap' } }),
     palette: () => ({ shaft: f('#202124', .2, .55, 'rod'), knurl: f('#161719', .3, .82, 'handle'), collar: f('#2a2b2e', .5, .45, 'sleeve'), sleeve: f('#2a2b2e', .5, .45, 'sleeve'), cap: f('#1b1c1e', .4, .5), badge: f('#d9d9d6', 0, .5) }),
   },
   'rogue-cb-1-camber-bar': {
+    rack: { shaft: CB1.shaft, shaftHalf: CB1.top / 2 },
     rest: FRONT,
     prims: cb1Prims,
     palette: () => ({ shaft: f('#1d1e20', .35, .55, 'rod'), logo: WHITE, collar: f('#232427', .5, .5, 'sleeve'), sleeve: f('#2b2c2f', .55, .45, 'sleeve'), cap: f('#1b1c1e', .4, .5) }),
@@ -344,6 +356,15 @@ export function specialtyBarPose(id: string, params: NumericParams): RestPose {
   let pose = poses.get(key); if (!pose) { const m = specialtyBarModel(id); pose = restPose(m.prims(params), m.rest); poses.set(key, pose); }
   return pose;
 }
+/** Cradle and plate-stack geometry (barbell-cradles.ts `bar` contract): the rackable section, the loadable sleeves read
+ * from the same prims the builder meshes, and the floor-pose axis height. Sleeve offsets from the shaft axis (S-cambers,
+ * CB-1 legs, Transformer brackets) are not part of that contract yet, so plate stacks centre on the shaft axis. */
+export function specialtyBarSpec(id: string, params: NumericParams): BarSpec {
+  const m = specialtyBarModel(id), sleeve = m.prims(params).find(q => q.name === 'Loadable sleeves' && q.kind === 'sweep' && q.path[1][0] > 0);
+  if (sleeve?.kind !== 'sweep' || !('circle' in sleeve.section)) throw Error(`No sleeves on ${id}.`);
+  const start = sleeve.path[0][0] + 1;
+  return { ...m.rack, sleeveStart: start, sleeveLength: sleeve.path[1][0] - start, sleeveDiameter: 2 * sleeve.section.circle, axisZ: specialtyBarPose(id, params).axisZ };
+}
 /** Floor footprint = posed X/Y bounds; the origin stays on the floor under the shaft axis (local Y = 0). */
 function footprint(id: string, params: NumericParams): FloorBox {
   const { min, max } = specialtyBarPose(id, params);
@@ -356,27 +377,27 @@ const indep = (brand: string) => `Independent reconstruction from published dime
 export const TITAN_SSB = defineFloorPart({
   ...base, id: 'titan-safety-squat-bar', name: 'Titan Safety Squat Bar', title: 'Titan Safety Squat Bar',
   description: `Chrome safety squat bar: 90.5" long, 38 mm shaft with 5" cambered drop, 50" rackable, 14.75" loadable sleeves, HeftyGrip yoke pad and 35 mm rubber handles 12.75" apart. ${indep('Titan Fitness')}`,
-  params: [], footprint: p => footprint('titan-safety-squat-bar', p),
+  params: [], footprint: p => footprint('titan-safety-squat-bar', p), bar: p => specialtyBarSpec('titan-safety-squat-bar', p),
   vendor: vendor('Titan Fitness', 'https://titan.fitness/products/safety-squat-olympic-bar', 'Titan Fitness — Safety Squat Bar (430410)', 'Titan Fitness and HeftyGrip are trademarks of Titan Fitness.', 'Independent Manifold reconstruction from the published dimension drawing (90.5" length, 50" rackable, 14.75" sleeves, 38 mm shaft, 50 mm sleeves, 35 mm handles 12.75" apart, 5" drop, 20° camber) and product photos. Pad block and arm sizes, bend radius and camber tilt estimated; logo is a flat plate. Scenery only.'),
 });
 export const ELITEFTS_SS_YOKE = defineFloorPart({
   ...base, id: 'elitefts-ss-yoke-bar', name: 'EliteFTS SS Yoke Bar', title: 'EliteFTS SS Yoke Bar',
   description: `Dave Tate's SS Yoke Bar: 92" long, 49.5" between cambers, 6" drop with a long 30° camber, dense neck pad with thick shoulder pads ~9" apart, 7" knurled screw-in handles, non-rotating sleeves. ${indep('EliteFTS')}`,
   params: [{ key: 'finish', label: 'Finish', default: 0, options: [0, 1], format: v => ['Black', 'Clear'][v] }],
-  footprint: p => footprint('elitefts-ss-yoke-bar', p),
+  footprint: p => footprint('elitefts-ss-yoke-bar', p), bar: p => specialtyBarSpec('elitefts-ss-yoke-bar', p),
   vendor: vendor('EliteFTS', 'https://elitefts.com/products/ss-yoke-bar', 'EliteFTS — SS Yoke Bar', 'EliteFTS and SS Yoke Bar are trademarks of Elite Fitness Systems.', 'Independent Manifold reconstruction from published specs (92" length, 49.5" between cambers, ~9" between pads, 7" handles; 6" drop and 30° camber from reviews) and product photos. Pad block size, sleeve diameter and length, bend radius estimated; logos are flat plates. Scenery only.'),
 });
 export const REP_SSB = defineFloorPart({
   ...base, id: 'rep-safety-squat-bar', name: 'REP Safety Squat Bar', title: 'REP Safety Squat Bar',
   description: `Metallic black SSB: 92.5" long, 49.1" between cambers, 5.5" camber drop, hard-chrome 2" sleeves, bright-chrome knurled 1.5" handles 13" apart, vinyl pad with pads 8.3" apart. ${indep('REP Fitness')}`,
-  params: [], footprint: p => footprint('rep-safety-squat-bar', p),
+  params: [], footprint: p => footprint('rep-safety-squat-bar', p), bar: p => specialtyBarSpec('rep-safety-squat-bar', p),
   vendor: vendor('REP Fitness', 'https://repfitness.com/products/safety-squat-bar', 'REP Fitness — Safety Squat Bar (BB-4600)', 'REP Fitness is a trademark of REP Fitness.', 'Independent Manifold reconstruction from REP technical specifications (92.5" length, 15.6" sleeves, 2" sleeve diameter, 7" × 1.5" handles 13" apart, 49.1" between cambers, 5.5" drop, pads 8.3" apart) and product photos. Shaft diameter, pad block size, camber tilt and bend radius estimated. Scenery only.'),
 });
 export const BOS_SS4 = defineFloorPart({
   ...base, id: 'bells-of-steel-ss4-safety-squat-bar', name: 'Bells of Steel SS4 Safety Squat Bar', title: 'Bells of Steel SS4 Safety Squat Bar',
   description: `Black-titanium SS4: 2200 mm long, 32 mm shaft, 22° camber, needle-bearing sleeves with 11 13/16" loadable, 5" round pad with shoulder pads 9" apart, and swappable straight, spider, seal-row or chain handles. ${indep('Bells of Steel')}`,
   params: [{ key: 'handles', label: 'Handles', default: 0, options: [0, 1, 2, 3], format: v => SS4_HANDLES[v] }],
-  footprint: p => footprint('bells-of-steel-ss4-safety-squat-bar', p),
+  footprint: p => footprint('bells-of-steel-ss4-safety-squat-bar', p), bar: p => specialtyBarSpec('bells-of-steel-ss4-safety-squat-bar', p),
   vendor: vendor('Bells of Steel', 'https://bellsofsteel.us/products/safety-squat-bar-ss4', 'Bells of Steel — Safety Squat Bar SS4', 'Bells of Steel and SS4 are trademarks of Bells of Steel.', 'Independent Manifold reconstruction from the published spec graphic (86 5/8" length, 11 13/16" sleeves, 1 1/4" shaft, 21" pad-to-handle depth) and review measurements (5" pad, 9" between pads, 7.25" handles) with product photos. Camber drop, between-camber length (48", photo-scaled), bend radius and handle-accessory shapes estimated. Scenery only.'),
 });
 export const KABUKI_TRANSFORMER = defineFloorPart({
@@ -387,32 +408,32 @@ export const KABUKI_TRANSFORMER = defineFloorPart({
     { key: 'slot', label: 'Sleeve slot', default: 3, options: [0, 1, 2, 3], format: v => ['Easy 1', '2', '3', 'Hard 4'][v] },
     { key: 'handles', label: 'Handles', default: 0, options: [0, 1], format: v => TRANSFORMER_HANDLES[v] },
   ],
-  footprint: p => footprint('kabuki-transformer-bar', p),
+  footprint: p => footprint('kabuki-transformer-bar', p), bar: p => specialtyBarSpec('kabuki-transformer-bar', p),
   vendor: vendor('Kabuki Strength', 'https://www.roguefitness.com/rogue-kabuki-transformer-bar', 'Kabuki Strength — Transformer Bar (made by Rogue Fitness)', 'Kabuki Strength and Transformer Bar are trademarks of Kabuki Strength; Rogue is a trademark of Rogue Fitness.', 'Independent Manifold reconstruction from published specs (91.25" length, 54" between brackets, 15.75" loadable sleeves, 1.15" handles 12" apart, 6 camber positions 30° apart, 4 sleeve slots) and product photos. Absolute camber angles, slot radii, bracket and hub sizes, pad and arm sizes estimated. Scenery only.'),
 });
 export const KABUKI_DUFFALO = defineFloorPart({
   ...base, id: 'kabuki-duffalo-bar', name: 'Kabuki Duffalo Bar', title: 'Kabuki Strength Duffalo Bar',
   description: `Chris Duffin's cambered squat and press bar: 95" long, 31.75 mm shaft bent through a gradual multi-radius camber, segmented sharp knurl, bronze-bushing sleeves with 17.25" loadable, stamped stainless end caps. ${indep('Kabuki Strength')}`,
   params: [{ key: 'finish', label: 'Finish', default: 0, options: [0, 1, 2], format: v => DUFFALO_FINISHES[v] }],
-  footprint: p => footprint('kabuki-duffalo-bar', p),
+  footprint: p => footprint('kabuki-duffalo-bar', p), bar: p => specialtyBarSpec('kabuki-duffalo-bar', p),
   vendor: vendor('Kabuki Strength', 'https://kabukistrength.com/products/duffalo-performance-squat-bar', 'Kabuki Strength — Duffalo Bar (archived product page)', 'Kabuki Strength and Duffalo Bar are trademarks of Kabuki Strength.', 'Independent Manifold reconstruction from the archived Kabuki technical specs (95" length, 31.75 mm diameter, 17.25" loadable sleeves, zinc/black oxide/nickel finishes) and owner photos. Camber depth (3.25") and bend width, knurl segment layout and collar sizes estimated from photos. Scenery only.'),
 });
 export const ELITEFTS_ACG = defineFloorPart({
   ...base, id: 'elitefts-american-cambered-grip-bar', name: 'EliteFTS American Cambered Grip Bar', title: 'EliteFTS American Cambered Grip Bar',
   description: `Cambered multi-grip press bar: 38 lb matte black frame with a 2" dropped centre, four angled grips per side at 7.5", 15", 21.5" and 28" on centre, rackable from 39.5" to 50.5". ${indep('EliteFTS')}`,
-  params: [], footprint: p => footprint('elitefts-american-cambered-grip-bar', p),
+  params: [], footprint: p => footprint('elitefts-american-cambered-grip-bar', p), bar: p => specialtyBarSpec('elitefts-american-cambered-grip-bar', p),
   vendor: vendor('EliteFTS', 'https://elitefts.com/products/american-cambered-grip-bar', 'EliteFTS — American Cambered Grip Bar', 'EliteFTS is a trademark of Elite Fitness Systems.', 'Independent Manifold reconstruction from published specs (grip spacing 7.5/15/21.5/28" on centre, rackable 39.5–50.5") and product photos. Overall length, frame depth, rail tube size, camber depth (2") and grip slant estimated from photos. Scenery only.'),
 });
 export const ROGUE_CB4 = defineFloorPart({
   ...base, id: 'rogue-cb-4-camber-bar', name: 'Rogue CB-4 Camber Bar', title: 'Rogue CB-4 38MM Camber Bar (Buffalo bar)',
   description: `Westside "Buffalo" camber bar: 95" long, 38 mm black Cerakote shaft with a 4.4" drop over a 55" wide bend, power and centre knurl, matte black 16" loadable sleeves. ${indep('Rogue Fitness')}`,
-  params: [], footprint: p => footprint('rogue-cb-4-camber-bar', p),
+  params: [], footprint: p => footprint('rogue-cb-4-camber-bar', p), bar: p => specialtyBarSpec('rogue-cb-4-camber-bar', p),
   vendor: vendor('Rogue Fitness', 'https://www.roguefitness.com/rogue-cb-4-38mm-camber-bar', 'Rogue Fitness — CB-4 38MM Camber Bar', 'Rogue and CB-4 are trademarks of Rogue Fitness.', 'Independent Manifold reconstruction from published specs (95" length, 38 mm diameter, 16" loadable sleeves, 4.4" drop, 55" wide bend, centre + power knurl, black Cerakote shaft, matte black sleeves) and product photos. Bend profile, knurl zone ends and collar sizes estimated. Scenery only.'),
 });
 export const ROGUE_CB1 = defineFloorPart({
   ...base, id: 'rogue-cb-1-camber-bar', name: 'Rogue CB-1 Camber Bar', title: 'Rogue CB-1 Camber Bar (cambered squat bar)',
   description: `Fully welded cambered squat bar: 85 lb, 1.5" solid shaft racked on its straight top bar, welded legs dropping the machined Olympic sleeves about 16.5" below it. ${indep('Rogue Fitness')}`,
-  params: [], footprint: p => footprint('rogue-cb-1-camber-bar', p),
+  params: [], footprint: p => footprint('rogue-cb-1-camber-bar', p), bar: p => specialtyBarSpec('rogue-cb-1-camber-bar', p),
   vendor: vendor('Rogue Fitness', 'https://www.roguefitness.com/cb-1-rogue-camber-bar', 'Rogue Fitness — CB-1 Camber Bar', 'Rogue and CB-1 are trademarks of Rogue Fitness.', 'Independent Manifold reconstruction from published specs (85 lb, 1.5" formed solid shaft, machined Olympic sleeves, fully welded) and product photos. Overall length, top-bar length, leg spacing and drop are photo-scaled estimates. Scenery only.'),
 });
 /** Highest-owned first (Gym Radar, Sep 2026). */
