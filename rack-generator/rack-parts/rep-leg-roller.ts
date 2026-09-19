@@ -11,7 +11,7 @@ export const LEG_ROLLER_SERIES = [
 /** Estimated from photos. 5000: chrome shaft, steel collar disc at the pad, lynch pin behind the upright.
  * 4000: hanger plate with a top pin and a red pop-pin one station lower; 1-1/4 in arm that leaves the plate toward
  * -X, U-bends outward and runs +X along the face, the pad on its end (centred in the rack from the front face). */
-export const LEG_ROLLER = { shaft: 24.5, collar: 50, collarThick: 8, plate: [76, 126, 6.35], plateTop: 22, popPin: 15.9, /** Pad-end washer + bolt head proud of the vinyl */ endBolt: 7, arm: 31.75, armZ: -86, bendRadius: 45, back: 60 } as const;
+export const LEG_ROLLER = { shaft: 24.5, collar: 50, collarThick: 8, plate: [76, 126, 6.35], plateTop: 22, popPin: 15.9, /** Pad-end washer + bolt head proud of the vinyl */ endBolt: 7, arm: 31.75, armZ: -86, bendRadius: 32, back: 55 } as const;
 export const legRollerSeries = (p: NumericParams) => { const s = LEG_ROLLER_SERIES[p.series ?? 0]; if (!s) throw Error('Unsupported leg roller series.'); return s; };
 /** 5000 stack along local +Y from the mounting face: collar, pad, end bolt; the shaft end behind the far face. */
 export function legRoller5000(p: NumericParams) {
@@ -22,7 +22,7 @@ export function legRoller5000(p: NumericParams) {
 export function legRoller4000(p: NumericParams) {
   const s = LEG_ROLLER_SERIES[1], face = (p.upright ?? 75) / 2, { plate, arm, bendRadius, back } = LEG_ROLLER;
   const bendX = -back, outerX = bendX - bendRadius - arm / 2, tip = outerX + s.length - LEG_ROLLER.endBolt;
-  const nearY = face + plate[2] + arm / 2 + 8, farY = nearY + 2 * bendRadius;
+  const nearY = face + plate[2] + arm / 2 + 2, farY = nearY + 2 * bendRadius;
   return { bendX, outerX, tip, padStart: tip - s.pad, nearY, farY };
 }
 export const REP_LEG_ROLLER = defineRackPart({
@@ -54,6 +54,7 @@ export const REP_LEG_ROLLER = defineRackPart({
   },
   pair: { default: false },
   handed: true,
-  placement: { height: 215, face: 'inside' },
+  // 5000: pad beside the upright, inside the rack. 4000: hung inside the front uprights so the arm reaches the centre.
+  placement: p => p.series ? { height: 265, face: 'back' } : { height: 215, face: 'inside' },
   autoFit: rack => ({ series: rack.holeDiameter < 20 ? 1 : 0 }),
 });

@@ -14,7 +14,7 @@ import { isVendorPart, vendorDefaults, vendorPlacement, vendorLimits, validateVe
 import { VOLTRA_IDS, DARKO_IDS, isDarkoTop } from './vendor-metadata.ts';
 import { validateMountShaft } from './mount-shafts.ts';
 import { RACK_PART_IDS, isRackPart, rackPart, rackTargets } from './rack-registry.ts';
-import { acceptsCrossmemberTop, rackDefaults, rackDefaultHole, rackLimits, rackPlacement, rackTopMounts, resolveRack, validateRackMount, validateRackPartParams } from './rack-mounts.ts';
+import { acceptsCrossmemberTop, rackPlacementFace, rackDefaults, rackDefaultHole, rackLimits, rackPlacement, rackTopMounts, resolveRack, validateRackMount, validateRackPartParams } from './rack-mounts.ts';
 import { gridProfile } from './profiles.ts';
 import { legacyGraph, validateGraph, structureSlots } from './topology.ts';
 import { snapDimensions } from './grid.ts';
@@ -95,7 +95,7 @@ const isMountedAttachment = (part: string) => attachmentPartIds.includes(part);
 const supportsPair = (part: string) => isRackPart(part) ? rackPlacement(part).paired : !isPullup(part) && (!isMountedAttachment(part) || getAttachmentPlacementInfo(part).paired);
 /** Registry preference: a named face, or the outer/inner side face of this upright. */
 function rackPreferredFace(doc: RackDoc, part: string, uprightId: string): Face {
-  const want = rackPart(part)?.placement?.face, faces = rackPlacement(part).faces ?? [...FACES];
+  const want = rackPlacementFace(part, doc.rack), faces = rackPlacement(part).faces ?? [...FACES];
   const p = doc.uprights[uprightId], xs = p ? Object.values(doc.uprights).filter(q => q.y === p.y).map(q => q.x) : [];
   const left = p ? p.x === Math.min(...xs) : sideOf(uprightId) === 'left';
   const face = want === 'outside' ? (left ? 'left' : 'right') : want === 'inside' ? (left ? 'right' : 'left') : want ?? 'front';

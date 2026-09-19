@@ -3,7 +3,7 @@ import { partDefaults } from './reset.ts';
 import { getMounts, getPartPlacementInfo, pairedByDefault, resolveAssembly, validateAssembly, addAccessory, moveAccessory } from './assembly.ts';
 import { detectCollisions } from './assembly-collisions.ts';
 import type { RackDoc, PartId, Mount, ResolvedInstance, NumericParams } from './types.ts';
-import { rackPart } from './rack-registry.ts';
+import { rackPart, rackPlacementFor } from './rack-registry.ts';
 import { rackAutoFit } from './rack-mounts.ts';
 
 export interface PlacementProposal { doc: RackDoc; entries: ResolvedInstance[]; ownerId: string; target?: Mount; label: string }
@@ -16,7 +16,7 @@ export function scoreMount(doc: RackDoc, part: PartId, m: Mount): number {
   const row = (rear ? Math.max : Math.min)(...posts.map(p => p.y));
   const left = Math.min(...posts.filter(q => q.y === p.y).map(q => q.x));
   const outside = p.x === left ? 'left' : 'right';
-  const rack = rackPart(part)?.placement, inside = outside === 'left' ? 'right' : 'left';
+  const entry = rackPart(part), rack = entry && rackPlacementFor(entry, rackAutoFit(part, doc.rack)), inside = outside === 'left' ? 'right' : 'left';
   const face = rack?.face ? (rack.face === 'outside' ? outside : rack.face === 'inside' ? inside : rack.face) : rear || part === 'landmine' ? outside : 'front';
   const hooks = doc.accessories.find(a => a.part.startsWith('j-hook'));
   const height = rack?.height ?? (part.startsWith('foot-') ? 65 : part === 'landmine' ? 165 : rear ? 365

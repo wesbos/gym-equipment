@@ -1,4 +1,4 @@
-import { vendorAttribution } from '../../rack-generator/vendor-metadata.ts';
+import { isDarko, isVoltra } from '../../rack-generator/vendor-metadata.ts';
 import { ResetButton } from './ResetButton.tsx';
 const choices: Record<string, readonly (readonly [number, string])[]> = {
  orientation: [[1,'Screen left'],[2,'Screen above'],[3,'Screen right'],[4,'Screen below']],
@@ -7,7 +7,8 @@ const choices: Record<string, readonly (readonly [number, string])[]> = {
  linerColor: [[1,'Black'],[2,'Red'],[3,'Blue'],[4,'Sand']],
  uprightLiner: [[1,'Included'],[2,'Omitted']],
 };
-export function hasVendorParameter(part: string, key: string) { return !!vendorAttribution(part) && Object.hasOwn(choices,key); }
+/** Darko/VOLTRA option labels only: registry parts (floor, hang, rack) carry their own `format` labels. */
+export function hasVendorParameter(part: string, key: string) { return (isDarko(part) || isVoltra(part)) && Object.hasOwn(choices,key); }
 export function VendorParameter({name,label,value,defaultValue,onValue}:{name:string;label:string;value:number;defaultValue:number;onValue:(value:number)=>void}) {
  return <><select aria-label={label} name={name} value={value} onChange={event=>onValue(Number(event.target.value))}>{choices[name].map(([number,text])=><option key={number} value={number}>{text}</option>)}</select><ResetButton label={label} changed={value!==defaultValue} onReset={()=>onValue(defaultValue)}/></>;
 }

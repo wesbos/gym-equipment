@@ -4,7 +4,7 @@
 import { pairSuffix } from './physical-identity.ts';
 import { darkoTopMount, darkoTopMounts } from './darko-mounts.ts';
 import { resolveBy, validateFloorParams } from './floor-part.ts';
-import { rackPart, rackHoles, rackTargets, rackFamily, type RackPart } from './rack-registry.ts';
+import { rackPart, rackHoles, rackTargets, rackFamily, rackPlacementFor, type RackPart } from './rack-registry.ts';
 import type { Accessory, Face, Mount, NumericParams, PlacementInfo, RackDimensions, RackDoc, ResolvedInstance, Target, Vec3 } from './types.ts';
 type MountDoc = Pick<RackDoc, 'rack' | 'uprights' | 'connections' | 'removed' | 'structure'>;
 const FACES: readonly Face[] = ['front', 'back', 'left', 'right'];
@@ -75,9 +75,11 @@ export function resolveRack(doc: RackDoc, accessory: Accessory, targets: Target[
 }
 /** New-placement params on this rack (autoFit), e.g. a 5/8-inch variant on 5/8-inch holes. */
 export const rackAutoFit = (part: string, rack: RackDimensions): NumericParams => ({ ...(entry(part).autoFit?.(rack) ?? {}) });
+/** Preferred face for a new placement on this rack (see RackPlacement). */
+export const rackPlacementFace = (part: string, rack: RackDimensions) => rackPlacementFor(entry(part), rackAutoFit(part, rack)).face;
 /** Suggested target hole for a new placement: the entry's preferred height, clamped into its limits. */
 export function rackDefaultHole(part: string, rack: RackDimensions): number {
-  const p = entry(part), height = p.placement?.height ?? 1215;
+  const p = entry(part), height = rackPlacementFor(p, rackAutoFit(part, rack)).height ?? 1215;
   const [min, max] = rackLimits({ id: 'probe', part: p.id as Accessory['part'], target: { uprightId: '', face: 'front', hole: 0 }, paired: false, params: rackAutoFit(part, rack) }, rack);
   return Math.min(Math.max(min, Math.round((height - rack.firstHole) / rack.pitch)), Math.max(min, max));
 }

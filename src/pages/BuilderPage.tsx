@@ -73,9 +73,8 @@ const groups: [string, readonly PartId[]][] = [
   ...sectionGroups(FLOOR_PARTS, FLOOR_SECTIONS, DEFAULT_FLOOR_SECTION),
   ...sectionGroups(WALL_PARTS, WALL_SECTIONS, DEFAULT_WALL_SECTION),
   ...sectionGroups(HANG_PARTS, HANG_SECTIONS, DEFAULT_HANG_SECTION),
-  // Brand rack attachments group under their rack-registry `section`.
-  ...sectionGroups(RACK_PARTS, RACK_SECTIONS, DEFAULT_RACK_SECTION),
-  ["Digital resistance", VOLTRA_IDS],
+  // Brand rack attachments group under their rack-registry `section`; the built-in VOLTRA mounts lead "Digital & cable".
+  ...sectionGroups<PartId>([...VOLTRA_IDS.map(id => ({ id, section: "Digital & cable" })), ...RACK_PARTS], RACK_SECTIONS, DEFAULT_RACK_SECTION),
   ["Darko Lifting", DARKO_IDS],
   [
     "Frame",

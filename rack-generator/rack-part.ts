@@ -47,6 +47,7 @@ export interface RackMount {
 }
 /** Bar rest points (local frame, shaft axis) that make brand J-cups/spotters/storage park barbells like the built-in J-hooks. */
 export interface RackCradles { kind: 'working' | 'storage'; /** Plural product label for cradle names, e.g. 'Ghost Roller J-Cups'. */ label: string; slots: (params: NumericParams) => { point: Vec3; axis: Vec3 }[] }
+export interface RackPlacement { height?: number; face?: Face | 'inside' | 'outside' }
 export interface RackPartSpec<Id extends string = string> {
   id: Id; /** Inspector/instance name */ name: string; /** Catalog card name */ title: string; /** Lowercase noun for UI copy and warnings */ noun: string;
   description?: string; /** Sidebar heading and library category (catalog-sections.ts) */ section?: RackSection;
@@ -60,8 +61,9 @@ export interface RackPartSpec<Id extends string = string> {
   /** The second unit of a pair is the mirror image (receives `mirror: 1`). */
   handed?: boolean;
   cradles?: RackCradles;
-  /** Suggested mount: centre height (mm) of the target hole and preferred face ('inside'/'outside' = the side faces). */
-  placement?: { height?: number; face?: Face | 'inside' | 'outside' };
+  /** Suggested mount for new placements (resolved with the autoFit params): target hole height (mm) and preferred face
+   * ('inside'/'outside' = the inner/outer side face of the upright). Front-row uprights are preferred. */
+  placement?: ByParams<RackPlacement>;
   /** Params picked for a new placement on this rack (e.g. a 5/8-inch variant on 5/8-inch holes). */
   autoFit?: (rack: RackDimensions) => NumericParams;
   /** Swap/variant family (default `rack:<section>`). Use an existing family (e.g. 'j-hooks') to swap with built-ins. */
@@ -80,6 +82,7 @@ export const validateRackParams = (part: RackPart, input: unknown): NumericParam
 export const coerceRackParams = (part: RackPart, input: NumericParams) => coerceFloorParams(part, withoutContext(input));
 export const rackTargets = (part: RackPart) => part.mount.targets ?? ['upright'];
 export const rackHoles = (part: RackPart, params: NumericParams) => [...resolveBy(part.mount.holes ?? [0], params)];
+export const rackPlacementFor = (part: RackPart, params: NumericParams): RackPlacement => resolveBy(part.placement ?? {}, { ...part.defaults, ...params });
 export const rackFamily = (part: RackPart) => part.family ?? `rack:${part.section ?? DEFAULT_RACK_SECTION}`;
 /** Default params plus a stand-in 75 mm, 50 mm pitch, 25 mm bore rack context, for thumbnails and tests. */
 export const rackBuildParams = (part: RackPart, params: NumericParams = {}): NumericParams => ({ upright: 75, mountSpacing: 50, holeDiameter: 25, ...part.defaults, ...params });
