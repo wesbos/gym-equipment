@@ -73,13 +73,13 @@ export function buildLegRoller(api: ManifoldAPI, p: NumericParams): SolidPart[] 
 
 // ── Leg Extension & Leg Curl attachment (BA-5010) ──────────────────────────────────────────────────────
 /** Local frame: origin on the floor at the base centre, +Y toward the bench (leg receiver end), wheels at −Y. */
-export function lelcLayout(p: NumericParams, receiverTop = 300) {
+export function lelcLayout(p: NumericParams, receiverTop = 190) {
   if (!(LELC.extension as readonly number[]).includes(p.extension) || !(LELC.curl as readonly number[]).includes(p.curl)) throw Error('Unsupported roller height.');
   // Column beside the leg receiver so the thigh pad continues the bench seat; rollers and horns face the wheel end.
-  const half = LELC.length / 2, column = 40, pivot: Pt = [column, 620];
-  return { half, column, pivot, receiver: [half - 170, half] as Pt, receiverTop, extension: [column - 200, p.extension] as Pt, curl: [column - 170, p.curl] as Pt, horn: [column - 260, 250] as Pt };
+  const half = LELC.length / 2, column = 0, pivot: Pt = [column, 620];
+  return { half, column, pivot, receiver: [100, 270] as Pt, receiverTop, extension: [column - 200, p.extension] as Pt, curl: [column - 170, p.curl] as Pt, horn: [column - 260, 250] as Pt };
 }
-export function lelcGeometry(t: BenchKit, p: NumericParams, place: Place, receiverTop = 300) {
+export function lelcGeometry(t: BenchKit, p: NumericParams, place: Place, receiverTop = 190) {
   const g = lelcLayout(p, receiverTop), add = (m: Material, ...s: Manifold[]) => t.add(m, ...s.map(place)), W = LELC.width;
   // Base plate with REP cut-out, band pegs, wheel brackets and the raised leg receiver with two lock pins.
   const plate: Pt[] = [[-150, -g.half + 40], [150, -g.half + 40], [230, -120], [230, g.half - 190], [160, g.half], [-160, g.half], [-230, g.half - 190], [-230, -120]];
@@ -92,12 +92,14 @@ export function lelcGeometry(t: BenchKit, p: NumericParams, place: Place, receiv
     add(ATTACH_STEEL, t.span([x * 120 - 6, -320, 12], [x * 120 + 6, -290, 60]), t.cylX(x * 120, x * 185, -305, 50, 28, 16), t.cylX(x * 185, x * 192, -305, 50, 40, 16));
   }
   const [r0, r1] = g.receiver, rt = g.receiverTop;
-  add(ATTACH_STEEL, t.cut(t.hull([t.span([-150, r0, 12], [150, r1, 30]), t.span([-150, r0 + 40, rt - 20], [150, r1 - 10, rt])]), [t.span([-110, r0 + 60, rt - 60], [110, r1 + 1, rt + 1])]));
+  add(ATTACH_STEEL, t.cut(t.hull([t.span([-150, r0, 12], [150, r1, 30]), t.span([-150, r0 + 30, rt - 20], [150, r1 - 10, rt])]), [t.span([-110, r0 + 50, rt - 60], [110, r1 + 1, rt + 1])]));
   for (const x of [-1, 1]) { add(MAT.hardware, t.cylX(x * 150, x * 176, (r0 + r1) / 2 + 20, rt - 40, 16, 16)); add(MAT.grip, t.cylX(x * 176, x * 196, (r0 + r1) / 2 + 20, rt - 40, 34, 20)); }
   // Column, top bracket with the flat thigh pad and side handles.
   add(ATTACH_STEEL, t.member(0, [g.column, 12], [g.column, 760], 76.2, 76.2), t.hull([t.span([-45, g.column - 60, 12], [45, g.column + 60, 22]), t.span([-40, g.column - 40, 60], [40, g.column + 40, 70])]));
+  // Diagonal brace from the base toward the pivot, as on the BA-5010 frame.
+  add(ATTACH_STEEL, t.above(t.member(0, [g.column - 330, 0], [g.column - 30, 560], 50.8, 50.8), 12));
   const pad = t.pad(t.roundRect(260, 300, 30), 0, 70, 16, 10);
-  const at = (s: Manifold) => t.move(s, [0, g.column + 20, 760]);
+  const at = (s: Manifold) => t.move(s, [0, g.column - 20, 760]);
   t.add(MAT.vinyl, place(at(pad.vinyl))); t.add(MAT.piping, place(at(pad.piping))); t.add(MAT.board, place(at(pad.backing)));
   const hx = W / 2;
   for (const x of [-1, 1]) {

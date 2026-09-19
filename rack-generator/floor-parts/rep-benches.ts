@@ -74,13 +74,13 @@ export const BLACKWING_BOXES: readonly FloorBox[] = [
   { width: BLACKWING.width, depth: BLACKWING.length },
   { width: BLACKWING.width, depth: 1787.47, offset: [0, -138.09] },
   { width: BLACKWING.width, depth: 1846.74, offset: [0, -167.72] },
-  { width: BLACKWING.width, depth: 2184.02, offset: [0, 276.89] },
+  { width: BLACKWING.width, depth: 2031.02, offset: [0, 200.39] },
 ];
 export const AB5000_BOXES: readonly FloorBox[] = [
   { width: AB5000.width, depth: AB5000.length },
   { width: AB5000.width, depth: 1755.12, offset: [0, -153.66] },
   { width: 586, depth: 1814.39, offset: [0, -183.3] },
-  { width: 648.7, depth: 2100.13, offset: [0, 228.59] },
+  { width: 648.7, depth: 1947.13, offset: [0, 152.09] },
 ];
 const withAttachment = (boxes: readonly FloorBox[]) => (p: NumericParams) => boxes[p.attachment] ?? boxes[0];
 

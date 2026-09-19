@@ -61,8 +61,10 @@ the entry offers the wide pads plus three standard CleanGrip pads as `fit` optio
   are reconstructed, so slot spacing is plausible rather than manufacturer CAD. Near flat the solved stations bunch
   together, so the decline stations (BlackWing −8°, AB-3000 −12°/−20°) sit next to the 0° slot; decline notch geometry is not
   published. The AB-5200 2.0 decline angles lower its telescoping rear post (black-chrome inner post, pop-pin) instead.
-- Pop-pin/ratchet benches (BlackWing seat, AB-3000 seat, AB-5000 back and seat) use quadrant plates centred on the hinge
-  with one hole per published angle; radii are estimated. AB-5000 knobs are blue anodized, quadrants stainless.
+- Pop-pin/ratchet benches (BlackWing seat, AB-3000 seat) use a hole plate on the frame centred on the hinge and a pin
+  on an arm that swings with the pad. The AB-5000 is the other way round, as its photos show: the stainless laser-marked
+  quadrants ride with the back pad and seat, and the blue anodized pop-pins are fixed to the beam and front leg, so each
+  published angle's hole swings onto the pin (radii 245 / 175 mm, estimated).
 - ZeroGap (BlackWing, AB-5000): `zeroGap` slides the seat 38 mm toward the back pad (estimated travel; AB-5000's published
   53.5 in pad run is the closed position).
 - AB-3000 leg rollers: arm hinge low on the front post; hole 1 is the forward use position and holes 2–6 swing the rollers
@@ -70,9 +72,11 @@ the entry offers the wide pads plus three standard CleanGrip pads as `fit` optio
 - Attachments on the BlackWing and AB-5000 (`attachment` param): leg rollers slide into the back-rail head end and follow
   the back angle; the 2.0 is shown at its shortest 262 mm spacing. The leg extension/curl attachment tips the bench 15°
   about its rear foot so the front foot drops into the leg receiver; receiver height is derived from that tilt, and the
-  column, cam arm, horns and band pegs are placed from the BA-5010 drawing and photos. Roller stations between the
+  column, diagonal brace, cam arm, horns and band pegs are placed from the BA-5010 drawing and photos (standalone
+  receiver height 190 mm, estimated). Roller stations between the
   published extremes (5 extension, 3 curl, 5 leg-roller-2.0 spacings) are evenly spaced estimates.
-- Standalone leg rollers rest on their four rollers (the 2.0 flipped so its insert and handle point up).
+- Standalone leg rollers: the 1.0 rests level on its four rollers; the 2.0 rests on its slide rail/rollers and insert
+  tip with the grab handle up, like REP's product shot.
 - Logos are plain coloured plates or cut-outs (no copied artwork): FB-5000 pad side plates and stainless post badges,
   BlackWing mountain cut-out in the T-foot, AB-3000 badge plate, AB-5000 stainless beam plate, LE/LC arm plate.
 - Materials: frames use role `frame` so rack paint (or the listed REP colours) recolours them; pads, rubber, wheels and
