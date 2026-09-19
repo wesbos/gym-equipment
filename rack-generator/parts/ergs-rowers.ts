@@ -198,7 +198,7 @@ export const ECHO_FOLD = { rail: -90, arm: 100 };
 export function buildEchoRower(api: ManifoldAPI, p: NumericParams): SolidPart[] {
   const folded = echoRowerFolded(p), L = ECHO_ROWER.length, W = ECHO_ROWER.width, rearY = -L / 2, front = L / 2;
   return withKit(api, 'Rogue Echo Rower', K => {
-    const frame = F('#2d2f33', .72), rail: Record<string, [Finish, Manifold[]]> = {}, fr: Record<string, [Finish, Manifold[]]> = {};
+    const frame = F('#3d4044', .75), rail: Record<string, [Finish, Manifold[]]> = {}, fr: Record<string, [Finish, Manifold[]]> = {};
     const put = (bag: typeof rail, name: string, f: Finish, ...s: Manifold[]) => { (bag[name] ??= [f, []])[1].push(...s); };
     const rubber = F('#1b1c1e', .9, 0, 'liner'), metal = F('#b9bdc1', .28, .9, 'rod'), white = F(WHITE, .5), hw: Finish = { role: 'fastener', color: '#2e3033', metalness: .8, roughness: .35, authored: true };
     // ---- Monorail (rear end to the hinge under the footrests), rear leg on a foot bar, seat.
@@ -220,9 +220,9 @@ export function buildEchoRower(api: ManifoldAPI, p: NumericParams): SolidPart[] 
     // ---- Front section: wide beam from the hinge to the flywheel hub, "ROGUE" on both faces.
     const hub: Vec3 = [110, front - 262, 660], hd = 520, hw2 = 190;
     const a: Vec3 = [0, hingeY - 140, rb + 50], b: Vec3 = [0, hub[1] + 20, hub[2]];
-    put(fr, 'Front frame', frame, K.bar(a, b, 80, 150, 8), K.span([-rw / 2 - 8, hingeY - 160, rb - 10], [rw / 2 + 8, hingeY + 10, rt + 10]));
+    put(fr, 'Front frame', frame, K.bar(a, b, 80, 172, 8), K.span([-rw / 2 - 8, hingeY - 160, rb - 10], [rw / 2 + 8, hingeY + 10, rt + 10]));
     const dir = [b[1] - a[1], b[2] - a[2]], at = (t: number): [number, number] => [a[1] + dir[0] * t, a[2] + dir[1] * t];
-    for (const s of [-1, 1]) { const [ya, za] = at(.28), [yb, zb] = at(.7); put(fr, 'Decal · white', white, K.bar([s * 40.4, ya, za], [s * 40.4, yb, zb], .8, 64, 0, [1, 0, 0])); }
+    for (const s of [-1, 1]) { const [ya, za] = at(.28), [yb, zb] = at(.7); put(fr, 'Decal · white', white, K.bar([s * 40.4, ya, za], [s * 40.4, yb, zb], .8, 80, 0, [1, 0, 0])); }
     // Footrest cradle (round belly under the stretcher), plates and quick-release straps.
     put(fr, 'Front frame', frame, K.disc([0, hingeY + 40, rb - 20], 'x', 150, 110, 40));
     const heel: Vec3 = [0, hingeY - 120, 175], toe: Vec3 = [0, hingeY + 90, 400];
@@ -241,9 +241,9 @@ export function buildEchoRower(api: ManifoldAPI, p: NumericParams): SolidPart[] 
     put(fr, 'Drive chain', F('#aeb2b6', .35, .9, 'rod'), K.rod([0, hy + 18, hz], [0, hub[1] - 100, hub[2] + 40], 9, 8));
     // ---- Flywheel housing: dark grey shell, black round grille with the ROGUE centre badge on the +X face.
     const fx = hub[0] + hw2 / 2;
-    put(fr, 'Flywheel housing', F('#27292c', .6, .1), K.disc([hub[0] - hw2 / 2 + 12, hub[1], hub[2]], 'x', hd, 24, 64), K.disc([fx - 16, hub[1], hub[2]], 'x', hd, 32, 64));
+    put(fr, 'Flywheel housing', F('#34373b', .6, .1), K.disc([hub[0] - hw2 / 2 + 12, hub[1], hub[2]], 'x', hd, 24, 64), K.disc([fx - 16, hub[1], hub[2]], 'x', hd, 32, 64));
     put(fr, 'Flywheel drum', F('#3b3e42', .55, .3), K.disc(hub, 'x', hd - 18, hw2 - 40, 64));
-    put(fr, 'Housing face ring', F('#4a4d52', .5, .2), K.ring([fx + 2, hub[1], hub[2]], 'x', hd - 30, hd - 110, 6, 64));
+    put(fr, 'Housing face ring', F('#63676c', .45, .25), K.ring([fx + 2, hub[1], hub[2]], 'x', hd - 30, hd - 110, 6, 64));
     put(fr, 'Grille', F('#101112', .6), K.disc([fx, hub[1], hub[2]], 'x', hd - 120, 6, 48));
     const grid: Manifold[] = [];
     for (let i = -6; i <= 6; i++) { const h = Math.sqrt(Math.max(0, (hd / 2 - 70) ** 2 - (i * 30) ** 2)); if (h > 10) grid.push(K.span([fx + 2.5, hub[1] + i * 30 - 2, hub[2] - h], [fx + 4.5, hub[1] + i * 30 + 2, hub[2] + h]), K.span([fx + 2.5, hub[1] - h, hub[2] + i * 30 - 2], [fx + 4.5, hub[1] + h, hub[2] + i * 30 + 2])); }

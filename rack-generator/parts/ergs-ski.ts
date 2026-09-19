@@ -25,7 +25,7 @@ function build(K: Kit, brand: SkiBrand, p: NumericParams) {
   K.add('Frame', lk.frame, K.span([-lk.colW / 2, y0, base], [lk.colW / 2, backY, lk.split]));
   const armTop = H - 40, armX = lk.barW / 2 - 50;
   for (const s of [-1, 1]) {
-    const arm = K.hull([K.box([lk.colW / 2 + 6, lk.colD, 2], [s * lk.colW / 4, cy, lk.split]), K.box([62, lk.topD, 2], [s * armX, y0 + lk.topD / 2, armTop])]);
+    const arm = K.hull([K.box([lk.colW / 2 + 6, lk.topD, 2], [s * lk.colW / 4, y0 + lk.topD / 2, lk.split]), K.box([62, lk.topD, 2], [s * armX, y0 + lk.topD / 2, armTop])]);
     const at = (t: number): Vec3 => [s * (lk.colW / 4 + (armX - lk.colW / 4) * t), y0 + lk.topD / 2, lk.split + (armTop - lk.split) * t];
     const slots = lk.slots ? [K.hull([K.box([16, 400, 1], at(.3)), K.box([16, 400, 1], at(.72))])] : [];
     K.add('Frame', lk.frame, K.cut(arm, slots));
