@@ -12,7 +12,7 @@ Each product is a list of ideal prims in `floor-parts/specialty-bars.ts` (geomet
 
 Mesh vertices lie on or inside the ideal surfaces, so the built bounds come within about 0.3 mm of the footprint and never go below the floor. The tests check this.
 
-**Parking.** Each entry declares a `bar` spec (`specialtyBarSpec`, the #139 contract): the rackable section's diameter and half-length, the loadable sleeves read from the same prims, and the floor-pose axis height. A parked bar's shaft therefore rests on the cup floor at its real radius and keeps its floor roll, so SSB handles and cambers point towards the rack front. The contract has no sleeve offset, so plate stacks on S-camber, CB-1 and Transformer sleeves centre on the shaft axis instead of the dropped sleeves; a `sleeveOffset` field would fix that. The bowed bars' sleeves are on the axis, so they are exact.
+**Parking.** Each entry declares a `bar` spec (`specialtyBarSpec`, the #139 contract): the rackable section's diameter and half-length, the loadable sleeves read from the same prims, and the floor-pose axis height. A parked bar's shaft therefore rests on the cup floor at its real radius and keeps its floor roll, so SSB handles and cambers point towards the rack front. Bars whose sleeves sit off the shaft axis (the S-camber SSBs, the CB-1 legs and every Transformer camber and slot setting) also declare a `sleeveOffset` (#149): the sleeve axis position relative to the shaft axis, read from the sleeve prim and rotated into the floor roll. The bar keeps that roll when parked, so `barSleeves` puts plate stacks on the real sleeves, both parked and on the floor. The bowed bars' sleeves are the rackable axis, so they declare no offset.
 
 ## Titan Fitness Safety Squat Bar (162)
 

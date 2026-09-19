@@ -8,7 +8,7 @@ import { defineFloorPart, type BarSpec, type FloorBox, type FloorPart } from '..
 import type { NumericParams } from '../types.ts';
 import type { MaterialRole } from '../appearance.ts';
 import {
-  FOAM, RUBBER, STEEL, add, box, cross, hull, inch, mul, norm, restPose, rod, rrect, slab, tube, xblock, xrod,
+  FOAM, RUBBER, STEEL, add, box, cross, hull, inch, mul, norm, restPose, rod, rotX, rrect, slab, tube, xblock, xrod,
   type Prim, type RestPose, type V2, type V3,
 } from './specialty-bars-geometry.ts';
 
@@ -357,13 +357,15 @@ export function specialtyBarPose(id: string, params: NumericParams): RestPose {
   return pose;
 }
 /** Cradle and plate-stack geometry (barbell-cradles.ts `bar` contract): the rackable section, the loadable sleeves read
- * from the same prims the builder meshes, and the floor-pose axis height. Sleeve offsets from the shaft axis (S-cambers,
- * CB-1 legs, Transformer brackets) are not part of that contract yet, so plate stacks centre on the shaft axis. */
+ * from the same prims the builder meshes, and the floor-pose axis height. Sleeves dropped or swung off the shaft axis
+ * (S-cambers, CB-1 legs, Transformer brackets) carry that offset in the floor roll, so plate stacks load on the real
+ * sleeves; the bowed bars' sleeves are the rackable axis and declare none. */
 export function specialtyBarSpec(id: string, params: NumericParams): BarSpec {
   const m = specialtyBarModel(id), sleeve = m.prims(params).find(q => q.name === 'Loadable sleeves' && q.kind === 'sweep' && q.path[1][0] > 0);
   if (sleeve?.kind !== 'sweep' || !('circle' in sleeve.section)) throw Error(`No sleeves on ${id}.`);
-  const start = sleeve.path[0][0] + 1;
-  return { ...m.rack, sleeveStart: start, sleeveLength: sleeve.path[1][0] - start, sleeveDiameter: 2 * sleeve.section.circle, axisZ: specialtyBarPose(id, params).axisZ };
+  const start = sleeve.path[0][0] + 1, pose = specialtyBarPose(id, params), [, y, z] = rotX(pose.theta, [0, sleeve.path[0][1], sleeve.path[0][2]]);
+  const spec: BarSpec = { ...m.rack, sleeveStart: start, sleeveLength: sleeve.path[1][0] - start, sleeveDiameter: 2 * sleeve.section.circle, axisZ: pose.axisZ };
+  return Math.hypot(y, z) > 1e-6 ? { ...spec, sleeveOffset: { y, z } } : spec;
 }
 /** Floor footprint = posed X/Y bounds; the origin stays on the floor under the shaft axis (local Y = 0). */
 function footprint(id: string, params: NumericParams): FloorBox {
