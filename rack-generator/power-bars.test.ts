@@ -122,5 +122,5 @@ test('power bars park on the J-cups with their own shaft radius, and follow the 
  assert.equal(freeCradles(resolveAssembly(doc)).length,1,'Olympic default still fits');
  const {doc:olympic}=park(doc,BARBELL.id),swapped=structuredClone(olympic);swapped.floorItems![0].part='test-short-bar' as never;swapped.floorItems![0].params={};
  assert.deepEqual(settleBarbells(swapped,resolveAssembly(swapped)).dropped,[swapped.floorItems![0].id]);
- assert.equal(resolveAssembly(swapped).find(e=>e.part==='test-short-bar')!.position[2],0,'unseatable bar stays at its floor spot');
+ assert.equal(resolveAssembly(swapped).find(e=>(e.part as string)==='test-short-bar')!.position[2],0,'unseatable bar stays at its floor spot');
 });
