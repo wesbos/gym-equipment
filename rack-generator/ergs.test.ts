@@ -78,6 +78,9 @@ test('the separated storage pose stands 54 in tall in two pieces close to the pu
     assert.ok(rail.min[2] < 1 && front.min[2] < 1, 'both pieces rest on the floor');
     assert.ok(Math.abs(b[0] - published.width) / published.width < .07, `${id} stored width within 7% of published`);
     assert.ok(Math.abs(b[1] - published.depth) / published.depth < .15, `${id} stored depth within 15% of published`);
+    // The two pieces stand apart (no interpenetration beyond contact tolerance).
+    const r = api.Manifold.union(parts.filter(s => s.name.startsWith('Monorail · ')).map(s => s.solid)), f = api.Manifold.union(parts.filter(s => !s.name.startsWith('Monorail · ')).map(s => s.solid)), both = api.Manifold.intersection([r, f]);
+    assert.ok(both.volume() < 10, `${id} storage pieces overlap by ${both.volume().toFixed(1)} mm³`); r.delete(); f.delete(); both.delete();
     // Caster wheels and the housing rim both carry the tipped front section.
     within(bounds(parts, s => s.name === 'Caster wheels')!.min[2], 0, 1, 'casters on the floor');
     within(bounds(parts, s => s.name === 'Flywheel housing')!.min[2], 0, 3, 'housing rim on the floor');
@@ -146,6 +149,10 @@ test('params validate strictly, coerce for UI edits, and persist on floor items'
   assert.deepEqual(coerceFloorParams(part('concept2-skierg'), { mount: 7 }), { mount: 2 });
   const doc = addFloorItem(createAssembly(), 'concept2-rowerg'), [item] = doc.floorItems!;
   assert.deepEqual(floorWarnings(doc), [], 'suggested placement clears the rack and its use area');
+  // Crowding the rack: the use area warns in use but not when separated for storage.
+  const rackLeft = Math.min(...Object.values(doc.uprights).map(u => u.x)) - doc.rack.tube / 2;
+  const crowd = (pose: number) => floorWarnings({ ...doc, floorItems: [{ ...item, position: [rackLeft - 500, 0], params: { legs: 0, pose } }] }).map(w => w.message);
+  assert.deepEqual(crowd(0), ['Rower use clearance overlaps the rack.']); assert.deepEqual(crowd(1), []);
   const stored = [{ ...item, params: { legs: 1, pose: 1 } }];
   assert.deepEqual(validateFloorItems(JSON.parse(JSON.stringify(stored))), stored);
 });

@@ -166,7 +166,7 @@ function buildC2(K: Kit, c: C2RowerConfig) {
 
 /** Storage pose: front section tipped back until its casters and housing rim both touch the floor (monitor arm folded along the beam,
  * handle on the housing peg), monorail stood on its rear end beside the beam with its legs tucked under the tipped section. */
-export const C2_STORAGE = { armFold: 78, railX: -115, railBack: 520 };
+export const C2_STORAGE = { armFold: 78, railX: -115, railBack: 524 };
 /** Tip angle (degrees about X) that puts the caster wheels and the housing rim on the floor together. */
 export function c2StorageTilt(L: C2Layout) {
   const A = (1220 - 26) - L.hub[1], B = L.hub[2] - 26, D = L.housingD / 2 - 26, R = Math.hypot(A, B);
@@ -188,7 +188,7 @@ export function buildC2Rower(api: ManifoldAPI, model: C2Model, p: NumericParams)
     // Rear end down, legs pointing back under the tipped beam toward the casters.
     const stood = Object.entries(rail).map(([n, [fin, s]]) => [n, fin, s.map(m => K.rotate(m, [90, 0, 180]))] as const);
     const rbx = bounds(stood.flatMap(([, , s]) => s));
-    const shift: Vec3 = [C2_STORAGE.railX - (rbx.min[0] + rbx.max[0]) / 2, fb.min[1] + C2_STORAGE.railBack - rbx.max[1], fb.min[2] - rbx.min[2]];
+    const shift: Vec3 = [C2_STORAGE.railX - (rbx.min[0] + rbx.max[0]) / 2, fb.min[1] + C2_STORAGE.railBack + L.lift - rbx.max[1], fb.min[2] - rbx.min[2]];
     for (const [n, fin, s] of stood) K.add(`Monorail · ${n}`, fin, ...s.map(m => K.move(m, shift)));
   });
 }

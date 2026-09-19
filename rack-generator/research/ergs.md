@@ -43,7 +43,14 @@ monorail stands on its rear end beside the beam (X −115) with its seat slid to
 It stands exactly 54 in (1372 mm) tall. Modelled footprints: 645 × 880 mm (std; published 635 × 838), 645 × 1034 mm (tall;
 published 686 × 1194), 645 × 889 mm (Model C). The published figures cannot be reproduced exactly from the in-use geometry (the tipped
 front section alone is ≈ 880 mm deep), so the footprint follows the modelled pose and the test holds it within 7 % / 15 % of the
-published box. The pose matches the Model D storage photo (beam ≈ 65°, casters and housing down, monorail vertical behind it).
+published box; the test also checks the two pieces do not interpenetrate. The pose matches the Model D storage photo (beam ≈ 65°,
+casters and housing down, monorail vertical behind it). Tall legs stand the monorail 154 mm further out so it clears the taller
+tipped section.
+
+Earlier RowErg work (PR #105, `wave6/rowerg`) was reviewed and folded in here: its left-of-rack placement (450 mm gap, clear of the
+default right-side bench, 4 ft use area still clear of the rack), the two-piece non-overlap check and the crowding test (use-area
+warning in use, none in storage). Its storage pose fit the published 33 in only by shrinking the housing to Ø 400 mm; this family
+keeps the photo-measured Ø 482 mm housing and reports the modelled footprint instead.
 
 ## Rogue Echo Rower (`rogue-echo-rower`)
 

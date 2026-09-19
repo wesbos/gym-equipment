@@ -35,7 +35,8 @@ export const CONCEPT2_ROWERG = defineFloorPart({
     pose,
   ],
   footprint: p => c2Footprint(c2RowerConfig('rowerg', p)), clearance: p => c2Clearance(c2RowerConfig('rowerg', p)),
-  placement: { side: 'right', gap: 350 },
+  // Left of the rack (after #105): clear of the default right-side bench; the 4 ft use area still clears the rack.
+  placement: { side: 'left', gap: 450 },
   vendor: c2Vendor('RowErg (PM5)', 'https://www.concept2.com/ergs/rowerg', 'Tall legs raise the monorail 6 in; storage pose follows the published separated footprint.'),
 });
 export const CONCEPT2_MODEL_D = defineFloorPart({
@@ -47,7 +48,8 @@ export const CONCEPT2_MODEL_D = defineFloorPart({
     pose,
   ],
   footprint: p => c2Footprint(c2RowerConfig('d', p)), clearance: p => c2Clearance(c2RowerConfig('d', p)),
-  placement: { side: 'right', gap: 350 },
+  // Left of the rack (after #105): clear of the default right-side bench; the 4 ft use area still clears the rack.
+  placement: { side: 'left', gap: 450 },
   vendor: c2Vendor('Model D Indoor Rower', 'https://www.concept2.com/support/indoor-rowers/model-d', 'Colourways follow the black and light blue-grey parts schematics.'),
 });
 export const CONCEPT2_MODEL_C = defineFloorPart({
@@ -58,7 +60,8 @@ export const CONCEPT2_MODEL_C = defineFloorPart({
     pose,
   ],
   footprint: p => c2Footprint(c2RowerConfig('c', p)), clearance: p => c2Clearance(c2RowerConfig('c', p)),
-  placement: { side: 'right', gap: 350 },
+  // Left of the rack (after #105): clear of the default right-side bench; the 4 ft use area still clears the rack.
+  placement: { side: 'left', gap: 450 },
   vendor: c2Vendor('Model C Indoor Rower', 'https://www.concept2.com/support/indoor-rowers/model-c', 'Model C shares the Model D envelope; its caged flywheel and fixed monitor arm follow the Model C schematic.'),
 });
 /** Rogue: 99 × 26 in, 16 in seat height; 38 × 26 in folded (`foldedModel` = the modelled resting pose, 36.3 in). */
@@ -70,7 +73,8 @@ export const ROGUE_ECHO_ROWER = defineFloorPart({
   params: [{ key: 'pose', label: 'Pose', default: 0, options: [0, 1], format: v => ['In use', 'Folded for storage'][v] ?? String(v) }],
   footprint: p => echoRowerFolded(p) ? { ...ECHO_ROWER.foldedModel } : { width: ECHO_ROWER.width, depth: ECHO_ROWER.length },
   clearance: p => echoRowerFolded(p) ? { ...ECHO_ROWER.foldedModel } : { width: C2_ROWER.clearance.width, depth: ECHO_ROWER.length + 300 },
-  placement: { side: 'right', gap: 350 },
+  // Left of the rack (after #105): clear of the default right-side bench; the 4 ft use area still clears the rack.
+  placement: { side: 'left', gap: 450 },
   vendor: { vendor: 'Rogue Fitness', url: 'https://www.roguefitness.com/rogue-echo-rower', credit: 'Rogue Fitness — Echo Rower', trademark: 'Rogue and Echo are trademarks of Rogue Fitness.',
     reconstruction: 'Independent Manifold reconstruction from Rogue\'s published length, width, seat height and folded footprint, and product photos. Beam, leg and housing sections estimated from photos; use area follows the Concept2 rower zone (no Rogue figure). Scenery only, excluded from print export.' },
 });
