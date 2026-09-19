@@ -3,6 +3,7 @@
  * their cradle through moves and fall back to their floor drop spot when it is gone. Pure over resolved instances. */
 import { BAR, DEFAULT_BAR_SPEC } from './floor-parts/barbell.ts';
 import { floorPart, resolveBy, type BarSpec } from './floor-registry.ts';
+import { rackPart } from './rack-registry.ts';
 import { rotateMountedPoint } from './mounted-rotation.ts';
 import type { FloorItem, NumericParams, RackDoc, ResolvedInstance, Vec3 } from './types.ts';
 export type CradleKind = 'working' | 'storage';
@@ -25,6 +26,7 @@ const SLOTS: Record<string, (p: ResolvedInstance['params']) => Slot[]> = {
   'darko-double-j': p => [-22.75, -114.75].map(z => ({ point: [-52.5 * (p.mirror === 1 ? -1 : 1), (p.upright ?? 75) / 2 + 12, z] as Vec3, axis: Y })),
 };
 const LABELS: Record<string, string> = { 'j-hook-standard': 'J-cups', 'j-hook-roller': 'Roller J-cups', 'j-hook-sandwich': 'Sandwich J-cups', monolift: 'Monolift arms', 'darko-anchor': 'Darko Barbell Anchors', 'darko-double-decker': 'Darko Double Deckers', 'darko-j': 'Darko Dock J-Anchors', 'darko-double-j': 'Darko Dock Double J-Anchors' };
+/** Built-in cradle parts; registry rack parts add theirs through `cradles` in their defineRackPart entry. */
 export const CRADLE_PARTS = Object.keys(SLOTS);
 /** A parking part's bar geometry (its `bar` spec at these params), else the 20 kg Olympic bar's. Rest points above
  * seat a 28.5 mm shaft; other shafts rise or drop by their radius difference (parkedPose). */
@@ -33,11 +35,14 @@ export function barSpec(part?: string | null, params: NumericParams = {}): BarSp
   return entry?.bar ? resolveBy(entry.bar, { ...entry.defaults, ...params }) : DEFAULT_BAR_SPEC;
 }
 export const barSpecOf = (item?: Pick<FloorItem, 'part' | 'params'> | null) => barSpec(item?.part, item?.params);
+const slotsOf = (e: ResolvedInstance): Slot[] => SLOTS[e.part]?.(e.params) ?? rackPart(e.part)?.cradles?.slots(e.params) ?? [];
+const kindOf = (part: string): CradleKind => part.startsWith('darko-') ? 'storage' : rackPart(part)?.cradles?.kind ?? 'working';
+const labelOf = (part: string) => LABELS[part] ?? rackPart(part)?.cradles?.label ?? part;
 const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], dot = (a: Vec3, b: Vec3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const add = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 export function barSupports(resolved: readonly ResolvedInstance[]): BarSupport[] {
-  return resolved.flatMap(e => (e.kind === 'accessory' && SLOTS[e.part] ? SLOTS[e.part](e.params) : []).map((slot, i) => ({
-    id: `${e.id}#${i}`, instanceId: e.id, ownerId: e.ownerId, part: e.part, kind: e.part.startsWith('darko-') ? 'storage' as const : 'working' as const,
+  return resolved.flatMap(e => (e.kind === 'accessory' ? slotsOf(e) : []).map((slot, i) => ({
+    id: `${e.id}#${i}`, instanceId: e.id, ownerId: e.ownerId, part: e.part, kind: kindOf(e.part),
     point: add(e.position, rotateMountedPoint(slot.point, e.rotation)), axis: rotateMountedPoint(slot.axis, e.rotation),
   })));
 }
@@ -52,7 +57,7 @@ export function barCradles(resolved: readonly ResolvedInstance[], bar: BarSpec =
     const pair = [a, b].sort((x, y) => x.id.localeCompare(y.id)) as [BarSupport, BarSupport];
     let yaw = Math.atan2(a.axis[1], a.axis[0]); if (yaw <= -Math.PI / 2 || yaw > Math.PI / 2 + 1e-9) yaw += yaw > 0 ? -Math.PI : Math.PI;
     const center = a.point.map((v, k) => (v + b.point[k]) / 2) as Vec3, kind = a.kind === 'storage' || b.kind === 'storage' ? 'storage' : 'working';
-    cradles.push({ key: pair.map(s => s.id).join('+'), supports: pair, center, yaw, kind, label: `${a.part === b.part ? LABELS[a.part] : `${LABELS[a.part]} + ${LABELS[b.part]}`} · ${Math.round(center[2])} mm` });
+    cradles.push({ key: pair.map(s => s.id).join('+'), supports: pair, center, yaw, kind, label: `${a.part === b.part ? labelOf(a.part) : `${labelOf(a.part)} + ${labelOf(b.part)}`} · ${Math.round(center[2])} mm` });
   }
   return cradles;
 }
