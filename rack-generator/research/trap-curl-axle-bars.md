@@ -15,10 +15,12 @@ gallery, plus retailer and review photos where the maker has fewer).
 | `buildTB2` | Rogue TB-2 | Mitred 1.5" square-tube hexagon ring, flush + raised U handles, lying on its sleeves. |
 | `buildMultiGrip` | Kabuki Kadillac, REP Cambered Swiss, Rogue MG-4CN, BoS Arch Nemesis, Titan Multi-Grip | Camber **up**, as every maker photographs them racked (MG-4CN and Kadillac front views, REP hero shot, BoS rack shot); rails are mitred strips (rect/plate), swept round tube (REP) or a flat ring (Titan). Resting on sleeves/collars/end blocks. |
 
-Footprints are analytic (`*Envelope` functions) and the tests compare them to the built bounding boxes. `barAxisZ(id, params)`
-gives the sleeve-axis height in the rest pose for a future per-bar cradle geometry (#83's `parkedPose` currently assumes
-the 28 mm Olympic-bar axis; rackable bars here are within a few mm of that except the REP Swiss bar, whose twin bracket
-plates hold its axis 10 mm higher, and the 2" axles, whose shafts sit ~5–9 mm into J-cup liners).
+Footprints are analytic (`*Envelope` functions) and the tests compare them to the built bounding boxes. The ten
+rackable bars declare their cradle geometry (#139 `bar`, from `trapCurlAxleBarSpec`): the diameter that rests in the
+cradle (the 2" axle shaft, the curl shaft, or the multi-grip sleeve stub between frame and collar), half the inner
+collar span, sleeve start/length/diameter and the floor axis height, so they park on the cradle floor, only fit cradles
+between their collars, and load plates on their real sleeves. Trap bars and the short curl bars (Rogue Curl Bar, CAP,
+BoS 45") are floor-only.
 
 ## Axles
 

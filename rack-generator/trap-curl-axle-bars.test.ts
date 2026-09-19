@@ -10,6 +10,7 @@ import { coerceFloorParams, floorOptions, floorPart, resolveBy, validateFloorPar
 import { addFloorItem } from './floor-items.ts';
 import { createAssembly } from './assembly.ts';
 import type { NumericParams, SolidPart } from './types.ts';
+import { barSpec, parkedPose } from './barbell-cradles.ts';
 const api = await Module(); api.setup();
 const inch = (v: number) => v * 25.4;
 const build = (id: string, p: NumericParams) => definitions.find(d => d.id === id)!.build(api, p);
@@ -136,4 +137,20 @@ test('params validate strictly and coerce; bars add to the floor in front of the
   const doc = addFloorItem(createAssembly(), 'rep-open-trap-bar');
   assert.equal(doc.floorItems!.at(-1)!.part, 'rep-open-trap-bar');
   assert.ok(doc.floorItems!.at(-1)!.position[1] > 0, 'suggested in front of the rack');
+});
+
+test('rackable bars carry their own cradle geometry: rest diameter, collar span, sleeves and floor axis (#139)', () => {
+  for (const part of PARTS.filter(p => p.parks)) for (const p of variants(part.id)) {
+    const spec = barSpec(part.id, p), parts = build(part.id, p), all = bounds(parts), len = all.max[0] - all.min[0];
+    assert.ok(Math.abs(spec.axisZ - barAxisZ(part.id, p)) < 1e-9, `${part.id} floor axis`);
+    assert.ok(Math.abs(spec.sleeveStart + spec.sleeveLength - len / 2) < 1e-6, `${part.id} sleeve ends at the bar end`);
+    assert.ok(spec.shaftHalf > 450 && spec.shaftHalf < spec.sleeveStart, `${part.id} rackable collar span ${spec.shaftHalf}`);
+    // Whatever rests in the cradle (shaft or sleeve stub) is a solid of exactly spec.shaft diameter at the collar.
+    const rest = parts.find(s => /grip \(unknurled\)|Cambered shaft|Sleeve stubs/.test(s.name))!, rb = rest.solid.boundingBox();
+    assert.ok(Math.abs(rb.max[2] - rb.min[2] - spec.shaft) < .01 || /Cambered/.test(rest.name), `${part.id} rest diameter ${rb.max[2] - rb.min[2]}`);
+    // Parked on a 28.5 mm bar's cradle axis, the resting diameter sits on the same cradle floor.
+    const pose = parkedPose({ center: [0, 0, 1000], yaw: 0 } as never, spec);
+    assert.ok(Math.abs(pose.position[2] + spec.axisZ - spec.shaft / 2 - (1000 - 28.5 / 2)) < 1e-9, part.id);
+    free(parts);
+  }
 });

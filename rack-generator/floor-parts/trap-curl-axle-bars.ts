@@ -2,7 +2,7 @@
  * Specs are published dimensions in mm (sources and estimates: research/trap-curl-axle-bars.md); the builders in
  * ../parts/trap-curl-axle-bars.ts read them, and the analytic envelopes below give the floor footprints.
  * Frames: X along the bar, Y across it, Z up, origin on the floor under the bar centre. */
-import { defineFloorPart, type FloorParam, type FloorPart } from '../floor-part.ts';
+import { defineFloorPart, type BarSpec, type FloorParam, type FloorPart } from '../floor-part.ts';
 import type { NumericParams, Vec2 } from '../types.ts';
 const inch = (v: number) => Math.round(v * 25.4 * 100) / 100;
 type P2 = readonly [number, number];
@@ -19,7 +19,7 @@ export const MAT = {
   rubber: { color: '#18191a', metalness: 0, roughness: .95 }, bronze: { color: '#b08a4a', metalness: 1, roughness: .3 },
   fringeYellow: { color: '#e2b41f', metalness: .1, roughness: .5 }, gold: { color: '#e0bd5e', metalness: .85, roughness: .25 },
   badgeWhite: { color: '#e6e6e3', metalness: 0, roughness: .6 }, steelPlate: { color: '#b9bec2', metalness: .9, roughness: .35 },
-  capDark: { color: '#2c2e31', metalness: .6, roughness: .4 }, satinSteel: { color: '#8e9296', metalness: .9, roughness: .38 },
+  capDark: { color: '#2c2e31', metalness: .6, roughness: .4 }, satinSteel: { color: '#8e9296', metalness: .9, roughness: .38 }, satinChrome: { color: '#a3a8ad', metalness: 1, roughness: .3 },
 } as const satisfies Record<string, Mat>;
 export interface Finish { name: string; shaft: Mat; knurl: Mat; sleeve: Mat }
 const finishParam = (finishes: readonly { name: string }[], label = 'Finish'): FloorParam =>
@@ -54,17 +54,17 @@ export function curlEnvelope(s: CurlSpec) {
 /** Rogue W: centre flat, valley, long angled grip, peak, then back to the axis. */
 const rogueWave = (between: number): Vec2[] => [[0, 0], [55, 0], [105, -38], [128, -38], [222, 38], [245, 38], [315, 0], [between / 2, 0]];
 /** The rackable bar spreads the same W wider around a longer logo centre (spec drawing). */
-const rogueRackWave = (between: number): Vec2[] => [[0, 0], [92, 0], [148, -42], [174, -42], [290, 42], [316, 42], [392, 0], [between / 2, 0]];
+const rogueRackWave = (between: number): Vec2[] => [[0, 0], [93, 0], [158, 38], [205, 38], [318, -38], [378, -38], [500, 0], [between / 2, 0]];
 const ROGUE_FINISHES: Finish[] = [
   { name: 'Black E-coat · bright zinc', shaft: MAT.ecoat, knurl: MAT.knurlBlack, sleeve: MAT.brightZinc },
   { name: 'Black Cerakote · bright zinc', shaft: MAT.cerakote, knurl: MAT.knurlBlack, sleeve: MAT.brightZinc },
   { name: 'Stainless steel', shaft: MAT.stainless, knurl: MAT.knurlStainless, sleeve: MAT.stainless },
 ];
 export const CURL_SPECS = {
-  'rogue-curl-bar': { length: inch(54.5), between: inch(31.5), shaftDia: 28.5, sleeveDia: 50, collarDia: 60, collarWidth: 25.4, profile: rogueWave(inch(31.5)), knurl: [1, 3, 5], bend: 16, finishes: ROGUE_FINISHES, bushing: true, logoBand: 70 },
-  'rogue-rackable-curl-bar': { length: inch(74.75), between: inch(51.8125), shaftDia: 28.5, sleeveDia: 50, collarDia: 60, collarWidth: 24.6, profile: rogueRackWave(inch(51.8125)), knurl: [1, 3, 5], bend: 16, finishes: ROGUE_FINISHES.slice(0, 2), bushing: true, logoBand: 70 },
+  'rogue-curl-bar': { length: inch(54.5), between: inch(31.5), shaftDia: 28.5, sleeveDia: 50, collarDia: 60, collarWidth: 25.4, profile: rogueWave(inch(31.5)), knurl: [1, 3, 5], bend: 26, finishes: ROGUE_FINISHES, bushing: true, logoBand: 70 },
+  'rogue-rackable-curl-bar': { length: inch(74.75), between: inch(51.8125), shaftDia: 28.5, sleeveDia: 50, collarDia: 60, collarWidth: 24.6, profile: rogueRackWave(inch(51.8125)), knurl: [1, 3, 5], bend: 40, finishes: ROGUE_FINISHES.slice(0, 2), bushing: true, logoBand: 70 },
   'rep-rackable-curl-bar': { length: inch(74), between: inch(51), shaftDia: 30, sleeveDia: 50, collarDia: 62, collarWidth: 38, profile: [[0, 0], [40, 0], [98, 50], [118, 50], [218, -50], [238, -50], [298, 0], [inch(25.5), 0]], knurl: [1, 3, 5], bend: 16, bushing: true,
-    finishes: [{ name: 'Hard chrome', shaft: MAT.hardChrome, knurl: MAT.knurlChrome, sleeve: MAT.hardChrome }, { name: 'Stainless steel', shaft: MAT.stainless, knurl: MAT.knurlStainless, sleeve: MAT.stainless }] },
+    finishes: [{ name: 'Hard chrome', shaft: MAT.satinChrome, knurl: MAT.knurlChrome, sleeve: MAT.satinChrome }, { name: 'Stainless steel', shaft: MAT.stainless, knurl: MAT.knurlStainless, sleeve: MAT.stainless }] },
   'cap-olympic-ez-curl-bar': { length: 1200, between: inch(32), shaftDia: 25.4, sleeveDia: 50, collarDia: 54, collarWidth: 6, profile: [[0, 0], [50, 0], [108, -34], [138, -34], [230, 34], [260, 34], [330, 0], [inch(16), 0]], knurl: [1, 2, 3, 4, 5], bend: 40, bushing: false,
     finishes: [{ name: 'Chrome', shaft: MAT.chrome, knurl: MAT.knurlChrome, sleeve: MAT.chrome }, { name: 'Black · chrome sleeves', shaft: MAT.glossBlack, knurl: MAT.knurlBlack, sleeve: MAT.chrome }] },
   'bos-ez-curl-bar-45': { length: 1143, between: 752, shaftDia: 28, sleeveDia: 50, collarDia: 58, collarWidth: 17.5, profile: [[0, 28], [22, 28], [112, -28], [160, -28], [240, 28], [262, 28], [330, 0], [376, 0]], knurl: [1, 3], bend: 22, bushing: true, ribbed: true,
@@ -146,7 +146,7 @@ export const MULTI_GRIP_SPECS = {
   'kabuki-kadillac-bar': { length: 2209.8, collarX: inch(52.5) / 2, collarWidth: 10, collarDia: 60, stubDia: 42, sleeveDia: 50, rail: { kind: 'plate', t: 12.7, h: 66 }, width: 177.8,
     arch: { half: 450, rise: 85 }, end: { x0: 450, x1: inch(40.5) / 2, h: 66, kind: 'box' },
     handles: [{ x: inch(15.3) / 2, angle: 10, dia: 33.8 }, { x: inch(22.3) / 2, angle: 12.5, dia: 33.8 }, { x: inch(29.2) / 2, angle: 15, dia: 33.8 }], extras: ['xbrace', 'flange'],
-    finishes: [{ name: 'Bright zinc sleeves', frame: MAT.texturedBlack, handle: MAT.knurlBlack, sleeve: MAT.brightZinc }, { name: 'Matte black sleeves', frame: MAT.texturedBlack, handle: MAT.knurlBlack, sleeve: MAT.matteBlack }] },
+    finishes: [{ name: 'Bright zinc', frame: MAT.texturedBlack, handle: MAT.knurlZinc, sleeve: MAT.brightZinc }, { name: 'Matte black', frame: MAT.texturedBlack, handle: MAT.knurlBlack, sleeve: MAT.matteBlack }] },
   'rep-cambered-swiss-bar': { length: inch(80.7), collarX: 655, collarWidth: 14, collarDia: 60, stubDia: 40, sleeveDia: 50, rail: { kind: 'round', t: 38, h: 38 }, width: 236,
     profile: [[0, inch(2.5)], [330, inch(2.5)], [400, 0], [450, 0]], end: { x0: 450, x1: 480, h: 76, kind: 'plates' },
     handles: [{ x: 130, angle: 0, dia: 35 }, { x: 250, angle: 0, dia: 35 }, { x: 425, angle: 0, dia: 35 }], extras: ['eyebolt'],
@@ -183,6 +183,15 @@ export function multiGripEnvelope(s: MultiGripSpec, p: NumericParams = {}) {
   return { width: multiGripLength(s, p), depth: Math.max(s.width + 2 * (s.handleCaps ?? 0), s.collarDia), axisZ: low };
 }
 
+/** Cradle geometry (#139) for the rackable bars: the diameter that rests in the cradle (shaft, or the sleeve stub
+ * between a multi-grip frame and its collar), collar and sleeve stations, and the floor axis height. */
+export function trapCurlAxleBarSpec(id: string, p: NumericParams): BarSpec {
+  if (id in CURL_SPECS) { const s: CurlSpec = CURL_SPECS[id as CurlId]; return { shaft: s.shaftDia, shaftHalf: s.between / 2, sleeveStart: s.between / 2 + s.collarWidth, sleeveLength: curlSleeve(s), sleeveDiameter: s.sleeveDia, axisZ: curlEnvelope(s).axisZ }; }
+  if (id in MULTI_GRIP_SPECS) { const s: MultiGripSpec = MULTI_GRIP_SPECS[id as MultiGripId]; return { shaft: s.stubDia, shaftHalf: s.collarX, sleeveStart: s.collarX + s.collarWidth, sleeveLength: multiGripSleeve(s, p), sleeveDiameter: s.sleeveDia, axisZ: multiGripEnvelope(s, p).axisZ }; }
+  const s = axleSpec(id, p); return { shaft: s.shaftDia, shaftHalf: s.grip / 2, sleeveStart: s.grip / 2 + s.collarWidth, sleeveLength: axleSleeve(s), sleeveDiameter: s.sleeveDia, axisZ: axleEnvelope(s).axisZ };
+}
+const barOf = (id: string) => (p: NumericParams) => trapCurlAxleBarSpec(id, p);
+
 // ─── Catalog entries ─────────────────────────────────────────────────────────────────────────────
 const section = 'Barbells' as const, bar = 'bar';
 const recon = (published: string, estimated: string) => `Independent Manifold reconstruction from ${published}. ${estimated} Scenery only; excluded from print export.`;
@@ -212,28 +221,28 @@ export const ROGUE_CURL_BAR = defineFloorPart({
 export const KABUKI_KADILLAC_BAR = defineFloorPart({
   id: 'kabuki-kadillac-bar', name: 'Kabuki Kadillac Bar', title: 'Kabuki Strength Kadillac Bar', noun: bar, section,
   description: 'Kabuki Strength Kadillac Bar: arched laser-cut plate frame with a centre X brace and three angled neutral grips (15.3/22.3/29.2" at 10/12.5/15°), 1.33" knurled handles, rackable 40.5–52.5", 16.75" sleeves on bolted flanges. Independent reconstruction; Kabuki Strength trademarks belong to Kabuki Strength.',
-  params: [mgFinish('kabuki-kadillac-bar', 'Sleeve finish')], footprint: mgFootprint('kabuki-kadillac-bar'), placement: posePlacement, parks: true,
+  params: [mgFinish('kabuki-kadillac-bar', 'Handles & sleeves')], footprint: mgFootprint('kabuki-kadillac-bar'), placement: posePlacement, parks: true, bar: barOf('kabuki-kadillac-bar'),
   vendor: { vendor: 'Kabuki Strength', url: 'https://www.roguefitness.com/kabuki-kadillac-bars', credit: 'Kabuki Strength — Kadillac Bar (made by Rogue Fitness)', trademark: 'Kabuki Strength and Kadillac Bar are trademarks of Kabuki Strength.',
     reconstruction: recon('the published specs (221 cm length, 17.78 cm width/height, 42.55 cm sleeves, rack fit 40.5–52.5", handle spacing and angles, 1.33" handles) and 18 product photos', 'Plate thickness and height, arch rise, X brace and end-box details are estimated from photos.') },
 });
 export const TITAN_AXLE_BARBELL = defineFloorPart({
   id: 'titan-axle-barbell', name: 'Titan Axle Barbell', title: 'Titan Fitness 84" Axle Barbell', noun: bar, section,
   description: 'Titan Fitness Axle Barbell: 1.98" fat grip and sleeves in one black powder-coated tube, raised collars, 52" grip and 15.5" sleeves on the 84" bar (60" variant: 43" grip, 8" sleeves). Rackable. Independent reconstruction; Titan Fitness trademarks belong to Titan Fitness.',
-  params: [{ key: 'length', label: 'Length', default: 0, options: [0, 1], format: v => TITAN_AXLES[v]?.name ?? String(v) }], footprint: axleFootprint('titan-axle-barbell'), placement: posePlacement, parks: true,
+  params: [{ key: 'length', label: 'Length', default: 0, options: [0, 1], format: v => TITAN_AXLES[v]?.name ?? String(v) }], footprint: axleFootprint('titan-axle-barbell'), placement: posePlacement, parks: true, bar: barOf('titan-axle-barbell'),
   vendor: { vendor: 'Titan Fitness', url: 'https://titan.fitness/products/axle-barbells', credit: 'Titan Fitness — Axle Barbell', trademark: 'Titan Fitness is a trademark of Titan Fitness.',
     reconstruction: recon('the published specs (84"/60" length, 52"/43" grip, 15.5"/8" sleeves, 1.98" diameter) and 16 product photos', 'Collar diameter and width are estimated from photos.') },
 });
 export const REP_CAMBERED_SWISS_BAR = defineFloorPart({
   id: 'rep-cambered-swiss-bar', name: 'REP Cambered Swiss Bar', title: 'REP Cambered Swiss Bar', noun: bar, section,
   description: 'REP Fitness Cambered Swiss Bar: round-tube ladder cambered 2.5" above the sleeves, three knurled 35 mm neutral grips with the outer pair at a deficit, removable centre eyebolt, twin-plate sleeve brackets and 14" hard-chrome sleeves. Independent reconstruction; REP Fitness trademarks belong to REP Fitness.',
-  params: [], footprint: mgFootprint('rep-cambered-swiss-bar'), placement: posePlacement, parks: true,
+  params: [], footprint: mgFootprint('rep-cambered-swiss-bar'), placement: posePlacement, parks: true, bar: barOf('rep-cambered-swiss-bar'),
   vendor: { vendor: 'REP Fitness', url: 'https://repfitness.com/products/cambered-swiss-multi-grip-barbell', credit: 'REP Fitness — Cambered Swiss Bar', trademark: 'REP Fitness and REP are trademarks of REP Fitness.',
     reconstruction: recon('the published tech specs (80.7" length, 14.03" sleeves, 2.5" camber, 35 mm handles, 50 mm sleeves) and 14 product photos', 'Frame length, ladder width, handle positions and bracket plates are estimated from photos.') },
 });
 export const ROGUE_RACKABLE_CURL_BAR = defineFloorPart({
   id: 'rogue-rackable-curl-bar', name: 'Rogue Rackable Curl Bar', title: 'Rogue Rackable Curl Bar', noun: bar, section,
   description: 'Rogue Rackable Curl Bar: 74.75" cambered curl bar with 51.8" between sleeves so it racks in standard J-cups, 28.5 mm Ohio-knurled bends, black E-coat or Cerakote shaft, 10.5" bright zinc bushing sleeves. Independent reconstruction; Rogue trademarks belong to Rogue Fitness.',
-  params: [finishParam(CURL_SPECS['rogue-rackable-curl-bar'].finishes)], footprint: curlFootprint('rogue-rackable-curl-bar'), placement: posePlacement, parks: true,
+  params: [finishParam(CURL_SPECS['rogue-rackable-curl-bar'].finishes)], footprint: curlFootprint('rogue-rackable-curl-bar'), placement: posePlacement, parks: true, bar: barOf('rogue-rackable-curl-bar'),
   vendor: { vendor: 'Rogue Fitness', url: 'https://www.roguefitness.com/rogue-rackable-curl-bar', credit: 'Rogue Fitness — Rackable Curl Bar', trademark: 'Rogue and Rogue Fitness are trademarks of Rogue Fitness.',
     reconstruction: recon('the published specs (74.75" length, 51.8125" between sleeves, 10.5" sleeves, 28.5 mm shaft) and 12 product photos', 'Bend offsets and collar size are estimated from the spec drawing and photos.') },
 });
@@ -245,14 +254,14 @@ export const ROGUE_MG4CN = defineFloorPart({
     { key: 'wide', label: '16° pair spacing', default: 22, options: MG4_SPACING_16, format: v => `${v}"` },
     { key: 'sleeves', label: 'Sleeves', default: 0, options: [0, 1], format: v => MULTI_GRIP_SPECS['rogue-mg-4cn-multi-grip-camber-bar'].sleeves[v]?.name ?? String(v) },
     mgFinish('rogue-mg-4cn-multi-grip-camber-bar', 'Handles & sleeves'),
-  ], footprint: mgFootprint('rogue-mg-4cn-multi-grip-camber-bar'), placement: posePlacement, parks: true,
+  ], footprint: mgFootprint('rogue-mg-4cn-multi-grip-camber-bar'), placement: posePlacement, parks: true, bar: barOf('rogue-mg-4cn-multi-grip-camber-bar'),
   vendor: { vendor: 'Rogue Fitness', url: 'https://www.roguefitness.com/rogue-mg-4cn-narrow-multi-grip-camber-bar', credit: 'Rogue Fitness — MG-4CN Narrow Multi-Grip Camber Bar', trademark: 'Rogue and Rogue Fitness are trademarks of Rogue Fitness.',
     reconstruction: recon('the published specs (83.8"/70.8" length, 51.5" between sleeves, 41" rackable span, 7.1"/5" frame width, 3.5" camber, 1×2" tube, 1" hole pitch, 5" × 32 mm handles at 12°/16°, 15.5"/9" sleeves) and 17 product photos', 'Camber ramp positions and end-block details are estimated from photos.') },
 });
 export const BOS_ARCH_NEMESIS = defineFloorPart({
   id: 'bos-arch-nemesis-swiss-bar', name: 'Arch Nemesis Swiss Bar', title: 'Bells of Steel Arch Nemesis Swiss Bar', noun: bar, section,
   description: 'Bells of Steel Arch Nemesis: 78.1" arched plate frame (7.5" wide, 5.5" deep) with three angled 32 mm neutral grips at 12/20.5/29", a top cable hook, glossy black powder coat and non-rotating 49.7 mm sleeves. Independent reconstruction; Bells of Steel trademarks belong to Bells of Steel.',
-  params: [], footprint: mgFootprint('bos-arch-nemesis-swiss-bar'), placement: posePlacement, parks: true,
+  params: [], footprint: mgFootprint('bos-arch-nemesis-swiss-bar'), placement: posePlacement, parks: true, bar: barOf('bos-arch-nemesis-swiss-bar'),
   vendor: { vendor: 'Bells of Steel', url: 'https://bellsofsteel.com/products/arch-nemesis-swiss-bar', credit: 'Bells of Steel — Arch Nemesis Swiss Bar', trademark: 'Bells of Steel and Arch Nemesis are trademarks of Bells of Steel.',
     reconstruction: recon('the published specs (78.1" length, 7.5" width, 5.5" depth, 49.7 mm sleeves, 32 mm grips at 12/20.5/29") and 9 product photos', 'Frame length, plate thickness, grip angle, collar position and hook shape are estimated from photos.') },
 });
@@ -266,7 +275,7 @@ export const CAP_EZ_CURL_BAR = defineFloorPart({
 export const REP_RACKABLE_CURL_BAR = defineFloorPart({
   id: 'rep-rackable-curl-bar', name: 'REP Rackable Curl Bar', title: 'REP Rackable Curl Bar', noun: bar, section,
   description: 'REP Fitness Rackable Curl Bar: 74" EZ bar with 51" between sleeves for standard racks, 30 mm shaft with medium knurl on the bends only, hybrid bushing 10" sleeves, hard chrome or stainless. Independent reconstruction; REP Fitness trademarks belong to REP Fitness.',
-  params: [finishParam(CURL_SPECS['rep-rackable-curl-bar'].finishes)], footprint: curlFootprint('rep-rackable-curl-bar'), placement: posePlacement, parks: true,
+  params: [finishParam(CURL_SPECS['rep-rackable-curl-bar'].finishes)], footprint: curlFootprint('rep-rackable-curl-bar'), placement: posePlacement, parks: true, bar: barOf('rep-rackable-curl-bar'),
   vendor: { vendor: 'REP Fitness', url: 'https://repfitness.com/products/rackable-curl-bar', credit: 'REP Fitness — Rackable Curl Bar', trademark: 'REP Fitness and REP are trademarks of REP Fitness.',
     reconstruction: recon('the published tech specs (74" length, 51" between sleeves, 10" sleeves, 30 mm shaft) and 9 product photos', 'Bend offsets and the wide collar are estimated from photos.') },
 });
@@ -281,7 +290,7 @@ export const GIANT_NORTHLAND = defineFloorPart({
 export const TITAN_MULTI_GRIP = defineFloorPart({
   id: 'titan-multi-grip-barbell', name: 'Titan Multi-Grip Barbell', title: 'Titan Fitness Multi-Grip Barbell', noun: bar, section,
   description: 'Titan Fitness Multi-Grip Barbell V3: flat 39.5 × 10.25" frame of 1.5" square tube with chamfered ends, 30° angled grips 10" apart and neutral grips at 20" and 29" (32 mm, 7" long), silver Titan badge, 14.5" black sleeves. Independent reconstruction; Titan Fitness trademarks belong to Titan Fitness.',
-  params: [], footprint: mgFootprint('titan-multi-grip-barbell'), placement: posePlacement, parks: true,
+  params: [], footprint: mgFootprint('titan-multi-grip-barbell'), placement: posePlacement, parks: true, bar: barOf('titan-multi-grip-barbell'),
   vendor: { vendor: 'Titan Fitness', url: 'https://titan.fitness/products/multi-grip-barbell-v3', credit: 'Titan Fitness — Multi-Grip Barbell V3', trademark: 'Titan Fitness is a trademark of Titan Fitness.',
     reconstruction: recon('the published specs (82" length, 39.5 × 10.25 × 1.5" frame, 53" sleeve to sleeve, 32 mm × 7" grips, 30° pair at 10", neutral 20"/29", 48 mm sleeves) and 9 product photos', 'Published 82" length and 14.5" sleeves overlap by 11 mm, so the loadable sleeve is 14.1"; chamfer size and badge are estimated.') },
 });
@@ -295,7 +304,7 @@ export const BOS_EZ_CURL_BAR = defineFloorPart({
 export const FRINGE_20KG_AXLE = defineFloorPart({
   id: 'fringe-sport-20kg-axle-bar', name: 'Fringe Sport Axle Bar', title: 'Fringe Sport 20 kg Axle "Fat" Bar', noun: bar, section,
   description: 'Fringe Sport 20 kg "El Gordazo" axle: 7 ft, 2" unknurled matte-black shaft, non-rotating 49 mm sleeves with 15.5" loadable, raised collars. Rackable. Independent reconstruction; Fringe Sport trademarks belong to Fringe Sport.',
-  params: [], footprint: axleFootprint('fringe-sport-20kg-axle-bar'), placement: posePlacement, parks: true,
+  params: [], footprint: axleFootprint('fringe-sport-20kg-axle-bar'), placement: posePlacement, parks: true, bar: barOf('fringe-sport-20kg-axle-bar'),
   vendor: { vendor: 'Fringe Sport', url: 'https://www.fringesport.com/products/onefitwonder-axle-bar-20-kg', credit: 'Fringe Sport — 20 kg Axle "Fat" Bar', trademark: 'Fringe Sport is a trademark of Fringe Sport.',
     reconstruction: recon('the published specs (7 ft length, 50 mm shaft, 49 mm sleeves, 15.5" loadable) and 12 product photos', 'Collar diameter and width are estimated from photos.') },
 });
@@ -316,7 +325,7 @@ export const BOS_OPEN_TRAP_BAR = defineFloorPart({
 export const FRINGE_STUBBY_AXLE = defineFloorPart({
   id: 'fringe-sport-stubby-axle-bar', name: 'Fringe Sport Stubby Axle', title: 'Fringe Sport Stubby Axle Rackable Shorty', noun: bar, section,
   description: 'Fringe Sport "El Gordito" Stubby Axle: 70.75" rackable shorty with a 2" unknurled matte-black tube throughout, yellow grip ring marks, gold end badges and 9" sleeves. Independent reconstruction; Fringe Sport trademarks belong to Fringe Sport.',
-  params: [], footprint: axleFootprint('fringe-sport-stubby-axle-bar'), placement: posePlacement, parks: true,
+  params: [], footprint: axleFootprint('fringe-sport-stubby-axle-bar'), placement: posePlacement, parks: true, bar: barOf('fringe-sport-stubby-axle-bar'),
   vendor: { vendor: 'Fringe Sport', url: 'https://www.fringesport.com/products/short-axle-barbell', credit: 'Fringe Sport — Stubby Axle Barbell', trademark: 'Fringe Sport is a trademark of Fringe Sport.',
     reconstruction: recon('the published specs (70.75" length, 2" diameter throughout, 9" sleeves) and 10 product photos', 'Collar size and ring-mark positions are estimated from photos.') },
 });
