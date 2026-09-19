@@ -68,7 +68,7 @@ export function buildPowerBar(api: ManifoldAPI, id: string, p: NumericParams): S
       add('Recessed TIG weld bead', 'source', WELD, ...both(lathe([[s0 - 2.2, R - .2], [s0 - 2.2, R + 2.6], [s0 - .6, R + 2.6], [s0 - .6, R - .2]], 40)));
     } else add(m.collarStyle === 'classic' ? 'Classic thick collars' : 'Sleeve shoulders', 'sleeve', finish.sleeve, ...both(shoulder));
     if (product.vendor !== 'REP Fitness' && m.collarStyle !== 'weld')
-      add('Bronze bushing thrust washers', 'source', BRONZE, ...both(lathe([[half - 1.6, r + .3], [half - 1.6, r + 5.5], [half + 1, r + 5.5], [half + 1, r + .3]], 40)));
+      add('Bronze bushing thrust washers', 'source', BRONZE, ...both(lathe([[half - 3, r + .3], [half - 3, r + 5.5], [half + 1, r + 5.5], [half + 1, r + .3]], 40)));
     const cap = m.cap, pocket = cap.bronze ? R - 6 : R - 2.5, capR = cap.bronze ? pocket - 4 : pocket, recess = cap.recess, deep = recess + 3;
     const sleeve = lathe([[s0, 0], [s0, R - .6], [s0 + .6, R], [L - 1, R], [L, R - 1], [L, pocket], [L - deep, pocket], [L - deep, 0]]);
     add(`${Math.round(m.sleeve)} mm loadable sleeves`, 'sleeve', finish.sleeve, ...both(sleeve));
@@ -95,7 +95,8 @@ export function buildPowerBar(api: ManifoldAPI, id: string, p: NumericParams): S
       // Colorado badge: red sky band over a yellow sun and white peaks inside a navy ring.
       const sky = k(circle(u * .8).intersect(k(C.square([u * .8, u * 1.7]).translate([-u * .8, -u * .85]))));
       emblems.push(['End-cap emblem', cap.accent, sky], ['End-cap sun', '#f0b323', k(circle(u * .34).intersect(k(C.square([u * .34, u * .7]).translate([-u * .34, -u * .35]))).translate([u * .02, 0]))],
-        ['End-cap peaks', '#f1f1ee', poly([[u * .05, u * .62], [-u * .44, u * .18], [-u * .1, -u * .05], [-u * .38, -u * .28], [u * .05, -u * .72]])]);
+        ['End-cap peaks', '#f1f1ee', poly([[u * .05, u * .62], [-u * .44, u * .18], [-u * .1, -u * .05], [-u * .38, -u * .28], [u * .05, -u * .72]])],
+        ['End-cap name band', '#f1f1ee', k(C.square([u * .2, u * 1.1]).translate([u * .22, -u * .55]))]);
     }
     for (const [name, color, shape] of emblems) add(name, 'source', [color, .2, .5], ...plate(shape));
     for (const [name, g] of groups) out.push({ name, solid: g.solids.length === 1 ? g.solids[0] : union(g.solids), role: g.role, color: g.mat[0], metalness: g.mat[1], roughness: g.mat[2] });

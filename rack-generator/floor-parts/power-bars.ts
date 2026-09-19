@@ -47,13 +47,13 @@ const OLY_28: PowerBarModel = { length: 2200, inside: 1310, sleeve: 415, shaft: 
 const boneyard = (m: PowerBarModel): PowerBarModel => ({ ...m, cap: { base: '#151618', accent: '#eeeeea', emblem: 'cross', ...ROGUE_CAP } });
 /** Texas: thick classic collars with a bronze thrust washer, end caps sunk ~7 mm with the bronze bushing showing. */
 const TEXAS_ORIGINAL: PowerBarModel = { length: inch(86.4), inside: inch(52), sleeve: inch(15), shaft: 28.5, sleeveDiameter: 50, collarDiameter: 63, collarStyle: 'classic',
-  knurl: { from: 215, runout: 22, center: inch(4), marks: [405], markWidth: 5, pitch: 2.4, depth: .34 }, cap: TEXAS_CAP };
+  knurl: { from: 215, runout: 14, center: inch(4), marks: [405], markWidth: 5, pitch: 2.4, depth: .34 }, cap: TEXAS_CAP };
 const TEXAS_PRO: PowerBarModel = { length: inch(86.5), inside: inch(51.625), sleeve: inch(16), shaft: 29, sleeveDiameter: 50, collarDiameter: 60, collarStyle: 'classic',
   knurl: { from: 215, runout: 18, center: inch(5.625), marks: [405], markWidth: 5, pitch: 2.4, depth: .34 }, cap: TEXAS_CAP };
 const TEXAS_DEADLIFT: PowerBarModel = { length: inch(92.5), inside: inch(56.5), sleeve: inch(15.5), shaft: 27, sleeveDiameter: 50, collarDiameter: 63, collarStyle: 'classic',
-  knurl: { from: 215, runout: 22, center: 0, marks: [405], markWidth: 5, pitch: 2.4, depth: .38 }, cap: TEXAS_CAP };
+  knurl: { from: 215, runout: 14, center: 0, marks: [405], markWidth: 5, pitch: 2.4, depth: .38 }, cap: TEXAS_CAP };
 const TEXAS_SQUAT: PowerBarModel = { length: inch(96.5), inside: inch(57.5), sleeve: inch(16.875), shaft: 31.75, sleeveDiameter: 50, collarDiameter: 66, collarStyle: 'classic',
-  knurl: { from: 215, runout: 22, center: inch(6), marks: [405], markWidth: 5, pitch: 2.4, depth: .34 }, cap: TEXAS_CAP };
+  knurl: { from: 215, runout: 14, center: inch(6), marks: [405], markWidth: 5, pitch: 2.4, depth: .34 }, cap: TEXAS_CAP };
 /** REP: 86.6" bars, 50 mm smooth sleeves, thin rounded shoulders with laser-etched faces, metal end caps. */
 const REP_COLORADO: PowerBarModel = { length: inch(86.6), inside: 1310, sleeve: inch(16.1), shaft: 28.5, sleeveDiameter: 50, collarDiameter: 60, collarStyle: 'flange',
   knurl: { from: 215, runout: 30, center: 0, marks: [405, 455], markWidth: 5, pitch: 1.8, depth: .2 }, cap: { base: '#1b2a4a', accent: '#c2272f', emblem: 'sectors', recess: .8 } };
