@@ -17,8 +17,25 @@ test('selector weights follow the published PowerBlock charts',()=>{
  assert.equal(powerBlockWeights(POWERBLOCK_MODELS[1]).at(-1),100);assert.equal(powerBlockWeights(POWERBLOCK_MODELS[2]).length,19);
  for(const m of POWERBLOCK_MODELS)assert.equal(m.handleLb+m.rails.length*m.plateLb+m.adders*m.adderLb>=m.max,true,m.name);
  assert.deepEqual(validateFloorParams(POWERBLOCK,{model:4,weight:9}),{model:4,weight:9});
- for(const bad of [{weight:52.5},{model:5},{model:3,weight:50},{model:0,weight:12.5}])assert.throws(()=>validateFloorParams(POWERBLOCK,bad),/dumbbell/);
+ for(const bad of [{weight:52.5},{model:POWERBLOCK_MODELS.length},{model:3,weight:50},{model:0,weight:12.5}])assert.throws(()=>validateFloorParams(POWERBLOCK,bad),/dumbbell/);
  assert.deepEqual(coerceFloorParams(POWERBLOCK,{model:4,weight:50}),{model:4,weight:24},'switching model snaps the weight into range');
+});
+test('EXP stage presets and the Commercial Pro 90 follow the published charts and lengths',()=>{
+ const byName=(prefix:string)=>POWERBLOCK_MODELS.map((m,i)=>[m,i] as const).filter(([m])=>m.name.startsWith(prefix));
+ // Stage 1: 2.5 (adder), 5, 7.5, 10, 15, 17.5, 20, 25 … 45, 47.5, 50; Stage 2 adds 55–70, Stage 3 adds 75–90 (Rogue / PowerBlock charts).
+ for(const family of ['Elite EXP','Sport EXP']){
+  const stages=byName(family);assert.equal(stages.length,3,family);
+  assert.deepEqual(powerBlockWeights(stages[0][0]),[5,7.5,10,15,17.5,20,25,27.5,30,35,37.5,40,45,47.5,50]);
+  assert.deepEqual(stages.map(([m])=>[m.max,m.rails.length,Math.round(m.length/25.4)]),[[50,4,12],[70,6,14],[90,8,16]],`${family} stages`);
+  assert.deepEqual(powerBlockWeights(stages[2][0]).slice(-6),[75,77.5,80,85,87.5,90]);
+ }
+ assert.deepEqual(byName('PowerBlock EXP').map(([m])=>m.max),[90]);
+ const [[pro90,index]]=byName('Commercial Pro 90');
+ assert.deepEqual(powerBlockWeights(pro90),Array.from({length:18},(_,i)=>5+5*i),'5–90 lb in 5 lb steps: 5 lb or 10 lb handle');
+ assert.deepEqual(powerBlockSelection(pro90,55),{plates:5,adders:0});assert.deepEqual(powerBlockSelection(pro90,60),{plates:5,adders:1});
+ const parts=buildPowerBlock(api,{model:index,weight:90});assert.ok(!parts.some(p=>p.name==='Micro adder weights'),'handle swap, no chrome adders');
+ const b=box(parts,'Engaged plates · lifted with handle')!;for(const p of parts)p.solid.delete();
+ assert.ok(Math.abs(Math.max(b.max[0]-b.min[0],b.max[1]-b.min[1])-17*25.4)<1,'17" long');
 });
 test('every model and weight builds closed solids inside the cradle footprint',()=>{
  // Every Elite USA 90 pin position; first, middle and last for the other presets.
