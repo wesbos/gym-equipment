@@ -50,7 +50,7 @@ export const SPUD_LONG_AB_STRAP = part({ id: 'spud-long-ab-strap', name: 'Long a
   vendor: credit('Spud Inc.', 'https://www.spud-inc-straps.com/products/long-abdominal-strap', 'Long Abdominal Strap (black)', 'Spud Inc. is a trademark of Spud, Inc.', '32″ × 2″ (Rogue lists 30″ × 2″)', 'Ring size, split point and loop shape estimated from product photos; webbing modelled flat-laid facing out') });
 export const DAISY_CHAINS = part({ id: 'generic-daisy-chains', name: 'Daisy chains (pair)', title: 'Daisy chains (pair)', noun: 'daisy chains',
   description: `Generic nylon daisy chains, the popular Amazon 2-pack: 1.1 m × 20 mm red webbing with eight stitched pocket loops and black bar-tacks, both chains folded over one hook. Independent reconstruction of an unbranded product.`,
-  envelope: { width: 165, above, drop: 575 },
+  envelope: { width: 145, above, drop: 565 },
   vendor: credit('Generic (Amazon)', 'https://www.amazon.com/dp/B0BM8RW8GP', '2 pcs adjustable daisy chain, 1.1 m', 'Unbranded generic product; no trademark claimed.', '1.1 m length, 20 mm (0.63″) width, 8 loops, 22 kN', 'Pocket length and bulge estimated from product photos; hung folded in half, flat-laid facing out') });
 export const GYMREAPERS_ANKLE_STRAP = part({ id: 'gymreapers-ankle-straps', name: 'Gymreapers ankle strap', title: 'Gymreapers ankle strap', noun: 'ankle strap',
   description: `Gymreapers Ankle Strap (black; sold in pairs, one shown): 7 mm neoprene-padded cuff with hook-and-loop webbing wrap, skull logo patch and twin stainless D-rings. ${ending('Gymreapers')}`,

@@ -24,7 +24,7 @@ const BLACK_OXIDE: Material = { role: 'source', color: '#2c2e31', metalness: .65
 const BLACK_PLASTIC: Material = { role: 'liner', color: '#161718', metalness: 0, roughness: .6 };
 const ZINC: Material = { role: 'source', color: '#c3c6c8', metalness: .9, roughness: .3 };
 const NYLON: Material = { role: 'liner', color: '#18191b', metalness: 0, roughness: .9 };
-const STITCH: Material = { role: 'liner', color: '#6a6d71', metalness: 0, roughness: .9 };
+const STITCH: Material = { role: 'liner', color: '#46494d', metalness: 0, roughness: .9 };
 const LABEL_WHITE: Material = { role: 'source', color: '#e6e6e1', metalness: 0, roughness: .7 };
 const HOOK: Material = { role: 'source', color: '#26282a', metalness: .4, roughness: .5 };
 /** Anchor z of a ring/eye centre whose hole (radius r) rests on the hook rod. */
@@ -167,7 +167,7 @@ export const buildRogueVGrip = attachment(ROGUE_V_GRIP, t => {
   });
   return [
     { name: 'Stainless clevis eye', solid: clevis, ...STAINLESS },
-    { name: 'Swivel hub (bronze bushings)', solid: barrel, ...BLACK_OXIDE },
+    { name: 'Swivel hub (bronze bushings)', solid: barrel, ...BLACK_OXIDE, color: '#484b4f', metalness: .75 },
     { name: 'Black steel side plates', solid: t.union([...plates, ...bolts]), ...BLACK_STEEL },
     { name: 'Knurled aluminium H-5 handles', solid: t.union(grips), ...RAW_ALUMINIUM },
     { name: 'Flanged Rogue rests', solid: t.union(rests), ...BLACK_PLASTIC },
@@ -311,27 +311,32 @@ export const buildSpudLongAbStrap = attachment(SPUD_LONG_AB_STRAP, t => {
   ];
 });
 
-/** Daisy chains (pair): 20 mm tape folded over the hook (inner chain at the front, outer chain behind it), each leg hanging straight
- * with four pocket loops bulging alternately either side, black bar-tacks between pockets, end loops at the bottom. */
+/** Daisy chains (pair): 20 mm tape folded over the hook (inner chain in front, outer chain behind), each leg hanging straight with
+ * four pocket loops that bulge out of the wall, black bar-tacks between pockets, end loops at the bottom. */
 export const buildDaisyChains = attachment(DAISY_CHAINS, t => {
-  const tape = 20, len = 108, pockets = 4, top = HOOK_ROD / 2 + tape / 2, chains: Manifold[] = [], tacks: Manifold[] = [];
-  for (const [i, x, y] of [[0, 16, -2.5], [1, 52, 2.5]] as const) {
-    const bands: CrossSection[] = [], bars: CrossSection[] = [];
+  const tape = 20, thick = 2, len = 108, pockets = 4, top = HOOK_ROD / 2 + tape / 2, chains: Manifold[] = [], tacks: Manifold[] = [];
+  /** Tape ribbon whose width runs along X at `x`, following a path in the YZ plane (pocket loops). */
+  const ribbon = (x: number, path: P2[], w: number) => t.union(path.slice(1).map((q, i) => {
+    const p = path[i], dy = q[0] - p[0], dz = q[1] - p[1], l = Math.hypot(dy, dz) || 1, ny = -dz / l * thick / 2, nz = dy / l * thick / 2;
+    return t.hull([p, q].flatMap(([y, z]) => [-1, 1].flatMap(sx => [-1, 1].map(sn => [x + sx * w / 2, y + sn * ny, z + sn * nz] as Vec3))));
+  }));
+  for (const [x, y] of [[16, -2], [50, 2]] as const) {
+    const bands: CrossSection[] = [], bars: CrossSection[] = [], loops: Manifold[] = [];
     // Fold over the rod: an arch from leg to leg whose inner edge rests on the rod top.
     bands.push(t.band2(t.curve([[-x, -34], [-x * .72, -8], [0, top], [x * .72, -8], [x, -34]], 4), tape));
     for (const s of [-1, 1]) {
       const cx = s * x, zEnd = -30 - pockets * len;
       bands.push(t.band2([[cx, -34], [cx, zEnd]], tape));
       for (let p = 0; p < pockets; p++) {
-        const z0 = -30 - p * len, z1 = z0 - len, side = (p + i) % 2 ? s : -s;
-        bands.push(t.band2(t.curve([[cx, z0 - 8], [cx + side * 16, z0 - 30], [cx + side * 17, z0 - 78], [cx, z1 + 8]], 5), tape * .9));
+        const z0 = -30 - p * len, z1 = z0 - len;
+        loops.push(ribbon(cx, t.curve([[y - thick, z0 - 6], [y - 22, z0 - 26], [y - 30, z0 - len / 2], [y - 22, z1 + 26], [y - thick, z1 + 6]], 6), tape * .92));
         bars.push(t.band2([[cx - tape / 2 - 1.5, z0], [cx + tape / 2 + 1.5, z0]], 5));
       }
       bars.push(t.band2([[cx - tape / 2 - 1.5, zEnd], [cx + tape / 2 + 1.5, zEnd]], 5));
-      bands.push(t.band2(t.curve([[cx, zEnd], [cx + s * 14, zEnd - 40], [cx + s * 6, zEnd - 96], [cx - s * 8, zEnd - 70], [cx - s * 4, zEnd - 20], [cx, zEnd]], 5), tape * .9, true));
+      bands.push(t.band2(t.curve([[cx, zEnd], [cx + s * 12, zEnd - 36], [cx + s * 5, zEnd - 90], [cx - s * 7, zEnd - 66], [cx - s * 4, zEnd - 18], [cx, zEnd]], 5), tape * .9, true));
     }
-    chains.push(t.flat(t.union2(bands), 2, y));
-    tacks.push(t.flat(t.union2(bars), 2.8, y));
+    chains.push(t.flat(t.union2(bands), thick, y), ...loops);
+    tacks.push(t.flat(t.union2(bars), thick + 1.2, y));
   }
   return [
     { name: 'Red nylon daisy chains', solid: t.union(chains), role: 'liner', color: '#c21f2a', metalness: 0, roughness: .8 },
@@ -346,10 +351,10 @@ export const buildManueklearTricepStraps = attachment(MANUEKLEAR_TRICEP_STRAPS, 
   const stem = t.flat(t.band2([[0, barZ + 2], [0, split - 30]], 38), 3.2);
   const pad: CrossSection[] = [], openings: CrossSection[] = [];
   for (const s of [-1, 1]) {
-    const pts = t.curve([[s * 10, split - 10], [s * 30, split - 110], [s * 56, split - 260], [s * 72, bottom + 40], [s * 72, bottom + 14]], 6);
-    pad.push(t.band2(pts, 48), t.hull2([t.circle2([s * 72, bottom + 30], 24), t.circle2([s * 72, bottom + 20], 24)]));
+    const pts = t.curve([[s * 12, split - 10], [s * 30, split - 110], [s * 52, split - 260], [s * 68, bottom + 40], [s * 68, bottom + 14]], 6);
+    pad.push(t.band2(pts, 56), t.hull2([t.circle2([s * 68, bottom + 30], 28), t.circle2([s * 68, bottom + 20], 28)]));
     const at = (f: number): P2 => { const i = Math.min(pts.length - 1, Math.round(f * (pts.length - 1))); return pts[i]; };
-    for (const [f0, f1] of [[.18, .4], [.46, .68], [.74, .96]]) openings.push(t.hull2([t.circle2(at(f0), 10, 20), t.circle2(at(f1), 10, 20)]));
+    for (const [f0, f1] of [[.2, .38], [.48, .66], [.76, .94]]) openings.push(t.hull2([t.circle2(at(f0), 15, 24), t.circle2(at(f1), 15, 24)]));
   }
   const legs2 = t.k(t.union2(pad).subtract(t.union2(openings)));
   const legs = t.flat(legs2, 8, 0);
@@ -371,8 +376,10 @@ export const buildManueklearTricepStraps = attachment(MANUEKLEAR_TRICEP_STRAPS, 
 export const buildBosSwivelShackles = attachment(BOS_SWIVEL_SHACKLES, t => {
   const steel: Manifold[] = [], rings: Manifold[] = [];
   for (const y of [-15, 3, 21, 39]) {
-    const bailIn = 8, bailOutline = t.hull2([t.circle2([0, hangZ(bailIn)], bailIn + 5.5, 32), t.k(t.k(t.C.square([26, 4], true)).translate([0, -14]))]);
-    const bail = t.flat(t.k(bailOutline.subtract(t.union2([t.circle2([0, hangZ(bailIn)], bailIn, 32), t.k(t.k(t.C.square([12, 12], true)).translate([7, -9]))]))), 5, y);
+    // Snap bail: a slim hook (6 mm bar, 16 mm opening) from the hinge boss over the rod and down to the latch.
+    const bailIn = 8, cz = hangZ(bailIn), arc: P2[] = [];
+    for (let i = 0; i <= 28; i++) { const ang = (-35 + i * 250 / 28) * Math.PI / 180; arc.push([(bailIn + 3) * Math.cos(ang), cz + (bailIn + 3) * Math.sin(ang)]); }
+    const bail = t.flat(t.union2([t.band2(arc, 6), t.circle2([-11, -10], 4.5, 16), t.band2([[9, cz - 6.3], [11, -13]], 6)]), 5, y);
     const body = t.hull([t.box([26, 12, 3], [0, y, -15]), t.box([12, 10, 3], [0, y, -27])]);
     const plunger = t.union([t.cylinder([-15, y, -19], [16, y, -19], 5, 16), t.cylinder([-17, y, -19], [-14, y, -19], 7, 16)]);
     const neck = t.union([t.cylinder([0, y, -28], [0, y, -33], 9, 20), t.cylinder([0, y, -33], [0, y, -37], 11, 6)]);
@@ -406,15 +413,15 @@ interface BluslmSpec { width: number; kind: 'wave' | 'v' | 'close'; /** grip tra
 const RUBBER: Material = { role: 'liner', color: '#1c1d1f', metalness: 0, roughness: .86 };
 function bluslm(part: HangPart, spec: BluslmSpec) {
   return attachment(part, t => {
-    const holeR = 6.5, eyeZ = hangZ(holeR), th = 17, bw = 34, a = spec.grip * Math.PI / 180, L = spec.paddle;
+    const holeR = 6.5, eyeZ = hangZ(holeR), th = 17, bw = 38, a = spec.grip * Math.PI / 180, L = spec.paddle;
     // Grip paddle: tapered rubber block at a frame end, projecting out of the wall (−Y), traced at `grip` degrees in XZ.
     // Corners are [along the trace, y, across the trace] for the right-hand paddle; the left one mirrors it.
-    const corners: Vec3[] = [[-4, th / 2, -9], [-4, th / 2, 9], [L, th / 2, -8], [L, th / 2, 8], [-2, -62, -7], [-2, -62, 7], [L * .82, -60, -6], [L * .82, -60, 6]];
+    const corners: Vec3[] = [[-4, th / 2, -12], [-4, th / 2, 12], [L, th / 2, -8], [L, th / 2, 8], [-2, -62, -10], [-2, -62, 10], [L * .82, -60, -6], [L * .82, -60, 6]];
     const local = ([along, y, off]: Vec3): Vec3 => [Math.cos(a) * along - Math.sin(a) * off, y, Math.sin(a) * along + Math.cos(a) * off];
     // Fit the frame so the overall width across the paddles is the published width.
     const reach = Math.max(bw / 2 * .2, ...corners.map(c => local(c)[0])), end = spec.width / 2 - reach;
     const half: P2[] = spec.kind === 'wave'
-      ? [[0, eyeZ - 6], [.14 * end, eyeZ - 30], [.33 * end, eyeZ - 56], [.5 * end, eyeZ - 50], [.7 * end, eyeZ - 62], [.88 * end, eyeZ - 66], [end, eyeZ - 68]]
+      ? [[0, eyeZ - 6], [.1 * end, eyeZ - 34], [.28 * end, eyeZ - 60], [.46 * end, eyeZ - 47], [.66 * end, eyeZ - 62], [.86 * end, eyeZ - 68], [end, eyeZ - 68]]
       : spec.kind === 'v' ? [[0, eyeZ - 6], [.5 * end, eyeZ - 42], [.9 * end, eyeZ - 66], [end, eyeZ - 68]]
         : [[0, eyeZ - 6], [0, eyeZ - 34], [.4 * end, eyeZ - 60], [end, eyeZ - 64]];
     const path = t.curve([...mirrorX(half).reverse(), ...half.slice(1)], 6);
