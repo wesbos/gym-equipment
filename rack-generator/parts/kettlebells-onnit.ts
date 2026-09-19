@@ -34,8 +34,8 @@ export function headField(hw: number, hd: number, hh: number, f: Face): Sdf {
   // Feature sizes and heights are shares of the head read off the Chimp/Gorilla front photos: brow bar .69–.79 of the
   // head height spanning 0.7 W, eyes at .70, nose .58–.64, muzzle .30–.56 spanning 0.6 W, mouth .28–.44.
   const skullW = f.ears ? W * (1 - .14 * f.ears) : f.flange ? W * .72 : W * .97;
-  const skull = ellipsoid([0, D * .08, hh * .56], [skullW, D * .9, hh * .46]);
-  const jaw = ellipsoid([0, -D * .1, hh * .3], [skullW * .9, D * .82, hh * .31]);
+  const skull = ellipsoid([0, D * .08, hh * .57], [skullW, D * .9, hh * .43]);
+  const jaw = ellipsoid([0, -D * .1, hh * .31], [skullW * .97, D * .82, hh * .31]);
   const muzzle = ellipsoid([0, -D * (.42 + .14 * f.muzzleY), hh * .43], [W * .6 * f.muzzle, D * .55, hh * .19 * f.muzzle]);
   const chin = ellipsoid([0, -D * .5, hh * .17], [W * .45, D * .45, hh * .16]);
   const brow = mirrorX(ellipsoid([W * .3, -D * .74, hh * .75], [W * .4, D * .22 * f.brow, hh * .1 * f.brow]));
@@ -49,7 +49,7 @@ export function headField(hw: number, hd: number, hh: number, f: Face): Sdf {
   const eyes = mirrorX(ellipsoid([W * .3, -D * .96, hh * .67], [W * .16 * f.eyes, D * .3, hh * .065 * f.eyes]));
   const eyeballs = mirrorX(ellipsoid([W * .3, -D * .72, hh * .665], [W * .075 * f.eyes, D * .1, hh * .035 * f.eyes]));
   const mouth = f.mouth === 'O' ? ellipsoid([0, -D * 1.12, hh * .35], [W * .24, D * .6, hh * .13])
-    : f.mouth === 'snarl' ? ellipsoid([0, -D * 1.12, hh * .36], [W * .44, D * .56, hh * .09])
+    : f.mouth === 'snarl' ? ellipsoid([0, -D * 1.12, hh * .36], [W * .5, D * .56, hh * .11])
     : f.mouth === 'grin' ? ellipsoid([0, -D * 1.08, hh * .36], [W * .54, D * .5, hh * .07])
     : ellipsoid([0, -D * 1.08, hh * .32], [W * .42, D * .2, hh * .014]);
   const span = f.mouth === 'grin' ? W * .5 : f.mouth === 'O' ? W * .2 : W * .4;
