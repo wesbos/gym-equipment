@@ -167,7 +167,7 @@ export const ROGUE_VERTICAL_BAR_HANGER = defineWallPart({
 /** 18″ square bent-steel box: top sheet folded into front/back walls, lower sheet the bars stand on, nine tubes in a 3 × 3 grid. */
 export interface NineBarSpec { size: number; top: number; tubeTop: number; base: number; tubeOd: number; tubeId: number; pitch: number; steel: number; liner?: string; color: string; roughness: number; badge: [number, number] }
 export const ROGUE_9_SPEC: NineBarSpec = { size: inch(18), top: inch(7.75), tubeTop: inch(8.5), base: inch(1.5), tubeOd: inch(2.375), tubeId: inch(2), pitch: inch(5.4), steel: inch(.1793), color: '#1c1d1f', roughness: .8, badge: [inch(12), inch(2.2)] };
-export const REP_9_SPEC: NineBarSpec = { size: inch(18), top: inch(6.6), tubeTop: inch(7.5), base: inch(1), tubeOd: inch(2.5), tubeId: inch(2.12), pitch: inch(6), steel: inch(.1793), liner: '#3b3d40', color: '#2b2d30', roughness: .7, badge: [inch(7), inch(2.2)] };
+export const REP_9_SPEC: NineBarSpec = { size: inch(18), top: inch(6.6), tubeTop: inch(7.5), base: inch(1), tubeOd: inch(2.5), tubeId: inch(2.12), pitch: inch(6), steel: inch(.1793), liner: '#2e3033', color: '#46484b', roughness: .62, badge: [inch(7), inch(2.2)] };
 export const nineBarFace = (s: NineBarSpec) => ({ width: s.size, height: s.base + BAR.length });
 const nineBar = <const Id extends string>(id: Id, title: string, spec: NineBarSpec, vendor: VendorAttribution, blurb: string) => ({ ...defineWallPart({
   id, name: title, title, noun: 'bar holder', section: 'Wall storage', description: `${blurb} Floor-standing: parked on the floor against the wall (height = half its face). ${tail(vendor.vendor)}`,
@@ -230,7 +230,7 @@ export const REP_WALL_PLATE_STORAGE = defineWallPart({
 });
 // Change-plate trees: two pegs on top, one below, on a Y-shaped plate that bolts through an upright.
 export interface ChangeTreeSpec { span: number; drop: number; horn: number; length: number; tilt: number; steel: number; lobe: number; stem: number; top: number; holes: number[]; bolt: number[]; tabs: number[]; stopper: boolean; badge: [number, number, number]; badgeColor: string; color: string; roughness: number }
-export const SDS_TREE: ChangeTreeSpec = { span: inch(9), drop: inch(9), horn: inch(1.9), length: inch(6), tilt: 3, steel: inch(.25), lobe: inch(1.4), stem: inch(2), top: inch(1.4), holes: [-inch(.3), -inch(4.3)], bolt: [-inch(2.3)], tabs: [-inch(3.7), -inch(1.9), inch(1.9), inch(3.7)], stopper: false, badge: [inch(5.2), inch(.9), inch(.55)], badgeColor: '#b9bcbe', color: '#1b1c1e', roughness: .75 };
+export const SDS_TREE: ChangeTreeSpec = { span: inch(9), drop: inch(9), horn: inch(1.9), length: inch(6), tilt: 3, steel: inch(.25), lobe: inch(1.4), stem: inch(2), top: inch(1.4), holes: [-inch(.3), -inch(4.3)], bolt: [-inch(2.3)], tabs: [-inch(3.7), -inch(1.9), inch(1.9), inch(3.7)], stopper: false, badge: [inch(5.2), inch(.9), inch(.55)], badgeColor: '#b9bcbe', color: '#38393c', roughness: .75 };
 export const BOS_TREE: ChangeTreeSpec = { span: inch(9), drop: inch(9), horn: inch(1.9), length: inch(8), tilt: 5, steel: inch(.25), lobe: inch(1.3), stem: inch(2.5), top: inch(1.3), holes: [-inch(2.1), -inch(6)], bolt: [-inch(2.1), -inch(6)], tabs: [], stopper: true, badge: [inch(1.6), inch(.75), -inch(.95)], badgeColor: '#aeb1b3', color: '#202123', roughness: .65 };
 export const TREE_LOADS: readonly { label: string; stacks: readonly (readonly StoredPlate[])[] }[] = [
   { label: 'Empty', stacks: [[], [], []] },
