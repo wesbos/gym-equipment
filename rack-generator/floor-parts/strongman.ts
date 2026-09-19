@@ -1,4 +1,13 @@
 /** Strongman implements. Metadata only (main bundle): never import Manifold builders here.
- * Family slot: list this file's entries in PARTS; floor-registry.ts already spreads it. */
+ * Family slot: list this file's entries in PARTS; floor-registry.ts already spreads it.
+ * Entries live in strongman-sandbags.ts, strongman-stones.ts and strongman-frames.ts; order is Gym Radar ownership (most owned first). */
 import type { FloorPart } from '../floor-part.ts';
-export const PARTS = [] as const satisfies readonly FloorPart[];
+import { BELLS_OF_STEEL_SANDBAG, CERBERUS_DUAL_PLY, CERBERUS_HUSAFELL_SANDBAG, CERBERUS_SANDSTONE, CERBERUS_THROWING_SANDBAG, FREEDOM_STRENGTH_SANDBAG, REP_SANDBAG, ROGUE_CYCLONE_SANDBAG, ROGUE_ECHO_SANDBAG, ROGUE_STRONGMAN_SANDBAG } from './strongman-sandbags.ts';
+import { BARTOS_STONE_OF_STEEL, DIY_ATLAS_STONE, DIY_KEG, DIY_STONE_PLATFORM, DIY_TIRE, NATURAL_STONE, TITAN_HUSAFELL_STONE } from './strongman-stones.ts';
+import { ABMAT_LOG_CUSHIONS, BARTOS_CIRCUS_DB, CERBERUS_DINNIE, ROGUE_DINNIE_RINGS, ROGUE_FARMERS, ROGUE_Y1, ROGUE_Y2, TITAN_CIRCUS_DB, TITAN_FARMERS, TITAN_LOG, TITAN_UPRIGHT_FARMERS, TITAN_YOKE } from './strongman-frames.ts';
+export const PARTS = [
+  CERBERUS_DUAL_PLY, ROGUE_STRONGMAN_SANDBAG, FREEDOM_STRENGTH_SANDBAG, DIY_KEG, DIY_ATLAS_STONE, TITAN_UPRIGHT_FARMERS, REP_SANDBAG, TITAN_YOKE,
+  ROGUE_ECHO_SANDBAG, CERBERUS_THROWING_SANDBAG, NATURAL_STONE, BELLS_OF_STEEL_SANDBAG, TITAN_LOG, CERBERUS_DINNIE, TITAN_CIRCUS_DB, DIY_TIRE,
+  TITAN_FARMERS, ROGUE_DINNIE_RINGS, TITAN_HUSAFELL_STONE, ROGUE_Y1, CERBERUS_HUSAFELL_SANDBAG, CERBERUS_SANDSTONE, BARTOS_STONE_OF_STEEL,
+  BARTOS_CIRCUS_DB, ROGUE_CYCLONE_SANDBAG, ROGUE_FARMERS, ROGUE_Y2, DIY_STONE_PLATFORM, ABMAT_LOG_CUSHIONS,
+] as const satisfies readonly FloorPart[];
