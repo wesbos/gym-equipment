@@ -7,11 +7,12 @@ import {ROOM_DEFAULTS, WALL_IDS, validateRoom, wallFrames, wallHit, wallPlaneHit
 import {createAssembly, validateAssembly, resizeAssembly, removeInstance, resolveAssembly} from './assembly.ts';
 import {buildPegboard, pegboardHoles} from './parts/pegboard.ts';
 import {definitions} from './catalog.ts';
+import {WALL_SECTIONS} from './catalog-sections.ts';
 import {cleanDocument} from '../src/state/history.ts';
 import type {Vec3, WallItem} from './types.ts';
 const near=(a:number[],b:number[])=>a.every((v,i)=>Math.abs(v-b[i])<1e-9);
 test('every registered wall part is complete: catalog builder under Wall storage, valid defaults and face',()=>{
- assert.deepEqual(definitions.filter(d=>d.category==='Wall storage').map(d=>d.id).sort(),[...WALL_PART_IDS].sort(),'register in both wall-registry.ts and catalog.ts');
+ assert.deepEqual(definitions.filter(d=>(WALL_SECTIONS as readonly string[]).includes(d.category)).map(d=>d.id).sort(),[...WALL_PART_IDS].sort(),'register in both wall-registry.ts and catalog.ts');
  for(const part of WALL_PARTS){
   const def=definitions.find(d=>d.id===part.id)!;
   assert.equal(def.name,part.title);assert.deepEqual(def.defaults,part.defaults);assert.ok(isWallPart(part.id));

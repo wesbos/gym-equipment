@@ -5,7 +5,7 @@ import type { ResolvedInstance, Vec3 } from '../types.ts';
 export const BAR = { length: 2200, shaft: 28.5, shaftHalf: 655, collar: 30, collarDiameter: 56, sleeve: 415, sleeveDiameter: 50, axisZ: 28, rings: [405, 455], centerKnurl: 60, knurl: [215, 640] } as const;
 export const BAR_FINISHES = ['Hard chrome', 'Black oxide'] as const;
 export const BARBELL = defineFloorPart({
-  id: 'olympic-barbell', name: 'Olympic barbell', title: 'Olympic barbell · 20 kg', noun: 'barbell',
+  id: 'olympic-barbell', name: 'Olympic barbell', title: 'Olympic barbell · 20 kg', noun: 'barbell', section: 'Barbells',
   description: "Men's 20 kg Olympic bar: 2200 mm, 28.5 mm shaft, 415 mm sleeves, IWF/IPF knurl marks. Parks in J-cups, monolift arms and Darko cradles, or lies on the floor.",
   params: [{ key: 'finish', label: 'Shaft finish', default: 0, options: [0, 1], format: v => BAR_FINISHES[v] }],
   footprint: { width: BAR.length, depth: BAR.collarDiameter },

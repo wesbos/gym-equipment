@@ -1,13 +1,15 @@
 /** Floor-part entry contract and param helpers. Entries are registered in floor-registry.ts. */
 import type { NumericParams, PartDefinition, Vec2 } from './types.ts';
 import type { VendorAttribution } from './vendor-metadata.ts';
+import { DEFAULT_FLOOR_SECTION, type FloorSection } from './catalog-sections.ts';
 /** Local floor rectangle in mm: width along the part's X, depth along its floor Z, centre offset from its origin. */
 export interface FloorBox { width: number; depth: number; offset?: Vec2 }
 type ByParams<T> = T | ((params: NumericParams) => T);
 export interface FloorParam { key: string; label: string; default: number; options: ByParams<readonly number[]>; format?: (value: number) => string }
 export interface FloorPartSpec<Id extends string = string> {
   id: Id; /** Inspector/instance name */ name: string; /** Catalog card name */ title: string; /** Lowercase noun for UI copy and warnings */ noun: string;
-  description?: string; params: readonly FloorParam[]; validate?: (params: NumericParams) => void;
+  description?: string; /** Sidebar heading and library category (catalog-sections.ts) */ section?: FloorSection;
+  params: readonly FloorParam[]; validate?: (params: NumericParams) => void;
   footprint: ByParams<FloorBox>; /** Soft use-clearance zone; warns when it overlaps the rack or another part. */ clearance?: ByParams<FloorBox>;
   /** Suggested placement: rack side and footprint gap from the rack's outer tube face (default right, 200 mm). */
   placement?: { side?: 'right' | 'left' | 'front' | 'back'; gap?: number };
@@ -38,6 +40,6 @@ export function coerceFloorParams(part: ParamPart, input: NumericParams): Numeri
   return params;
 }
 export const floorDefinition = (part: FloorPart, build: PartDefinition['build']): PartDefinition => ({
-  id: part.id, name: part.title, category: 'Floor items', defaults: part.defaults, build, description: part.description,
+  id: part.id, name: part.title, category: part.section ?? DEFAULT_FLOOR_SECTION, defaults: part.defaults, build, description: part.description,
   standardOptions: Object.fromEntries(part.params.filter(p => typeof p.options !== 'function').map(p => [p.key, (p.options as readonly number[]).map(value => ({ value, label: (p.format ?? String)(value) }))])),
 });

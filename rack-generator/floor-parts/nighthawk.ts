@@ -6,7 +6,7 @@ export const NIGHTHAWK_DEFAULTS = { backrestAngle: 0, seatAngle: 0 };
 export const NIGHTHAWK_COLORS = PAINT_SWATCHES.filter(([name]) => ['Metallic Black','Red','Blue','Matte Black','Army Green','White'].includes(name));
 const degrees = (value: number) => `${value}°`;
 export const NIGHTHAWK = defineFloorPart({
-  id: 'rep-nighthawk', name: 'REP Nighthawk', title: 'REP Nighthawk adjustable bench', noun: 'bench',
+  id: 'rep-nighthawk', name: 'REP Nighthawk', title: 'REP Nighthawk adjustable bench', noun: 'bench', section: 'Benches',
   description: 'REP Fitness Nighthawk (AB-4102). Independent reconstruction from published dimensions; REP trademarks belong to REP Fitness.',
   params: [
     { key: 'backrestAngle', label: 'Backrest angle', default: NIGHTHAWK_DEFAULTS.backrestAngle, options: BACKREST_ANGLES, format: degrees },

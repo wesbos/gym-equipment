@@ -20,7 +20,7 @@ const dumbbellBox = (p: NumericParams): FloorBox => p.rest
   ? { width: 2 * PEPIN.plate + PEPIN.restGap, depth: PEPIN.cradleLength, offset: [(PEPIN.plate + PEPIN.restGap) / 2, 0] }
   : { width: PEPIN.plate, depth: PEPIN.cradleLength };
 export const PEPIN_DUMBBELL = defineFloorPart({
-  id: 'rep-pepin-dumbbell', name: 'REP x PÉPIN FAST Series', title: 'REP x PÉPIN FAST adjustable dumbbell', noun: 'dumbbell',
+  id: 'rep-pepin-dumbbell', name: 'REP x PÉPIN FAST Series', title: 'REP x PÉPIN FAST adjustable dumbbell', noun: 'dumbbell', section: 'Dumbbells',
   description: 'REP x PÉPIN FAST Series adjustable dumbbell in its steel cradle. Independent reconstruction; REP and PÉPIN trademarks belong to their owners.',
   params: [
     { key: 'variant', label: 'Set size', default: 85, options: PEPIN_VARIANTS, format: v => `${v} lb${v === 125 ? ' (max)' : ''}` },
@@ -38,7 +38,7 @@ export const STAND_HEIGHTS = [18, 19, 20, 21] as const;
 export const STAND = { width: 787, length: 566, opening: 414, trayWidth: 183, trayLength: 503 } as const;
 export const STAND_COLORS = PAINT_SWATCHES.filter(([name]) => ['Metallic Black','White','Matte Black'].includes(name));
 export const PEPIN_STAND = defineFloorPart({
-  id: 'rep-pepin-stand', name: 'REP Adjustable Dumbbell Stand', title: 'REP adjustable dumbbell stand', noun: 'dumbbell stand',
+  id: 'rep-pepin-stand', name: 'REP Adjustable Dumbbell Stand', title: 'REP adjustable dumbbell stand', noun: 'dumbbell stand', section: 'Floor storage',
   description: 'REP Adjustable Dumbbell Stand with REP x PÉPIN FAST Series trays. Independent reconstruction; REP trademarks belong to REP Fitness.',
   params: [
     { key: 'height', label: 'Tray height', default: 18, options: STAND_HEIGHTS, format: v => `${v}"` },

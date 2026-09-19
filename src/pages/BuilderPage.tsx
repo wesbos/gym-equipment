@@ -6,12 +6,13 @@ import { FloorInspector } from '../components/FloorInspector.tsx';
 import { PlateStackEditor } from '../components/PlateStackEditor.tsx';
 import { WallInspector } from '../components/WallInspector.tsx';
 import { wallWarnings } from '../../rack-generator/wall-items.ts';
-import { WALL_PART_IDS } from '../../rack-generator/wall-registry.ts';
+import { WALL_PARTS } from '../../rack-generator/wall-registry.ts';
 import { HangInspector } from '../components/HangInspector.tsx';
 import { hangWarnings } from '../../rack-generator/hang-items.ts';
-import { HANG_PART_IDS } from '../../rack-generator/hang-registry.ts';
+import { HANG_PARTS } from '../../rack-generator/hang-registry.ts';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
-import { FLOOR_PART_IDS, floorPart } from '../../rack-generator/floor-registry.ts';
+import { FLOOR_PARTS, floorPart } from '../../rack-generator/floor-registry.ts';
+import { FLOOR_SECTIONS, WALL_SECTIONS, HANG_SECTIONS, DEFAULT_FLOOR_SECTION, DEFAULT_WALL_SECTION, DEFAULT_HANG_SECTION, sectionGroups } from '../../rack-generator/catalog-sections.ts';
 import { LogoControls } from '../components/LogoControls.tsx';
 import { addsStructure } from '../../rack-generator/structure-candidates.ts';
 import { VendorControls, VendorCredit } from '../components/VendorControls.tsx';
@@ -66,9 +67,10 @@ import "../../rack-generator/builder.css";
 import "../components/history-timeline.css";
 const groups: [string, readonly PartId[]][] = [
   ["Systems", SYSTEM_PARTS],
-  ["Floor items", FLOOR_PART_IDS],
-  ["Wall storage", WALL_PART_IDS],
-  ["Cable attachments", HANG_PART_IDS],
+  // Floor, wall and hang parts group under their registry `section` (catalog-sections.ts).
+  ...sectionGroups(FLOOR_PARTS, FLOOR_SECTIONS, DEFAULT_FLOOR_SECTION),
+  ...sectionGroups(WALL_PARTS, WALL_SECTIONS, DEFAULT_WALL_SECTION),
+  ...sectionGroups(HANG_PARTS, HANG_SECTIONS, DEFAULT_HANG_SECTION),
   ["Digital resistance", VOLTRA_IDS],
   ["Darko Lifting", DARKO_IDS],
   [

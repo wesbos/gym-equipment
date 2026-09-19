@@ -9,8 +9,12 @@
  *  3. Register: add MY_PART to HANG_PARTS below, and spread its `definitions` into catalog.ts. */
 import type { HangPart } from './hang-part.ts';
 import { LAT_BAR, STRAIGHT_BAR, TRICEP_ROPE, D_HANDLES, TRIANGLE_ROW, PUSHDOWN_BAR, CURL_BAR, ANKLE_CUFF } from './hang-parts/cable-attachments.ts';
+// Family slots: each file owns its PARTS list, so parallel families never edit this file.
+import { PARTS as CABLE_HANDLES } from './hang-parts/cable-handles.ts';
+import { PARTS as SPECIALTY_GRIPS } from './hang-parts/specialty-grips.ts';
+import { PARTS as HANGING_ACCESSORIES } from './hang-parts/hanging-accessories.ts';
 export * from './hang-part.ts';
-export const HANG_PARTS = [LAT_BAR, STRAIGHT_BAR, TRICEP_ROPE, D_HANDLES, TRIANGLE_ROW, PUSHDOWN_BAR, CURL_BAR, ANKLE_CUFF] as const;
+export const HANG_PARTS = [LAT_BAR, STRAIGHT_BAR, TRICEP_ROPE, D_HANDLES, TRIANGLE_ROW, PUSHDOWN_BAR, CURL_BAR, ANKLE_CUFF, ...CABLE_HANDLES, ...SPECIALTY_GRIPS, ...HANGING_ACCESSORIES] as const;
 export type HangPartId = (typeof HANG_PARTS)[number]['id'];
 export const HANG_PART_IDS: HangPartId[] = HANG_PARTS.map(p => p.id);
 const registry = new Map<string, HangPart>(HANG_PARTS.map(p => [p.id, p]));
