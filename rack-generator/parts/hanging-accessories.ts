@@ -217,7 +217,7 @@ const buildSlingShot = attachment(SLING_SHOT, t => {
     t.rect2(4 * thick, panel + 2, [0, (joinTop + joinBottom) / 2]),
     t.k(t.poly2(drapePath(lower, thick / 2)).subtract(t.poly2(drapePath(lower, -thick / 2)))),
   ]);
-  const body = clipFront(t, t.prismXZ(section, y0, y1), y0, -2, joinTop - 10);
+  const body = clipFront(t, t.prismXZ(section, y0, y1), y0, -2, -60);
   // White seams across the panel ends and down the sleeve centre lines; a white outline badge on the lower sleeve.
   const seamX = 2 * thick + .3, seams = [joinTop, joinBottom].map(z => t.box([.8, width - 6, 3], [seamX, (y0 + y1) / 2, z]));
   const midSeam = t.box([.8, 2, panel - 8], [seamX, (y0 + y1) / 2, (joinTop + joinBottom) / 2]);
@@ -260,7 +260,8 @@ function fatGripz(part: HangPart, od: number, colour: string, text: string) {
     const body = t.prismXZ(section, y0, y1);
     // Smooth label panel on the +X flank with the black wordmark; end chamfer rings.
     const panel = t.k(t.prismXZ(t.k(t.circle2([0, zc], ro + .6, 56).subtract(t.circle2([0, zc], ro - .5, 56))), y0 + 16, y1 - 16).intersect(t.box([ro, L, ro * .9], [ro, (y0 + y1) / 2, zc + ro * .12])));
-    const word = t.k(t.prismXZ(t.k(t.circle2([0, zc], ro + 1, 56).subtract(t.circle2([0, zc], ro + .3, 56))), y0 + 26, y1 - 26).intersect(t.box([ro, L, ro * .3], [ro, (y0 + y1) / 2, zc + ro * .2])));
+    const shell = t.k(t.circle2([0, zc], ro + 1, 56).subtract(t.circle2([0, zc], ro + .3, 56))), band = t.box([ro, L, ro * .3], [ro, (y0 + y1) / 2, zc + ro * .22]);
+    const word = t.union([t.k(t.prismXZ(shell, y0 + 22, y0 + 44).intersect(band)), t.k(t.prismXZ(shell, y0 + 50, y1 - 22).intersect(band))]);
     const tilt = (m: Manifold) => t.rotX(m, -theta, contact);
     return [
       { name: `${part.id === 'fat-gripz' ? 'Blue' : 'Orange'} textured rubber sleeve`, solid: tilt(body), ...fabric(colour, .8) },
@@ -328,26 +329,28 @@ const buildKeppi = attachment(KEPPI_OPENCOLLAR, t => {
 /** Rogue USA Aluminum: 1.5″ billet ring with twelve flats, hinge knuckles at the upper left, black nylon lever on top. */
 export const ROGUE_USA = { od: 76, width: 1.5 * IN, bore: 26.8, lining: 1.5 };
 const buildRogueUsa = attachment(ROGUE_USA_COLLARS, t => {
-  const { od, width, bore, lining } = ROGUE_USA, inner = bore - lining, zc = boreZ(inner), R = od / 2, bodies: Manifold[] = [], liners: Manifold[] = [], levers: Manifold[] = [], marks: Manifold[] = [], pins: Manifold[] = [];
+  const { od, width, bore, lining } = ROGUE_USA, inner = bore - lining, zc = boreZ(inner), R = od / 2, bodies: Manifold[] = [], liners: Manifold[] = [], levers: Manifold[] = [], marks: Manifold[] = [], pins: Manifold[] = [], etched: Manifold[] = [];
   const flats: P2[] = []; for (let i = 0; i < 12; i++) { const a = (i + .5) * Math.PI / 6; flats.push([R / Math.cos(Math.PI / 12) * .985 * Math.cos(a), zc + R / Math.cos(Math.PI / 12) * .985 * Math.sin(a)]); }
   const outline = t.k(t.k(t.poly2(flats).intersect(t.circle2([0, zc], R, 64))).subtract(t.circle2([0, zc], bore, 56)));
   const split = t.rect2(2.2, 16, [-R * .62, zc + R * .74]);
-  const leverAt = 55 * Math.PI / 180, lx = (R + 3) * Math.cos(leverAt), lz = zc + (R + 3) * Math.sin(leverAt);
+  const leverAt = 68 * Math.PI / 180, lx = (R + 3) * Math.cos(leverAt), lz = zc + (R + 3) * Math.sin(leverAt);
   for (const i of [0, 1]) {
     const [y0, y1] = pairSpan(width, i);
     bodies.push(t.prismXZ(t.k(outline.subtract(split)), y0, y1));
     liners.push(t.prismXZ(t.k(t.circle2([0, zc], bore + .2, 48).subtract(t.circle2([0, zc], inner, 48))), y0 + 1, y1 - 1));
     for (const [dy0, dy1] of [[0, 11], [width - 11, width]]) pins.push(t.cylinder([-R * .72, y0 + dy0, zc + R * .7], [-R * .72, y0 + dy1, zc + R * .7], 13, 24));
-    const lever = t.rotY(t.box([48, width - 7, 10], [lx - 8, (y0 + y1) / 2, lz]), 32, [lx, lz]);
-    levers.push(lever);
-    marks.push(t.rotY(t.box([30, width - 18, .6], [lx - 10, (y0 + y1) / 2, lz + 5.2]), 32, [lx, lz]), t.box([16, .5, 4], [R * .1, y0 - .15, zc + R * .8]));
+    // Lever lies tangent across the top, descending to the right past the body.
+    levers.push(t.rotY(t.union([t.box([46, width - 6, 7], [lx - 4, (y0 + y1) / 2, lz - 1]), t.box([10, width - 6, 11], [lx - 24, (y0 + y1) / 2, lz - 3])]), 22, [lx, lz]));
+    marks.push(t.rotY(t.box([28, 7, .6], [lx - 4, (y0 + y1) / 2, lz + 2.8]), 22, [lx, lz]));
+    etched.push(t.box([.5, width - 16, 7], [R + .15, (y0 + y1) / 2, zc - 4]));
   }
   return [
     { name: 'Clear-anodised billet bodies', solid: t.union(bodies), role: 'source', color: '#cfd2d5', metalness: .88, roughness: .3 },
     { name: 'Hinge knuckles', solid: t.union(pins), role: 'source', color: '#bfc3c6', metalness: .9, roughness: .26 },
     { name: 'Rubber linings', solid: t.union(liners), ...BLACK_RUBBER },
     { name: 'Black nylon levers', solid: t.union(levers), ...BLACK_PLASTIC },
-    { name: 'Rogue logos', solid: t.union(marks), ...WHITE },
+    { name: 'White lever logos', solid: t.union(marks), ...WHITE },
+    { name: 'Laser-etched Rogue logos', solid: t.union(etched), role: 'source', color: '#8b8f93', metalness: .7, roughness: .5 },
   ];
 });
 
