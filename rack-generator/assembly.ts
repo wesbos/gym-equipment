@@ -162,7 +162,7 @@ function uprightFrameParams(doc: RackDoc, id: string, profile: GridProfile, angl
   if (base.gusset) Object.assign(out, { gussetHeight: base.gusset.height, gussetLength: base.gusset.length });
   const opposite = live.some(([, n]) => Math.sign(n.x) === -Math.sign(node.x) && Math.abs(n.x) > 1);
   if (base.rearBar && next === undefined && opposite && Math.abs(node.x) > r.tube / 2) {
-    const worldY = base.rearBar === 'end' ? plus - base.width / 2 : 0;
+    const worldY = base.rearBar === 'end' ? plus - base.width / 2 - (base.rearBarOffset ?? 0) : base.rearBarOffset ?? 0;
     const localY = worldY * flip;
     Object.assign(out, { crossIn: Math.abs(node.x) }, Math.abs(localY) > 0.01 ? { crossY: Math.abs(localY) } : {}, localY < 0 ? { crossBack: 1 } : {});
   }

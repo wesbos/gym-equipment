@@ -10,12 +10,13 @@
  * - `foot`: a flat-foot base tube under each side (flat-foot racks, half racks, squat stands).
  *   `front`/`back` are the overhangs past the front-most upright's front face and the rear-most
  *   upright's back face; posts in one column share one continuous tube. `rearBar` adds the floor
- *   crossbar joining both feet at the foot's rear end (`end`) or at the rear posts (`post`).
+ *   crossbar joining both feet at the foot's rear end (`end`, moved `rearBarOffset` forward) or at the rear posts
+ *   (`post`, moved `rearBarOffset` rearward).
  * - `wall`: fold-back wall mount; each post swings on two arms hinged to wall brackets. */
 export type FrameBase =
   | { style: 'plate' }
   | { style: 'bolt-down'; out: number; in?: number; fore: number; thickness: number }
-  | { style: 'foot'; width: number; height: number; front: number; back: number; wall?: number; rearBar?: 'end' | 'post'; gusset?: { height: number; length: number }; caps?: boolean }
+  | { style: 'foot'; width: number; height: number; front: number; back: number; wall?: number; rearBar?: 'end' | 'post'; rearBarOffset?: number; gusset?: { height: number; length: number }; caps?: boolean }
   | { style: 'wall'; armLow: number; armHigh: number; armSize: number; bracketHeight: number; bracketOut: number };
 /** Flat coloured nameplate on the rear top crossmember; no manufacturer artwork. */
 export interface ProfileNameplate { style: 'badge' | 'arch' | 'panel'; color: string; accent?: string; height?: number; center?: boolean; width?: number }
@@ -60,8 +61,9 @@ const ROGUE_BLACK = '#1c1d1f', TITAN_BLACK = '#18191b', REP_METALLIC = '#303236'
 const MONSTER_LITE = { pitch: inch(2), holeDiameter: inch(11 / 16), wall: 3.04, firstHole: inch(2.5), benchZone: { startStation: 7, endStation: 22, spacing: inch(1) } } as const;
 const ROGUE_DECAL = { color: '#e6e7e8', length: inch(13), width: inch(0.9), top: inch(5) } as const;
 const ROGUE_BOLT_DOWN: FrameBase = { style: 'bolt-down', out: inch(2), fore: inch(2), thickness: inch(3 / 8) };
-/** Rogue Monster Lite squat-stand base: 48-inch 2x3 feet, triangle gussets, rear floor crossbar. */
-const ROGUE_STAND_BASE: FrameBase = { style: 'foot', width: inch(3), height: inch(2), front: inch(16), back: inch(29), rearBar: 'end', gusset: { height: inch(9), length: inch(4) } };
+/** Rogue Monster Lite squat-stand base: 48-inch 2x3 feet with the posts toward the rear, triangle gussets,
+ * rear floor crossbar a few inches in from the rear ends. */
+const ROGUE_STAND_BASE: FrameBase = { style: 'foot', width: inch(3), height: inch(2), front: inch(29), back: inch(16), rearBar: 'end', rearBarOffset: inch(3), gusset: { height: inch(9), length: inch(4) } };
 const TITAN_BADGE: ProfileNameplate = { style: 'badge', color: '#eceded', accent: '#d21f26' };
 export const GRID_PROFILES: readonly GridProfile[] = [
   { id: 'generic-75', label: 'BOS generic 75 mm', widths: [425,725,1075], depths: [425,725,1075], pitch:50, holeDiameter:25 },
@@ -111,7 +113,7 @@ export const GRID_PROFILES: readonly GridProfile[] = [
     reconstructionNote: 'Reconstruction: published 2x3 11-gauge uprights (2-inch face forward), Westside spacing, 43-inch inside width, 24/30-inch depths, 90.375-inch height and 34/40 × 53-inch footprints. Hole size, plate outlines and fat/skinny bar heights are estimated; physical Rogue fit is unverified.' },
   { id: 'rogue-hr2', label: 'Rogue HR-2 Half Rack', vendor: 'Rogue Fitness', tube: inch(3), ...MONSTER_LITE, firstHole: inch(4), numbered: true,
     widths: [inch(43)], depths: [inch(17)], heights: [inch(92.25), inch(110.25)],
-    base: { ...ROGUE_STAND_BASE, back: inch(9) }, color: ROGUE_BLACK, lowerCrossmembers: false,
+    base: { ...ROGUE_STAND_BASE, front: inch(19.5), back: inch(5.5), rearBarOffset: 0 }, color: ROGUE_BLACK, lowerCrossmembers: false,
     source: 'https://www.roguefitness.com/rogue-hr-2-half-rack',
     starters: [
       { kind: 'four', height: inch(92.25), rearHeight: inch(72.25), depth: inch(17), label: 'Rogue HR-2 Half Rack · 90″ front / 70″ rear', featured: true, pullups: [31.75], rearCrossmember: false },
@@ -125,17 +127,17 @@ export const GRID_PROFILES: readonly GridProfile[] = [
     id, label, vendor: 'Rogue Fitness', tube: inch(3), ...MONSTER_LITE, firstHole: inch(4), numbered: true,
     widths: [inch(43)], depths: [inch(12)], heights: [height], base: ROGUE_STAND_BASE, color: ROGUE_BLACK, source,
     starters: [{ kind: 'stand', height, depth: inch(12), label: `${label.replace(' Monster Lite Squat Stand', '')} squat stand`, featured: true, pullups }],
-    reconstructionNote: `Reconstruction: published 3x3 11-gauge uprights, three 2x3 11-gauge base tubes, 5/8-inch holes, Westside spacing, ${Math.round(height / 25.4 * 100) / 100}-inch height and 48 × 49-inch footprint. The post position on the 48-inch feet (16 inches from the front), triangle plates and hole bounds are estimated from photos; physical Rogue fit is unverified.`,
+    reconstructionNote: `Reconstruction: published 3x3 11-gauge uprights, three 2x3 11-gauge base tubes, 5/8-inch holes, Westside spacing, ${Math.round(height / 25.4 * 100) / 100}-inch height and 48 × 49-inch footprint. The post position on the 48-inch feet (16 inches from the rear, crossbar 3 inches in), triangle plates and hole bounds are estimated from photos; physical Rogue fit is unverified.`,
   })),
   { id: 'rogue-sm-1', label: 'Rogue SM-1 Monster Squat Stand 2.0', vendor: 'Rogue Fitness', tube: inch(3), wall: 3.04, pitch: inch(2), holeDiameter: inch(1 + 1 / 16), firstHole: inch(5), numbered: true,
     widths: [inch(43)], depths: [inch(12)], heights: [inch(73)],
-    base: { style: 'foot', width: inch(3), height: inch(3), front: inch(17), back: inch(30), rearBar: 'end', gusset: { height: inch(10), length: inch(5) }, caps: true },
+    base: { style: 'foot', width: inch(3), height: inch(3), front: inch(23.5), back: inch(23.5), rearBar: 'post', rearBarOffset: inch(8), gusset: { height: inch(10), length: inch(5) }, caps: true },
     color: ROGUE_BLACK, source: 'https://www.roguefitness.com/rogue-sm-1-squat-stand-2-0',
     starters: [{ kind: 'stand', height: inch(73), depth: inch(12), label: 'Rogue SM-1 Monster squat stand 2.0 · 73″', featured: true }],
     reconstructionNote: 'Reconstruction: published 3x3 11-gauge steel, 1-inch hardware, 73-inch height, rubber feet and 50 × 54-inch footprint. Foot section, post position, gussets and 43-inch inside width are estimated from photos; physical Rogue fit is unverified.' },
   { id: 'rogue-s-2', label: 'Rogue S-2 Squat Stand 2.0', vendor: 'Rogue Fitness', tube: inch(2), tubeDepth: inch(3), ...MONSTER_LITE, firstHole: inch(4), numbered: false,
     widths: [inch(43)], depths: [inch(12)], heights: [inch(92)],
-    base: { style: 'foot', width: inch(3), height: inch(2), front: inch(16), back: inch(29), rearBar: 'end', gusset: { height: inch(9), length: inch(4) } },
+    base: ROGUE_STAND_BASE,
     decal: ROGUE_DECAL, color: ROGUE_BLACK, source: 'https://www.roguefitness.com/rogue-s2-squat-stand-2-0',
     starters: [{ kind: 'stand', height: inch(92), depth: inch(12), label: 'Rogue S-2 squat stand 2.0 · 92″ · fat/skinny bar', featured: true, pullups: [31.75, 50.8] }],
     reconstructionNote: 'Reconstruction: published 2x3 11-gauge uprights, Westside spacing, 5/8-inch hardware, 92-inch height, 48 × 48-inch footprint, triangle-plate base and 1.25/2-inch pull-up bars. Post position, inside width and hole size are estimated; physical Rogue fit is unverified.' },
