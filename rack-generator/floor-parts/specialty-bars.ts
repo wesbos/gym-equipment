@@ -132,29 +132,29 @@ function handles(out: Prim[], s: SsbSpec, h: HandleStyle, mats = { post: 'handle
 const TITAN: SsbSpec = {
   length: inch(90.5), shaft: 38, between: inch(50), drop: inch(5), tilt: 20, bendR: 30,
   collar: { len: 22, d: 60 }, sleeve: { d: 50, len: inch(14.75) }, cap: { len: 6, d: 46 },
-  pad: { len: inch(18), h: 135, d: 140, round: 40, y: 6, z: 8 },
+  pad: { len: inch(18), h: 135, d: 140, round: 30, y: 6, z: 8 },
   arms: { x: inch(12.75) / 2, w: 127, t: 118, len: 282, tilt: 8, round: 38 },
-  logos: [{ at: 'front', w: 30, h: 30, mat: 'logoRed', dx: -62 }, { at: 'front', w: 104, h: 22, mat: 'logo', dx: 12, dz: 6 }, { at: 'front', w: 66, h: 9, mat: 'logoRed', dx: 31, dz: -14 }],
+  logos: [{ at: 'front', w: 42, h: 44, mat: 'logoRed', dx: -92, dz: 14 }, { at: 'front', w: 180, h: 24, mat: 'logo', dx: 32, dz: 24 }, { at: 'front', w: 100, h: 11, mat: 'logoRed', dx: 68, dz: 6 }],
 };
 const ELITE_YOKE: SsbSpec = {
   length: inch(92), shaft: 38, between: inch(49.5), drop: inch(6), tilt: 30, bendR: 40,
   collar: { len: 16, d: 66 }, sleeve: { d: 49.5, len: inch(14.5) }, cap: { len: 3, d: 44 },
-  pad: { len: inch(18), h: 150, d: 170, round: 28, y: 20, z: 28 },
-  arms: { x: inch(9) / 2 + 55, w: 110, t: 110, len: 290, tilt: 20, round: 54 },
+  pad: { len: inch(18), h: 150, d: 170, round: 45, y: 20, z: 28 },
+  arms: { x: inch(9) / 2 + 55, w: 110, t: 110, len: 310, tilt: 20, round: 54 },
   logos: [{ at: 'top', w: 190, h: 34, mat: 'logo', dz: -8 }, { at: 'arm', w: 130, h: 22, mat: 'logo' }],
 };
 const REP: SsbSpec = {
   length: inch(92.5), shaft: 32, between: inch(49.1), drop: inch(5.5), tilt: 25, bendR: 36,
   collar: { len: 20, d: 58 }, sleeve: { d: 50, len: 390 }, cap: { len: 6, d: 44 },
   pad: { len: 432, h: 125, d: 132, round: 26, y: 8, z: 10 },
-  arms: { x: inch(13) / 2, w: inch(13) - inch(8.3), t: 108, len: 250, tilt: 5, round: 36 },
+  arms: { x: inch(13) / 2, w: inch(13) - inch(8.3), t: 108, len: 330, tilt: 5, round: 36 },
   logos: [{ at: 'front', w: 150, h: 38, mat: 'logo', dz: -6 }],
 };
 const SS4: SsbSpec = {
   length: 2200, shaft: 32, between: 1219, drop: inch(3.5), tilt: 22, bendR: 34,
   collar: { len: 22, d: 62 }, bearing: { len: 3, d: 54 }, sleeve: { d: 50, len: 300 }, cap: { len: 8, d: 48 },
   pad: { len: 406, h: 127, d: 127, round: 48, y: 0, z: 4 },
-  arms: { x: inch(9) / 2 + 56, w: 112, t: 112, len: 230, tilt: 5, round: 36 },
+  arms: { x: inch(9) / 2 + 56, w: 112, t: 112, len: 265, tilt: 5, round: 36 },
   logos: [{ at: 'top', w: 30, h: 30, mat: 'logo', dx: -58 }, { at: 'top', w: 76, h: 30, mat: 'logo', dx: 8 }],
 };
 export const SS4_HANDLES = ['Straight handles', 'Spider handles', 'Seal row handles', 'Chain handles'] as const;
@@ -173,14 +173,14 @@ const TRANSFORMER = {
   length: inch(91.25), shaft: 38, brackets: inch(54), hub: { d: 140, len: 12 }, plate: { t: 16, r0: 62, r1: 48, reach: 190 },
   block: { len: 70, size: 56 }, collar: { len: 26, d: 64 }, sleeve: { d: 50, len: inch(15.75) }, cap: { len: 6, d: 46 },
 };
-const TRANSFORMER_PAD: SsbSpec = { ...REP, pad: { len: 406, h: 118, d: 128, round: 44, y: 10, z: 10 }, arms: { x: inch(12) / 2, w: 106, t: 100, len: 228, tilt: 28, round: 40 }, logos: [] };
+const TRANSFORMER_PAD: SsbSpec = { ...REP, pad: { len: 483, h: 105, d: 125, round: 40, y: 8, z: 6 }, arms: { x: inch(12) / 2, w: 108, t: 100, len: 210, tilt: 28, round: 40 }, logos: [] };
 function transformerPrims(p: NumericParams): Prim[] {
   const T = TRANSFORMER, out: Prim[] = [], c = T.brackets / 2, end = T.length / 2, phi = rad(TRANSFORMER_ANGLES[p.camber]), slot = TRANSFORMER_SLOTS[p.slot];
   const dir: V3 = [0, -Math.sin(phi), -Math.cos(phi)], at: V3 = mul(dir, slot);
   out.push(xrod('Bar shaft', 'shaft', -c, c, T.shaft / 2));
   yokePad(out, TRANSFORMER_PAD);
   handles(out, TRANSFORMER_PAD, p.handles ? { kind: 'bent', post: 150, postD: 29, bendAt: 30, bend: 60, bendR: 35, grip: 90, gripD: 29.2, cap: 4 }
-    : { kind: 'straight', post: 20, postD: 29, grip: 190, gripD: 29.2, cap: 4 }, { post: 'handlePost', grip: 'grip', cap: 'handleCap' });
+    : { kind: 'straight', post: 20, postD: 29, grip: 300, gripD: 29.2, cap: 4 }, { post: 'handlePost', grip: 'grip', cap: 'handleCap' });
   const x1 = c + T.hub.len, x2 = x1 + T.plate.t, disc = (cx: number, cy: number, cz: number, r: number, n = 28) =>
     Array.from({ length: n }, (_, i) => [cx, cy + r * Math.cos(2 * Math.PI * i / n), cz + r * Math.sin(2 * Math.PI * i / n)] as V3);
   for (const sx of [-1, 1]) {
@@ -206,14 +206,18 @@ function transformerPrims(p: NumericParams): Prim[] {
  * through the middle (Duffalo's multiple-radius bend). Both leave the collars with zero slope. */
 interface BowSpec { length: number; shaft: number; halfWidth: number; drop: number; profile: 'cosine' | 'multi'; collar: { len: number; d: number }; sleeve: { d: number; len: number }; cap: { len: number; d: number }; knurl: [number, number][] }
 const bowZ = (s: BowSpec, x: number) => { const u = x / s.halfWidth; return Math.abs(u) >= 1 ? 0 : s.profile === 'multi' ? s.drop * (1 - u * u) ** 2 : s.drop * (1 + Math.cos(Math.PI * u)) / 2; };
-function bowPrims(s: BowSpec, capBadge?: { d: number; mat: string }): Prim[] {
+function bowPrims(s: BowSpec, capBadge?: { d: number; mat: string; inner?: { d: number; mat: string } }): Prim[] {
   const out: Prim[] = [], end = s.length / 2, xc = end - s.cap.len - s.sleeve.len - s.collar.len, curve = (a: number, b: number) =>
     Array.from({ length: Math.ceil((b - a) / 4) + 1 }, (_, i) => { const x = a + (b - a) * i / Math.ceil((b - a) / 4); return [x, 0, bowZ(s, x)] as V3; });
   out.push(tube('Cambered shaft', 'shaft', curve(-xc - 2, xc + 2), [0, 1, 0], s.shaft / 2, STEEL, 8));
   for (const [a, b] of s.knurl) for (const [lo, hi] of a === -b ? [[a, b]] : [[a, b], [-b, -a]]) out.push(tube('Knurling', 'knurl', curve(lo, hi), [0, 1, 0], s.shaft / 2 + .25, STEEL, 8));
   // Badge discs sit in the end-cap face, flush with the bar end.
   sleeves(out, xc, capBadge ? end - .6 : end, [0, 0], { ...s, cap: { ...s.cap, len: s.cap.len - (capBadge ? .6 : 0) } });
-  if (capBadge) for (const sx of [-1, 1]) out.push(xrod('End cap badges', capBadge.mat, sx * (end - 1.2), sx * end, capBadge.d / 2));
+  // A ring badge is a disc with a darker centre disc standing proud of it by 0.4 mm.
+  if (capBadge) for (const sx of [-1, 1]) {
+    out.push(xrod('End cap badges', capBadge.mat, sx * (end - 1.2), sx * (end - (capBadge.inner ? .4 : 0)), capBadge.d / 2));
+    if (capBadge.inner) out.push(xrod('End cap badge centres', capBadge.inner.mat, sx * (end - 1.2), sx * end, capBadge.inner.d / 2));
+  }
   return out;
 }
 const CB4: BowSpec = {
@@ -241,18 +245,20 @@ function cb1Prims(): Prim[] {
 }
 
 // ---------------------------------------------------------------- EliteFTS American Cambered Grip Bar: cambered multi-grip frame
-const ACG = { length: inch(80), frame: inch(39.5), depth: 280, rail: { w: 25, h: 38 }, flat: 150, slope: 200, drop: inch(2), shaft: 32, collarAt: inch(50.5) / 2,
-  collar: { len: 20, d: 58 }, sleeve: { d: 50, len: 0 }, cap: { len: 6, d: 46 }, grips: [inch(7.5), inch(15), inch(21.5), inch(28)].map(v => v / 2), gripD: 32, slant: 18 };
+const ACG = { length: inch(80), frame: inch(39.5), depth: 215, chamfer: 22, rail: { w: 25, h: 38 }, flat: 150, slope: 200, drop: inch(2), shaft: 32, collarAt: inch(50.5) / 2,
+  collar: { len: 20, d: 58 }, sleeve: { d: 50, len: 0 }, cap: { len: 6, d: 46 }, grips: [inch(7.5), inch(15), inch(21.5), inch(28)].map(v => v / 2), gripD: 32, slant: 14 };
 const acgZ = (x: number) => { const a = Math.abs(x); return a <= ACG.flat ? -ACG.drop : a >= ACG.slope ? 0 : -ACG.drop * (ACG.slope - a) / (ACG.slope - ACG.flat); };
 function acgPrims(): Prim[] {
   const s = ACG, out: Prim[] = [], L = s.frame / 2, { w, h } = s.rail, yo = s.depth / 2 - w / 2, end = s.length / 2;
   // Rails: vertical-cut rectangular tube segments at the camber breaks (hulls of their end sections).
-  const breaks = [-L, -s.slope, -s.flat, s.flat, s.slope, L];
+  const breaks = [-(L - s.chamfer), -s.slope, -s.flat, s.flat, s.slope, L - s.chamfer];
   for (const y of [-yo, yo]) for (let i = 0; i < breaks.length - 1; i++) {
     const [x0, x1] = [breaks[i], breaks[i + 1]], section = (x: number) => [-1, 1].flatMap(dy => [-1, 1].map(dz => [x, y + dy * w / 2, acgZ(x) + dz * h / 2] as V3));
     out.push(hull('Cambered frame', 'frame', [...section(x0 - (i === 0 ? 0 : .01)), ...section(x1 + (i === breaks.length - 2 ? 0 : .01))]));
   }
-  for (const sx of [-1, 1]) out.push(box('Cambered frame', 'frame', [sx > 0 ? L - w : -L, -yo - w / 2, -h / 2], [sx > 0 ? L : -L + w, yo + w / 2, h / 2]));
+  // End rails with 45° chamfered corners (the frame reads as a long hexagon from above).
+  const D = s.depth / 2, c = s.chamfer;
+  for (const sx of [-1, 1]) out.push(hull('Cambered frame', 'frame', [-h / 2, h / 2].flatMap(z => [[L, D - c], [L - c, D], [L - c - w * .4, D]].flatMap(([x, y]) => [[sx * x, y, z], [sx * x, -y, z]] as V3[]))));
   // Angled grips between the rails, mirrored about the centre.
   const inner = yo - w / 2 + 2, dx = inner * Math.tan(rad(s.slant));
   for (const sx of [-1, 1]) for (const g of s.grips) {
@@ -321,7 +327,7 @@ const MODELS: Record<string, Model> = {
   },
   'rogue-cb-4-camber-bar': {
     rest: BOW_FRONT,
-    prims: () => bowPrims(CB4, { d: 30, mat: 'badge' }),
+    prims: () => bowPrims(CB4, { d: 34, mat: 'badge', inner: { d: 25, mat: 'cap' } }),
     palette: () => ({ shaft: f('#202124', .2, .55, 'rod'), knurl: f('#161719', .3, .82, 'handle'), collar: f('#2a2b2e', .5, .45, 'sleeve'), sleeve: f('#2a2b2e', .5, .45, 'sleeve'), cap: f('#1b1c1e', .4, .5), badge: f('#d9d9d6', 0, .5) }),
   },
   'rogue-cb-1-camber-bar': {
@@ -377,7 +383,7 @@ export const KABUKI_TRANSFORMER = defineFloorPart({
   ...base, id: 'kabuki-transformer-bar', name: 'Kabuki Transformer Bar', title: 'Kabuki Strength Transformer Bar',
   description: `Adjustable safety squat bar: 91.25" long, yoke on a black 54" centre bar, indexed brackets with six camber angles 30° apart and four sleeve slots (easy 1 to hard 4), 15.75" matte black sleeves, 1.15" knurled handles 12" apart. ${indep('Kabuki Strength')}`,
   params: [
-    { key: 'camber', label: 'Camber angle', default: 3, options: [0, 1, 2, 3, 4, 5], format: v => `${TRANSFORMER_ANGLES[v] > 0 ? '+' : ''}${TRANSFORMER_ANGLES[v]}° (position ${v + 1})` },
+    { key: 'camber', label: 'Camber angle', default: 2, options: [0, 1, 2, 3, 4, 5], format: v => `${TRANSFORMER_ANGLES[v] > 0 ? '+' : ''}${TRANSFORMER_ANGLES[v]}° (position ${v + 1})` },
     { key: 'slot', label: 'Sleeve slot', default: 3, options: [0, 1, 2, 3], format: v => ['Easy 1', '2', '3', 'Hard 4'][v] },
     { key: 'handles', label: 'Handles', default: 0, options: [0, 1], format: v => TRANSFORMER_HANDLES[v] },
   ],
