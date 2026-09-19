@@ -83,7 +83,7 @@ Loads: 2 × 25 kg bumpers or 4 × 45 lb iron (single); 5 + 2.5 lb pairs above a 
 Sources: [Titan product](https://titan.fitness/products/wall-mounted-6-barbell-rack), [Amazon B08R11DZ1M](https://www.amazon.com/dp/B08R11DZ1M).
 Photos (10): pair iso, 32″ dimension shot, 12-bar wall scene ×2, hook close-ups ×4, spec card.
 Published: 32″ tall, 5.4″ deep, six bars, 400 lb, 21 lb, fully lined UHMW (V2). Estimates: 2″ flange, 3/16″ steel,
-hook profile (30 mm notch 66 mm from the wall, 34 mm lip, 14 mm chamfer), 1/4″ UHMW plates on both faces.
+hook profile (31 mm notch 68 mm from the wall, 24 mm teeth with a 32 mm lip, 14 mm chamfer), 1/4″ UHMW plates on both faces.
 
 ## 9. Bells of Steel Change Plate Storage Pegs (22) — `bells-of-steel-change-plate-pegs`
 

@@ -112,7 +112,7 @@ const gunFace = (spec: (p: NumericParams) => GunRackSpec) => (p: NumericParams) 
 const ROGUE_GUN = { depth: inch(5), flange: inch(1.75), steel: inch(.1793), pitch: 134, arm: 28, lip: 26, notch: 26, notchAt: 54, spine: 26, gusset: 26, chamfer: 16, liner: 'insert' as const, linerThickness: inch(.375), color: '#1c1d1f', roughness: .78 };
 export const ROGUE_V2_SPEC: GunRackSpec = { ...ROGUE_GUN, height: inch(31.75), rungs: 6 };
 export const ROGUE_3_SPEC: GunRackSpec = { ...ROGUE_GUN, height: inch(17), rungs: 3 };
-export const TITAN_6_SPEC: GunRackSpec = { height: inch(32), depth: inch(5.4), flange: inch(2), steel: inch(.1875), rungs: 6, pitch: 133, arm: 30, lip: 34, notch: 30, notchAt: 66, spine: 34, gusset: 20, chamfer: 14, liner: 'sandwich', linerThickness: inch(.25), color: '#161718', roughness: .6 };
+export const TITAN_6_SPEC: GunRackSpec = { height: inch(32), depth: inch(5.4), flange: inch(2), steel: inch(.1875), rungs: 6, pitch: 133, arm: 24, lip: 32, notch: 31, notchAt: 68, spine: 36, gusset: 10, chamfer: 14, liner: 'sandwich', linerThickness: inch(.25), color: '#161718', roughness: .6 };
 export const REP_GUN_SPECS: readonly GunRackSpec[] = [3, 8].map(rungs => ({ height: inch(rungs === 3 ? 21.7 : 53.1), depth: inch(5.5), flange: inch(2.5), steel: inch(.2043), rungs, pitch: 165, arm: 26, lip: 42, notch: 30, notchAt: 72, spine: 36, gusset: 34, chamfer: 12, liner: 'lining' as const, linerThickness: 3, color: '#2d2f32', roughness: .72 }));
 const repGun = (p: NumericParams) => { const s = REP_GUN_SPECS[p.size]; if (!s) throw Error('Unsupported gun rack size.'); return s; };
 export const ROGUE_V2_GUN_RACK = defineWallPart({
