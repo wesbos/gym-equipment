@@ -8,7 +8,8 @@ import { coerceFloorParams, floorOptions, resolveBy, validateFloorParams } from 
 import { addFloorItem, floorWarnings } from './floor-items.ts';
 import { createAssembly, resolveAssembly, validateAssembly } from './assembly.ts';
 import { barCradles, barSpec, freeCradles, parkedPose, suggestCradle } from './barbell-cradles.ts';
-import { BAR } from './floor-parts/barbell.ts';
+import { BAR, barSleeves } from './floor-parts/barbell.ts';
+import { buildPlateStack } from './parts/plates.ts';
 import type { NumericParams, SolidPart } from './types.ts';
 const api = await Module(); api.setup();
 const box = (parts: SolidPart[], name?: string | RegExp) => {
@@ -70,6 +71,48 @@ test('bars park on the J-cups at their true shaft height, with sleeves from the 
     const parts = build(part.id, part.defaults), sleeve = box(parts, 'Loadable sleeves'), cap = box(parts, 'Sleeve end caps');
     near(spec.sleeveStart + spec.sleeveLength, sleeve.max[0], .5, `${part.id} sleeve end`); near(spec.sleeveDiameter, Math.min(sleeve.max[2] - sleeve.min[2], 60), .6, `${part.id} sleeve diameter`); assert.ok(spec.sleeveStart + spec.sleeveLength <= cap.max[0]);
     free(parts);
+  }
+});
+
+test('plates load on the real sleeve axis: dropped CB-1 and Transformer sleeves, parked or yawed on the floor', () => {
+  const doc = createAssembly(), [jcups] = barCradles(resolveAssembly(doc));
+  /** The bar at `p` either parked on the J-cups or lying on the floor turned by `yaw`; returns its resolved instance. */
+  const place = (id: string, p: NumericParams, yaw?: number) => {
+    const next = addFloorItem(doc, id), item = next.floorItems!.at(-1)!; item.params = p;
+    if (yaw === undefined) item.cradle = jcups.key; else item.rotation = yaw;
+    return resolveAssembly(validateAssembly(next)).find(e => e.id === item.id)!;
+  };
+  const cases: [string, NumericParams, number?][] = [
+    ['rogue-cb-1-camber-bar', {}], ['rogue-cb-1-camber-bar', {}, .7],
+    ...TRANSFORMER_ANGLES.map((_, camber) => ['kabuki-transformer-bar', { camber, slot: 3, handles: 0 }] as [string, NumericParams]),
+    ['kabuki-transformer-bar', { camber: 0, slot: 0, handles: 0 }], ['kabuki-transformer-bar', { camber: 4, slot: 2, handles: 1 }, -2.1],
+    ['titan-safety-squat-bar', {}], ['bells-of-steel-ss4-safety-squat-bar', { handles: 2 }, 1.2],
+  ];
+  for (const [id, params, yaw] of cases) {
+    const p = { ...PARTS.find(q => q.id === id)!.defaults, ...params }, label = `${id} ${JSON.stringify(p)}${yaw === undefined ? ' parked' : ` yaw ${yaw}`}`;
+    const bar = place(id, p, yaw), spec = barSpec(id, p), sleeves = barSleeves(bar, spec), a = bar.rotation[2], c = Math.cos(a), s = Math.sin(a);
+    assert.ok(spec.sleeveOffset && Math.hypot(spec.sleeveOffset.y, spec.sleeveOffset.z) > 90, `${label} declares its dropped sleeves`);
+    // Built sleeves (local frame) → world: yaw about Z, then the instance position.
+    const parts = build(id, p), local = box(parts, 'Loadable sleeves'), [ly, lz] = [(local.min[1] + local.max[1]) / 2, (local.min[2] + local.max[2]) / 2];
+    for (const [i, side] of [1, -1].entries()) {
+      const lx = side * spec.sleeveStart, want = [bar.position[0] + lx * c - ly * s, bar.position[1] + lx * s + ly * c, bar.position[2] + lz];
+      for (const k of [0, 1, 2]) near(sleeves[i].origin[k], want[k], .01, `${label} sleeve ${side} origin[${k}]`);
+      // A plate stack from that origin runs out along the sleeve, its bore round the built sleeve axis.
+      const plates = buildPlateStack(api, ['kg20', 'kg20', 'kg10'], { origin: sleeves[i].origin, axis: sleeves[i].axis, segments: 32 });
+      // Back into the bar's local frame: the stack's YZ centre is the built sleeve's, and it stays on the loadable length.
+      const u = api.Manifold.union(plates.map(q => q.solid)).translate([-bar.position[0], -bar.position[1], -bar.position[2]]).rotate([0, 0, -a * 180 / Math.PI]), pb = u.boundingBox(); u.delete();
+      near((pb.min[1] + pb.max[1]) / 2, ly, .5, `${label} plates centred on the sleeve (y)`); near((pb.min[2] + pb.max[2]) / 2, lz, .5, `${label} plates centred on the sleeve (z)`);
+      const [x0, x1] = side > 0 ? [pb.min[0], pb.max[0]] : [-pb.max[0], -pb.min[0]];
+      assert.ok(x0 >= spec.sleeveStart - .5 && x1 <= spec.sleeveStart + spec.sleeveLength + .5, `${label} plates stay on the loadable sleeve`);
+      free(plates);
+    }
+    free(parts);
+  }
+  // Bowed bars rack on their sleeve axis: no offset, and barSleeves is the coaxial path.
+  for (const id of ['rogue-cb-4-camber-bar', 'kabuki-duffalo-bar']) {
+    const spec = barSpec(id); assert.ok(!('sleeveOffset' in spec), `${id} sleeves are the rackable axis`);
+    const pose = { position: [120, -40, 900] as [number, number, number], rotation: [0, 0, .4] as [number, number, number] };
+    assert.deepEqual(barSleeves(pose, spec).map(q => q.origin[2]), [900 + spec.axisZ, 900 + spec.axisZ]);
   }
 });
 

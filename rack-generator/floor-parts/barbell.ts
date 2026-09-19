@@ -16,6 +16,8 @@ export const BARBELL = defineFloorPart({
 /** Loadable sleeve segments in world space (inner collar face → outward), for plate stacks (#96). Pass the bar's
  * own spec (barSpec in barbell-cradles.ts resolves it from a part id + params); the default is the Olympic bar. */
 export function barSleeves(bar: Pick<ResolvedInstance, 'position' | 'rotation'>, spec: BarSpec = DEFAULT_BAR_SPEC): { origin: Vec3; axis: Vec3; length: number; diameter: number }[] {
-  const yaw = bar.rotation[2], x: Vec3 = [Math.cos(yaw), Math.sin(yaw), 0], start = spec.sleeveStart;
-  return [1, -1].map(side => ({ origin: [bar.position[0] + side * start * x[0], bar.position[1] + side * start * x[1], bar.position[2] + spec.axisZ], axis: x.map(v => side * v) as Vec3, length: spec.sleeveLength, diameter: spec.sleeveDiameter }));
+  const yaw = bar.rotation[2], x: Vec3 = [Math.cos(yaw), Math.sin(yaw), 0], start = spec.sleeveStart, o = spec.sleeveOffset;
+  // Dropped sleeves (sleeveOffset): shift by local Y (turned with the bar's yaw) and Z. Coaxial bars skip it untouched.
+  const centre: Vec3 = o ? [bar.position[0] - o.y * x[1], bar.position[1] + o.y * x[0], bar.position[2] + spec.axisZ + o.z] : [bar.position[0], bar.position[1], bar.position[2] + spec.axisZ];
+  return [1, -1].map(side => ({ origin: [centre[0] + side * start * x[0], centre[1] + side * start * x[1], centre[2]], axis: x.map(v => side * v) as Vec3, length: spec.sleeveLength, diameter: spec.sleeveDiameter }));
 }

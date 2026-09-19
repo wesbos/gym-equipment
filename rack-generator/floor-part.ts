@@ -10,6 +10,10 @@ export interface BarSpec {
   /** Shaft diameter where it rests in a cradle, mm */ shaft: number; /** Centre to the inner collar face (half the grip span) */ shaftHalf: number;
   /** Centre to the start of the loadable sleeve */ sleeveStart: number; sleeveLength: number; sleeveDiameter: number;
   /** Bar axis height when the bar lies on the floor (its collars on the ground) */ axisZ: number;
+  /** Sleeve axis offset from the shaft axis, mm, in the bar's local frame (y along local Y, z up), for bars whose
+   * sleeves are dropped or swung off the rackable shaft (S-cambers, CB-1 legs, Transformer brackets). The bar keeps
+   * its floor roll when parked, so one offset serves both. Omitted: the sleeves are coaxial with the shaft. */
+  sleeveOffset?: { y: number; z: number };
 }
 type ByParams<T> = T | ((params: NumericParams) => T);
 export interface FloorParam { key: string; label: string; default: number; options: ByParams<readonly number[]>; format?: (value: number) => string }

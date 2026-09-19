@@ -58,6 +58,6 @@ A parking floor part may declare `bar: BarSpec | (params) => BarSpec` (`floor-pa
 - `barCradles(resolved, bar?)` and `freeCradles(resolved, items, movingId, bar?)` accept a support span only if it fits between that bar's collars: 300 mm ≤ span ≤ 2·shaftHalf − 40 mm. `freeCradles` defaults to the moving item's own spec.
 - `parkedPose(cradle, bar?)` places the floor-item origin so the bar's shaft bottom sits where the 28.5 mm reference shaft's does. The cradle rest points are 28.5 mm shaft axes, so the axis moves by (shaft − 28.5)/2. A 31.75 mm Texas Squat Bar rides 1.6 mm higher, a 25 mm Bella 1.75 mm lower.
 - `parkBarbells` and `settleBarbells` resolve every parked item with its own spec: a bar whose collars cannot straddle its cradle drops to the floor.
-- `barSleeves(bar, spec?)` returns each sleeve's world origin (inner collar face), axis, loadable length and diameter for plate stacks.
+- `barSleeves(bar, spec?)` returns each sleeve's world origin (inner collar face), axis, loadable length and diameter for plate stacks. A spec may add `sleeveOffset: { y, z }`, the sleeve axis position relative to the shaft axis in the bar's local frame, for dropped sleeves (cambered specialty bars, #149). Specs without it keep the sleeves on the shaft axis.
 
 The bars build with local X along the bar and the origin on the floor under the centre. The axis sits at collar radius, so the collars rest on the floor. The footprint is overall length × collar diameter. Scenery only, excluded from print export.
