@@ -84,6 +84,7 @@ export const MY_JCUP = defineRackPart({
 });
 ```
 
+- **Family tests:** build with `def.build(api, rackBuildParams(PART, { ...params }))` (a 75 mm tube, 50 mm pitch and 25 mm bore context), and use `rack-attachments.test.ts` as the template.
 - **Builder context:** builders, `bodies` and cradle `slots` receive the entry params plus `upright` (tube mm), `mountSpacing` (pitch mm), `holeDiameter` and, on the second unit of a `handed` pair, `mirror: 1`, which mirrors the geometry across local X. Offset hole k sits at `z = k * params.mountSpacing`. Never name a param after one of these context keys, and never assume a 75 mm tube or 50 mm pitch.
 - **Pairs:** the second unit goes on the matching upright across the rack, and side faces swap (`left` ↔ `right`). On a crossmember top, the second unit goes on the parallel rail.
 - **Bodies:** use a few boxes that follow the real pads, arms and cups, and leave out the pin or collar inside the hole. Every hole in `holes` is also checked for shared-slot conflicts with other accessories.
