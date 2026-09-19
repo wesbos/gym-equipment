@@ -43,11 +43,11 @@ export function buildPowerBar(api: ManifoldAPI, id: string, p: NumericParams): S
     smooth.push([at, half + 1]);
     add(`${m.shaft} mm shaft`, 'rod', finish.shaft, ...smooth.filter(([a, b]) => b - a > .05).map(([a, b]) => cyl(a, b, r)));
     // Knurl: a diamond grid of pyramids, the intersection of a ring-ribbed lathe (circumferential cuts) and a fluted
-    // prism (axial cuts). Depth follows the model's grade; the pitch is coarsened to 4.2–5 mm so it reads at bar scale
+    // prism (axial cuts). Depth follows the model's grade; the pitch is coarsened to 4.4–5 mm so it reads at bar scale
     // and each bar stays under ~80k triangles.
-    const pitch = Math.min(5, Math.max(4.2, m.knurl.pitch * 2)), depth = m.knurl.depth * 1.8, peak = r + depth * .4, valley = r - depth * .6;
+    const pitch = Math.min(5, Math.max(4.4, m.knurl.pitch * 2)), depth = m.knurl.depth * 1.8, peak = r + depth * .4, valley = r - depth * .6;
     const flutes = Math.max(16, Math.round(Math.PI * m.shaft / pitch * .85));
-    const star: Vec2[] = []; for (let i = 0; i < 2 * flutes; i++) { const t = i * Math.PI / flutes, rad = i % 2 ? valley : peak + .4; star.push([rad * Math.cos(t), rad * Math.sin(t)]); }
+    const star: Vec2[] = []; for (let i = 0; i < 2 * flutes; i++) { const t = (i + .25) * Math.PI / flutes, rad = i % 2 ? valley + depth * .17 : peak + .4; star.push([rad * Math.cos(t), rad * Math.sin(t)]); }
     const prism = (a: number, b: number) => k(k(k(k(new C([star])).extrude(b - a)).rotate([0, 90, 0])).translate([a, 0, z]));
     const band = ([a, b]: [number, number]) => {
       const pts: Vec2[] = [[a, 0], [a, valley]];

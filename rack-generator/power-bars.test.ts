@@ -9,6 +9,7 @@ import {coerceFloorParams, defineFloorPart, floorOptions, registerFloorPart, res
 import {addFloorItem, floorWarnings} from './floor-items.ts';
 import {createAssembly, removeInstance, resolveAssembly, validateAssembly} from './assembly.ts';
 import type {Manifold, NumericParams, RackDoc, SolidPart} from './types.ts';
+import {printableMesh} from '../src/exports/print-mesh.ts';
 const api=await Module();api.setup();
 const inch=(v:number)=>v*25.4;
 /** Published specs, re-typed from the manufacturer pages (research/power-bars.md), independent of the model constants:
@@ -45,11 +46,11 @@ test('the catalog lists the fourteen #107 bars, most-owned first, as parking Bar
   assert.match(part.description!,/Independent reconstruction .*; .+ trademarks belong to .+\.$/);
  }
 });
-test('every bar and param extreme builds closed solids whose bounds are the footprint (collars on the floor)',()=>{
+test('every bar and param extreme builds closed, non-degenerate solids whose bounds are the footprint (collars on the floor)',()=>{
  for(const part of PARTS)for(const params of cases(part)){
   const parts=buildPowerBar(api,part.id,params),tag=`${part.id} ${JSON.stringify(params)}`;
   try{
-   for(const p of parts){assert.ok(!p.solid.isEmpty() && p.solid.status()==='NoError' && p.solid.volume()>0,`${tag} ${p.name}`);assert.notEqual(p.role,'frame','factory finishes, not rack paint');}
+   for(const p of parts){assert.ok(!p.solid.isEmpty() && p.solid.status()==='NoError' && p.solid.volume()>0,`${tag} ${p.name}`);assert.notEqual(p.role,'frame','factory finishes, not rack paint');printableMesh(p.solid,`${tag} ${p.name}`);}
    const b=bbox(parts),{width,depth}=resolveBy(part.footprint,params);
    assert.ok(Math.abs(b.max[0]-b.min[0]-width)<1e-6 && Math.abs(b.max[1]-b.min[1]-depth)<1e-6 && Math.abs(b.min[2])<1e-6 && Math.abs(b.max[2]-depth)<1e-6,`${tag} footprint`);
    const tris=parts.reduce((n,p)=>n+p.solid.numTri(),0);assert.ok(tris<80000,`${tag}: ${tris} triangles`);
