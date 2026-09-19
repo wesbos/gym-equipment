@@ -5,13 +5,13 @@ import type { BuilderStore } from '../state/builder-store.ts';
 import { floorPart, floorOptions, coerceFloorParams } from '../../rack-generator/floor-registry.ts';
 import type { NumericParams } from '../../rack-generator/types.ts';
 import { NumericControl } from './NumericControl.tsx';
-import { barCradles } from '../../rack-generator/barbell-cradles.ts';
+import { barCradles, barSpecOf } from '../../rack-generator/barbell-cradles.ts';
 /** Controls come from the registry entry: one select per param, optional paint palette, rotation. */
 export function FloorInspector({store,id}:{store:BuilderStore;id:string}) {
   const state=useSyncExternalStore(store.subscribe,store.getSnapshot),item=state.doc.floorItems!.find(i=>i.id===id)!,part=floorPart(item.part)!;
   const noun=part.noun,Noun=noun[0].toUpperCase()+noun.slice(1),colorLabel=part.colorLabel ?? `${Noun} color`;
   const setParams=(params:NumericParams)=>store.updateFloor(id,{params:coerceFloorParams(part,params)});
-  const cradle=item.cradle ? barCradles(state.resolved).find(c=>c.key===item.cradle) : undefined;
+  const cradle=item.cradle ? barCradles(state.resolved,barSpecOf(item)).find(c=>c.key===item.cradle) : undefined;
   return <><h2 id="selection-title">{part.name}</h2><div id="inspector" className="inspector-fields">
     {part.params.map(param=>{const {key,label,format=String}=param;return <label className="field" key={key}><span>{label}</span><select aria-label={label} value={item.params[key]} onChange={e=>setParams({...item.params,[key]:Number(e.target.value)})}>{floorOptions(param,item.params).map(v=><option key={v} value={v}>{format(v)}</option>)}</select><ResetButton label={label} changed={item.params[key] !== param.default} onReset={()=>setParams({...item.params,[key]:param.default})} /></label>;})}
     {part.colors && <label className="field"><span>{colorLabel}</span><select aria-label={colorLabel} value={state.doc.appearance?.overrides?.[id] ?? ''} onChange={e=>{

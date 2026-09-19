@@ -1,10 +1,10 @@
 /** Bar-receiving points (#83). Each resolved cradle accessory exposes local shaft-axis rest points; two coaxial
  * supports on the shaft span form a cradle. Parked bars persist the cradle key (support ids), so they follow
  * their cradle through moves and fall back to their floor drop spot when it is gone. Pure over resolved instances. */
-import { BAR } from './floor-parts/barbell.ts';
-import { floorPart } from './floor-registry.ts';
+import { BAR, DEFAULT_BAR_SPEC } from './floor-parts/barbell.ts';
+import { floorPart, resolveBy, type BarSpec } from './floor-registry.ts';
 import { rotateMountedPoint } from './mounted-rotation.ts';
-import type { FloorItem, RackDoc, ResolvedInstance, Vec3 } from './types.ts';
+import type { FloorItem, NumericParams, RackDoc, ResolvedInstance, Vec3 } from './types.ts';
 export type CradleKind = 'working' | 'storage';
 interface Slot { point: Vec3; axis: Vec3 }
 export interface BarSupport { id: string; instanceId: string; ownerId: string; part: string; point: Vec3; axis: Vec3; kind: CradleKind }
@@ -26,6 +26,13 @@ const SLOTS: Record<string, (p: ResolvedInstance['params']) => Slot[]> = {
 };
 const LABELS: Record<string, string> = { 'j-hook-standard': 'J-cups', 'j-hook-roller': 'Roller J-cups', 'j-hook-sandwich': 'Sandwich J-cups', monolift: 'Monolift arms', 'darko-anchor': 'Darko Barbell Anchors', 'darko-double-decker': 'Darko Double Deckers', 'darko-j': 'Darko Dock J-Anchors', 'darko-double-j': 'Darko Dock Double J-Anchors' };
 export const CRADLE_PARTS = Object.keys(SLOTS);
+/** A parking part's bar geometry (its `bar` spec at these params), else the 20 kg Olympic bar's. Rest points above
+ * seat a 28.5 mm shaft; other shafts rise or drop by their radius difference (parkedPose). */
+export function barSpec(part?: string | null, params: NumericParams = {}): BarSpec {
+  const entry = floorPart(part ?? '');
+  return entry?.bar ? resolveBy(entry.bar, { ...entry.defaults, ...params }) : DEFAULT_BAR_SPEC;
+}
+export const barSpecOf = (item?: Pick<FloorItem, 'part' | 'params'> | null) => barSpec(item?.part, item?.params);
 const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], dot = (a: Vec3, b: Vec3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const add = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 export function barSupports(resolved: readonly ResolvedInstance[]): BarSupport[] {
@@ -34,13 +41,14 @@ export function barSupports(resolved: readonly ResolvedInstance[]): BarSupport[]
     point: add(e.position, rotateMountedPoint(slot.point, e.rotation)), axis: rotateMountedPoint(slot.axis, e.rotation),
   })));
 }
-/** Coaxial, level support pairs whose span sits inside the shaft (between the collars) and holds the bar stably. */
-export function barCradles(resolved: readonly ResolvedInstance[]): BarCradle[] {
+/** Coaxial, level support pairs whose span sits inside the shaft (between the collars) and holds the bar stably.
+ * `bar` sets the shaft span that must fit between the collars (default: the Olympic bar). */
+export function barCradles(resolved: readonly ResolvedInstance[], bar: BarSpec = DEFAULT_BAR_SPEC): BarCradle[] {
   const supports = barSupports(resolved), cradles: BarCradle[] = [];
   for (const [i, a] of supports.entries()) for (const b of supports.slice(i + 1)) {
     if (a.instanceId === b.instanceId || Math.abs(dot(a.axis, b.axis)) < .9995 || Math.abs(a.axis[2]) > 1e-6) continue;
     const d = sub(b.point, a.point), along = dot(d, a.axis), lateral = sub(d, a.axis.map(v => v * along) as Vec3);
-    if (Math.hypot(...lateral) > 2 || Math.abs(along) < 300 || Math.abs(along) > 2 * BAR.shaftHalf - 40) continue;
+    if (Math.hypot(...lateral) > 2 || Math.abs(along) < 300 || Math.abs(along) > 2 * bar.shaftHalf - 40) continue;
     const pair = [a, b].sort((x, y) => x.id.localeCompare(y.id)) as [BarSupport, BarSupport];
     let yaw = Math.atan2(a.axis[1], a.axis[0]); if (yaw <= -Math.PI / 2 || yaw > Math.PI / 2 + 1e-9) yaw += yaw > 0 ? -Math.PI : Math.PI;
     const center = a.point.map((v, k) => (v + b.point[k]) / 2) as Vec3, kind = a.kind === 'storage' || b.kind === 'storage' ? 'storage' : 'working';
@@ -49,27 +57,34 @@ export function barCradles(resolved: readonly ResolvedInstance[]): BarCradle[] {
   return cradles;
 }
 export const cradleSupportIds = (key: string) => key.split('+');
-/** Cradles with no parked bar on any of their supports (the moving bar's own cradle stays free). */
-export function freeCradles(resolved: readonly ResolvedInstance[], items: readonly FloorItem[] = [], movingId?: string | null) {
+/** Cradles with no parked bar on any of their supports (the moving bar's own cradle stays free). `bar` defaults to
+ * the moving item's own spec when it is in `items`, else the Olympic bar. */
+export function freeCradles(resolved: readonly ResolvedInstance[], items: readonly FloorItem[] = [], movingId?: string | null, bar?: BarSpec) {
   const taken = new Set(items.filter(i => i.cradle && i.id !== movingId).flatMap(i => cradleSupportIds(i.cradle!)));
-  return barCradles(resolved).filter(c => c.supports.every(s => !taken.has(s.id)));
+  return barCradles(resolved, bar ?? barSpecOf(items.find(i => i.id === movingId))).filter(c => c.supports.every(s => !taken.has(s.id)));
 }
 /** Suggested park: the highest working cradle (J-cups, monolift), else the highest storage cradle. */
 export const suggestCradle = (cradles: readonly BarCradle[]) => [...cradles].sort((a, b) => +(a.kind === 'storage') - +(b.kind === 'storage') || b.center[2] - a.center[2])[0] ?? null;
-export const parkedPose = (cradle: BarCradle) => ({ position: [cradle.center[0], cradle.center[1], cradle.center[2] - BAR.axisZ] as Vec3, rotation: [0, 0, cradle.yaw] as Vec3 });
+/** Floor-item pose that seats `bar` in the cradle: rest points carry a 28.5 mm shaft axis, so a thicker shaft sits higher. */
+export const parkedPose = (cradle: BarCradle, bar: BarSpec = DEFAULT_BAR_SPEC) => ({ position: [cradle.center[0], cradle.center[1], cradle.center[2] + (bar.shaft - BAR.shaft) / 2 - bar.axisZ] as Vec3, rotation: [0, 0, cradle.yaw] as Vec3 });
+/** barCradles keyed by cradle key for each distinct bar spec among `items` (most docs hold one bar type). */
+function cradlesFor(resolved: readonly ResolvedInstance[]) {
+  const cache = new Map<string, Map<string, BarCradle>>();
+  return (bar: BarSpec) => { const key = JSON.stringify(bar); let hit = cache.get(key); if (!hit) cache.set(key, hit = new Map(barCradles(resolved, bar).map(c => [c.key, c]))); return hit; };
+}
 /** resolveAssembly hook: moves parked floor entries onto their cradle; unresolved ones stay at their floor spot. */
 export function parkBarbells(result: ResolvedInstance[], items: readonly FloorItem[] = []) {
   if (!items.some(i => i.cradle)) return;
-  const cradles = new Map(barCradles(result).map(c => [c.key, c]));
+  const cradles = cradlesFor(result);
   for (const item of items) {
-    const cradle = item.cradle && cradles.get(item.cradle), entry = cradle && result.find(e => e.id === item.id);
-    if (entry) Object.assign(entry, parkedPose(cradle), { connectedTo: [...new Set(cradle.supports.map(s => s.ownerId))] });
+    const bar = item.cradle ? barSpecOf(item) : DEFAULT_BAR_SPEC, cradle = item.cradle && cradles(bar).get(item.cradle), entry = cradle && result.find(e => e.id === item.id);
+    if (entry) Object.assign(entry, parkedPose(cradle, bar), { connectedTo: [...new Set(cradle.supports.map(s => s.ownerId))] });
   }
 }
 /** After an edit: bars whose cradle is gone (removed, moved apart, unpaired) drop to the floor beneath where they
  * were parked in `before`, and lose their cradle key. Returns the settled document and the dropped ids. */
 export function settleBarbells(doc: RackDoc, resolved: readonly ResolvedInstance[], before: readonly ResolvedInstance[] = []) {
-  const keys = new Set(barCradles(resolved).map(c => c.key)), dropped = (doc.floorItems ?? []).filter(i => i.cradle && !keys.has(i.cradle)).map(i => i.id);
+  const cradles = cradlesFor(resolved), dropped = (doc.floorItems ?? []).filter(i => i.cradle && !cradles(barSpecOf(i)).has(i.cradle)).map(i => i.id);
   if (!dropped.length) return { doc, dropped };
   const next = structuredClone(doc);
   for (const item of next.floorItems!) if (dropped.includes(item.id)) {
