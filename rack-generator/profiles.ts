@@ -162,7 +162,7 @@ export const GRID_PROFILES: readonly GridProfile[] = [
     reconstructionNote: 'Reconstruction: published 3x3 11-gauge uprights, 11/16-inch holes, Westside spacing through the bench and clean-pull zone, 6-inch side hole spacing, 42 × 24/36-inch inside dimensions, 80/90-inch heights and 54-inch footprint width. Westside bounds, first hole, plate outlines and badge are estimated; physical Titan fit is unverified.' },
   { id: 'titan-x3-flat-foot', label: 'Titan X-3 Series Flat Foot Power Rack', vendor: 'Titan Fitness', tube: inch(3), ...MONSTER_LITE, firstHole: inch(4), sideStride: 3, numbered: false,
     widths: [inch(42)], depths: [inch(30)], heights: [inch(82), inch(91)],
-    base: { style: 'foot', width: inch(3), height: inch(2), front: inch(6), back: inch(6), gusset: { height: inch(14), length: inch(5) } },
+    base: { style: 'foot', width: inch(3), height: inch(2), front: inch(6), back: inch(6), gusset: { height: inch(13), length: inch(3) } },
     nameplate: TITAN_BADGE, color: TITAN_BLACK, lowerCrossmembers: false,
     source: 'https://www.titan.fitness/products/x3-series-flat-foot-power-rack',
     starters: [
