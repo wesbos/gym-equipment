@@ -5,7 +5,7 @@ import { floorDefinition, resolveBy } from '../floor-part.ts';
 import {
   ABMAT, ABMAT_LOG_CUSHIONS, BARTOS_CIRCUS, BARTOS_CIRCUS_DB, CERBERUS_DINNIE, DINNIE, LOG_COLLAR, LOG_HANDLE, LOG_SLEEVE, ROGUE_DINNIE_RINGS, ROGUE_FARMER, ROGUE_FARMERS,
   ROGUE_RINGS, ROGUE_Y1, ROGUE_Y1_YOKE, ROGUE_Y2, ROGUE_Y2_YOKE, TITAN_CIRCUS, TITAN_CIRCUS_DB, TITAN_FARMER, TITAN_FARMERS, TITAN_LOG, TITAN_LOGS, TITAN_T3_YOKE,
-  TITAN_UPRIGHT, TITAN_UPRIGHT_FARMERS, TITAN_YOKE, titanUprightSleeveZ, yokeHornX, type CircusSpec, type FarmerSpec, type YokeSpec,
+  TITAN_UPRIGHT, TITAN_UPRIGHT_FARMERS, TITAN_YOKE, titanUprightSleeveZ, PITBULL_LOG, PITBULL_12_LOG, PITBULL_WELD, yokeHornX, type CircusSpec, type FarmerSpec, type YokeSpec,
 } from '../floor-parts/strongman-frames.ts';
 import { inch, loadPlates, loadRadius, pick } from '../floor-parts/strongman-loads.ts';
 import type { FloorPart } from '../floor-part.ts';
@@ -196,6 +196,33 @@ export function buildTitanLog(api: ManifoldAPI, p: NumericParams): SolidPart[] {
     return K.done(fp(TITAN_LOG, p));
   });
 }
+/** Pitbull 12" log: spray-painted tube and end plates, open windows over the top (±65°) around smooth handles that cross the
+ * whole tube, as-welded beads at both joints, and pipe pins straight off the end plates (hollow on the Classic). */
+const PITBULL_PAINT: Finish = { color: '#1d1e20', metalness: .25, roughness: .62 };
+export function buildPitbullLog(api: ManifoldAPI, p: NumericParams): SolidPart[] {
+  const L = PITBULL_LOG;
+  if (![0, 1].includes(p.model)) throw Error('Unsupported log model.');
+  return withKit(api, K => {
+    const R = L.d / 2, zc = Math.max(R, loadRadius(p.load)), B = L.body / 2, t = L.plate, half = L.arc / 2 * Math.PI / 180;
+    let barrel = K.cut(K.bar('x', -B + t, B - t, L.d, 0, zc, 96), [K.bar('x', -B, B, L.d - 2 * L.wall, 0, zc, 96)]);
+    // Window: a rounded-rectangle plan cut down to the plane where the tube wall is ±65° from the top.
+    const windows = [-1, 1].map(s => K.slab(L.window, 2 * R * Math.sin(half) + .5, R, L.corner, [s * L.spacing / 2, 0, zc + R * Math.cos(half)]));
+    barrel = K.cut(barrel, windows);
+    const outer = K.bar('x', -B, B, L.d, 0, zc, 96);
+    K.add('Painted 12" steel tube', K.union([barrel, K.bar('x', -B, -B + t, L.d, 0, zc, 96), K.bar('x', B - t, B, L.d, 0, zc, 96)]), PITBULL_PAINT);
+    for (const s of [-1, 1]) {
+      K.add('Smooth neutral handles', K.inter(K.bar('y', -R, R, L.handle, s * L.spacing / 2, zc, 32), outer), { ...PITBULL_PAINT, role: 'handle', roughness: .5 });
+      // As-welded fillet beads: end plate to tube, pin to end plate (big enough that plates don't sit flush).
+      const ring = (x: number, r: number, bead: number) => K.move(K.rot(K.torus(r, bead, 96, 10), [0, 90, 0]), [x, 0, zc]);
+      K.add('Weld beads', K.union([ring(s * (B - t), R - 3.5, 3.5), ring(s * B, L.sleeveD / 2 + 1, PITBULL_WELD)]), { ...PITBULL_PAINT, roughness: .8 });
+      let pin = K.bar('x', s > 0 ? B : -L.length / 2, s > 0 ? L.length / 2 : -B, L.sleeveD, 0, zc, 40);
+      if (p.model === 0) pin = K.cut(pin, [K.bar('x', s > 0 ? B + 20 : -L.length / 2 - 1, s > 0 ? L.length / 2 + 1 : -B - 20, L.bore, 0, zc, 32)]);
+      K.add('Loading pins', pin, PITBULL_PAINT);
+      K.plates(loadPlates(p.load), [s * (B + PITBULL_WELD), 0, zc], [s, 0, 0], 'plate');
+    }
+    return K.done(fp(PITBULL_12_LOG, p));
+  });
+}
 // ---- AbMat Log Crash Cushions -------------------------------------------------------------------------------------------
 export function buildAbmatCushions(api: ManifoldAPI, p: NumericParams): SolidPart[] {
   return withKit(api, K => {
@@ -239,6 +266,7 @@ export const FRAME_DEFINITIONS = [
   floorDefinition(CERBERUS_DINNIE, buildCerberusDinnie), floorDefinition(TITAN_CIRCUS_DB, buildTitanCircus), floorDefinition(TITAN_FARMERS, buildTitanFarmers),
   floorDefinition(ROGUE_DINNIE_RINGS, buildRogueRings), floorDefinition(ROGUE_Y1, buildRogueY1), floorDefinition(BARTOS_CIRCUS_DB, buildBartosCircus),
   floorDefinition(ABMAT_LOG_CUSHIONS, buildAbmatCushions), floorDefinition(ROGUE_FARMERS, buildRogueFarmers), floorDefinition(ROGUE_Y2, buildRogueY2),
+  floorDefinition(PITBULL_12_LOG, buildPitbullLog),
 ];
 export type { Vec3 };
 export { rectOutline };

@@ -131,6 +131,27 @@ export const TITAN_LOG = defineFloorPart({
   footprint: logBox, placement: { side: 'front', gap: 500 },
   vendor: { vendor: 'Titan Fitness', url: 'https://titan.fitness/products/rackable-strongman-log-bars', credit: 'Titan Fitness — Rackable Strongman Log Bars (8" / 10" / 12")', trademark: 'Titan and Titan Fitness are trademarks of Titan Fitness.', reconstruction: 'Independent Manifold reconstruction from the published drawings (7.75" / 10" / 11.3" barrels; 71.25" / 74.4" / 80.3" overall; 10" / 11.875" / 14" sleeves; 42 mm handles; 48 mm sleeves) and product photos. Cut-out shape estimated; laser-cut lettering omitted. Scenery only.' },
 });
+/** Pitbull Strongman Equipment 12" log (Kansas one-man shop, sold via Facebook until ~2021; no website ever existed).
+ * Maker's 2020 Facebook spec post: 12" tube ("actually 12 inches"), 5 ft body, ~1 7/8" loading pins, Classic ~85 lb with hollow
+ * pins, Solid Shaft End ~105 lb. Owner reviews (Kurtis 2019, Lean Strong Daily 2020, Farr Outpost 2020/2026) measure 82" overall,
+ * 11" sleeves, 25.5" handle centres and 1.2–1.3" smooth handles, and weigh the Classic at 84.8 lb. Window size, arc and corners
+ * are estimated from their video frames (research/strongman.md). */
+export const PITBULL_LOG = { d: inch(12), body: inch(60), length: inch(82), sleeve: inch(11), sleeveD: inch(1.875), bore: inch(1.61), spacing: inch(25.5), handle: inch(1.3),
+  window: inch(13.5), arc: 130, corner: inch(1.5), wall: inch(.11), plate: inch(.25) } as const;
+/** The pin-to-end-plate fillet: plates stop this far out from the end plate. */
+export const PITBULL_WELD = 5;
+export const PITBULL_MODELS = ['Classic · hollow pins (~85 lb)', 'Solid Shaft End Log (~105 lb)'] as const;
+export const pitbullLogBox = (p: NumericParams): FloorBox => ({ width: PITBULL_LOG.length, depth: Math.max(PITBULL_LOG.d, 2 * loadRadius(p.load)) });
+export const PITBULL_12_LOG = defineFloorPart({
+  id: 'pitbull-12-strongman-log', name: 'Pitbull 12" Strongman Log', title: 'Pitbull Strongman 12" Log', noun: 'log', section: 'Strongman',
+  description: 'Pitbull Strongman Equipment 12" strongman log (discontinued): a 5 ft black-painted 12" steel tube with flat welded end plates, two open rounded-rectangle hand windows around smooth 1.3" neutral handles on 25.5" centres, and 11" loading pins of 1 7/8" pipe (hollow on the Classic, solid on the Solid Shaft End Log). Not rackable. Independent reconstruction from the maker post and owner measurements; Pitbull Strongman Equipment trademarks belong to their owner.',
+  params: [
+    { key: 'model', label: 'Model', default: 0, options: [0, 1], format: v => PITBULL_MODELS[v] ?? String(v) },
+    loadParam(PITBULL_LOG.sleeve - PITBULL_WELD, 'per sleeve'),
+  ],
+  footprint: pitbullLogBox, placement: { side: 'front', gap: 500 },
+  vendor: { vendor: 'Pitbull Strongman Equipment', url: 'https://www.facebook.com/pitbullstrongmanequipment', credit: 'Pitbull Strongman Equipment — 12" Strongman Log (Classic / Solid Shaft End)', trademark: 'Pitbull Strongman Equipment is a trademark of its owner.', reconstruction: 'Independent Manifold reconstruction. Published (maker\'s 2020 Facebook post): 12" tube, 5 ft body, ~1 7/8" pins, ~85 lb Classic / ~105 lb solid. Owner-measured (three video reviews, Gym Radar): 82" overall, 11" sleeves, 25.5" handle centres, 1.2–1.3" smooth handles, 84.8 lb. Estimated from their video frames: 13.5" windows over ~130° of the tube with 1.5" corners, ~0.11" wall (from the weight), 1/4" end plates and weld beads. Scenery only.' },
+});
 /** AbMat Log Crash Cushions: 43 x 20 x 12 in, black 18 oz ripstop vinyl, sold in pairs. */
 export const ABMAT = { l: inch(43), w: inch(20), h: inch(12) } as const;
 export const ABMAT_GAPS = [16, 20, 24, 30] as const;

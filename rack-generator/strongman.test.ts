@@ -123,6 +123,17 @@ test('steel implements match their published drawings', () => {
   // Titan logs: 71.25" / 74.4" / 80.3" overall, 7.75" / 10" / 11.3" barrels, 42 mm handles 26" apart on the 12".
   for (const [size, len, d] of [[0, 71.25, 7.75], [1, 74.4, 10], [2, 80.3, 11.3]]) { const l = measure('titan-rackable-strongman-log', { size }); near(l.size[0], inch(len), 1, `log ${size} length`); near(l.size[2], inch(d), 1, `log ${size} diameter`); }
   near(measure('titan-rackable-strongman-log', {}, /Neutral handles/).size[0], inch(26) + 42, 1, '12" log handle spacing');
+  // Pitbull 12" log: 82" overall, 60" body, 12" tube, 1.3" handles on 25.5" centres, 11" pins of 1 7/8" pipe (hollow on the Classic).
+  const pb = measure('pitbull-12-strongman-log'); near(pb.size[0], inch(82), 1, 'Pitbull overall'); near(pb.size[2], inch(12), .5, 'Pitbull 12" tube');
+  near(measure('pitbull-12-strongman-log', {}, /^Painted 12" steel tube$/).size[0], inch(60), .5, 'Pitbull 5 ft body');
+  near(measure('pitbull-12-strongman-log', {}, /Smooth neutral handles/).size[0], inch(25.5) + inch(1.3), 1, 'Pitbull handle spacing');
+  near(measure('pitbull-12-strongman-log', {}, /Loading pins/).size[2], inch(1.875), .5, 'Pitbull 1 7/8" pins');
+  for (const model of [0, 1]) {
+    const { parts } = build('pitbull-12-strongman-log', { model }), pins = parts.find(p => p.name === 'Loading pins')!, full = inch(1.875) ** 2 * Math.PI / 4 * inch(22);
+    assert.ok(model ? pins.solid.volume() > full * .97 : pins.solid.volume() < full * .5, `model ${model} pins ${model ? 'solid' : 'hollow'}`);
+    free(parts);
+  }
+  const pbLoaded = measure('pitbull-12-strongman-log', { load: 2 }); near(pbLoaded.size[2], 448, 1, 'Pitbull rests on its 45s');
   // Circus dumbbells: Titan 10" -> 10.7" x 30.2", 12" -> 12.8" x 28.25"; Bartos 2.375" handle.
   const c10 = measure('titan-circus-dumbbell', { bell: 0, handle: 2 }), c12 = measure('titan-circus-dumbbell', { bell: 1, handle: 3 });
   near(c10.size[1], inch(30.2), 1, '10" circus length'); near(c10.size[2], inch(10.7), 1, '10" bells'); near(c12.size[1], inch(28.25), 1, '12" circus length'); near(c12.size[2], inch(12.8), 1, '12" bells');
