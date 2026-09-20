@@ -4,7 +4,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import Module from 'manifold-3d';
-import { definitions } from './catalog.ts';
+import { catalog, definitions } from './catalog.ts';
+import { unzipSync, strFromU8 } from 'fflate';
+import { exportPrint3MF } from '../src/exports/print-3mf.ts';
+import { printableMesh } from '../src/exports/print-mesh.ts';
 import { validateRackParams, coerceRackParams, rackBuildParams, rackHoles, floorOptions, type RackPart } from './rack-registry.ts';
 import { PARTS } from './rack-parts/rack-dips-landmines.ts';
 import { BOS_LANDMINE, KLEVA_ADROIT_2, REP_KLEVA_ADROIT, REP_LANDMINE, ROGUE_LANDMINE, ROGUE_MONSTER_LANDMINE, ADROIT } from './rack-parts/rack-dips-landmines-landmines.ts';
@@ -167,4 +170,28 @@ test('brand parts fit the racks they are sold for: bore, post size and hardware 
   assert.equal(params(pr4000, REP_KLEVA_ADROIT.id).hardware, 0, 'Adroit drops its 1 in adapter on 5/8 in holes');
   assert.equal(params(manticore, BOS_LANDMINE.id).variant, 1); assert.equal(params(hydra, BOS_LANDMINE.id).variant ?? 0, 0);
   assert.equal(params(manticore, BOS_Y_DIP.id).variant ?? 2, 2); assert.equal(params(hydra, BOS_Y_DIP.id).variant, 1);
+});
+test('3MF export prints every dip and landmine with its vendor credit', () => {
+  const ours = new Set<string>(PARTS.map(p => p.id));
+  const builders = catalog.definitions.map(def => ours.has(def.id) ? def : { ...def, build: () => [{ name: 'Frame fixture', solid: api.Manifold.cube([1, 1, 1]), role: 'frame' as const }] });
+  const credited = new Set<string>();
+  for (const group of [PARTS.slice(0, 5), PARTS.slice(5, 9), PARTS.slice(9)]) {
+    let doc = createAssembly({ emptyAccessories: true });
+    for (const part of group) { const r = suggestPlacement(doc, part.id); assert.ok(r.proposal, `${part.id}: ${r.reason}`); doc = r.proposal!.doc; }
+    const result = exportPrint3MF(api, doc, builders, { layout: 'assembled' }, undefined, catalog.attribution);
+    const credits = JSON.parse(strFromU8(unzipSync(result.bytes)['Metadata/print-report.json'])).vendorCredits as { part: string }[];
+    for (const c of credits) credited.add(c.part);
+  }
+  assert.deepEqual([...credited].filter(id => ours.has(id)).sort(), [...ours].sort());
+});
+test('every option of every entry exports closed, printable meshes (no zero-area or open triangles)', () => {
+  for (const part of PARTS) {
+    let combos: NumericParams[] = [{ ...part.defaults }];
+    for (const param of part.params) combos = combos.flatMap(p => floorOptions(param, p).map(v => ({ ...p, [param.key]: v })));
+    const def = definitions.find(d => d.id === part.id)!;
+    for (const params of combos) for (const mirror of part.handed ? [0, 1] : [0]) for (const tube of [75, 76.2]) {
+      const solids = def.build(api, { ...rackBuildParams(part, params), upright: tube, ...(mirror ? { mirror } : {}) });
+      try { for (const solid of solids) printableMesh(solid.solid, `${part.id} ${JSON.stringify(params)} ${tube} ${solid.name}`); } finally { solids.forEach(x => x.solid.delete()); }
+    }
+  }
 });

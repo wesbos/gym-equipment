@@ -33,8 +33,12 @@ export function kit(s: Scope) {
   const rect = (x0: number, y0: number, x1: number, y1: number) => k(k(C.square([x1 - x0, y1 - y0])).translate([x0, y0]));
   const circle = (x: number, y: number, r: number, n = 40) => k(k(C.circle(r, n)).translate([x, y]));
   const union2 = (parts: CrossSection[]) => k(C.union(parts));
+  /** Convex hull of 2D pieces: blends a round end into a straight tab without the tangent slivers a union leaves. */
+  const hull2 = (parts: CrossSection[]) => k(C.hull(parts));
   /** Rounded tongue: a circle of radius r at (cx, cy) blended into a rectangle reaching `to` along +x. */
-  const tongue = (cx: number, cy: number, r: number, to: number) => union2([circle(cx, cy, r), rect(cx, cy - r, to, cy + r)]);
+  const tongue = (cx: number, cy: number, r: number, to: number) => hull2([circle(cx, cy, r), rect(cx, cy - r, to, cy + r)]);
+  /** Rounded rectangle (corner radius r) from an inset square offset back out, so no tangent seams. */
+  const roundRect = (x0: number, y0: number, x1: number, y1: number, r: number, n = 32) => k(rect(x0 + r, y0 + r, x1 - r, y1 - r).offset(r, 'Round', 2, n));
   /** Hex prism (across flats `af`) along an axis: rotated so a flat faces up. */
   const hex = (af: number, h: number) => k(M.cylinder(h, af / Math.sqrt(3), af / Math.sqrt(3), 6));
   const hexY = (x: number, z: number, y0: number, y1: number, af: number) => k(k(k(hex(af, y1 - y0).rotate([0, 0, 30])).rotate([-90, 0, 0])).translate([x, y0, z]));
@@ -63,7 +67,7 @@ export function kit(s: Scope) {
   };
   /** Polygon from points in either winding (normalised counter-clockwise). */
   const poly = (points: Vec2[]) => { const area = points.reduce((a, [x, y], i) => { const [u, v] = points[(i + 1) % points.length]; return a + x * v - u * y; }, 0); return k(new C([area < 0 ? [...points].reverse() : points])); };
-  return { alongX, alongY, alongZ, tube, plateXZ, plateXY, plateYZ, rect, circle, union2, tongue, hexY, hexZ, star, starY, starZ, sphere, bent, rod, bar, poly };
+  return { alongX, alongY, alongZ, tube, plateXZ, plateXY, plateYZ, rect, circle, union2, hull2, roundRect, tongue, hexY, hexZ, star, starY, starZ, sphere, bent, rod, bar, poly };
 }
 /** Re-pose every solid added after `from` (a joint group); `move` must return a solid it already kept. */
 export function pose(s: Scope, from: number, move: (m: Manifold) => Manifold) {

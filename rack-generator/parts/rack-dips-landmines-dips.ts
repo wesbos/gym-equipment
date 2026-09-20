@@ -19,8 +19,7 @@ function rodAB(s: Scope, a: Vec3, b: Vec3, d: number, c0 = 0, c1 = 0, n = 40): M
 }
 /** Rounded-rectangle outline (corner radius r) in a plane. */
 function roundRect(s: Scope, x0: number, y0: number, x1: number, y1: number, r: number): CrossSection {
-  const K = kit(s);
-  return K.union2([K.rect(x0 + r, y0, x1 - r, y1), K.rect(x0, y0 + r, x1, y1 - r), K.circle(x0 + r, y0 + r, r, 20), K.circle(x1 - r, y0 + r, r, 20), K.circle(x0 + r, y1 - r, r, 20), K.circle(x1 - r, y1 - r, r, 20)]);
+  return kit(s).roundRect(x0, y0, x1, y1, r, 20);
 }
 /** Detent / pull pin across the upright (along X at height z): shaft, head on +X, and a pull ring in the XZ plane. */
 function crossPin(s: Scope, x0: number, x1: number, z: number, d: number, ring: Finish, name: string, ringName: string) {
@@ -207,7 +206,7 @@ export function buildBosYDip(api: ManifoldAPI, params: NumericParams): SolidPart
         const x0 = sw, x1 = g.rootX;
         add('L-arm', s.keep(s.M.union([box([6.35, sa1 - sa0, g.s + 6], [side * (x0 + 3.2), g.f + (sa0 + sa1) / 2, g.zb + g.s / 2 + 3]), box([x1 - x0, st1 - st0, t], [side * (x0 + x1) / 2, g.f + (st0 + st1) / 2, g.zb + t / 2])])), 'source', ...BLACK);
       }
-      for (const by of [sa0 + 7, sa1 - 7]) add('M12 x 75 bolt', s.keep(s.M.union([K.alongX(g.f + by, g.zb + g.s / 2, -sw - 14, sw + 14, 6, 0, 0, 20), K.alongX(g.f + by, g.zb + g.s / 2, sw + 6.35, sw + 14, 10, 0, 0, 6), K.alongX(g.f + by, g.zb + g.s / 2, -sw - 16, -sw - 6.35, 10, 0, 0, 6)])), 'fastener', ...ZINC);
+      for (const by of [sa0 + 7, sa1 - 7]) add('M12 x 75 bolt', s.keep(s.M.union([K.alongX(g.f + by, g.zb + g.s / 2, -sw - 15, sw + 13, 6, 0, 0, 20), K.alongX(g.f + by, g.zb + g.s / 2, sw + 6.35, sw + 14, 10, 0, 0, 6), K.alongX(g.f + by, g.zb + g.s / 2, -sw - 16, -sw - 6.35, 10, 0, 0, 6)])), 'fastener', ...ZINC);
     }
     for (const side of [1, -1] as const) {
       const h = g.handle(side), v = [h.b[0] - h.a[0], h.b[1] - h.a[1]], L = Math.hypot(v[0], v[1]);
@@ -226,7 +225,7 @@ export function buildSwanNeck(api: ManifoldAPI, params: NumericParams): SolidPar
       add('M24 mounting bolt', s.keep(s.M.union([K.alongY(0, z, -g.f - 26, fy + 14, 12, 1, 0, 32), K.hexY(0, z, fy, fy + 15, 36)])), 'fastener', ...ZINC);
       add('M24 nut', K.hexY(0, z, -g.f - 20, -g.f, 36), 'fastener', ...ZINC);
     }
-    const leaf = K.union2([K.rect(-w, fy - .5, w, g.hinge), K.circle(0, g.hinge, w, 40)]);
+    const leaf = K.hull2([K.rect(-w, fy - .5, w, g.hinge), K.circle(0, g.hinge, w, 40)]);
     add('Hinge leaves', s.keep(s.M.union([K.plateXY(leaf, g.leafTop[0], g.leafTop[1]), K.plateXY(leaf, g.leafBot[0], g.leafBot[1])])), 'source', ...BLACK);
     add('Hinge pin', s.keep(s.M.union([K.alongZ(0, g.hinge, g.leafBot[0] - 12, g.leafTop[1] + 4, 11, 0, 0, 32), K.hexZ(0, g.hinge, g.leafTop[1], g.leafTop[1] + 12, 30), K.hexZ(0, g.hinge, g.leafBot[0] - 12, g.leafBot[0], 30)])), 'fastener', ...ZINC);
     const popY = fy + 26;
@@ -237,7 +236,7 @@ export function buildSwanNeck(api: ManifoldAPI, params: NumericParams): SolidPar
     const swivel = box([S.box[0], g.y1 - (g.hinge - S.box[1]), g.boxZ[1] - g.boxZ[0]], [0, (g.y1 + g.hinge - S.box[1]) / 2, zc]);
     add('Swivel box', s.keep(swivel.subtract(K.alongX(holeY, zc, -40, 40, 14.5, 0, 0, 32))), 'source', ...BLACK);
     add('Post', box([S.post, S.post, g.postTop - g.boxZ[1] + 1], [0, g.y1 - S.post / 2, (g.postTop + g.boxZ[1]) / 2]), 'source', ...BLACK);
-    const tab = K.union2([K.rect(g.y1 - 10, g.postTop - S.tab[2], g.y1 + S.tab[1] - S.tab[2] / 2, g.postTop), K.circle(g.y1 + S.tab[1] - S.tab[2] / 2, g.postTop - S.tab[2] / 2, S.tab[2] / 2, 32)]);
+    const tab = K.hull2([K.rect(g.y1 - 10, g.postTop - S.tab[2], g.y1 + S.tab[1] - S.tab[2] / 2, g.postTop), K.circle(g.y1 + S.tab[1] - S.tab[2] / 2, g.postTop - S.tab[2] / 2, S.tab[2] / 2, 32)]);
     const slot = K.union2([18, 34, 50].map(dy => K.circle(g.y1 + dy, g.postTop - S.tab[2] / 2, 10, 24)));
     add('Slotted hook tab', K.plateYZ(s.keep(tab.subtract(slot)), -S.tab[0] / 2, S.tab[0] / 2), 'source', ...BLACK);
     if (p.magpin) {
