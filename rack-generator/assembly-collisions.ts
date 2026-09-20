@@ -262,7 +262,7 @@ export function detectCollisions(resolvedInstances: unknown): CollisionWarning[]
     if (seen.has(key)) continue;
     // A part mounted on another accessory (#178) wraps or clamps its host by design.
     const hosts = (v: CollisionInstance) => (Array.isArray(v.mounts) ? v.mounts : []).map(m => m?.hostId);
-    if (hosts(a).includes(b.id) || hosts(b).includes(a.id)) continue;
+    if (hosts(a).includes(b.ownerId ?? b.id) || hosts(b).includes(a.ownerId ?? a.id)) continue;
     const slot = a.kind === 'accessory' && b.kind === 'accessory' ? sharedSlot(a, b) : null;
     const overlap = slot || bodies.get(a)!.some(x => bodies.get(b)!.some(y => intersects(x, y)));
     if (!overlap) continue;

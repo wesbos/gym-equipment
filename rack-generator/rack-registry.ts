@@ -12,8 +12,8 @@ import type { RackPart } from './rack-part.ts';
 import { ROGUE_MONSTER_BAND_PEG } from './rack-parts/rogue-band-pegs.ts';
 import { REP_LEG_ROLLER } from './rack-parts/rep-leg-roller.ts';
 // Family slots: each file owns its PARTS list, so parallel families never edit this file.
-import { PARTS as ROLLERS_PADS } from './rack-parts/rack-rollers-pads.ts';
-import { PARTS as JCUPS_SAFETIES } from './rack-parts/rack-jcups-safeties.ts';
+import { PARTS as ROLLERS_PADS, REGISTRY_V2_PARTS as ROLLERS_PADS_V2 } from './rack-parts/rack-rollers-pads.ts';
+import { PARTS as JCUPS_SAFETIES, REGISTRY_V2_PARTS as JCUPS_SAFETIES_V2 } from './rack-parts/rack-jcups-safeties.ts';
 import { PARTS as DIPS_LANDMINES } from './rack-parts/rack-dips-landmines.ts';
 import { PARTS as LEVERS_BELT_SQUAT } from './rack-parts/rack-levers-belt-squat.ts';
 import { PARTS as DIGITAL_CABLE } from './rack-parts/rack-digital-cable.ts';
@@ -21,6 +21,8 @@ export * from './rack-part.ts';
 export const RACK_PARTS = [
   ROGUE_MONSTER_BAND_PEG, REP_LEG_ROLLER,
   ...ROLLERS_PADS, ...JCUPS_SAFETIES, ...DIPS_LANDMINES, ...LEVERS_BELT_SQUAT, ...DIGITAL_CABLE,
+  // Registry v2 (#178): parts that need rack context, hosted targets or the floor rule.
+  ...ROLLERS_PADS_V2, ...JCUPS_SAFETIES_V2,
 ] as const;
 export type RackPartId = (typeof RACK_PARTS)[number]['id'];
 export const RACK_PART_IDS: RackPartId[] = RACK_PARTS.map(p => p.id);

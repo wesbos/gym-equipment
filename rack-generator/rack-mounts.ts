@@ -15,7 +15,7 @@ const NORMALS: Record<Face, Vec3> = { front: [0, -1, 0], back: [0, 1, 0], left: 
 const entry = (part: string): RackPart => { const found = rackPart(part); if (!found) throw Error(`Unknown rack attachment ${part}.`); return found; };
 const Title = (part: RackPart) => part.noun[0].toUpperCase() + part.noun.slice(1);
 /** Context keys every hosted target receives (the rest of the v2 context is opt-in via RackPartSpec.context). */
-const HOST_KEYS = new Set(['hostWidth', 'hostHeight', 'hostTop', 'hostHole', 'hostPitch']);
+const HOST_KEYS = new Set(['hostWidth', 'hostHeight', 'hostTop', 'hostHole', 'hostPitch', 'hostSpan']);
 /** Entry params plus the resolved rack context the builder, bodies and cradle slots see. `extra` carries the v2
  * context (#178); only host keys and the keys the entry lists in `context` are passed on. */
 export function rackContextParams(part: RackPart, params: NumericParams, rack: RackDimensions, mirror = false, face?: Face, span?: number, extra: NumericParams = {}): NumericParams {
@@ -26,10 +26,14 @@ export function rackContextParams(part: RackPart, params: NumericParams, rack: R
   return { ...part.defaults, ...params, upright, mountSpacing: rack.pitch, holeDiameter: rack.holeDiameter, ...(mirror ? { mirror: 1 } : {}),
     ...(width !== upright ? { uprightWidth: width } : {}), ...(span !== undefined ? { uprightSpan: span } : {}), ...opt };
 }
-/** Opt-in v2 rack context of an upright target: hole height above the floor, clear inside width and depth, and the
- * height of the mounting upright. */
-export function uprightContext(rack: RackDimensions, hole: number, node?: UprightNode): NumericParams {
-  return { holeHeight: rack.firstHole + hole * rack.pitch, rackWidth: rack.width, rackDepth: rack.depth, rackHeight: Math.min(rack.height, node?.height ?? rack.height) };
+/** Opt-in v2 rack context of an upright target: hole height above the floor, clear inside width and depth, the height
+ * of the mounting upright, and which way local +X points relative to the rack (acrossOut, +1 = out of the rack). */
+export function uprightContext(doc: Pick<RackDoc, 'rack' | 'uprights' | 'removed'>, t: Pick<Target, 'uprightId' | 'face' | 'hole'>): NumericParams {
+  const rack = doc.rack, node: UprightNode | undefined = doc.uprights[t.uprightId];
+  const live = Object.entries(doc.uprights).filter(([id]) => !doc.removed.includes(id)).map(([, n]) => n);
+  const cx = live.reduce((s, n) => s + n.x, 0) / (live.length || 1), cy = live.reduce((s, n) => s + n.y, 0) / (live.length || 1), angle = ROTATIONS[t.face];
+  const out = node ? (node.x - cx) * Math.cos(angle) + (node.y - cy) * Math.sin(angle) : 0;
+  return { holeHeight: rack.firstHole + t.hole * rack.pitch, rackWidth: rack.width, rackDepth: rack.depth, rackHeight: Math.min(rack.height, node?.height ?? rack.height), acrossOut: out < -1 ? -1 : 1 };
 }
 /** `uprightSpan` for a spanning entry (RackMount.span): centre-to-centre distance to the nearest live post in line
  * with the mounting face, along local X ('across', signed) or local +Y ('normal'). */
@@ -94,7 +98,7 @@ export function validateRackMount(doc: MountDoc, accessory: Accessory) {
     throw Error(`${name} mounts on ${accepted.map(k => KIND_NAMES[k]).join(' or ')}, not ${KIND_NAMES[kind]}.`);
   }
   if (isHostedTarget(t)) return;
-  const params = rackContextParams(p, accessory.params, rack, false, kind === 'upright' ? t.face : undefined, undefined, isUprightTarget(t) ? uprightContext(rack, t.hole, doc.uprights[t.uprightId]) : {});
+  const params = rackContextParams(p, accessory.params, rack, false, kind === 'upright' ? t.face : undefined, rackSpan(doc, p, t), isUprightTarget(t) ? uprightContext(doc, t) : {});
   const pin = resolveBy(p.mount.pin, params);
   if (pin > rack.holeDiameter) throw Error(`${name} mounting pin ${pin} mm exceeds the rack bore ${rack.holeDiameter} mm.`);
   p.mount.validate?.(rack, params);
@@ -130,7 +134,7 @@ export function resolveRack(doc: RackDoc, accessory: Accessory, targets: Target[
   const p = entry(accessory.part), r = doc.rack;
   return targets.map((t, i) => {
     const params = rackContextParams(p, accessory.params, r, !!p.handed && i > 0, isUprightTarget(t) ? t.face : undefined, rackSpan(doc, p, t),
-      isUprightTarget(t) ? uprightContext(r, t.hole, doc.uprights[t.uprightId]) : {});
+      isUprightTarget(t) ? uprightContext(doc, t) : {});
     const base = { id: accessory.paired ? `${accessory.id}:${pairSuffix(targets, i)}` : accessory.id, part: accessory.part, params, ownerId: accessory.id, kind: 'accessory' as const,
       paired: accessory.paired, localOutward: [0, 1, 0] as Vec3, collisionBoxes: resolveBy(p.bodies, params).map(b => ({ min: [...b.min] as Vec3, max: [...b.max] as Vec3 })), name: p.name };
     if (isRailTarget(t)) {

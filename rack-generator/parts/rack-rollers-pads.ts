@@ -5,6 +5,8 @@
 import type { CrossSection, Manifold, ManifoldAPI, NumericParams, PartDefinition, SolidPart } from '../types.ts';
 import type { MaterialRole } from '../appearance.ts';
 import { rackDefinition } from '../rack-part.ts';
+import { DARKO_THRESHER_PAD, REP_UTILITY_SEAT, ROGUE_MULTI_USE_RACK_ROLLER } from '../rack-parts/rack-rollers-pads-v2.ts';
+import { buildRackRoller, buildThresherPad, buildUtilitySeat } from './rack-rollers-pads-v2.ts';
 import { vendorSolid } from './vendor-solid.ts';
 import { revolveProfile } from './rogue-band-pegs.ts';
 import {
@@ -347,4 +349,8 @@ export const definitions: PartDefinition[] = [
   rackDefinition(ROGUE_MONSTER_LITE_LEG_ROLLER, buildRogueMonsterLiteLegRoller),
   rackDefinition(BELLS_OF_STEEL_SPLIT_SQUAT_LEG_ROLLER, buildBosSplitSquatRoller),
   rackDefinition(TITAN_RACK_MOUNTED_LEG_ROLLER, buildTitanLegRoller),
+  // Registry v2 (#178): parts that span the rack or mount on a spotter arm (parts/rack-rollers-pads-v2.ts).
+  rackDefinition(ROGUE_MULTI_USE_RACK_ROLLER, buildRackRoller),
+  rackDefinition(REP_UTILITY_SEAT, buildUtilitySeat),
+  rackDefinition(DARKO_THRESHER_PAD, buildThresherPad),
 ];

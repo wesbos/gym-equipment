@@ -27,15 +27,17 @@ export const PIN_1IN = 24.8, PIN_5_8IN = 15.5;
  *
  * Registry v2 (#178) adds, only for entries that list them in `context` (so moving other parts never rebuilds them):
  * `holeHeight` target hole centre above the floor, `rackWidth` / `rackDepth` the rack's clear inside width and depth,
- * `rackHeight` the mounting upright's height (all mm). Hosted targets (a spotter arm, box safety or pull-up bar) always
+ * `rackHeight` the mounting upright's height (all mm), and `acrossOut` = +1 or -1, the sign of local +X that points out of
+ * the rack (away from its centre: forward on a front post's side face). Hosted targets (a spotter arm, box safety or pull-up bar) always
  * receive the host section: `hostWidth` across the host tube or bar (local X), `hostHeight` its vertical size, `hostTop`
  * the top surface above the target axis, `hostHole` the host's hole diameter (0 on a bar) and `hostPitch` its station
- * pitch. Rail targets get `upright` / `uprightWidth` = the rail section. Builders fall back to nominal values when a key
+ * pitch, plus `hostSpan` when the host has a matching unit across the rack (a paired spotter arm or safety): the signed
+ * distance along local X to the same station on it. Rail targets get `upright` / `uprightWidth` = the rail section. Builders fall back to nominal values when a key
  * is absent (thumbnails, the part viewer, contract tests). */
 export const RACK_CONTEXT_KEYS = ['upright', 'mountSpacing', 'holeDiameter', 'mirror', 'uprightWidth', 'uprightSpan',
-  'holeHeight', 'rackWidth', 'rackDepth', 'rackHeight', 'hostWidth', 'hostHeight', 'hostTop', 'hostHole', 'hostPitch'] as const;
+  'holeHeight', 'rackWidth', 'rackDepth', 'rackHeight', 'acrossOut', 'hostWidth', 'hostHeight', 'hostTop', 'hostHole', 'hostPitch', 'hostSpan'] as const;
 /** Opt-in rack context (RackPartSpec.context). */
-export type RackContextKey = 'holeHeight' | 'rackWidth' | 'rackDepth' | 'rackHeight';
+export type RackContextKey = 'holeHeight' | 'rackWidth' | 'rackDepth' | 'rackHeight' | 'acrossOut';
 /** Mount target kinds. 'crossmember-under' hangs under an upper rail at a Darko rail station: the part's frame is the
  * upright frame laid along the rail (local Z along the rail, local +Y straight down out of the rail's underside, local X
  * along the side-hole bolt axis), so a bracket built for an upright wraps the rail unchanged. 'spotter-arm' and

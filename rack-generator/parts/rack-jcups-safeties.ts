@@ -11,6 +11,8 @@ import { GHOST_ROLLER_J_CUP, REP_FLAT_SANDWICH_J_CUPS, ROGUE_MONSTER_LITE_J_CUPS
 import { ROGUE_SAML_24_SPOTTER_ARMS, ROGUE_MONSTER_SPOTTER_ARMS_2, REP_SPOTTER_ARMS, SURPLUS_STEALTH_SPOTTERS, OAK_CLUB_ALPHA_SPOTTER_ARMS } from '../rack-parts/rack-jcups-safeties-spotters.ts';
 import { REP_STRAP_SAFETIES, ROGUE_MONSTER_STRAP_SAFETY_2, ROGUE_MONSTER_LITE_STRAP_SAFETY_2, BOS_SAFETY_STRAPS, REP_FLIP_DOWN_SAFETIES, REP_PULL_UP_BAR, REP_MULTI_GRIP_PULL_UP_BAR, ROGUE_FAT_SKINNY_PULL_UP_BAR } from '../rack-parts/rack-jcups-safeties-spans.ts';
 import { ROGUE_AM_2_MONOLIFT, MUTANT_METALS_SNAP_BACK_MONOLIFT } from '../rack-parts/rack-jcups-safeties-monolifts.ts';
+import { ROGUE_MONSTER_MINI_FEET } from '../rack-parts/rack-jcups-safeties-feet.ts';
+import { buildMiniFeet } from './rack-jcups-safeties-feet.ts';
 export const definitions: PartDefinition[] = [
   rackDefinition(GHOST_ROLLER_J_CUP, buildGhostRoller),
   rackDefinition(REP_FLAT_SANDWICH_J_CUPS, buildRepSandwich),
@@ -34,4 +36,5 @@ export const definitions: PartDefinition[] = [
   rackDefinition(ROGUE_FAT_SKINNY_PULL_UP_BAR, buildRogueFatSkinny),
   rackDefinition(ROGUE_AM_2_MONOLIFT, buildAm2),
   rackDefinition(MUTANT_METALS_SNAP_BACK_MONOLIFT, buildSnapBack),
+  rackDefinition(ROGUE_MONSTER_MINI_FEET, buildMiniFeet),
 ];

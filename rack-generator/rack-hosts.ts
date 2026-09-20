@@ -10,10 +10,10 @@
 import { resolveBy } from './floor-part.ts';
 import { pairSuffix } from './physical-identity.ts';
 import { rackPart, rackHosts, rackTargets, type RackHost, type RackPart } from './rack-registry.ts';
-import { rackContextParams, rackSpan } from './rack-mounts.ts';
+import { rackContextParams, rackSpan, resolveRack } from './rack-mounts.ts';
 import { applyBasis, basisEuler, cross, eulerBasis, isHostedTarget } from './rack-targets.ts';
 import type { Accessory, Face, HostedTarget, Mount, NumericParams, RackDimensions, RackDoc, ResolvedInstance, Target, Vec3 } from './types.ts';
-export type HostDoc = Pick<RackDoc, 'rack' | 'uprights' | 'removed' | 'accessories'>;
+export type HostDoc = Pick<RackDoc, 'rack' | 'uprights' | 'removed' | 'accessories'> & Partial<Pick<RackDoc, 'connections' | 'structure'>>;
 const pairFace = (face: Face): Face => face === 'left' ? 'right' : face === 'right' ? 'left' : face;
 const tubeAlong = (rack: RackDimensions, dx: number, dy: number) => Math.abs(dx) >= Math.abs(dy) ? rack.tube : rack.tubeDepth ?? rack.tube;
 
@@ -58,8 +58,8 @@ export const hostContext = (h: RackHost): NumericParams => ({ hostWidth: h.width
 const entry = (part: string): RackPart => { const found = rackPart(part); if (!found) throw Error(`Unknown rack attachment ${part}.`); return found; };
 const Title = (part: RackPart) => part.noun[0].toUpperCase() + part.noun.slice(1);
 /** Params the hosted builder, bodies and fit rules see. */
-export function hostedParams(doc: HostDoc, a: Accessory, h: RackHost): NumericParams {
-  return rackContextParams(entry(a.part), a.params, doc.rack, false, undefined, undefined, hostContext(h));
+export function hostedParams(doc: HostDoc, a: Accessory, h: RackHost, span?: number): NumericParams {
+  return rackContextParams(entry(a.part), a.params, doc.rack, false, undefined, undefined, { ...hostContext(h), ...(span !== undefined ? { hostSpan: span } : {}) });
 }
 /** Validates a hosted accessory against its host and returns the target normalised to the host's upright and face.
  * Throws user-facing messages. */
@@ -71,7 +71,7 @@ export function validateHostedMount(doc: HostDoc, a: Accessory, t: HostedTarget 
   const frames = hostFrames(doc, host, t.unit), h = frames[t.frame];
   if (!h || h.kind !== t.kind) throw Error(`${name} does not mount on that ${host.part.replaceAll('-', ' ')}.`);
   if (t.station < 0 || t.station >= h.stations) throw Error(`${name} station ${t.station + 1} is off the ${h.label.toLowerCase()}.`);
-  const params = hostedParams(doc, a, h), reach = resolveBy(p.mount.hostReach ?? { back: 0, front: 0 }, params), at = t.station * h.pitch;
+  const params = hostedParams(doc, a, h, hostSpan(doc, host, t)), reach = resolveBy(p.mount.hostReach ?? { back: 0, front: 0 }, params), at = t.station * h.pitch;
   if (at - reach.back < h.span[0] - 1e-6 || at + reach.front > h.span[1] + 1e-6) throw Error(`${name} does not fit at station ${t.station + 1}: it would run past the end of the ${h.label.toLowerCase()}.`);
   const pin = resolveBy(p.mount.pin, params);
   if (h.hole > 0 && pin > h.hole) throw Error(`${name} pin ${pin} mm exceeds the ${h.label.toLowerCase()} hole ${h.hole} mm.`);
@@ -91,45 +91,75 @@ export function hostedPairTarget(doc: HostDoc, a: Accessory): HostedTarget {
   if (!h || station === t.station || station < 0 || station >= h.stations) throw Error(`${Title(p)} has no room for a matching pair on this ${h?.label.toLowerCase() ?? 'host'}; move it off the middle.`);
   return { ...t, station };
 }
+/** World pose (and instance id) of a host unit, exactly as resolveAssembly places it. */
+export interface HostPose { id: string; position: Vec3; rotation: Vec3; name?: string; connectedTo: string[] }
+export function hostPose(doc: HostDoc, host: Accessory, unit: number): HostPose | undefined {
+  const r = doc.rack, t = unitTarget(host, unit);
+  if (!t) return undefined;
+  if (host.part === 'safety-box') {
+    // resolveAssembly: one beam per side at the front post's x, rack centre y, turned to run front to rear.
+    const side = t.uprightId.endsWith('-right') ? 'right' : 'left', post = doc.uprights[`front-${side}`] ?? doc.uprights[t.uprightId];
+    return { id: host.paired ? `${host.id}:${side}` : host.id, position: [post.x, 0, r.firstHole + t.hole * r.pitch - 137.5], rotation: [0, 0, Math.PI / 2], name: 'Box safety', connectedTo: [`front-${side}`, `rear-${side}`] };
+  }
+  if (host.part === 'pullup-straight' && host.spanTo) {
+    const a = doc.uprights[t.uprightId], b = doc.uprights[host.spanTo];
+    return { id: host.id, position: [(a.x + b.x) / 2, (a.y + b.y) / 2, r.firstHole + t.hole * r.pitch - 25], rotation: [0, 0, Math.atan2(b.y - a.y, b.x - a.x)], name: 'Pull-up bar', connectedTo: [t.uprightId, host.spanTo] };
+  }
+  if (!rackPart(host.part)) return undefined;
+  const targets = [unitTarget(host, 0), unitTarget(host, 1)].filter((x): x is Target => !!x);
+  const inst = resolveRack(doc as RackDoc, host, host.paired ? targets : [targets[0]])[unit];
+  return inst && { id: inst.id, position: inst.position, rotation: inst.rotation, name: inst.name, connectedTo: inst.connectedTo };
+}
 /** World frame of a host station: origin, basis (local X across, Y along the host, Z up). */
-function stationFrame(hostInstance: ResolvedInstance, h: RackHost, station: number) {
-  const B = eulerBasis(hostInstance.rotation), local: Vec3 = h.origin.map((v, i) => v + h.axis[i] * station * h.pitch) as Vec3;
-  const w = applyBasis(B, local), origin = w.map((v, i) => v + hostInstance.position[i]) as Vec3;
+function stationFrame(pose: HostPose, h: RackHost, station: number) {
+  const B = eulerBasis(pose.rotation), local: Vec3 = h.origin.map((v, i) => v + h.axis[i] * station * h.pitch) as Vec3;
+  const w = applyBasis(B, local), origin = w.map((v, i) => v + pose.position[i]) as Vec3;
   const Y = applyBasis(B, h.axis), Z = applyBasis(B, [0, 0, 1]), X = cross(Y, Z);
   return { origin, X, Y, Z };
 }
-const hostUnit = (resolved: readonly ResolvedInstance[], host: string, unit: number) => resolved.filter(r => r.ownerId === host && r.kind === 'accessory')[unit];
-/** Mount marker for a hosted target (world). */
-export function hostedMount(t: HostedTarget, hostInstance: ResolvedInstance, h: RackHost): Mount {
-  const f = stationFrame(hostInstance, h, t.station);
-  return { ...t, position: f.origin, center: f.origin, pinAxis: h.hole > 0 ? f.X : f.Y, hostId: hostInstance.id, label: `${hostInstance.name ?? h.label} · ${h.label.toLowerCase()} ${h.kind === 'pull-up-bar' ? 'clamp station' : 'hole'} ${t.station + 1}` };
+/** Signed distance along the station's local X to the same station on the host's other unit (the matching spotter
+ * arm or safety across the rack), for parts that span between them (REP Utility Seat). */
+export function hostSpan(doc: HostDoc, host: Accessory, t: HostedTarget): number | undefined {
+  if (t.unit > 1) return undefined;
+  const h = hostFrames(doc, host, t.unit)[t.frame], o = hostFrames(doc, host, 1 - t.unit)[t.frame];
+  const a = hostPose(doc, host, t.unit), b = hostPose(doc, host, 1 - t.unit);
+  if (!h || !o || !a || !b || o.kind !== h.kind || t.station >= o.stations) return undefined;
+  const f = stationFrame(a, h, t.station), g = stationFrame(b, o, t.station), d = g.origin.map((v, i) => v - f.origin[i]);
+  // Only a true side-by-side partner counts (parallel, level, straight across).
+  const along = d[0] * f.Y[0] + d[1] * f.Y[1] + d[2] * f.Y[2], across = d[0] * f.X[0] + d[1] * f.X[1] + d[2] * f.X[2];
+  return Math.abs(along) < 1 && Math.abs(d[2]) < 1 && Math.abs(g.Y[0] * f.Y[0] + g.Y[1] * f.Y[1]) > .999 ? across : undefined;
 }
-/** Resolves a hosted accessory (one instance, two for a pair) on its (already resolved) host. */
-export function resolveHosted(doc: HostDoc, a: Accessory, resolved: readonly ResolvedInstance[]): ResolvedInstance[] {
+/** Mount marker for a hosted target (world). */
+export function hostedMount(t: HostedTarget, pose: HostPose, h: RackHost): Mount {
+  const f = stationFrame(pose, h, t.station);
+  return { ...t, position: f.origin, center: f.origin, pinAxis: h.hole > 0 ? f.X : f.Y, hostId: t.host, label: `${pose.name ?? h.label} · ${h.label.toLowerCase()} ${h.kind === 'pull-up-bar' ? 'clamp station' : 'hole'} ${t.station + 1}` };
+}
+/** Resolves a hosted accessory (one instance, two for a pair) on its host. */
+export function resolveHosted(doc: HostDoc, a: Accessory): ResolvedInstance[] {
   const p = entry(a.part), targets = [a.target as HostedTarget, ...(a.paired && a.pairHost ? [a.pairHost] : [])], host = doc.accessories.find(x => x.id === targets[0].host)!;
   return targets.map((t, i) => {
-    const h = hostFrames(doc, host, t.unit)[t.frame], hi = hostUnit(resolved, t.host, t.unit);
-    if (!hi || !h) throw Error(`${Title(p)} lost its host ${t.host}.`);
-    const f = stationFrame(hi, h, t.station), params = hostedParams(doc, a, h), m = hostedMount(t, hi, h);
+    const h = hostFrames(doc, host, t.unit)[t.frame], pose = hostPose(doc, host, t.unit);
+    if (!pose || !h) throw Error(`${Title(p)} lost its host ${t.host}.`);
+    const f = stationFrame(pose, h, t.station), params = hostedParams(doc, a, h, hostSpan(doc, host, t)), m = hostedMount(t, pose, h);
     return { id: targets.length > 1 ? `${a.id}:${pairSuffix(targets, i)}` : a.id, part: a.part, params, position: f.origin, rotation: basisEuler(f.X, f.Y, f.Z), mount: m, mounts: [m], ownerId: a.id, kind: 'accessory', paired: targets.length > 1,
-      connectedTo: [t.host, ...hi.connectedTo], localOutward: [0, 0, 1], collisionBoxes: resolveBy(p.bodies, params).map(b => ({ min: [...b.min] as Vec3, max: [...b.max] as Vec3 })), name: p.name };
+      connectedTo: [t.host, ...pose.connectedTo], localOutward: [0, 0, 1], collisionBoxes: resolveBy(p.bodies, params).map(b => ({ min: [...b.min] as Vec3, max: [...b.max] as Vec3 })), name: p.name };
   });
 }
 /** Every host station of the kinds this entry accepts (before full validation). */
-export function hostedCandidates(doc: HostDoc, resolved: readonly ResolvedInstance[], part: string): Mount[] {
+export function hostedCandidates(doc: HostDoc, part: string): Mount[] {
   const p = rackPart(part);
   if (!p) return [];
   const kinds = rackTargets(p).filter(k => k === 'spotter-arm' || k === 'pull-up-bar');
   if (!kinds.length) return [];
   const out: Mount[] = [];
   for (const host of doc.accessories) for (const unit of [0, 1]) {
-    const frames = hostFrames(doc, host, unit), hi = frames.length ? hostUnit(resolved, host.id, unit) : undefined;
-    if (!hi) continue;
+    const frames = hostFrames(doc, host, unit), pose = frames.length ? hostPose(doc, host, unit) : undefined;
+    if (!pose) continue;
     frames.forEach((h, frame) => {
       if (!kinds.includes(h.kind)) return;
       const base = unitTarget(host, unit)!;
       for (let station = 0; station < h.stations; station++)
-        out.push(hostedMount({ kind: h.kind, host: host.id, unit, frame, station, uprightId: base.uprightId, face: base.face, hole: 0 }, hi, h));
+        out.push(hostedMount({ kind: h.kind, host: host.id, unit, frame, station, uprightId: base.uprightId, face: base.face, hole: 0 }, pose, h));
     });
   }
   return out;

@@ -602,8 +602,7 @@ export function getMounts(input: RackDoc, part?: string, params: NumericParams =
   }) : [];
   // Registry parts on other accessories (#178): every host station that validates alongside the existing accessories.
   if (part && isRackPart(part) && rackTargets(rackPart(part)!).some(k => k === 'spotter-arm' || k === 'pull-up-bar')) {
-    const resolved = resolveAssembly(doc);
-    tops.push(...hostedCandidates(doc, resolved, part).filter(m => {
+    tops.push(...hostedCandidates(doc, part).filter(m => {
       if (!isHostedTarget(m)) return false;
       const target = { kind: m.kind, host: m.host, unit: m.unit, frame: m.frame, station: m.station, uprightId: m.uprightId, face: m.face, hole: 0 };
       try { validateAssembly({ ...doc, accessories: [...doc.accessories, { id: 'mount-preview', part: part as PartId, target, paired: false, params }] }); return true; } catch { return false; }
@@ -772,7 +771,7 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
     }
   }
   // Hosted parts (#178) ride on their resolved host instance.
-  for (const a of doc.accessories) if (isRackPart(a.part) && isHostedTarget(a.target)) result.push(...resolveHosted(doc, a, result));
+  for (const a of doc.accessories) if (isRackPart(a.part) && isHostedTarget(a.target)) result.push(...resolveHosted(doc, a));
   result.push(...resolveSystems(doc));
   parkBarbells(result, doc.floorItems);
   return result;

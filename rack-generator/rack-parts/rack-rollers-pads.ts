@@ -373,3 +373,5 @@ export const PARTS = [
   REP_PEGASUS, REP_LEG_ROLLER_2, ROGUE_MONSTER_SINGLE_LEG_ROLLER_2, ROGUE_MONSTER_PRITCHETT_PAD, BELLS_OF_STEEL_SEAL_ROW_PAD,
   PRIME_PRODIGY_STABILITY_PAD, ROGUE_MONSTER_LITE_LEG_ROLLER, BELLS_OF_STEEL_SPLIT_SQUAT_LEG_ROLLER, TITAN_RACK_MOUNTED_LEG_ROLLER,
 ] as const satisfies readonly RackPart[];
+/** Parts that needed the registry v2 (#178): spanning and spotter-arm mounted rollers, seats and pads, kept apart from the #132 PARTS list. */
+export { REGISTRY_V2_PARTS } from './rack-rollers-pads-v2.ts';

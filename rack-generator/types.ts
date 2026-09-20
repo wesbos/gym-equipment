@@ -54,7 +54,7 @@ export interface RackDoc { room?: Room; wallItems?: WallItem[]; hangItems?: Hang
 
 export interface StructureSlot { id: string; part: PartId; connectedTo: UprightId[] }
 export interface LocalBox { min: Vec3; max: Vec3 }
-export type Mount = Target & { position: Vec3; center: Vec3; localAnchor?: Vec3; pinAxis?: Vec3; label?: string; connectorId?: string; /** Hosted mounts: the resolved host instance id (its bodies are not a collision). */ hostId?: string }
+export type Mount = Target & { position: Vec3; center: Vec3; localAnchor?: Vec3; pinAxis?: Vec3; label?: string; connectorId?: string; /** Hosted mounts: the host accessory id (its units' bodies are not a collision). */ hostId?: string }
 export interface ResolvedInstance { logo?: ValidatedLogo; id: string; part: PartId; params: NumericParams; position: Vec3; rotation: Vec3; mount: Mount | null; mounts: Mount[]; ownerId: string; kind: 'structure' | 'accessory' | 'floor-item' | 'wall-item'; paired: boolean; connectedTo: string[]; collisionEnabled?: boolean; collisionBoxes?: LocalBox[]; localOutward?: Vec3; name?: string }
 export interface PlacementField { key: string; label: string; min: number; max: number; step: number }
 export interface PlacementInfo { family: string; label: string; paired: boolean; /** Initial pair choice; omitted means `paired`. */ defaultPaired?: boolean; slots?: string[]; fields: PlacementField[]; faces?: Face[]; fixedHole?: number; requiredPitch?: number; handed?: boolean; mountType?: string; description?: string }
