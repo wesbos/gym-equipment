@@ -700,7 +700,9 @@ export function buildMajorB52(api: ManifoldAPI, p: NumericParams): SolidPart[] {
     // Uprights: 2" × 3" front and rear, 2" × 2" middle; top frame, multi-grip pull-up handles, rear logo plate.
     for (const e of [-1, 1]) {
       const x = e * ux;
-      t.add(UP, t.upright(x, 0, TY, top - TY, TX, TY, holes), t.upright(x, yM, TY, top - TY, TY, TY, { ...holes, faces: 'y' }), t.upright(x, yR, TY, top - TY, TX, TY, { ...holes, faces: 'x' }));
+      // Colourways paint the front and middle uprights; the rear uprights stay black.
+      t.add(UP, t.upright(x, 0, TY, top - TY, TX, TY, holes), t.upright(x, yM, TY, top - TY, TY, TY, { ...holes, faces: 'y' }));
+      t.add(F, t.upright(x, yR, TY, top - TY, TX, TY, { ...holes, faces: 'x' }));
       for (let n = 3; n <= 27; n += 2) t.add(mat('White upright numbers', '#e3e3df', 0, .6), t.label(String(n), 16, 12, .5, [x + e * 22, -TY / 2 - .5, holes.start + (n - 1) * inch(2) / 2 + 30], [1, 0, 0], [0, 0, 1]));
       t.add(F, t.box([x - TX / 2, -TY / 2, top - TY], [x + TX / 2, yR + TY / 2, top]));
       t.add(F, t.prismYZ([[yR - 150, top], [yR + TY / 2, top], [yR + TY / 2, top - 260], [yR - 20, top - 260]], x - 6, x + 6));
