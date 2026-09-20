@@ -30,8 +30,10 @@ export const SOURCE_MOUNT_SHAFTS: Readonly<Record<string, number>> = Object.free
   'safety-webbing': 16,
 });
 
-export function validateMountShaft(part: string, params: NumericParams, bore: number): void {
-  const diameter = part === 'safety-pin-pipe' ? params.pinDiameter ?? 16 : SOURCE_MOUNT_SHAFTS[part];
+/** `fitPin`: the rack's pin class when the built-in is fitted to a non-75 mm upright (mount-fit.ts, #162); the
+ * pin-and-pipe safety keeps an explicit saved pinDiameter. */
+export function validateMountShaft(part: string, params: NumericParams, bore: number, fitPin?: number): void {
+  const diameter = part === 'safety-pin-pipe' ? params.pinDiameter ?? fitPin ?? 16 : fitPin !== undefined && SOURCE_MOUNT_SHAFTS[part] !== undefined ? fitPin : SOURCE_MOUNT_SHAFTS[part];
   if (diameter !== undefined && diameter > bore) {
     throw new Error(`${part} retaining pin/bolt diameter ${diameter} mm exceeds the rack bore ${bore} mm.`);
   }

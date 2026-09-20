@@ -54,6 +54,8 @@ The editor uses connection records and per-part mounting adapters rather than in
 
 Single-upright accessories snap to their retaining-pin or mounting-bolt locations. Matching pairs can be split for independent placement. Stabilizer feet attach at the base and stay seated on the floor. Select a frame catalog entry to choose a compatible frame slot; select an installed member to change its variant or supported dimensions. Straight-member names identify their library variants; their actual span follows the connected rack dimensions. The separate nameplate retains its supporting rail. Frame variants that cannot support an installed rail-mounted pull-up assembly are rejected.
 
+On manufacturer racks with other uprights (2×2, 2×3 narrow face forward, 3×3; 5/8″ or 1″ holes; 2″ or 3″ pitch) the built-in J-hooks, safeties and attachments keep their working body and fit only their mount: sleeves and collars shrink or grow to the tube, side plates come in or out, multi-bolt patterns snap to the rack's stations, and rack-crossing pins take the 5/8″ or 1″ class (`mount-fit.ts`, `research/builtin-rack-fit.md`). The fit lives in resolved builder params only; saved documents and every 75 mm rack are unchanged.
+
 Existing version-1 designs remain readable. Optional `structure` records store frame-member overrides; accessory records retain their existing connection format. Cable systems are a separate future assembly family; manufacturer manuals and implementation notes are collected in `research/cable-systems.md`.
 
 ## TypeScript SPA and Cloudflare
