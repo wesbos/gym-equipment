@@ -9,6 +9,7 @@
     "preview": "wrangler dev",
     "deploy": "npm run build && wrangler deploy",
     "test": "tsx --test rack-generator/*.test.ts src/**/*.test.ts",
+    "thumbnails": "tsx scripts/generate-thumbnails.ts",
     "test:logos:browser": "playwright test e2e/logos.spec.ts --workers=1"
   },
   "keywords": [],

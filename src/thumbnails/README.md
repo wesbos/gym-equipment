@@ -1,5 +1,32 @@
 # Geometry thumbnails
 
+## Prebuilt (catalog defaults)
+
+Every catalog part's default-parameter thumbnail is rendered at build time by
+`npm run thumbnails` (`scripts/generate-thumbnails.ts`): a Vite dev server +
+headless Chromium (SwiftShader, GPU-independent) runs `scripts/thumbnails.html`,
+which drives this exact backend/renderer and encodes lossless WebP (same pixels
+and framing as the runtime PNG). Output: `public/thumbnails/<part>.<hash>.webp`
+(content-hashed, served `immutable` via `public/_headers`) and
+`manifest.json` here, mapping the canonical `thumbnailKey` to the file (or
+`null` when the part's geometry can't build, which shows the SVG icon).
+
+`PartThumbnail` looks the key up first (`prebuilt.ts`; empty params mean
+defaults, so rows show images before definitions load). A hit renders a plain
+fixed-size `<img loading="lazy" decoding="async">`: no queue, worker, Manifold
+build or main-thread render. Its `src` is set by one shared observer per scroll
+container (`reveal.ts`, 300px preload margin) that unobserves each card once
+seen; images already shown this session render immediately. (Native lazy
+loading alone keeps every unloaded image in a per-frame intersection check,
+about 0.8 ms/frame for the sidebar while the builder canvas animates.) Only non-default params or keys missing from the
+manifest use the live pipeline below. The generator is incremental (only new or
+changed keys; `--force` re-renders all, naming parts re-renders those) and
+deletes unreferenced images. `prebuilt.test.ts` fails when a catalog part has
+no image for its current defaults: after adding a part or changing defaults,
+run `npm run thumbnails` and commit the results.
+
+## Live pipeline (other params)
+
 `PartThumbnail` observes actual viewport intersection (including clipped scroll
 containers). The original SVG is decorative loading/error fallback. Supply the
 part ID and complete effective numeric parameters, usually catalog defaults;

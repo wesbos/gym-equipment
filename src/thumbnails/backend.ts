@@ -1,9 +1,9 @@
 import type { LibraryWorkerResponse } from '../../rack-generator/worker-types.ts';
 import type { ThumbnailBackend, ThumbnailRequest } from './queue.ts';
-import { createThumbnailRenderer } from './renderer.ts';
+import { createThumbnailRenderer, type ThumbnailEncoding } from './renderer.ts';
 
 /** Shared by the queue, never by individual catalog rows. */
-export function createThumbnailBackend(): ThumbnailBackend {
+export function createThumbnailBackend(encoding?: ThumbnailEncoding): ThumbnailBackend {
   const worker = new Worker(new URL('../../rack-generator/library-worker.ts', import.meta.url), { type: 'module', name: 'part-thumbnails' });
   let renderer: ReturnType<typeof createThumbnailRenderer> | undefined;
   let disposed = false;
@@ -22,7 +22,7 @@ export function createThumbnailBackend(): ThumbnailBackend {
     clearTimeout(timeout);
     if (data.type === 'error') { fail(data.error); return; }
     try {
-      renderer ??= createThumbnailRenderer();
+      renderer ??= createThumbnailRenderer(encoding);
       pending?.resolve(renderer.render(data.meshes));
       pending = undefined;
     } catch (error) { fail(String(error)); }
