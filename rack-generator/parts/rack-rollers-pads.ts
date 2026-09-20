@@ -16,7 +16,7 @@ type Scope = Parameters<Parameters<typeof vendorSolid>[1]>[0];
 type Finish = { color: string; metalness: number; roughness: number; role?: MaterialRole };
 const F = (color: string, metalness: number, roughness: number, role: MaterialRole = 'source'): Finish => ({ color, metalness, roughness, role });
 const REP_BLACK = F('#1d1e21', .45, .5), ROGUE_BLACK = F('#18191b', .4, .42), BOS_BLACK = F('#222326', .3, .72), PRIME_BLACK = F('#1f2023', .35, .68);
-const ZINC = F('#c4c8cc', .85, .3), CHROME = F('#dde0e3', .95, .14), NICKEL = F('#5e6267', .88, .3), GUNMETAL = F('#45484c', .85, .34);
+const ZINC = F('#c4c8cc', .85, .3), CHROME = F('#dde0e3', .95, .14), NICKEL = F('#9a9ea3', .9, .26), GUNMETAL = F('#45484c', .85, .34), MACHINED = F('#7d8186', .88, .3);
 const VINYL = F('#26272a', 0, .78), CLEANGRIP = F('#232427', 0, .72), FOAM = F('#1f2022', 0, .9), UHMW = F('#2e2f31', 0, .6, 'liner');
 const FASTENER = F('#2a2b2e', .7, .35, 'fastener'), WHITE = F('#eeeeec', 0, .55), GREEN = F('#8ed13a', .1, .45), ORANGE = F('#f06a1d', .1, .45), BRONZE = F('#b07a3e', .8, .35);
 const DEG = Math.PI / 180;
@@ -85,8 +85,8 @@ const build = (api: ManifoldAPI, fn: (s: Kit) => void) => vendorSolid(api, v => 
 
 /** Gathered-end vinyl roller along +Y from y0 to y1 (Rogue and BoS style). */
 function gatheredRollerY(s: Kit, name: string, y0: number, y1: number, r: number, f: Finish, x = 0, z = 0) {
-  s.add(name, s.alongY(x, z, y0 + 3, y1 - 3, r, r * .32, r * .32, 64), f);
-  s.add('Gathered pad ends', s.k(s.M.union([s.alongY(x, z, y0, y0 + 5, r * .7, 0, 1.5), s.alongY(x, z, y1 - 5, y1, r * .7, 1.5, 0), s.gathers(y0 + 4, -1, r * .52, r * .82, x, z), s.gathers(y1 - 4, 1, r * .52, r * .82, x, z)])), f);
+  s.add(name, s.alongY(x, z, y0, y1, r, r * .32, r * .32, 64), f);
+  s.add('Gathered pad ends', s.k(s.M.union([s.alongY(x, z, y0 - 1.5, y0 + 5, r * .62, 1, 0), s.alongY(x, z, y1 - 5, y1 + 1.5, r * .62, 0, 1), s.gathers(y0 + 1, -1, r * .4, r * .68, x, z), s.gathers(y1 - 1, 1, r * .4, r * .68, x, z)])), f);
 }
 
 // ───────────────────────────── Leg rollers ─────────────────────────────
@@ -96,7 +96,7 @@ export function buildRepLegRoller2(api: ManifoldAPI, params: NumericParams): Sol
   return build(api, s => {
     // Nickel shaft through the upright to the threaded stud; the knob clamps the shoulder against the mounting face.
     s.add('Nickel-plated 1 in shaft', s.k(s.M.union([s.alongY(0, 0, g.knob0, -g.face + 2, 10.6, 1, 0, 32), s.alongY(0, 0, -g.face + 1, g.pad1 - 4, REP_LR2.shaft / 2, 0, 0, 40)])), NICKEL);
-    s.add('Shoulder collar', s.alongY(0, 0, g.face, g.face + REP_LR2.shoulder[1], REP_LR2.shoulder[0] / 2, .8, 1.5, 48), NICKEL);
+    s.add('Shoulder collar', s.alongY(0, 0, g.face, g.face + REP_LR2.shoulder[1], REP_LR2.shoulder[0] / 2, .8, 1.5, 48), F('#1a1b1d', .45, .45));
     s.add('Pad hub', s.alongY(0, 0, g.face + REP_LR2.shoulder[1] - .5, g.pad0 + 1, REP_LR2.hub[0] / 2, 0, 2, 48), F('#161719', .4, .5));
     s.add('Molded CleanGrip roller pad', s.alongY(0, 0, g.pad0, g.pad1, r, 11, 11, 72), CLEANGRIP);
     // Molded end faces with the radial "turbine" pattern and a seam ring near each end.
@@ -106,7 +106,7 @@ export function buildRepLegRoller2(api: ManifoldAPI, params: NumericParams): Sol
       for (let i = 0; i < 22; i++) caps.push(s.k(s.k(s.k(s.M.cube([1.4, 1.6, 26], true)).translate([6, 0, 40])).rotate([0, i / 22 * 360, 0])).translate([0, y + side * 1.2, 0]));
     }
     s.add('Molded end caps', s.k(s.M.union(caps)), F('#1a1b1d', 0, .6));
-    s.add('Pad seams', s.k(s.M.union([s.stitchY(g.pad0 + 16, r), s.stitchY(g.pad1 - 16, r)])), F('#3a3b3e', 0, .7));
+    s.add('Pad seams', s.k(s.M.union([s.stitchY(g.pad0 + 16, r), s.stitchY(g.pad1 - 16, r), s.box([1.2, REP_LR2.pad - 40, 1.2], [r - .2, (g.pad0 + g.pad1) / 2, 0])])), F('#3a3b3e', 0, .7));
     s.add('End retaining nut', s.k(s.M.union([s.alongY(0, 0, g.pad1, g.pad1 + 12, 21, 0, 1.5), s.alongY(0, 0, g.pad1 + 11, g.tip, 15, 0, 1.5, 6)])), NICKEL);
     s.add('Knurled securing knob', s.k(s.k(s.prismY(s.knurled(REP_LR2.knob[0] / 2), g.knob0 + 2, REP_LR2.knob[1] - 2)).add(s.alongY(0, 0, g.knob0, g.knob0 + 2.5, REP_LR2.knob[0] / 2 - 3, 1.5, 0))), F('#131415', .3, .45));
   });
@@ -118,7 +118,7 @@ export function buildRogueSingleLegRoller2(api: ManifoldAPI, params: NumericPara
     s.add('Machined shaft collars', s.k(s.M.union([s.alongY(0, 0, g.face, g.pad0, cd / 2, .8, .8), s.alongY(0, 0, g.pad1, g.pad1 + cl, cd / 2, .8, .8)])), GUNMETAL);
     s.add('Collar set screws', s.k(s.M.union([s.cylinder(3, 5, [0, g.face + cl / 2, cd / 2 + 1.5], [0, 0, 0], 12), s.cylinder(3, 5, [0, g.pad1 + cl / 2, cd / 2 + 1.5], [0, 0, 0], 12)])), FASTENER);
     gatheredRollerY(s, '27 oz vinyl EPDM foam pad', g.pad0, g.pad1, ROGUE_SLR2.padDiameter / 2, VINYL);
-    s.add('Knurled screw-on nut', s.k(s.k(s.prismY(s.knurled(ROGUE_SLR2.nut[0] / 2, 64, .7), g.nut0 + 2, ROGUE_SLR2.nut[1] - 4)).add(s.k(s.alongY(0, 0, g.nut0, g.nut0 + 2.5, ROGUE_SLR2.nut[0] / 2 - 4, 1.5, 0)).add(s.alongY(0, 0, -g.face - 2.2, -g.face, ROGUE_SLR2.nut[0] / 2 - 4, 0, 1)))), GUNMETAL);
+    s.add('Knurled screw-on nut', s.k(s.k(s.prismY(s.knurled(ROGUE_SLR2.nut[0] / 2, 64, .7), g.nut0 + 2, ROGUE_SLR2.nut[1] - 4)).add(s.k(s.alongY(0, 0, g.nut0, g.nut0 + 2.5, ROGUE_SLR2.nut[0] / 2 - 4, 1.5, 0)).add(s.alongY(0, 0, -g.face - 2.2, -g.face, ROGUE_SLR2.nut[0] / 2 - 4, 0, 1)))), MACHINED);
   });
 }
 export function buildRogueMonsterLiteLegRoller(api: ManifoldAPI, params: NumericParams): SolidPart[] {
@@ -173,7 +173,7 @@ export function buildPritchettPad(api: ManifoldAPI, params: NumericParams): Soli
     if (!p.series) s.add('Welded 1 in mounting pin', s.alongY(0, 0, g.face - P.pinReach, front + 12, 12.2, 1.5, 1, 40), ROGUE_BLACK);
     else {
       s.add('5/8 in hitch pin', s.alongY(0, 0, -g.face - 22, front + 16, 7.8, 1.5, 0, 24), ZINC);
-      s.add('Hitch pin clip', s.k(s.k(s.k(s.k(s.C.circle(16, 32)).subtract(s.k(s.C.circle(13, 32)))).extrude(3)).translate([0, -g.face - 14, 0])), ZINC);
+      s.add('Hitch pin clip', s.k(s.k(s.k(s.k(s.k(s.C.circle(16, 32)).subtract(s.k(s.C.circle(13, 32)))).extrude(3)).rotate([90, 0, 0])).translate([0, -g.face - 12, -10])), ZINC);
     }
     // 3x3 in 11-gauge arm: horizontal run, riser and upper riser, with the 1 in lightening holes and the carry handle.
     const holes: Manifold[] = [], seg = (p0: [number, number], p1: [number, number], ts: number[]) => ts.forEach(t => holes.push(s.alongX(p0[0] + (p1[0] - p0[0]) * t, p0[1] + (p1[1] - p0[1]) * t, -arm, arm, 12.7, 0, 0, 20)));
@@ -189,7 +189,8 @@ export function buildPritchettPad(api: ManifoldAPI, params: NumericParams): Soli
     for (const x of [-1, 1]) s.add('ROGUE logo cut-out', s.rotYZ(s.k(s.M.cube([.6, 120, 22], true)).translate([x * (arm / 2 + .2), 0, 0]), rise, [mid[0] + 150 * Math.cos(rise * DEG), mid[1] + 150 * Math.sin(rise * DEG)]), F('#0b0b0c', .2, .8));
     // Pad plate and the tapered self-skinned polyurethane pad (8 in at the top, 11 in at the bottom).
     const tilt = Math.atan2(g.along[1], g.along[0]) / DEG, [L, wTop, wBot, t] = P.pad, rr = 22;
-    const outline = s.roundedPoly([[-(wTop / 2 - rr), -L / 2 + rr, rr], [wTop / 2 - rr, -L / 2 + rr, rr], [-(wBot / 2 - rr), L / 2 - rr, rr], [wBot / 2 - rr, L / 2 - rr, rr]]);
+    // Local +Y runs out and up the pad: 11 in wide at the low (rack) end, 8 in at the high outer end.
+    const outline = s.roundedPoly([[-(wBot / 2 - rr), -L / 2 + rr, rr], [wBot / 2 - rr, -L / 2 + rr, rr], [-(wTop / 2 - rr), L / 2 - rr, rr], [wTop / 2 - rr, L / 2 - rr, rr]]);
     const base: [number, number] = [end[0] + P.padPlate * g.dir[0], end[1] + P.padPlate * g.dir[1]];
     s.add('Pad plate', s.rotYZ(s.k(s.k(s.k(outline.offset(-14, 'Round', 16)).extrude(P.padPlate)).translate([0, 0, -P.padPlate])), tilt, base), ROGUE_BLACK);
     s.add('Self-skinned polyurethane pad', s.rotYZ(s.pillow(outline, t, 12, 4), tilt, base), FOAM);
@@ -235,10 +236,13 @@ export function buildPegasus(api: ManifoldAPI, params: NumericParams): SolidPart
   if (![0, 1].includes(p.series)) throw Error('Unsupported Pegasus series.');
   return build(api, s => {
     const gap = 2, front = g.face + gap + t, side = g.face + gap + t / 2, h = g.sleeveTop - g.sleeveBottom, cz = (g.sleeveTop + g.sleeveBottom) / 2;
-    // C-sleeve that slides onto the upright from the front, pinned through the side holes by the magnetic pin.
-    s.add('Sleeve', s.k(s.M.union([s.box([2 * side + t, t, h], [0, front - t / 2, cz]), ...[-1, 1].map(x => s.box([t, 2 * g.face + gap + t - 4, h], [x * side, (front + (-g.face + 4)) / 2, cz]))])), REP_BLACK);
+    // Sleeve box: side walls from behind the upright to the box front, pinned through the upright's side holes by the
+    // magnetic pin; it slides on from the front and houses the roller post.
+    const boxFront = g.face + P.boxFront, back = -g.face - 4;
+    s.add('Sleeve', s.k(s.M.union([s.box([2 * side + t, t, h], [0, front - t / 2, cz]), s.box([2 * side + t, t, h * .55], [0, boxFront - t / 2, g.sleeveBottom + h * .275]),
+      ...[-1, 1].map(x => s.box([t, boxFront - back, h], [x * side, (boxFront + back) / 2, cz]))])), REP_BLACK);
     s.add('UHMW sleeve liners', s.k(s.M.union([s.box([2 * g.face - 10, gap, h - 12], [0, g.face + gap / 2, cz]), ...[-1, 1].map(x => s.box([gap, 2 * g.face - 16, h - 12], [x * (g.face + gap / 2), 0, cz]))])), UHMW);
-    s.add('REP logo', s.box([.8, 22, 70], [-(side + t / 2 + .4), 0, cz + 20]), WHITE);
+    s.add('REP logo', s.box([.8, 22, 70], [-(side + t / 2 + .4), g.face + 60, cz + 10]), WHITE);
     const outer = side + t / 2;
     s.add('Magnetic pin', s.alongX(0, 0, -outer - 5, outer + 3, pinR, 1.2, 0, 32), ZINC);
     s.add('Mountain-logo pin knob', s.alongX(0, 0, outer + 2, outer + 22, 23, 0, 2.5, 48), F('#111214', .4, .4));
@@ -246,26 +250,26 @@ export function buildPegasus(api: ManifoldAPI, params: NumericParams): SolidPart
     s.add('Clamp knob', s.k(s.k(s.prismX(s.knurled(25, 48, .8), outer + 2, 20, 0, g.sleeveBottom + 26)).add(s.alongX(0, g.sleeveBottom + 26, outer - .5, outer + 2.5, 12, 0, 0, 24))), ZINC);
     // Main arm: pivot plates on the sleeve, 2x3 in tube out to the seat pivot, angle pop-pin.
     const [ay, az] = g.A;
-    s.add('Arm pivot plates', s.k(s.M.union([-1, 1].map(x => s.box([6.35, 70, 118], [x * 40, front + 31, az + 4])))), REP_BLACK);
-    s.add('Arm pivot bolt', s.alongX(ay + 12, az, -48, 48, 9, 1, 1, 24), ZINC);
-    s.add('Main arm', s.beam([g.armAt(0, -20), g.armAt(g.armLength + 70, -20)], inch2(2), inch2(3)), REP_BLACK);
-    s.add('Arm angle pop-pin', s.k(s.k(s.alongX(ay + 50, az + 40, -46, 58, 7, 1, 0, 20)).add(s.alongX(ay + 50, az + 40, 50, 64, 11, 1, 2, 24))), ZINC);
+    s.add('Arm pivot plates', s.k(s.M.union([-1, 1].map(x => s.box([6.35, 80, 112], [x * 40, ay - 10, az + 1])))), REP_BLACK);
+    s.add('Arm pivot bolt', s.alongX(ay, az, -48, 48, 9, 1, 1, 24), ZINC);
+    s.add('Main arm', s.beam([g.armAt(-30, -20), g.armAt(g.armLength + 70, -20)], inch2(2), inch2(3)), REP_BLACK);
+    s.add('Arm angle pop-pin', s.k(s.k(s.alongX(ay - 30, az + 34, -46, 58, 7, 1, 0, 20)).add(s.alongX(ay - 30, az + 34, 50, 64, 11, 1, 2, 24))), ZINC);
     // Seat angle arc plates (zinc) on the arm, under the seat pivot, with seven locking holes.
     const arcHoles: Manifold[] = P.seatAngles.map((b, i) => { const a = (-90 - 60 + i * 20) * DEG; return s.alongX(62 * Math.cos(a) + g.armLength, 62 * Math.sin(a), -60, 60, 5.5, 0, 0, 16); });
     const disc = s.k(s.k(s.alongX(g.armLength, 0, -34, 34, P.arcRadius, 0, 0, 48)).subtract(s.k(s.M.union([s.box([80, 2 * P.arcRadius + 4, P.arcRadius + 2], [0, g.armLength, P.arcRadius / 2 + 1]), s.alongX(g.armLength, 0, -28, 28, P.arcRadius, 0, 0, 48)]))));
     s.add('Seat angle arc plates', s.rotYZ(s.k(s.k(disc).subtract(s.k(s.M.union(arcHoles)))), g.alpha, g.A), ZINC);
     // Seat: bracket, steel frame and the tapered CleanGrip pad (11 in at the front, 7.5 in at the rack end).
     const [L, wFar, wNear, st] = P.seat, rr = 26, seatOutline = s.roundedPoly([[-(wNear / 2 - rr), -L / 2 + rr, rr], [wNear / 2 - rr, -L / 2 + rr, rr], [-(wFar / 2 - rr), L / 2 - rr, rr], [wFar / 2 - rr, L / 2 - rr, rr]]);
-    const seat = (m: Manifold) => s.rotYZ(m, g.seatAngle, g.S);
-    s.add('Seat pivot bracket', seat(s.k(s.M.union([...[-1, 1].map(x => s.box([6.35, 120, P.seatLift + 4], [x * 22, 0, (P.seatLift + 4) / 2 - 2])), s.alongX(0, 0, -30, 30, 8, 0, 0, 20)]))), REP_BLACK);
+    const seat = (m: Manifold) => s.rotYZ(s.k(m.translate([0, g.seatMid, 0])), g.seatAngle, g.S);
+    s.add('Seat pivot bracket', s.rotYZ(s.k(s.M.union([...[-1, 1].map(x => s.box([6.35, 120, P.seatLift + 4], [x * 22, 20, (P.seatLift + 4) / 2 - 2])), s.alongX(0, 0, -30, 30, 8, 0, 0, 20)])), g.seatAngle, g.S), REP_BLACK);
     s.add('Seat frame', seat(s.k(s.k(s.k(seatOutline.offset(-6, 'Round', 16)).extrude(P.frame)).translate([0, 0, P.seatLift]))), REP_BLACK);
     const seatBase = P.seatLift + P.frame;
     s.add('CleanGrip seat pad', seat(s.pillow(seatOutline, st, 16, 5, seatBase)), CLEANGRIP);
     s.add('Seat piping', seat(s.k(s.k(s.k(s.k(seatOutline.offset(.6, 'Round', 16)).subtract(s.k(seatOutline.offset(-2, 'Round', 16)))).extrude(2)).translate([0, 0, seatBase + 9]))), F('#8f9296', 0, .6));
     s.add('REP seat logo', seat(s.box([96, 1, 26], [0, L / 2 + .3, seatBase + st * .52])), WHITE);
     // Roller post on the sleeve front, axle and the twin 5.8 in CleanGrip rollers with stitched ends.
-    const postY = g.face + P.postY, post = P.post, top = g.axleZ + 40, r = P.rollerDiameter / 2, x0 = post / 2 + 4, x1 = P.width / 2;
-    s.add('Roller post', s.k(s.M.union([s.box([post, post, top + 60], [0, postY, (top - 60) / 2]), s.box([post, postY - post / 2 - front + 1, 110], [0, (front + postY - post / 2) / 2, 10])])), REP_BLACK);
+    const postY = g.face + P.postY, post = P.post, top = g.axleZ + 40, r = P.rollerDiameter / 2, x0 = post / 2 + 4, x1 = P.width / 2 - 2.2;
+    s.add('Roller post', s.k(s.M.union([s.box([post, post, top - g.sleeveBottom - 20], [0, postY, (top + g.sleeveBottom + 20) / 2]), s.box([post, postY - post / 2 - front + 1, 60], [0, (front + postY - post / 2) / 2, g.sleeveBottom + 50])])), REP_BLACK);
     s.add('Carry handle', s.k(s.k(s.box([74, 12, PEGASUS_HANDLE - 40], [0, postY, top + (PEGASUS_HANDLE - 40) / 2 - 1])).subtract(s.box([52, 14, PEGASUS_HANDLE - 58], [0, postY, top + (PEGASUS_HANDLE - 58) / 2 - 1]))), REP_BLACK);
     s.add('Roller height pop-pin', s.k(s.k(s.alongY(0, g.axleZ - 64, postY - post / 2 - 2, postY + post / 2 + 20, 7, 0, 1, 20)).add(s.alongY(0, g.axleZ - 64, postY + post / 2 + 12, postY + post / 2 + 26, 11, 1, 2, 24))), ZINC);
     s.add('Roller axle', s.alongX(postY, g.axleZ, -x0 - 3, x0 + 3, 12.7, 0, 0, 24), ZINC);

@@ -129,16 +129,17 @@ export const BELLS_OF_STEEL_SPLIT_SQUAT_LEG_ROLLER = defineRackPart({
 export const PRITCHETT = {
   extension: inch(33), pad: [inch(12), inch(8), inch(11), inch(2.25)] as const, arm: inch(3), wall: 3.05,
   channel: { top: 28, bottom: -178, depth: 44, plate: 6.35 }, pinReach: 44,
-  /** Centreline: horizontal run, 50° riser, 70° upper riser; the pad plate sits square to the upper riser. */
-  path: [[8, -140], [298, -140], [298 + 420 * Math.cos(50 * Math.PI / 180), -140 + 420 * Math.sin(50 * Math.PI / 180)]] as [number, number][],
-  upper: { length: 300, angle: 70 }, padPlate: 6.35,
+  /** Centreline: low horizontal run the lifter straddles, 40° riser, then an upper riser leaning back toward the rack
+   * (102°); the pad plate sits square to it, so the pad faces up and back toward the rack for the lifter bent over it. */
+  path: [[8, -140], [361, -140], [361 + 520 * Math.cos(40 * Math.PI / 180), -140 + 520 * Math.sin(40 * Math.PI / 180)]] as [number, number][],
+  upper: { length: 330, angle: 102 }, padPlate: 6.35,
 } as const;
 export const PRITCHETT_SERIES = ['Monster · 1 in welded pin', 'Monster Lite · 5/8 in hitch pin'] as const;
 export function pritchettLayout(p: NumericParams) {
   const face = faceOf(p), [a, b, c] = PRITCHETT.path.map(([y, z]) => [face + y, z] as [number, number]);
   const t = PRITCHETT.upper.angle * Math.PI / 180, d: [number, number] = [Math.cos(t), Math.sin(t)];
   const end: [number, number] = [c[0] + PRITCHETT.upper.length * d[0], c[1] + PRITCHETT.upper.length * d[1]];
-  // Pad centre above the plate along the riser direction; its length runs down-and-out (square to the riser).
+  // Pad centre above the plate along the riser direction; its length runs out and up (square to the riser).
   const lift = PRITCHETT.padPlate + PRITCHETT.pad[3] / 2, centre: [number, number] = [end[0] + lift * d[0], end[1] + lift * d[1]];
   const along: [number, number] = [d[1], -d[0]];
   const half = PRITCHETT.pad[0] / 2, h = PRITCHETT.pad[3] / 2;
@@ -165,7 +166,7 @@ export const ROGUE_MONSTER_PRITCHETT_PAD = defineRackPart({
     return [
       box([-a, p0[0], p0[1] - a], [a, p1[0] + a, p1[1] + a]),
       box([-a, p1[0], p1[1] - a], [a, p2[0] + a * .6, p2[1] + a * .6]),
-      box([-a, p2[0] - a * .6, p2[1]], [a, p3[0] + a * .4, p3[1]]),
+      box([-a, Math.min(p2[0], p3[0]) - a * .6, p2[1]], [a, Math.max(p2[0], p3[0]) + a * .4, p3[1]]),
       // Inset past the pad's rounded corners so the box stays inside the solids.
       box([-w + 20, Math.min(...ys) + 16, Math.min(...zs) + 16], [w - 20, Math.max(...ys) - 16, Math.max(...zs) - 16]),
     ];
@@ -191,7 +192,7 @@ const rot2 = ([y, z]: [number, number], deg: number): [number, number] => { cons
 export function sealRowLayout(p: NumericParams) {
   const face = faceOf(p), pitch = pitchOf(p), angle = SEAL_ROW.angles[p.angle ?? 1];
   if (angle === undefined) throw Error('Unsupported seal row pad angle.');
-  const clampZ = -SEAL_ROW.clampStations * pitch, top = 40, bottom = clampZ - 42, pivot: [number, number] = [face + SEAL_ROW.pivot[0], SEAL_ROW.pivot[1]];
+  const clampZ = -SEAL_ROW.clampStations * pitch, top = 40, bottom = clampZ - 49, pivot: [number, number] = [face + SEAL_ROW.pivot[0], SEAL_ROW.pivot[1]];
   const at = (pt: [number, number]): [number, number] => { const r = rot2(pt, angle); return [pivot[0] + r[0], pivot[1] + r[1]]; };
   const legZ = SEAL_ROW.arm[2][1], a = SEAL_ROW.armSize[1] / 2, [, L, W] = [0, SEAL_ROW.pad[1], SEAL_ROW.pad[0]];
   const padLocal: [number, number][] = [[SEAL_ROW.padStart, legZ + a], [SEAL_ROW.padStart + L, legZ + a], [SEAL_ROW.padStart, legZ + a + SEAL_ROW.board + SEAL_ROW.pad[2]], [SEAL_ROW.padStart + L, legZ + a + SEAL_ROW.board + SEAL_ROW.pad[2]]];
@@ -235,31 +236,32 @@ export const PEGASUS = {
   sleeve: [inch(8.9), inch(9.8)] as const, sleeveTop: 108, extension: inch(24.8), width: inch(24.6), wall: 6.35,
   seat: [inch(13.6), inch(11), inch(7.5), inch(2.5)] as const, seatAngles: [0, 12.5, 25, 40, 55, 70, 90] as const, armAngles: [0, 12.5, 25, 40] as const,
   rollerHeights: [3, 4, 5, 6, 7, 8] as const, rollerDiameter: inch(5.8), post: inch(2),
-  /** Arm pivot at the sleeve front and seat pivot under the seat centre, [y from the face, z]. */ armPivot: [22, -120] as [number, number],
+  /** Arm pivot under the sleeve box front, [y from the face, z]; the seat pivots `seatPivot` mm in from its rack end. */ armPivot: [128, -120] as [number, number], seatPivot: 100,
+  /** The sleeve is a box: side walls run from behind the upright to `boxFront` in front of the face, housing the roller post. */ boxFront: 122,
   frame: 6.35, seatLift: 30, arcRadius: 88, postY: 88,
 } as const;
 /** Carry-handle loop top above the roller axle. */
-export const PEGASUS_HANDLE = 92;
+export const PEGASUS_HANDLE = 80;
 export const PEGASUS_SERIES = ['5000 Series · 1 in holes', '4000 Series · 5/8 in holes'] as const;
 export function pegasusLayout(p: NumericParams) {
   const face = faceOf(p), alpha = PEGASUS.armAngles[p.arm ?? 0], beta = PEGASUS.seatAngles[p.seat ?? 0], rise = PEGASUS.rollerHeights[p.roller ?? 2];
   if (alpha === undefined || beta === undefined || rise === undefined) throw Error('Unsupported Pegasus adjustment.');
   const [L] = PEGASUS.seat, A: [number, number] = [face + PEGASUS.armPivot[0], PEGASUS.armPivot[1]];
-  const seatPivot0: [number, number] = [face + PEGASUS.extension - L / 2, PEGASUS.armPivot[1]];
+  const seatPivot0: [number, number] = [face + PEGASUS.extension - L + PEGASUS.seatPivot, PEGASUS.armPivot[1]], u0 = -PEGASUS.seatPivot, u1 = L - PEGASUS.seatPivot;
   const S = ((r): [number, number] => [A[0] + r[0], A[1] + r[1]])(rot2([seatPivot0[0] - A[0], 0], alpha));
   const seatAngle = alpha - beta, seatTop0 = PEGASUS.armPivot[1] + PEGASUS.seatLift + PEGASUS.frame + PEGASUS.seat[3];
   /** Seat-frame point (u along the seat from its pivot, w up from the pivot) → [y, z]. */
   const seatAt = (u: number, w: number): [number, number] => { const r = rot2([u, w], seatAngle); return [S[0] + r[0], S[1] + r[1]]; };
   const armAt = (u: number, w: number): [number, number] => { const r = rot2([u, w], alpha); return [A[0] + r[0], A[1] + r[1]]; };
   const axleZ = seatTop0 + inch(rise) + PEGASUS.rollerDiameter / 2, sleeveH = PEGASUS.sleeve[p.series ?? 0];
-  const seatCorners = [-L / 2, L / 2].flatMap(u => [PEGASUS.seatLift, PEGASUS.seatLift + PEGASUS.frame + PEGASUS.seat[3]].map(w => seatAt(u, w)));
+  const seatCorners = [u0, u1].flatMap(u => [PEGASUS.seatLift, PEGASUS.seatLift + PEGASUS.frame + PEGASUS.seat[3]].map(w => seatAt(u, w)));
   const arc = [-1, 1].flatMap(s => [0, -PEGASUS.arcRadius].map(w => armAt(seatPivot0[0] - A[0] + s * PEGASUS.arcRadius, w)));
   // Main arm tube (2x3 in, centreline 20 mm below the pivot) and the fixed pivot plates under the sleeve.
-  const armEnds = [0, seatPivot0[0] - A[0] + 70].flatMap(u => [-20 - inch(1.5), -20 + inch(1.5)].map(w => armAt(u, w)));
+  const armEnds = [-30, seatPivot0[0] - A[0] + 70].flatMap(u => [-20 - inch(1.5), -20 + inch(1.5)].map(w => armAt(u, w)));
   /** Seat box for collisions, inset past the pad's rounded edges so it stays inside the solids. */
-  const seatBody = [-L / 2 + 16, L / 2 - 16].flatMap(u => [PEGASUS.seatLift, PEGASUS.seatLift + PEGASUS.frame + PEGASUS.seat[3] - 16].map(w => seatAt(u, w)));
+  const seatBody = [u0 + 16, u1 - 16].flatMap(u => [PEGASUS.seatLift, PEGASUS.seatLift + PEGASUS.frame + PEGASUS.seat[3] - 16].map(w => seatAt(u, w)));
   const zs = [...seatCorners, ...arc, ...armEnds].map(c => c[1]);
-  return { face, alpha, beta, A, S, seatAngle, seatAt, armAt, axleZ, sleeveTop: PEGASUS.sleeveTop, sleeveBottom: PEGASUS.sleeveTop - sleeveH, seatCorners, seatBody, arc,
+  return { face, alpha, beta, A, S, seatAngle, seatAt, armAt, axleZ, sleeveTop: PEGASUS.sleeveTop, sleeveBottom: PEGASUS.sleeveTop - sleeveH, seatCorners, seatBody, arc, seatMid: (u0 + u1) / 2,
     armLength: seatPivot0[0] - A[0], low: Math.min(...zs, PEGASUS.sleeveTop - sleeveH, PEGASUS.armPivot[1] - 56), high: Math.max(...zs, axleZ + PEGASUS.rollerDiameter / 2, axleZ + PEGASUS_HANDLE) };
 }
 export const REP_PEGASUS = defineRackPart({
