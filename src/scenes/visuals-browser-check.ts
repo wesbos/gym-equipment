@@ -54,7 +54,7 @@ export async function runVisualChecks(viewport: HTMLElement, onProgress: (stage:
       try {
         const waitBuilt = async () => {
           const deadline = performance.now() + 30000;
-          while (store.getSnapshot().loading) { check(performance.now() < deadline, 'Build timed out'); await frames(1); }
+          while (store.getSnapshot().builtDoc !== store.getSnapshot().doc) { check(performance.now() < deadline, 'Build timed out'); await frames(1); }
           check(!store.getSnapshot().error, store.getSnapshot().status);
           await frames(3);
         };

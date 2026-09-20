@@ -28,7 +28,7 @@ test('placement outside release, capture loss, and keyboard history end scene ge
         }
       });
     });
-    const ready = () => expect.poll(() => page.evaluate(() => !(window as any).sceneReview.store.getSnapshot().loading)).toBe(true);
+    const ready = () => expect.poll(() => page.evaluate(() => { const s = (window as any).sceneReview.store.getSnapshot(); return s.builtDoc === s.doc; })).toBe(true);
     await ready();
     await page.evaluate(() => { const { store, scene } = (window as any).sceneReview; scene.fit('top'); store.startPlacement('rep-nighthawk'); });
     await page.mouse.move(450, 300);

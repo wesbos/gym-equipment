@@ -22,6 +22,7 @@ import { createSwapRegions } from './swap-regions.ts';
 import { cloneInstanceMaterials } from './instance-materials.ts';
 import { BuildAnimation, planBuild } from './build-animation.ts';
 import { InstanceSync, placeInstance } from './instance-sync.ts';
+import { isBuilt, whenBuilt } from '../state/build-status.ts';
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
@@ -289,7 +290,8 @@ export function createBuilderScene(
   async function rebuild() {
     rebuilding = true;
     const serial = generation,
-      entries = snapshot.resolved;
+      entries = snapshot.resolved,
+      builtDoc = snapshot.doc;
     let releaseBatch = cache.pin(entries.map(geometryKey));
     if (!cached(entries)) store.patch({
       loading: true,
@@ -317,7 +319,10 @@ export function createBuilderScene(
       refreshPlacement();
       trimCache();
       const warnings = [...detectCollisions(entries), ...floorWarnings(snapshot.doc), ...wallWarnings(snapshot.doc), ...hangWarnings(snapshot.doc)];
+      // Before the patch: listeners that see `builtDoc` settle may export immediately.
+      renderedGeneration = serial;
       store.patch({
+        builtDoc,
         loading: false,
         dimensions: dimensions(true),
         status: warnings.length
@@ -329,10 +334,9 @@ export function createBuilderScene(
         fit();
         hasFit = true;
       }
-      renderedGeneration = serial;
     } catch (error) {
       if (!disposed && serial === generation)
-        store.patch({ loading: false, status: message(error), error: true });
+        store.patch({ builtDoc, loading: false, status: message(error), error: true });
     } finally {
       releaseBatch();
       if (!disposed) trimCache();
@@ -1080,7 +1084,10 @@ export function createBuilderScene(
       if (disposed) throw Error("Scene has been disposed.");
       stopBuild();
       if (snapshot.timeline.viewing) throw Error("Return to latest before exporting the applied rack.");
-      if (snapshot.loading)
+      // A rebuild from cached geometry never sets `loading` and settles within microtasks: wait for it.
+      if (!snapshot.loading && !isBuilt(snapshot)) await whenBuilt(store, 5000).catch(() => {});
+      if (disposed) throw Error("Scene has been disposed.");
+      if (snapshot.loading || !isBuilt(snapshot))
         throw Error("Wait for the rack to finish building.");
       // Status messages can clear error flags; only a successful current build is exportable.
       if (renderedGeneration !== generation)
