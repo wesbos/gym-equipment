@@ -17,6 +17,8 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   const baseURL = process.env.GYM_LOGO_BASE_URL ?? 'http://127.0.0.1:5305';
   const page = browser.contexts()[0].pages().find(p => p.url().startsWith(baseURL)) ?? await browser.contexts()[0].newPage();
   page.setDefaultTimeout(15000);
+  // A reused tab may hold unsaved work: accept its beforeunload prompt instead of hanging the navigation.
+  page.on('dialog', dialog => dialog.accept());
   const chooseExport = async (format: 'GLB' | '3MF') => {
     if (await page.locator('#export').getAttribute('aria-expanded') !== 'true') await page.locator('#export').click();
     await page.getByRole('menuitemradio', { name: new RegExp(format) }).click();
