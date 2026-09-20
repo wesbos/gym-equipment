@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { RACK_PRESETS, applyPreset, type RackPreset } from '../../rack-generator/presets.ts';
 import { GRID_PROFILES, gridProfile } from '../../rack-generator/profiles.ts';
 import type { BuilderStore } from '../state/builder-store.ts';
@@ -6,7 +6,8 @@ import './rack-presets.css';
 // Curated manufacturer starters (profiles with `starters`) are grouped by brand below the core starters.
 const isBrandStarter = (p: RackPreset) => !!gridProfile(p.profileId).starters?.length;
 const brandGroups = [...new Set(RACK_PRESETS.filter(p => p.featured && isBrandStarter(p)).map(p => p.vendor ?? 'Other'))];
-export function RackPresets({store}:{store:BuilderStore}) {
+/** Static starter list; memoised so search keystrokes in the catalog do not rebuild it. */
+export const RackPresets = memo(function RackPresets({store}:{store:BuilderStore}) {
   const [choice,setChoice] = useState(RACK_PRESETS.find(p => !p.featured)!.id);
   const apply = (id:string) => {
     if (store.getSnapshot().dirty && !window.confirm('Replace your unsaved working rack with this starting point? You can undo this change.')) return;
@@ -28,4 +29,4 @@ export function RackPresets({store}:{store:BuilderStore}) {
       {GRID_PROFILES.filter(p=>p.source).map(p=><p key={p.id}><a href={p.source} target="_blank" rel="noreferrer">{p.label} vendor specs</a></p>)}
     </details>
   </details>;
-}
+});

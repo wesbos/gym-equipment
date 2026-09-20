@@ -4,7 +4,7 @@ import {
   trolleyStations,
 } from "../../rack-generator/cable-stations.ts";
 import { ResetButton } from "./ResetButton.tsx";
-import { useSyncExternalStore } from "react";
+import { deepEqual, useStoreSelector } from "../state/use-store.ts";
 import type { BuilderStore } from "../state/builder-store.ts";
 import { NumericControl } from "./NumericControl.tsx";
 import {
@@ -273,7 +273,8 @@ function Installed({
   );
 }
 export function CableSmithControls({ store }: { store: BuilderStore }) {
-  const { doc } = useSyncExternalStore(store.subscribe, store.getSnapshot);
+  // Installed systems read the rack at render time; re-render when either changes, not on every document edit.
+  const doc = useStoreSelector(store, s => s.doc, (a, b) => deepEqual(a.systems, b.systems) && deepEqual(a.rack, b.rack));
   return (
     <details className="system-controls">
       <summary>Cable systems & Smith</summary>
@@ -311,10 +312,10 @@ export function CableSmithControls({ store }: { store: BuilderStore }) {
 
 /** Installation settings remain staged in the sidebar until Place is pressed. */
 export function SystemPlacementOptions({ store }: { store: BuilderStore }) {
-  const { systemChoice, systemParams, doc } = useSyncExternalStore(store.subscribe, store.getSnapshot);
+  const { systemChoice, systemParams, rack } = useStoreSelector(store, s => ({ systemChoice: s.systemChoice, systemParams: s.systemParams, rack: s.doc.rack }), (a, b) => a.systemChoice === b.systemChoice && a.systemParams === b.systemParams && deepEqual(a.rack, b.rack));
   if (!systemChoice) return null;
   return <details className="system-placement-options" key={systemChoice}>
     <summary>{SYSTEM_NAMES[systemChoice]} installation options</summary>
-    <Options part={systemChoice} p={systemParams} rack={doc.rack} onChange={store.previewSystem} />
+    <Options part={systemChoice} p={systemParams} rack={rack} onChange={store.previewSystem} />
   </details>;
 }
