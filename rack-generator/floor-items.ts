@@ -37,14 +37,25 @@ function boxBounds(item: FloorItem, box: FloorBox): Bounds {
   const x=(box.width*c+box.depth*s)/2,z=(box.depth*c+box.width*s)/2,cx=item.position[0]+ox,cz=item.position[1]+oz;
   return { min:[cx-x,cz-z], max:[cx+x,cz+z] };
 }
+/** Footprints and clearances are pure functions of (part, params); some (cast bells) solve geometry, so memoise them. */
+const boxMemo = new Map<string, FloorBox | undefined>();
+function memoBox(kind: string, item: FloorItem, value: FloorPart['footprint'] | undefined) {
+  if (value === undefined || typeof value !== 'function') return value;
+  const key = `${kind}|${item.part}|${JSON.stringify(item.params)}`;
+  if (boxMemo.has(key)) return boxMemo.get(key);
+  if (boxMemo.size > 2000) boxMemo.clear();
+  const box = resolveBy(value, item.params);
+  boxMemo.set(key, box);
+  return box;
+}
 /** Footprint bounds, grown to cover a loaded bar's plates. */
 export function floorBounds(item: FloorItem): Bounds {
-  const part=entry(item.part), bounds=boxBounds(item, resolveBy(part.footprint, item.params)), plates=item.plates && part.bar && barLoadBox(sleeveSpec(part,item.params),item.plates);
+  const part=entry(item.part), bounds=boxBounds(item, memoBox('footprint', item, part.footprint)!), plates=item.plates && part.bar && barLoadBox(sleeveSpec(part,item.params),item.plates);
   if(!plates) return bounds;
   const loaded=boxBounds(item,plates);
   return { min:bounds.min.map((v,i)=>Math.min(v,loaded.min[i])), max:bounds.max.map((v,i)=>Math.max(v,loaded.max[i])) };
 }
-export function clearanceBounds(item: FloorItem) { const clearance=entry(item.part).clearance; return clearance && boxBounds(item, resolveBy(clearance, item.params)); }
+export function clearanceBounds(item: FloorItem) { const clearance=memoBox('clearance', item, entry(item.part).clearance); return clearance && boxBounds(item, clearance); }
 const overlaps=(a:Bounds,b:Bounds,margin=0)=>a.min.every((v,i)=>v<b.max[i]+margin && a.max[i]+margin>b.min[i]);
 export function rackBounds(doc: RackDoc): Bounds | null {
   const posts=Object.entries(doc.uprights).filter(([id])=>!doc.removed.includes(id)).map(([,p])=>p);
@@ -53,13 +64,15 @@ export function rackBounds(doc: RackDoc): Bounds | null {
 const title = (part: FloorPart) => part.noun[0].toUpperCase() + part.noun.slice(1);
 export function floorWarnings(doc: RackDoc) {
   const items=(doc.floorItems ?? []).filter(i=>!i.cradle), warnings: {ids:[string,string];message:string}[]=[], rack=rackBounds(doc);
+  // Bounds once per item, then cheap box tests (was O(n²) footprint solves per call).
+  const under=items.map(i=>!!entry(i.part).underlay), all=items.map(floorBounds);
   for (const [i,item] of items.entries()) {
-    const bounds=floorBounds(item),clear=clearanceBounds(item),noun=title(entry(item.part)),under=(i:FloorItem)=>!!entry(i.part).underlay;
-    if(under(item)) continue;
+    if(under[i]) continue;
+    const bounds=all[i],clear=clearanceBounds(item),noun=title(entry(item.part));
     if(rack && overlaps(bounds,rack)) warnings.push({ids:[item.id,'rack'],message:`${noun} overlaps the rack footprint.`});
     else if(rack && clear && overlaps(clear,rack)) warnings.push({ids:[item.id,'rack'],message:`${noun} use clearance overlaps the rack.`});
-    for(const other of items.slice(i+1)) if(!under(other) && overlaps(bounds,floorBounds(other))) warnings.push({ids:[item.id,other.id],message:'Floor items overlap.'});
-    if(clear) for(const other of items) if(other!==item && !under(other) && overlaps(clear,floorBounds(other)) && !overlaps(bounds,floorBounds(other))) warnings.push({ids:[item.id,other.id],message:`${noun} use clearance overlaps another floor item.`});
+    for(let j=i+1;j<items.length;j++) if(!under[j] && overlaps(bounds,all[j])) warnings.push({ids:[item.id,items[j].id],message:'Floor items overlap.'});
+    if(clear) for(const [j,other] of items.entries()) if(j!==i && !under[j] && overlaps(clear,all[j]) && !overlaps(bounds,all[j])) warnings.push({ids:[item.id,other.id],message:`${noun} use clearance overlaps another floor item.`});
   }
   return warnings;
 }

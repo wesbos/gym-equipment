@@ -223,6 +223,18 @@ function intersects(a: OrientedBox, b: OrientedBox) {
   return true;
 }
 
+type Bounds = { min: Vec3; max: Vec3 };
+function obbBounds({ center, half, axes }: OrientedBox): Bounds {
+  const reach = [0, 1, 2].map(k => half.reduce((sum, h, i) => sum + h * Math.abs(axes[i][k]), 0));
+  return { min: center.map((v, k) => v - reach[k]) as Vec3, max: center.map((v, k) => v + reach[k]) as Vec3 };
+}
+/** False only when some world-axis overlap is at most CLEARANCE (less a float margin), where `intersects` is false too. */
+function near(a: Bounds | null, b: Bounds | null) {
+  if (!a || !b) return false;
+  for (let k = 0; k < 3; k++) if (Math.min(a.max[k], b.max[k]) - Math.max(a.min[k], b.min[k]) <= CLEARANCE - 1e-3) return false;
+  return true;
+}
+
 type Slot = Partial<Mount> & { connectionId?: string; station?: number; host?: string; unit?: number; frame?: number };
 function sharedSlot(a: CollisionInstance, b: CollisionInstance): Slot | null {
   const mounts = (instance: CollisionInstance): Slot[] => (Array.isArray(instance.mounts) ? instance.mounts : instance.mount ? [instance.mount] : []) as Slot[];
@@ -252,19 +264,23 @@ export function detectCollisions(resolvedInstances: unknown): CollisionWarning[]
   const instances = candidates.filter(i => i && typeof i.id === 'string' && i.collisionEnabled !== false
     && !(i.kind === 'structure' && i.part === 'upright')
     && (i.kind === 'accessory' || i.collisionEnabled === true || Array.isArray(i.collisionBoxes) || FRAME_BODIES.has(i.part)));
-  const bodies = new Map(instances.map(i => [i, worldBodies(i)]));
+  // Broad phase: world AABBs of every body and of each instance. SAT with CLEARANCE cannot report an overlap when
+  // the boxes' projections on a world axis overlap by CLEARANCE or less, so skipping those pairs is exact.
+  const bodies = instances.map(i => worldBodies(i).map(body => ({ body, bounds: obbBounds(body) })));
+  const bounds = bodies.map(list => list.reduce<Bounds | null>((all, { bounds: b }) => all ? { min: all.min.map((v, k) => Math.min(v, b.min[k])) as Vec3, max: all.max.map((v, k) => Math.max(v, b.max[k])) as Vec3 } : b, null));
+  const hostIds = instances.map(v => (Array.isArray(v.mounts) ? v.mounts : []).map(m => m?.hostId));
   const warnings: CollisionWarning[] = [], seen = new Set<string>();
   for (let i = 0; i < instances.length; i++) for (let j = i + 1; j < instances.length; j++) {
     const a = instances[i], b = instances[j];
     if (a.id === b.id) continue;
     if (a.kind === 'structure' && b.kind === 'structure') continue;
-    const key = JSON.stringify([a.id, b.id].sort());
+    const key = a.id < b.id ? `${a.id}\u0000${b.id}` : `${b.id}\u0000${a.id}`;
     if (seen.has(key)) continue;
     // A part mounted on another accessory (#178) wraps or clamps its host by design.
-    const hosts = (v: CollisionInstance) => (Array.isArray(v.mounts) ? v.mounts : []).map(m => m?.hostId);
-    if (hosts(a).includes(b.ownerId ?? b.id) || hosts(b).includes(a.ownerId ?? a.id)) continue;
+    if (hostIds[i].includes(b.ownerId ?? b.id) || hostIds[j].includes(a.ownerId ?? a.id)) continue;
     const slot = a.kind === 'accessory' && b.kind === 'accessory' ? sharedSlot(a, b) : null;
-    const overlap = slot || bodies.get(a)!.some(x => bodies.get(b)!.some(y => intersects(x, y)));
+    const overlap = slot || (near(bounds[i], bounds[j])
+      && bodies[i].some(x => bodies[j].some(y => near(x.bounds, y.bounds) && intersects(x.body, y.body))));
     if (!overlap) continue;
     const name = (v: CollisionInstance) => v.name || NAMES[v.part] || String(v.part || 'Accessory').replaceAll('-', ' ');
     // The first ID is the movable accessory so a warning click opens its editor.
