@@ -5,6 +5,7 @@
 import { defineFloorPart, type FloorParam, type FloorPart } from '../floor-part.ts';
 import type { NumericParams } from '../types.ts';
 import { centred, footprintOf, type Describe } from './leg-machines-kit.ts';
+import { MIKOLO_TAWERET, TAWERET_REPS, describeMikoloTaweret } from './leg-machines-mikolo.ts';
 import { FORCE_CLP, GMWD_LE08, RITFIT_PLC01, TITAN_LPHS, TOG_QUADSEND, describeForceClp, describeTitanLphs, describeTogQuadsend, TITAN_LEC_REPS, describeGmwdLe08, describeLionscoolV4, describeRitfitPlc01, describeTitanLec, describeTitanSelector, describeTogV3, range, titanSelectorWeights, togV3Weights } from './leg-machines-models.ts';
 const deg = (v: number) => `${v}°`, plates45 = (v: number) => v ? `${v} × 45 lb` : 'Unloaded';
 const mode = (labels: readonly string[]): FloorParam => ({ key: 'mode', label: 'Exercise', default: 0, options: labels.map((_, i) => i), format: v => labels[v] ?? String(v) });
@@ -29,6 +30,15 @@ export const TITAN_LEG_EXTENSION_CURL = machine({
   describe: describeTitanLec,
   vendor: { vendor: 'Titan Fitness', url: 'https://www.titan.fitness/products/leg-extension-curl-machine', credit: 'Titan Fitness — Leg Extension & Hamstring Curl Machine (401556)', trademark: 'Titan and Titan Fitness are trademarks of Titan Fitness.',
     reconstruction: 'Independent Manifold reconstruction. Published: 39" × 42" × 36" envelope, seat 22" × 17" × 2", back pad 15" × 10" × 2", 17" × 5" rollers, 10" × 49 mm weight post, 7 seat-depth and knee-pad positions, 7/10.5/14° seat, 11-gauge 2" × 3" and 2" × 2" tube (operator manual parts list). Estimated: pivot height, lever and weight-arm lengths, dial diameter, arc bracket, handle and storage-post details, from product photos; scenery only, excluded from print export.' },
+});
+export const MIKOLO_TAWERET_MACHINE = machine({
+  id: 'mikolo-taweret-leg-extension-curl', name: 'Mikolo TAWERET', title: 'Mikolo TAWERET 1:1 Leg Extension & Curl',
+  description: 'Mikolo × GMWD TAWERET 1:1 Cable Ratio Leg Extension and Prone Leg Curl (LE09): knee lever on a 25-position cam disc with a 7-position Ø6" roller arm, cable over a red aluminium tower pulley to a plate-loaded lever under the seat with its chrome 2" horn on the right, 5-position backrest that folds flat behind the seat, and a seat that tilts 13° into a thigh pad for curls; black or red frame. Independent reconstruction from published dimensions; Mikolo and GMWD trademarks belong to their owners.',
+  params: [mode(['Leg extension', 'Prone leg curl']), rep(TAWERET_REPS), position('roller', 'Roller arm', 7, 4), position('backPad', 'Backrest', 5, 3),
+    { key: 'color', label: 'Frame colour', default: 0, options: [0, 1], format: v => MIKOLO_TAWERET.colors[v]?.[0] ?? String(v) }, plates(6)],
+  describe: describeMikoloTaweret,
+  vendor: { vendor: 'Mikolo', url: 'https://gym-mikolo.com/products/taweret%E2%84%A2-leg-extension-and-prone-leg-curl-machine', credit: 'Mikolo × GMWD — TAWERET 1:1 Cable Ratio Leg Extension and Curl Machine (LE09)', trademark: 'Mikolo and TAWERET are trademarks of Mikolo; GMWD is a trademark of GMWD Fitness.',
+    reconstruction: 'Independent Manifold reconstruction. Published (archived gym-mikolo.com spec table and dimension drawing, Feb 2026): 49.6" L × 30.6" W × 43.5" H, 14.2" × 25.6" backrest, 20.5" seat, 17.8" leg roller (5.5" in the table, 6" in the launch video), 2" × 2" 14-ga and 2" × 3" 12-ga steel, 1:1 cable, 2" plates, 400 lb, 25 cam / 7 roller / 5 backrest positions, black or red. Estimated from the right-side video frame scaled to the 43.5" height: pivot, seat and tower heights, cam and pulley sizes, lever and horn positions, A-frame and handle layout. Scenery only, excluded from print export.' },
 });
 const colour = (list: readonly (readonly [string, string])[], label: string): FloorParam => ({ key: 'color', label, default: 0, options: list.map((_, i) => i), format: v => list[v]?.[0] ?? String(v) });
 export const GMWD_LE08_MACHINE = machine({
@@ -98,4 +108,4 @@ export const TITAN_LEG_PRESS_HACK_SQUAT = machine({
   vendor: { vendor: 'Titan Fitness', url: 'https://www.titan.fitness/products/leg-press-hack-squat-machine', credit: 'Titan Fitness — Leg Press Hack Squat Machine (401486)', trademark: 'Titan and Titan Fitness are trademarks of Titan Fitness.',
     reconstruction: 'Independent Manifold reconstruction. Published: 84" L × 40" W × 53" H, 45° carriage (80 lb), LP footplate 21" × 15", LP back pad 10.5" × 31", HS footplate 26" × 22" with 4 positions, HS back pad 20" × 15", shoulder pads 4.5" × 8" at 7.5" spread, 11.25" weight sleeves, 11.75" storage posts, 49 mm, 1,000 lb; frame layout from the operator manual exploded views. Estimated from product photos: rail length and spacing, carriage length, flip-unit hinge and angles, handle frames. Scenery only, excluded from print export.' },
 });
-export const PARTS = [TITAN_LEG_EXTENSION_CURL, GMWD_LE08_MACHINE, LIONSCOOL_V4_MACHINE, RITFIT_PLC01_MACHINE, TOG_V3_MACHINE, TITAN_SELECTORIZED_MACHINE, FORCE_COMPACT_LEG_PRESS, TOG_QUADSEND_MACHINE, TITAN_LEG_PRESS_HACK_SQUAT] as const satisfies readonly FloorPart[];
+export const PARTS = [TITAN_LEG_EXTENSION_CURL, MIKOLO_TAWERET_MACHINE, GMWD_LE08_MACHINE, LIONSCOOL_V4_MACHINE, RITFIT_PLC01_MACHINE, TOG_V3_MACHINE, TITAN_SELECTORIZED_MACHINE, FORCE_COMPACT_LEG_PRESS, TOG_QUADSEND_MACHINE, TITAN_LEG_PRESS_HACK_SQUAT] as const satisfies readonly FloorPart[];

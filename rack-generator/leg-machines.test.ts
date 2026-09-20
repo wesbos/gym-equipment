@@ -17,6 +17,7 @@ const inch=(v:number)=>v*25.4;
  * [length (floor depth), width (floor X), height] in inches, each with a tolerance in mm and the pose it is measured in. */
 const PUBLISHED:Record<string,{l?:number;w?:number;h:number;tol:number;pose?:NumericParams}>={
  'titan-leg-extension-curl':{l:36,w:42,h:39,tol:60},
+ 'mikolo-taweret-leg-extension-curl':{l:49.6,w:30.6,h:43.5,tol:60},
  'gmwd-le08-leg-extension-curl':{l:54.6,w:55.4,h:38.8,tol:60},
  'lionscool-leg-extension-curl-v4':{l:40.8,w:33,h:38.3,tol:60},
  'ritfit-plc01-leg-extension-curl':{l:50.9,w:43.5,h:42.7,tol:60},
@@ -88,7 +89,7 @@ test('plate horns load real Olympic plates and grow the footprint; unloaded horn
 test('lever and sled poses move the arms and carriages along their real paths',()=>{
  const at=(id:string,p:NumericParams,pick:RegExp)=>{const parts=build(id,{...PARTS.find(x=>x.id===id)!.defaults,...p});try{return bbox(parts,s=>pick.test(s.name))!;}finally{parts.forEach(s=>s.solid.delete());}};
  // Leg extension: the shin roller swings forward and up from start to peak contraction.
- for(const id of ['titan-leg-extension-curl','gmwd-le08-leg-extension-curl','lionscool-leg-extension-curl-v4','ritfit-plc01-leg-extension-curl','tog-selectorized-leg-extension-seated-curl-v3','titan-selectorized-leg-extension-curl']){
+ for(const id of ['titan-leg-extension-curl','mikolo-taweret-leg-extension-curl','gmwd-le08-leg-extension-curl','lionscool-leg-extension-curl-v4','ritfit-plc01-leg-extension-curl','tog-selectorized-leg-extension-seated-curl-v3','titan-selectorized-leg-extension-curl']){
   const start=at(id,{mode:0,rep:0},/Foam roller/),peak=at(id,{mode:0,rep:2},/Foam roller/);
   assert.ok(peak.min[2]>start.min[2]+100,`${id}: roller rises at peak contraction`);
   assert.ok(peak.min[1]<start.min[1]-100,`${id}: roller swings out in front`);
