@@ -23,9 +23,36 @@ export const PIN_1IN = 24.8, PIN_5_8IN = 15.5;
  * `upright` tube size through the mounting face (mm, so the mating face is y = upright / 2), `mountSpacing` hole
  * pitch (mm), `holeDiameter` rack bore (mm), and `mirror` = 1 on the second unit of a `handed` pair (mirror your
  * geometry across local X). On rectangular 2x3 posts `uprightWidth` is the face width along local X when it differs
- * from `upright`. Entries with `mount.span` receive `uprightSpan` (see RackMount.span) when the post they span to exists. */
-export const RACK_CONTEXT_KEYS = ['upright', 'mountSpacing', 'holeDiameter', 'mirror', 'uprightWidth', 'uprightSpan'] as const;
-export type RackTargetKind = 'upright' | 'crossmember-top';
+ * from `upright`. Entries with `mount.span` receive `uprightSpan` (see RackMount.span) when the post they span to exists.
+ *
+ * Registry v2 (#178) adds, only for entries that list them in `context` (so moving other parts never rebuilds them):
+ * `holeHeight` target hole centre above the floor, `rackWidth` / `rackDepth` the rack's clear inside width and depth,
+ * `rackHeight` the mounting upright's height (all mm), and `acrossOut` = +1 or -1, the sign of local +X that points out of
+ * the rack (away from its centre: forward on a front post's side face). Hosted targets (a spotter arm, box safety or pull-up bar) always
+ * receive the host section: `hostWidth` across the host tube or bar (local X), `hostHeight` its vertical size, `hostTop`
+ * the top surface above the target axis, `hostHole` the host's hole diameter (0 on a bar) and `hostPitch` its station
+ * pitch, plus `hostSpan` when the host has a matching unit across the rack (a paired spotter arm or safety): the signed
+ * distance along local X to the same station on it. Rail targets get `upright` / `uprightWidth` = the rail section. Builders fall back to nominal values when a key
+ * is absent (thumbnails, the part viewer, contract tests). */
+export const RACK_CONTEXT_KEYS = ['upright', 'mountSpacing', 'holeDiameter', 'mirror', 'uprightWidth', 'uprightSpan',
+  'holeHeight', 'rackWidth', 'rackDepth', 'rackHeight', 'acrossOut', 'hostWidth', 'hostHeight', 'hostTop', 'hostHole', 'hostPitch', 'hostSpan'] as const;
+/** Opt-in rack context (RackPartSpec.context). */
+export type RackContextKey = 'holeHeight' | 'rackWidth' | 'rackDepth' | 'rackHeight' | 'acrossOut';
+/** Mount target kinds. 'crossmember-under' hangs under an upper rail at a Darko rail station: the part's frame is the
+ * upright frame laid along the rail (local Z along the rail, local +Y straight down out of the rail's underside, local X
+ * along the side-hole bolt axis), so a bracket built for an upright wraps the rail unchanged. 'spotter-arm' and
+ * 'pull-up-bar' mount on another accessory's host frame (RackHost): origin on the host's hole or bar axis at the
+ * station, local +Y along the host, Z up, X across it (the hole axis). */
+export type RackTargetKind = 'upright' | 'crossmember-top' | 'crossmember-under' | 'spotter-arm' | 'pull-up-bar';
+/** A tube or bar other parts can mount on (#178), in the host part's own local frame. Station k sits at
+ * `origin + axis * k * pitch`; a hosted part is allowed where its `hostReach` stays inside `span` (distances along
+ * `axis` from `origin`). */
+export interface RackHost {
+  kind: 'spotter-arm' | 'pull-up-bar'; label: string;
+  origin: Vec3; axis: Vec3; stations: number; pitch: number; span: [number, number];
+  /** Section across the axis (horizontal) and vertically; top surface above the axis; hole diameter (0 = plain bar). */
+  width: number; height: number; top: number; hole: number;
+}
 export interface RackMount {
   /** Accepted target kinds (default ['upright']). 'crossmember-top' uses the Darko Anchor rail stations: an active
    * upper, straight perforated crossmember; the part bolts through the rail's side hole at `station`. */
@@ -51,10 +78,16 @@ export interface RackMount {
    * 'across' along local X (signed; a strap on the inner side face runs to the post behind it), 'normal' along +Y
    * (the post this face looks at; a bar between the inner side faces). Absent when there is no such post. */
   span?: 'across' | 'normal';
+  /** Parts that stand on the floor from their mount (#178): the target hole centre must sit `holeHeight` mm above the
+   * floor, within [min, max]. The builder receives `holeHeight` and puts its floor contact at z = -holeHeight. */
+  floor?: ByParams<{ min: number; max: number }>;
+  /** Hosted targets: reach along the host axis behind (toward the host's origin side) and in front of the station;
+   * the part must stay inside the host's usable span. */
+  hostReach?: ByParams<{ back: number; front: number }>;
 }
 /** Bar rest points (local frame, shaft axis) that make brand J-cups/spotters/storage park barbells like the built-in J-hooks. */
 export interface RackCradles { kind: 'working' | 'storage'; /** Plural product label for cradle names, e.g. 'Ghost Roller J-Cups'. */ label: string; slots: (params: NumericParams) => { point: Vec3; axis: Vec3 }[] }
-export interface RackPlacement { height?: number; face?: Face | 'inside' | 'outside' }
+export interface RackPlacement { height?: number; face?: Face | 'inside' | 'outside'; /** Preferred target kind when several fit (#178). */ target?: RackTargetKind }
 export interface RackPartSpec<Id extends string = string> {
   id: Id; /** Inspector/instance name */ name: string; /** Catalog card name */ title: string; /** Lowercase noun for UI copy and warnings */ noun: string;
   description?: string; /** Sidebar heading and library category (catalog-sections.ts) */ section?: RackSection;
@@ -75,6 +108,10 @@ export interface RackPartSpec<Id extends string = string> {
   autoFit?: (rack: RackDimensions) => NumericParams;
   /** Swap/variant family (default `rack:<section>`). Use an existing family (e.g. 'j-hooks') to swap with built-ins. */
   family?: string;
+  /** Extra rack context this builder needs (#178, see RACK_CONTEXT_KEYS). */
+  context?: readonly RackContextKey[];
+  /** Tubes or bars of this part that other registry parts can mount on (spotter arms, pull-up bars). */
+  hosts?: ByParams<RackHost[]>;
 }
 export interface RackPart<Id extends string = string> extends RackPartSpec<Id> { defaults: NumericParams }
 export function defineRackPart<const Id extends string>(spec: RackPartSpec<Id>): RackPart<Id> {
@@ -93,6 +130,7 @@ export const rackPlacementFor = (part: RackPart, params: NumericParams): RackPla
 export const rackFamily = (part: RackPart) => part.family ?? `rack:${part.section ?? DEFAULT_RACK_SECTION}`;
 /** Default params plus a stand-in 75 mm, 50 mm pitch, 25 mm bore rack context, for thumbnails and tests. */
 export const rackBuildParams = (part: RackPart, params: NumericParams = {}): NumericParams => ({ upright: 75, mountSpacing: 50, holeDiameter: 25, ...part.defaults, ...params });
+export const rackHosts = (part: RackPart, params: NumericParams): RackHost[] => [...resolveBy(part.hosts ?? [], params)];
 export const rackDefinition = (part: RackPart, build: PartDefinition['build']): PartDefinition => ({
   id: part.id, name: part.title, category: part.section ?? DEFAULT_RACK_SECTION, defaults: part.defaults, build, description: part.description,
   standardOptions: Object.fromEntries(part.params.filter(p => typeof p.options !== 'function').map(p => [p.key, (p.options as readonly number[]).map(value => ({ value, label: (p.format ?? String)(value) }))])),

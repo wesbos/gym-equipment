@@ -2,6 +2,7 @@ import { defaultAccessoryTarget, createAssembly, getPartDefaults, getPartPlaceme
 import { snapDimensions } from './grid.ts';
 import { gridProfile } from './profiles.ts';
 import { structureSlots } from './topology.ts';
+import { isUprightTarget } from './rack-targets.ts';
 import type { Accessory, NumericParams, PartId, RackDoc } from './types.ts';
 
 /** Snap source dimensions through the active profile; never reset a REP bore/pitch to BOS. */
@@ -30,7 +31,7 @@ export function defaultVariant(doc: RackDoc, id: string): PartId {
 }
 /** Placement defaults keep explicit graph endpoints; no arbitrary relocation of dynamic posts. */
 export function placementDefaults(doc: RackDoc, accessory: Accessory): Accessory {
-  if (accessory.target.kind === 'crossmember-top') return { ...accessory, params: {}, target: { ...accessory.target } };
+  if (!isUprightTarget(accessory.target)) return { ...accessory, params: {}, target: { ...accessory.target } };
   const stock = createAssembly().accessories.find(a => a.id === accessory.id);
   const stockPost = stock && doc.uprights[stock.target.uprightId] && !doc.removed.includes(stock.target.uprightId) ? stock.target.uprightId : accessory.target.uprightId;
   const target = defaultAccessoryTarget(doc, accessory.part, accessory.spanTo ? accessory.target.uprightId : stockPost);

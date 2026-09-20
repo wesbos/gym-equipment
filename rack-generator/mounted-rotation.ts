@@ -1,11 +1,12 @@
 import { Euler, Matrix4, Vector3 } from 'three';
 import type { Accessory, Target, Vec3 } from './types.ts';
 import { rackPart } from './rack-registry.ts';
+import { isRailTarget } from './rack-targets.ts';
 
 export interface MountedRotationMode { kind: 'stepped' | 'continuous' | 'fixed'; supported: boolean; step: number; angles?: readonly number[]; label: string; reason: string }
 /** UI steps are degrees; persisted rotations and candidate orientations are radians. */
 export function mountedRotationMode(a: Pick<Accessory, 'part' | 'target'>): MountedRotationMode {
-  if ((a.part === 'darko-anchor' || a.part === 'darko-double-decker' || rackPart(a.part)) && a.target.kind === 'crossmember-top') return { kind:'stepped', supported:true, step:180, angles:[0,Math.PI], label:'Flip rail side', reason:'The top bearing tab and transverse bolt allow only opposite rail sides (0° / 180°). Quarter turns lose hole alignment.' };
+  if ((a.part === 'darko-anchor' || a.part === 'darko-double-decker' || rackPart(a.part)) && isRailTarget(a.target)) return { kind:'stepped', supported:true, step:180, angles:[0,Math.PI], label:'Flip rail side', reason:'The top bearing tab and transverse bolt allow only opposite rail sides (0° / 180°). Quarter turns lose hole alignment.' };
   if (a.part === 'storage-pin-short' || a.part === 'storage-pin-long') return { kind:'continuous', supported:true, step:15, label:'Spin about mounting shaft', reason:'Rotation is about the horizontal shaft, not vertical yaw; a round storage peg may look unchanged.' };
   return { kind:'fixed', supported:false, step:0, label:'Fixed mounting orientation', reason:a.part === 'landmine' ? 'The landmine base has two rack studs. Its sleeve swivel is not whole-assembly rotation.' : 'The bolt pattern or bearing surfaces fix this attachment orientation. Move it to another compatible mount.' };
 }
@@ -27,7 +28,7 @@ export function validateMountedRotation(a: Accessory): void {
 export function nextMountedRotation(a: Accessory, direction = 1): number { return normalizeMountedRotation(accessoryRotation(a)+direction*mountedRotationMode(a).step*Math.PI/180); }
 /** A half turn is a remount on the opposite side, never a spin around a floating bolt. */
 export function orientedMountTarget(target: Target, rotation: number): Target {
-  if (target.kind !== 'crossmember-top') return target;
+  if (!isRailTarget(target)) return target;
   return {...target, side: (rotation === 0 ? target.side : -target.side) as 1|-1};
 }
 export function mountedOrientationCandidates(a: Accessory): Target[] {

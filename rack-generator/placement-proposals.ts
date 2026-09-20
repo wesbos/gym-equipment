@@ -22,7 +22,9 @@ export function scoreMount(doc: RackDoc, part: PartId, m: Mount): number {
   const height = rack?.height ?? (part.startsWith('foot-') ? 65 : part === 'landmine' ? 165 : rear ? 365
     : part.startsWith('dip-') ? 815 : part.startsWith('safety-') || part === 'spotter-arm' ? (hooks ? 65 + hooks.target.hole * doc.rack.pitch - 250 : 815)
     : part === 'monolift' ? 1415 : part.startsWith('pullup-') ? doc.rack.height - 200 : 1215);
-  return Math.abs(p.y - row) * 4 + (m.face === face ? 0 : 500) + Math.abs(m.position[2] - height) + (p.x === left ? 0 : 1);
+  // Registry entries can prefer a target kind (#178), e.g. a bar mount on a pull-up bar over a peg in an upright hole.
+  const kind = rack?.target && (m.kind ?? 'upright') !== rack.target ? 5000 : 0;
+  return kind + Math.abs(p.y - row) * 4 + (m.face === face ? 0 : 500) + Math.abs(m.position[2] - height) + (p.x === left ? 0 : 1);
 }
 function locationLabel(doc: RackDoc, id: string): string {
   const p = doc.uprights[id], posts = Object.values(doc.uprights);
@@ -42,9 +44,9 @@ export function placementMounts(doc: RackDoc, part: PartId, movingId: string | n
   return getMounts(doc, part, proposalParams(doc, part, movingId));
 }
 /** Strip renderer metadata, retaining all domain target fields (including future target kinds). */
-type DomainTarget<T> = T extends Mount ? Omit<T, 'position' | 'center' | 'localAnchor' | 'pinAxis' | 'label' | 'connectorId'> : never;
+type DomainTarget<T> = T extends Mount ? Omit<T, 'position' | 'center' | 'localAnchor' | 'pinAxis' | 'label' | 'connectorId' | 'hostId'> : never;
 export function placementTarget<T extends Mount>(target: T): DomainTarget<T> {
-  const { position, center, localAnchor, pinAxis, label, connectorId, ...domainTarget } = target;
+  const { position, center, localAnchor, pinAxis, label, connectorId, hostId, ...domainTarget } = target;
   return structuredClone(domainTarget) as DomainTarget<T>;
 }
 /** Pure preview document adapter, also usable by swap/hover callers. */

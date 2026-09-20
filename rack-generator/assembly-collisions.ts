@@ -1,5 +1,6 @@
 import { Euler, Vector3 } from 'three';
-import type { Vec2, Vec3, NumericParams, LocalBox, CollisionInstance, CollisionWarning, Mount } from './types.ts';
+import type { Vec2, Vec3, NumericParams, LocalBox, CollisionInstance, CollisionWarning, Mount, Target } from './types.ts';
+import { isHostedTarget, isRailTarget } from './rack-targets.ts';
 interface OrientedBox { center: Vec3; half: Vec3; axes: [Vec3, Vec3, Vec3] }
 // Conservative interference checks for resolved accessories, in millimetres.
 // These envelopes cover working bodies, excluding collars, mounting pins and
@@ -222,14 +223,21 @@ function intersects(a: OrientedBox, b: OrientedBox) {
   return true;
 }
 
-function sharedSlot(a: CollisionInstance, b: CollisionInstance): Partial<Mount> | null {
-  const mounts = (instance: CollisionInstance) => Array.isArray(instance.mounts) ? instance.mounts : instance.mount ? [instance.mount] : [];
+type Slot = Partial<Mount> & { connectionId?: string; station?: number; host?: string; unit?: number; frame?: number };
+function sharedSlot(a: CollisionInstance, b: CollisionInstance): Slot | null {
+  const mounts = (instance: CollisionInstance): Slot[] => (Array.isArray(instance.mounts) ? instance.mounts : instance.mount ? [instance.mount] : []) as Slot[];
   for (const x of mounts(a)) for (const y of mounts(b)) {
     // Top targets use hole=0 as an upright placeholder. Their actual through
     // hole is identified by rail and station, including both faces of the rail.
-    if (x?.kind === 'crossmember-top' || y?.kind === 'crossmember-top') {
-      if (x?.kind === 'crossmember-top' && y?.kind === 'crossmember-top'
+    // Top and underside rail targets use the same side hole at a station.
+    if (isRailTarget(x as Target) || isRailTarget(y as Target)) {
+      if (isRailTarget(x as Target) && isRailTarget(y as Target)
         && x.connectionId === y.connectionId && Number.isInteger(x.station) && x.station === y.station) return x;
+      continue;
+    }
+    // Hosted targets (#178) share a slot only with another part on the same host station.
+    if (isHostedTarget(x as Target) || isHostedTarget(y as Target)) {
+      if (isHostedTarget(x as Target) && isHostedTarget(y as Target) && x.host === y.host && x.unit === y.unit && x.frame === y.frame && x.station === y.station) return x;
       continue;
     }
     if (x?.uprightId && (x.connectorId ?? x.uprightId) === (y?.connectorId ?? y?.uprightId) && Number.isFinite(x.hole) && x.hole === y.hole) return x;
@@ -252,6 +260,9 @@ export function detectCollisions(resolvedInstances: unknown): CollisionWarning[]
     if (a.kind === 'structure' && b.kind === 'structure') continue;
     const key = JSON.stringify([a.id, b.id].sort());
     if (seen.has(key)) continue;
+    // A part mounted on another accessory (#178) wraps or clamps its host by design.
+    const hosts = (v: CollisionInstance) => (Array.isArray(v.mounts) ? v.mounts : []).map(m => m?.hostId);
+    if (hosts(a).includes(b.ownerId ?? b.id) || hosts(b).includes(a.ownerId ?? a.id)) continue;
     const slot = a.kind === 'accessory' && b.kind === 'accessory' ? sharedSlot(a, b) : null;
     const overlap = slot || bodies.get(a)!.some(x => bodies.get(b)!.some(y => intersects(x, y)));
     if (!overlap) continue;
@@ -259,8 +270,9 @@ export function detectCollisions(resolvedInstances: unknown): CollisionWarning[]
     // The first ID is the movable accessory so a warning click opens its editor.
     const ids: [string, string] = a.kind === 'structure' ? [b.id, a.id] : [a.id, b.id];
     warnings.push({ ids, message: slot
-      ? slot.kind === 'crossmember-top'
+      ? isRailTarget(slot as Target)
         ? `${name(a)} and ${name(b)} share mounting station ${slot.station! + 1} on ${slot.connectionId}.`
+        : isHostedTarget(slot as Target) ? `${name(a)} and ${name(b)} share station ${slot.station! + 1} on ${slot.host}.`
         : `${name(a)} and ${name(b)} share mounting hole ${slot.hole! + 1} on ${slot.uprightId}.`
       : `${name(a)} and ${name(b)} overlap. Move one to another hole or face.` });
     seen.add(key);

@@ -15,6 +15,7 @@ import { FLOOR_PARTS, floorPart } from '../../rack-generator/floor-registry.ts';
 import { FLOOR_SECTIONS, WALL_SECTIONS, HANG_SECTIONS, RACK_SECTIONS, DEFAULT_FLOOR_SECTION, DEFAULT_WALL_SECTION, DEFAULT_HANG_SECTION, DEFAULT_RACK_SECTION, sectionGroups } from '../../rack-generator/catalog-sections.ts';
 import { RACK_PARTS } from '../../rack-generator/rack-registry.ts';
 import { RackPartControls } from '../components/RackPartControls.tsx';
+import { isUprightTarget } from '../../rack-generator/rack-targets.ts';
 import { LogoControls } from '../components/LogoControls.tsx';
 import { addsStructure } from '../../rack-generator/structure-candidates.ts';
 import { VendorControls, VendorCredit } from '../components/VendorControls.tsx';
@@ -261,7 +262,7 @@ function Inspector({ store }: { store: BuilderStore }) {
                   variant === part ? { ...item.params, ...params } : {};
                 item.part = variant;
                 const uprightId = data.get("upright") as UprightId;
-                if (entry.target.kind !== "crossmember-top") item.target = {
+                if (isUprightTarget(entry.target)) item.target = {
                   uprightId,
                   face: spanning
                     ? uprightId.endsWith("left")
@@ -274,7 +275,7 @@ function Inspector({ store }: { store: BuilderStore }) {
                 };
                 if (item.spanTo && data.get("spanTo")) item.spanTo = String(data.get("spanTo"));
                 // An unpairable part submits no checkbox: adopt the new variant's default.
-                if (entry.target.kind !== "crossmember-top") item.paired =
+                if (isUprightTarget(entry.target)) item.paired =
                   variant !== part && !info?.paired ? pairedByDefault(variant, doc) :
                   !!getPartPlacementInfo(variant, doc)?.paired &&
                   data.get("paired") === "on";
@@ -303,7 +304,7 @@ function Inspector({ store }: { store: BuilderStore }) {
               <ResetButton label="variant" changed={part !== resetVariant} onReset={() => store.act(() => { const next = structuredClone(doc); if (entry) { const a = next.accessories.find(a => a.id === entry.id)!; a.part = resetVariant; a.params = {}; store.commit(next); } else store.commit(replaceStructurePart(doc, ownerId!, resetVariant)); })} />
             </Field>
           )}
-          {entry && entry.target.kind !== "crossmember-top" && (
+          {entry && isUprightTarget(entry.target) && (
             <>
               <Field label="Mounting upright">
                 <select name="upright" value={entry.target.uprightId} onChange={e => e.currentTarget.form?.requestSubmit()}>

@@ -14,7 +14,9 @@ import { isVendorPart, vendorDefaults, vendorPlacement, vendorLimits, validateVe
 import { VOLTRA_IDS, DARKO_IDS, isDarkoTop } from './vendor-metadata.ts';
 import { validateMountShaft } from './mount-shafts.ts';
 import { RACK_PART_IDS, isRackPart, rackPart, rackTargets } from './rack-registry.ts';
-import { acceptsCrossmemberTop, rackPlacementFace, rackDefaults, rackDefaultHole, rackLimits, rackPlacement, rackTopMounts, resolveRack, validateRackMount, validateRackPartParams } from './rack-mounts.ts';
+import { acceptsRail, acceptsTarget, rackPlacementFace, rackDefaults, rackDefaultHole, rackLimits, rackPlacement, rackRailMounts, railMount, resolveRack, validateRackMount, validateRackPartParams } from './rack-mounts.ts';
+import { hostedCandidates, hostedOn, hostedPairTarget, resolveHosted, validateHostedMount } from './rack-hosts.ts';
+import { TARGET_KINDS, isHostedTarget, isRailTarget, isUprightTarget } from './rack-targets.ts';
 import { gridProfile, type GridProfile } from './profiles.ts';
 import { legacyGraph, validateGraph, structureSlots } from './topology.ts';
 import { snapDimensions } from './grid.ts';
@@ -35,8 +37,8 @@ export const FACES: readonly Face[] = Object.freeze(['front', 'back', 'left', 'r
 export const ACCESSORY_PARTS = Object.freeze(['pullup-straight', 'pullup-multigrip', 'pullup-sphere', 'j-hook-standard', 'j-hook-roller', 'j-hook-sandwich', 'safety-box', 'safety-pin-pipe', 'safety-webbing', 'foot-400', 'foot-800', ...attachmentPartIds, ...VOLTRA_IDS, ...DARKO_IDS, ...RACK_PART_IDS]);
 /** Includes rack-registry entries registered after load (test seam). */
 export const isAccessoryPart = (part: string) => ACCESSORY_PARTS.includes(part) || isRackPart(part);
-/** Parts that bolt to a crossmember-top rail station (Darko Anchors and registry entries that accept it). */
-const topMounted = (part: string) => isDarkoTop(part) || acceptsCrossmemberTop(part);
+/** Parts that bolt to a crossmember rail station (Darko Anchors and registry entries that accept it, on top or under). */
+const railMounted = (part: string, kind: string) => kind === 'crossmember-top' ? isDarkoTop(part) || acceptsTarget(part, 'crossmember-top') : acceptsRail(part) && acceptsTarget(part, kind as 'crossmember-under');
 export const STRUCTURE_SLOTS: readonly StructureSlot[] = Object.freeze<StructureSlot[]>([
   ...UPRIGHT_IDS.map((id): StructureSlot => ({ id, part: 'upright', connectedTo: [] })),
   { id: 'left-upper-crossmember', part: 'crossmember-725', connectedTo: ['front-left', 'rear-left'] },
@@ -179,7 +181,8 @@ function mount(rack: RackDimensions & { uprights?: RackDoc["uprights"] }, uprigh
 }
 function targetsFor(accessory: Accessory): Target[] {
   const targets = [accessory.target];
-  if (accessory.target.kind === 'crossmember-top') return accessory.paired && accessory.pairTarget ? [...targets, accessory.pairTarget] : targets;
+  if (isRailTarget(accessory.target)) return accessory.paired && accessory.pairTarget ? [...targets, accessory.pairTarget] : targets;
+  if (isHostedTarget(accessory.target)) return accessory.paired && accessory.pairHost ? [...targets, accessory.pairHost] : targets;
   if (accessory.paired) {
     const face = accessory.target.face;
     targets.push({ ...accessory.target, uprightId: accessory.pairTo ?? otherSide(accessory.target.uprightId), face: face === 'left' ? 'right' : face === 'right' ? 'left' : face });
@@ -187,7 +190,9 @@ function targetsFor(accessory: Accessory): Target[] {
   return targets;
 }
 function dependencies(accessory: Accessory): string[] {
-  if (accessory.target.kind === 'crossmember-top') return targetsFor(accessory).flatMap(t => t.kind === 'crossmember-top' ? [t.connectionId,t.uprightId] : []);
+  if (isRailTarget(accessory.target)) return targetsFor(accessory).flatMap(t => isRailTarget(t) ? [t.connectionId,t.uprightId] : []);
+  // Hosted parts depend on their host accessory (checked, and pruned with it, in validateAssembly / pruneHosted).
+  if (isHostedTarget(accessory.target)) return [];
   if (accessory.spanTo) return [accessory.target.uprightId, accessory.spanTo, ...(accessory.paired ? [accessory.pairTo ?? otherSide(accessory.target.uprightId), accessory.pairedSpanTo!] : [])];
   const ids = new Set<string>();
   for (const t of targetsFor(accessory)) {
@@ -307,8 +312,9 @@ export function validateAssembly(input: unknown): RackDoc {
     ids.add(a.id);
     if (typeof a.part !== 'string' || !isAccessoryPart(a.part)) fail(`No rack connection adapter for ${a.part}.`);
     if (!isRecord(a.target) || typeof a.target.uprightId !== "string" || !Object.hasOwn(graph.uprights, a.target.uprightId) || !FACES.includes(a.target.face as Face) || typeof a.target.hole !== 'number' || !(Number.isInteger(a.target.hole) || validHole(rack, a.target.hole, a.target.face as Face))) fail(`Invalid connection target for ${a.id}.`);
-    if (a.target.kind !== undefined && a.target.kind !== 'upright' && a.target.kind !== 'crossmember-top') fail('Unknown mount target kind.');
-    if (a.target.kind === 'crossmember-top' && !topMounted(a.part)) fail('This part requires an upright target.');
+    if (a.target.kind !== undefined && !(TARGET_KINDS as readonly unknown[]).includes(a.target.kind)) fail('Unknown mount target kind.');
+    if (isRailTarget(a.target as unknown as Target) && !railMounted(a.part, a.target.kind as string)) fail(a.target.kind === 'crossmember-under' && isRackPart(a.part) ? 'This part does not hang under a crossmember.' : 'This part requires an upright target.');
+    if (isHostedTarget(a.target as unknown as Target) && !isRackPart(a.part)) fail('Only registry rack parts mount on other accessories.');
     if (!a.spanTo && (isSafety(a.part) || isPullup(a.part)) && a.target.face !== (sideOf(a.target.uprightId as UprightId) === 'left' ? 'right' : 'left')) fail('Spanning parts mount on the inward-facing connection of an upright.');
     if (typeof a.paired !== 'boolean' || !supportsPair(a.part) && a.paired) fail('This part is placed as one complete or handed assembly.');
     if (graph.uprights[a.target.uprightId].height !== undefined && a.target.hole > maxHoleAt(rack, graph.uprights[a.target.uprightId])) fail(`Invalid connection target for ${a.id}: above the top of this shorter upright.`);
@@ -341,18 +347,18 @@ export function validateAssembly(input: unknown): RackDoc {
     if (clean.rotation !== undefined || clean.target.orientation !== undefined) clean.rotation = accessoryRotation(clean);
     if (isVendorPart(clean.part)) validateVendorMount({ rack, ...graph, removed, structure }, clean);
     if (isRackPart(clean.part)) validateRackMount({ rack, ...graph, removed, structure }, clean);
-    if (clean.target.kind === 'crossmember-top') {
-      if (!topMounted(clean.part)) fail('This part requires an upright target.');
+    if (isRailTarget(clean.target)) {
+      if (!railMounted(clean.part, clean.target.kind)) fail('This part requires an upright target.');
       if (clean.paired && !clean.pairTarget) clean.pairTarget = matchingDarkoTarget({rack,...graph,removed,structure},clean.target);
       if (clean.paired && !clean.pairTarget) fail('Choose a parallel crossmember for the matching pair.');
       if (clean.pairTarget) {
-        if (clean.pairTarget.kind !== 'crossmember-top' || clean.pairTarget.connectionId === clean.target.connectionId) fail('Choose a distinct matching crossmember.');
-        const m = darkoTopMount({rack,...graph,removed,structure},clean.target), n = darkoTopMount({rack,...graph,removed,structure},clean.pairTarget);
+        if (clean.pairTarget.kind !== clean.target.kind || clean.pairTarget.connectionId === clean.target.connectionId) fail('Choose a distinct matching crossmember.');
+        const m = railMount({rack,...graph,removed,structure},clean.target), n = railMount({rack,...graph,removed,structure},clean.pairTarget);
         const v = n.center.map((x,i) => x-m.center[i]);
         if (Math.abs(v[2])>.01 || Math.hypot(v[0],v[1])<rack.tube || Math.abs(v[0]*m.pinAxis![1]-v[1]*m.pinAxis![0])>.01 || Math.abs(m.pinAxis![0]*n.pinAxis![1]-m.pinAxis![1]*n.pinAxis![0])>.01) fail('Paired Darko cradles must align across parallel rails at equal heights.');
       }
     } else if (clean.pairTarget) fail('Crossmember pair target requires a crossmember-mounted part.');
-    if (clean.target.kind !== 'crossmember-top' && clean.paired && !clean.pairTo && UPRIGHT_IDS.includes(clean.target.uprightId)) clean.pairTo = otherSide(clean.target.uprightId);
+    if (isUprightTarget(clean.target) && clean.paired && !clean.pairTo && UPRIGHT_IDS.includes(clean.target.uprightId)) clean.pairTo = otherSide(clean.target.uprightId);
     if (!clean.spanTo && UPRIGHT_IDS.includes(clean.target.uprightId)) {
       if (clean.part === 'pullup-straight') clean.spanTo = otherSide(clean.target.uprightId);
       if (isSafety(clean.part)) {
@@ -363,7 +369,7 @@ export function validateAssembly(input: unknown): RackDoc {
       }
     }
     for (const key of ['spanTo', 'pairTo', 'pairedSpanTo'] as const) if (a[key] !== undefined && (typeof a[key] !== 'string' || !Object.hasOwn(graph.uprights, a[key]) || a[key] === clean.target.uprightId)) fail('Invalid explicit accessory endpoint.');
-    if (clean.paired && !clean.pairTo && clean.target.kind !== 'crossmember-top') fail('Choose an explicit matching upright for this pair.');
+    if (clean.paired && !clean.pairTo && isUprightTarget(clean.target)) fail('Choose an explicit matching upright for this pair.');
     if ((isSafety(clean.part) || clean.part === 'pullup-straight') && !clean.spanTo) fail('Choose an explicit span endpoint for this upright.');
     if (clean.spanTo) {
       if (!(isSafety(clean.part) || clean.part === 'pullup-straight')) fail('Explicit spans require a safety or straight pull-up bar.');
@@ -384,6 +390,16 @@ export function validateAssembly(input: unknown): RackDoc {
     for (const id of dependencies(clean)) if (!slots.some(s => s.id === id) || removed.includes(id)) fail(`${a.id} depends on removed ${id}.`);
     return clean;
   });
+  // Hosted parts (#178) are checked once every accessory is known: the host exists, offers that frame and station, and
+  // the part fits it. Hosts are never hosted themselves, so one pass suffices.
+  for (const a of accessories) if (isHostedTarget(a.target)) {
+    const host = accessories.find(x => x.id === (a.target as { host?: string }).host);
+    if (host && isHostedTarget(host.target)) fail(`${a.id} cannot mount on another mounted attachment.`);
+    const hostDoc = { rack, uprights: graph.uprights, removed, accessories };
+    a.target = validateHostedMount(hostDoc, a);
+    if (a.paired) a.pairHost = validateHostedMount(hostDoc, a, a.pairHost ?? hostedPairTarget(hostDoc, a)); else delete a.pairHost;
+  }
+  for (const a of accessories) if (!isHostedTarget(a.target)) delete a.pairHost;
   if (typeof input.nextId !== 'number' || !Number.isSafeInteger(input.nextId) || input.nextId < 1 || input.nextId > 1000000) fail('Invalid next accessory ID.');
   const appearance = validateAppearance(input.appearance);
   const floorItems = validateFloorItems(input.floorItems, [...Object.keys(graph.uprights), ...graph.connections.map(e=>e.id), ...accessories.map(a=>a.id)]);
@@ -461,8 +477,11 @@ export function moveAccessory(input: RackDoc, id: string, target: Partial<Target
   if (target.uprightId && target.uprightId !== a.target.uprightId && UPRIGHT_IDS.includes(target.uprightId)) { delete a.spanTo; delete a.pairTo; delete a.pairedSpanTo; }
   if (target.orientation !== undefined) a.rotation = target.orientation;
   delete a.target.orientation;
-  a.target = { ...a.target, ...target } as Target; if (a.target.kind === 'crossmember-top') delete a.pairTarget; if (paired !== undefined) a.paired = supportsPair(a.part) ? paired : false;
-  return validateAssembly(doc);
+  // A plain upright target (no kind) replaces a rail or hosted target outright instead of merging into it.
+  if (!('kind' in target) && 'face' in target && 'hole' in target && !isUprightTarget(a.target)) { a.target = { uprightId: a.target.uprightId, face: a.target.face, hole: a.target.hole }; delete a.pairTarget; }
+  a.target = { ...a.target, ...target } as Target; if (isRailTarget(a.target)) delete a.pairTarget; delete a.pairHost; if (paired !== undefined) a.paired = supportsPair(a.part) ? paired : false;
+  if (!isHostedTarget(a.target)) { delete (a.target as { host?: string }).host; for (const key of ['unit', 'frame'] as const) delete (a.target as unknown as Record<string, unknown>)[key]; }
+  return settleHosted(doc, ownerId);
 }
 export function unpairAccessory(input: RackDoc, id: string): RackDoc {
   const doc = validateAssembly(input), ownerId = id.split(':')[0];
@@ -482,9 +501,15 @@ export function unpairAccessory(input: RackDoc, id: string): RackDoc {
   }
   a.paired = false;
   const second = { ...a, id: secondId, target: { ...other }, ...(a.pairedSpanTo ? { spanTo: a.pairedSpanTo } : {}), params: { ...a.params } };
-  delete second.pairTarget; delete a.pairTarget; delete second.pairTo; delete second.pairedSpanTo; delete a.pairTo; delete a.pairedSpanTo;
+  delete second.pairTarget; delete a.pairTarget; delete second.pairHost; delete a.pairHost; delete second.pairTo; delete second.pairedSpanTo; delete a.pairTo; delete a.pairedSpanTo;
   doc.accessories.push(second);
-  return validateAssembly(doc);
+  // Parts mounted on the second unit (#178) move with it to the new accessory.
+  for (const h of hostedOn(doc.accessories, a.id)) {
+    if (isHostedTarget(h.target) && h.target.unit === 1) h.target = { ...h.target, host: secondId, unit: 0 };
+    if (h.pairHost?.unit === 1) h.pairHost = { ...h.pairHost, host: secondId, unit: 0 };
+  }
+  // Parts that spanned both units (a seat across the pair) no longer have their partner: they are dropped.
+  return settleHosted(doc);
 }
 /** Replace a storage pin's plate stack (root outward); both sides of a pair carry it. */
 export function setPlateStack(input: RackDoc, id: string, plates: readonly PlateId[]): RackDoc {
@@ -505,6 +530,7 @@ export function removeInstance(input: RackDoc, id: string): RackDoc {
     doc.removed = [...removed];
     doc.accessories = doc.accessories.filter(a => dependencies(a).every(dep => !removed.has(dep)));
   } else doc.accessories = doc.accessories.filter(a => a.id !== ownerId);
+  pruneHosted(doc);
   if (doc.systems) doc.systems = doc.systems.filter(system => {
     if (system.id === ownerId) return false;
     if (!structureSlots(doc).some(slot => slot.id === ownerId)) return true;
@@ -512,6 +538,29 @@ export function removeInstance(input: RackDoc, id: string): RackDoc {
     try { validateSystems(doc, [system]); return true; } catch { return false; }
   });
   return validateAssembly(doc);
+}
+/** Drops hosted parts (#178) whose host accessory is gone or no longer offers their station (removed, unpaired, swapped
+ * to a part without that tube or bar), repeatedly. Mutates and returns `doc`. */
+export function pruneHosted<T extends Pick<RackDoc, 'rack' | 'uprights' | 'removed' | 'accessories'>>(doc: T): T {
+  for (let changed = true; changed;) {
+    changed = false;
+    doc.accessories = doc.accessories.filter(a => {
+      if (!isHostedTarget(a.target)) return true;
+      try { validateHostedMount(doc, a); return true; } catch { changed = true; return false; }
+    });
+  }
+  return doc;
+}
+/** Validates an edited document; when the edit left hosted parts (#178) without their host station (a host moved to a
+ * face, pairing or variant that no longer offers it), those parts are dropped. The accessory being edited never is. */
+function settleHosted(doc: RackDoc, editedId?: string): RackDoc {
+  try { return validateAssembly(doc); } catch (error) {
+    const hosted = doc.accessories.filter(a => isHostedTarget(a.target) && a.id !== editedId);
+    if (!hosted.length) throw error;
+    const base = validateAssembly({ ...doc, accessories: doc.accessories.filter(a => !hosted.includes(a)) });
+    const kept = hosted.filter(h => { try { validateAssembly({ ...base, accessories: [...base.accessories, h] }); return true; } catch { return false; } });
+    return validateAssembly({ ...base, accessories: [...base.accessories, ...kept] });
+  }
 }
 export function restoreInstance(input: RackDoc, id: string): RackDoc {
   const doc = validateAssembly(input), slot = structureSlots(doc).find(slot => slot.id === id);
@@ -546,12 +595,20 @@ export function getMounts(input: RackDoc, part?: string, params: NumericParams =
   const doc = validateAssembly(input), result: Mount[] = [];
   if (part && isDarkoTop(part)) return darkoTopMounts(doc);
   if (part !== undefined && !isAccessoryPart(part)) return result;
-  // Registry parts on crossmember tops: every rail station that validates as a full candidate.
-  const tops = part && isRackPart(part) ? rackTopMounts(doc, part).filter(m => {
-    if (m.kind !== 'crossmember-top') return false;
+  // Registry parts on crossmember rails (top or underside): every rail station that validates as a full candidate.
+  const tops = part && isRackPart(part) ? rackRailMounts(doc, part).filter(m => {
+    if (!isRailTarget(m)) return false;
     const target = { kind: m.kind, connectionId: m.connectionId, station: m.station, side: m.side, uprightId: m.uprightId, face: m.face, hole: 0 };
     try { validateAssembly({ ...doc, accessories: [{ id: 'mount-preview', part: part as PartId, target, paired: false, params }] }); return true; } catch { return false; }
   }) : [];
+  // Registry parts on other accessories (#178): every host station that validates alongside the existing accessories.
+  if (part && isRackPart(part) && rackTargets(rackPart(part)!).some(k => k === 'spotter-arm' || k === 'pull-up-bar')) {
+    tops.push(...hostedCandidates(doc, part).filter(m => {
+      if (!isHostedTarget(m)) return false;
+      const target = { kind: m.kind, host: m.host, unit: m.unit, frame: m.frame, station: m.station, uprightId: m.uprightId, face: m.face, hole: 0 };
+      try { validateAssembly({ ...doc, accessories: [...doc.accessories, { id: 'mount-preview', part: part as PartId, target, paired: false, params }] }); return true; } catch { return false; }
+    }));
+  }
   if (part && isRackPart(part) && !rackTargets(rackPart(part)!).includes('upright')) return tops;
   if (part && isWidePullup(part)) {
     if (doc.rack.pitch !== 50 || doc.rack.depth < (part === 'pullup-sphere' ? 425 : 375) || ['left-upper-crossmember', 'right-upper-crossmember'].some(id => doc.removed.includes(id) || doc.structure[id]?.part === 'angled-crossmember')) return result;
@@ -642,6 +699,8 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
     const defaults = isVendorPart(a.part) ? vendorDefaults(a.part) : SOURCE_DEFAULTS[a.part], params = { ...defaults, ...a.params };
     if (isVendorPart(a.part)) {
       result.push(...resolveVendor(doc, a, targetsFor(a).map(t=>orientedMountTarget(t,accessoryRotation(a)))));
+    } else if (isRackPart(a.part) && isHostedTarget(a.target)) {
+      continue;
     } else if (isRackPart(a.part)) {
       result.push(...resolveRack(doc, a, targetsFor(a).map(t=>orientedMountTarget(t,accessoryRotation(a)))));
     } else if (a.spanTo) {
@@ -712,6 +771,8 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
       append(a.id, a.part, { ...params, length: r.width }, [0, yy, zz], angle, mounts, 'accessory', a.id, false, dependencies(a));
     }
   }
+  // Hosted parts (#178) ride on their resolved host instance.
+  for (const a of doc.accessories) if (isRackPart(a.part) && isHostedTarget(a.target)) result.push(...resolveHosted(doc, a));
   result.push(...resolveSystems(doc));
   parkBarbells(result, doc.floorItems);
   return result;

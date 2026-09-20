@@ -1,7 +1,7 @@
 /** Brand spotter arms (#133): Rogue SAML-24 and Monster 2.0, REP, Surplus Strength Stealth Spotters and Oak Club Alpha.
  * Metadata only (main bundle): no Manifold imports. Research: research/rack-jcups-safeties.md. All arms project along +Y
  * from the mounting face; z is relative to the mounting pin axis (the target hole). Numbers are shared with the builder. */
-import { defineRackPart, PIN_1IN, PIN_5_8IN, type RackPart } from '../rack-part.ts';
+import { defineRackPart, PIN_1IN, PIN_5_8IN, type RackHost, type RackPart } from '../rack-part.ts';
 import type { LocalBox, NumericParams, Vec3 } from '../types.ts';
 const inch = (v: number) => v * 25.4;
 const face = (p: NumericParams) => (p.upright ?? 75) / 2;
@@ -25,6 +25,13 @@ function armBodies(p: NumericParams, a: ArmSpec): LocalBox[] {
 }
 const armSlots = (p: NumericParams, a: ArmSpec) => [{ point: [0, face(p) + a.flatFrom + (a.reach - a.flatFrom) * .55, armCatchZ(a) + BAR_R] as Vec3, axis: [1, 0, 0] as Vec3 }];
 const armExtent = (a: ArmSpec) => ({ below: -a.low + 1, above: a.high + 1 });
+/** Host frame (#178): the arm's numbered side holes, for parts that pin through them (Darko Thresher Pad). `from` and
+ * `step` place the holes along +Y from the mounting face, `holeZ` their axis height; the flat catch is the usable span. */
+function armHost(p: NumericParams, a: ArmSpec & Record<string, number>, label: string, from: number, step: number, holeZ: number): RackHost[] {
+  const f = face(p), y0 = f + from, end = f + a.reach, n = Math.max(0, Math.min(a.holes, Math.floor((end - 20 - y0) / step) + 1));
+  return [{ kind: 'spotter-arm', label, origin: [0, y0, holeZ], axis: [0, 1, 0], stations: n, pitch: step, span: [f + a.flatFrom - y0, end - (a.plate ?? 6) - y0],
+    width: a.w, height: a.h, top: armCatchZ(a) - holeZ, hole: a.holeD }];
+}
 function fits3in(p: NumericParams, name: string) {
   const w = faceWidth(p);
   if (Math.abs(w - inch(3)) > 2.5) throw Error(`${name} fit a 3 in upright face, not ${(w / 25.4).toFixed(2)} in.`);
@@ -69,6 +76,7 @@ export const ROGUE_MONSTER_SPOTTER_ARMS_2 = defineRackPart({
   bodies: p => armBodies(p, MONSTER_SPOTTER),
   pair: { default: true },
   cradles: { kind: 'working', label: 'Monster Spotter Arms 2.0', slots: p => armSlots(p, MONSTER_SPOTTER) },
+  hosts: p => armHost(p, MONSTER_SPOTTER, 'Monster spotter arm', 150, 50.8, MONSTER_SPOTTER.top - MONSTER_SPOTTER.h / 2),
   placement: { height: 815, face: 'front' },
   family: 'spotter-arm',
 });
@@ -92,6 +100,7 @@ export const REP_SPOTTER_ARMS = defineRackPart({
   bodies: p => armBodies(p, REP_SPOTTER),
   pair: { default: true },
   cradles: { kind: 'working', label: 'REP Spotter Arms', slots: p => armSlots(p, REP_SPOTTER) },
+  hosts: p => armHost(p, REP_SPOTTER, 'REP spotter arm', REP_SPOTTER.pad + 95, 53, REP_SPOTTER.top - REP_SPOTTER.h / 2),
   placement: { height: 815, face: 'front' },
   autoFit: rack => ({ series: rack.holeDiameter >= PIN_1IN ? 1 : 0 }),
   family: 'spotter-arm',
@@ -116,6 +125,7 @@ export const SURPLUS_STEALTH_SPOTTERS = defineRackPart({
   bodies: p => armBodies(p, STEALTH),
   pair: { default: true },
   cradles: { kind: 'working', label: 'Stealth Spotters', slots: p => armSlots(p, STEALTH) },
+  hosts: p => armHost(p, { ...STEALTH, h: STEALTH.top - STEALTH.low }, 'Stealth Spotter', 170, 50.8, STEALTH.low + 38),
   placement: { height: 815, face: 'front' },
   family: 'spotter-arm',
 });
