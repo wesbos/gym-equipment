@@ -51,7 +51,10 @@ export default function LibraryPage() {
           <p className="eyebrow">BOS STRENGTH / LIBRARY</p>
           <h1>Parts library</h1>
         </div>
-        <Link to="/">Build a rack ↗</Link>
+        <nav className="library-links">
+          <Link to="/gyms">Pre-built gyms ↗</Link>
+          <Link to="/">Build a rack ↗</Link>
+        </nav>
       </header>
       <div className="gallery-filters">
         <label>

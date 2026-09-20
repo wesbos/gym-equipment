@@ -69,4 +69,15 @@ export const routeTree = rootRoute.addChildren([
     path: "/library",
     component: lazyRouteComponent(() => import("./LibraryPage.tsx")),
   }),
+  // Pre-built gym gallery (#184); "Open in builder" links to /?gym=<slug>.
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/gyms",
+    component: lazyRouteComponent(() => import("./GymsPage.tsx")),
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/gyms/$slug",
+    component: lazyRouteComponent(() => import("./GymsPage.tsx"), "GymDetailPage"),
+  }),
 ]);

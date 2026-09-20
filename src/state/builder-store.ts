@@ -842,6 +842,36 @@ export class BuilderStore {
     }
     this.select(null);
   };
+  /**
+   * Opens a ready-made design (a gallery gym) as a new, unsaved design. Unsaved work is never lost:
+   * a pending draft is kept as a saved configuration first, then the opened design becomes the draft.
+   * Resolves to the name the previous draft was kept under, if there was one.
+   */
+  openDesign = async (input: RackDoc, title: string): Promise<string | null> => {
+    await this.ready;
+    this.endGesture();
+    const doc = cleanDocument(input);
+    // Let a queued autosave land so the current working copy is the stored draft.
+    if (this.state.dirty) this.autosave();
+    await this.flushStorage();
+    // A draft identical to its saved configuration, or an untouched starter rack, holds no work to keep.
+    const same = (a: RackDoc, b: RackDoc) => JSON.stringify(cleanDocument(a)) === JSON.stringify(cleanDocument(b));
+    const { draft } = this.collection, saved = this.collection.configs.find((c) => c.id === this.collection.activeId);
+    const keep = !!draft && !same(draft, saved?.doc ?? createAssembly());
+    const keptName = keep ? `Unsaved draft (before ${title})` : null;
+    await this.mutateStorage((current) => ({
+      configs: keep && current.draft
+        ? [...current.configs, { id: crypto.randomUUID(), name: keptName!, doc: cleanDocument(current.draft), ...(current.draftTimeline ? { timeline: current.draftTimeline } : {}) }]
+        : current.configs,
+      activeId: null,
+      draft: null,
+    }));
+    this.replaceWorking(doc);
+    this.patch({ activeId: null, draftAvailable: false });
+    this.autosave();
+    this.status(keptName ? `Opened ${title}. Your previous unsaved design was kept as “${keptName}”.` : `Opened ${title} as a new design.`);
+    return keptName;
+  };
 }
 export function getBuilderStore() {
   let storage: StorageLike | undefined;
