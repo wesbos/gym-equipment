@@ -54,11 +54,12 @@ const title = (part: FloorPart) => part.noun[0].toUpperCase() + part.noun.slice(
 export function floorWarnings(doc: RackDoc) {
   const items=(doc.floorItems ?? []).filter(i=>!i.cradle), warnings: {ids:[string,string];message:string}[]=[], rack=rackBounds(doc);
   for (const [i,item] of items.entries()) {
-    const bounds=floorBounds(item),clear=clearanceBounds(item),noun=title(entry(item.part));
+    const bounds=floorBounds(item),clear=clearanceBounds(item),noun=title(entry(item.part)),under=(i:FloorItem)=>!!entry(i.part).underlay;
+    if(under(item)) continue;
     if(rack && overlaps(bounds,rack)) warnings.push({ids:[item.id,'rack'],message:`${noun} overlaps the rack footprint.`});
     else if(rack && clear && overlaps(clear,rack)) warnings.push({ids:[item.id,'rack'],message:`${noun} use clearance overlaps the rack.`});
-    for(const other of items.slice(i+1)) if(overlaps(bounds,floorBounds(other))) warnings.push({ids:[item.id,other.id],message:'Floor items overlap.'});
-    if(clear) for(const other of items) if(other!==item && overlaps(clear,floorBounds(other)) && !overlaps(bounds,floorBounds(other))) warnings.push({ids:[item.id,other.id],message:`${noun} use clearance overlaps another floor item.`});
+    for(const other of items.slice(i+1)) if(!under(other) && overlaps(bounds,floorBounds(other))) warnings.push({ids:[item.id,other.id],message:'Floor items overlap.'});
+    if(clear) for(const other of items) if(other!==item && !under(other) && overlaps(clear,floorBounds(other)) && !overlaps(bounds,floorBounds(other))) warnings.push({ids:[item.id,other.id],message:`${noun} use clearance overlaps another floor item.`});
   }
   return warnings;
 }
@@ -81,6 +82,6 @@ export function addFloorItem(doc: RackDoc, part: string, position?: Vec2, pair =
   moveFloorGroup(items,start);
   // Step along the rack side by the footprint plus 100 mm, on the 25 mm grid, until clear of existing floor items.
   const stride=Math.ceil((span.max[along]-span.min[along]+100)/25)*25;
-  if(!position) while(items.some(item=>next.floorItems!.some(other=>!other.cradle && overlaps(floorBounds(item),floorBounds(other),100)))) for(const item of items) item.position[along]+=stride;
+  if(!position && !spec.underlay) while(items.some(item=>next.floorItems!.some(other=>!other.cradle && !entry(other.part).underlay && overlaps(floorBounds(item),floorBounds(other),100)))) for(const item of items) item.position[along]+=stride;
   next.floorItems.push(...items); return next;
 }
