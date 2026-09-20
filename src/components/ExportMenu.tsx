@@ -1,6 +1,7 @@
 import './export-menu.css';
 import { resolveAssembly } from '../../rack-generator/assembly.ts';
-import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { useStoreSelector } from '../state/use-store.ts';
 import { ResetButton } from './ResetButton.tsx';
 import type { BuilderStore } from '../state/builder-store.ts';
 import type { PrintLayout, PrintScale } from '../exports/print-3mf.ts';
@@ -9,12 +10,20 @@ import { ExportJob, readExportFormat, rememberExportFormat, type ExportFormat } 
 const DEFAULT_LAYOUT: PrintLayout = 'laid-out';
 const DEFAULT_SCALE: PrintScale = 10;
 const formats: ExportFormat[] = ['glb', '3mf'];
+// While history is viewed the applied rack differs from the visible one; it only changes with a new timeline snapshot.
+const emptyApplied = new WeakMap<object, boolean>();
+function appliedIsEmpty(store: BuilderStore, timeline: object) {
+  let empty = emptyApplied.get(timeline);
+  if (empty === undefined) { empty = !resolveAssembly(store.getAppliedDoc()).length; emptyApplied.set(timeline, empty); }
+  return empty;
+}
 
 export function ExportMenu({ store, exportGLB, loading, empty }: {
   store: BuilderStore; exportGLB: () => Promise<ArrayBuffer>; loading: boolean; empty: boolean;
 }) {
-  const { timeline } = useSyncExternalStore(store.subscribe, store.getSnapshot);
-  const appliedEmpty = !resolveAssembly(store.getAppliedDoc()).length;
+  const viewing = useStoreSelector(store, s => s.timeline.viewing);
+  // The applied rack is the visible one unless history is being viewed; resolve it only when it differs.
+  const appliedEmpty = useStoreSelector(store, s => s.timeline.viewing ? appliedIsEmpty(store, s.timeline) : !s.resolved.length);
   const [open, setOpen] = useState(false);
   const [format, setFormat] = useState<ExportFormat>(() => {
     try { return readExportFormat(sessionStorage); } catch { return 'glb'; }
@@ -62,7 +71,7 @@ export function ExportMenu({ store, exportGLB, loading, empty }: {
 
   const exportEmpty = format === '3mf' ? appliedEmpty : empty;
   const start = () => {
-    if (busy || exportEmpty || (format === 'glb' && (loading || timeline.viewing))) return;
+    if (busy || exportEmpty || (format === 'glb' && (loading || viewing))) return;
     try { rememberExportFormat(sessionStorage, format); } catch { /* Storage may be unavailable. */ }
     // Keep focus inside the popover before disabling its download button.
     items.current[formats.indexOf(format)]?.focus();
@@ -124,9 +133,9 @@ export function ExportMenu({ store, exportGLB, loading, empty }: {
         <p>Select printer and filaments.</p>
         <a href="https://github.com/wesbos/gym-equipment/blob/main/docs/print-export.md" target="_blank" rel="noreferrer">Export details ↗</a>
       </div>}
-      {format === 'glb' && timeline.viewing && <p>Return to latest to export the applied rack. <button type="button" onClick={store.latestHistory}>Return to latest</button></p>}
+      {format === 'glb' && viewing && <p>Return to latest to export the applied rack. <button type="button" onClick={store.latestHistory}>Return to latest</button></p>}
       <div className="export-menu-actions">
-        <button type="button" className="primary" disabled={!!busy || exportEmpty || (format === 'glb' && (loading || timeline.viewing))}
+        <button type="button" className="primary" disabled={!!busy || exportEmpty || (format === 'glb' && (loading || viewing))}
           onClick={start}>{busy ? 'Preparing…' : `Download ${format.toUpperCase()}`}</button>
         {busy === '3mf' && <button type="button" onClick={() => { job.cancel(); items.current[1]?.focus(); }}>Cancel export</button>}
       </div>

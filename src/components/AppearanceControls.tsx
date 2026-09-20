@@ -1,7 +1,7 @@
 import { physicalFinish, resetAppearanceField } from '../../rack-generator/appearance-reset.ts';
 import { ResetButton } from './ResetButton.tsx';
 import { GestureColorInput, type GestureCallbacks } from './GestureInputs.tsx';
-import { useSyncExternalStore } from 'react';
+import { deepEqual, useStoreSelector } from '../state/use-store.ts';
 import { DEFAULT_FRAME_COLOR, PAINT_SWATCHES, type Appearance, type FrameFinish, type HardwareFinish } from '../../rack-generator/appearance.ts';
 import type { BuilderStore } from '../state/builder-store.ts';
 import './appearance-controls.css';
@@ -24,9 +24,11 @@ function PaintPicker({ label, color, mixedColor = false, finish, onColor, onFini
   </fieldset>;
 }
 export function AppearanceControls({ store }: { store: BuilderStore }) {
-  const { doc, resolved, selected, selection } = useSyncExternalStore(store.subscribe, store.getSnapshot);
-  const physical = resolved.find(r => r.id === selected) ?? resolved.find(r => r.ownerId === selected);
-  const appearance = doc.appearance ?? {};
+  // Only the appearance, the selection and the selected piece's identity: moving a part must not re-render the pickers.
+  const { appearance = {}, selection, physical } = useStoreSelector(store, ({ doc, resolved, selected, selection }) => {
+    const found = resolved.find(r => r.id === selected) ?? resolved.find(r => r.ownerId === selected);
+    return { appearance: doc.appearance, selection, physical: found && { id: found.id, kind: found.kind } };
+  }, deepEqual);
   const update = (change: Partial<Appearance> | ((current: Appearance) => Appearance)) => store.act(() => store.edit(current => ({ ...current, appearance: typeof change === 'function' ? change(current.appearance ?? {}) : { ...current.appearance, ...change } })));
   const colors = selection.map(id => appearance.overrides?.[id] ?? appearance.frameColor ?? (id.startsWith('floor-') ? '#353739' : DEFAULT_FRAME_COLOR));
   const mixed = colors.some(value => value !== colors[0]);

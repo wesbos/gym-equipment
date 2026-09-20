@@ -1,5 +1,5 @@
 import { ResetButton } from './ResetButton.tsx';
-import { useSyncExternalStore } from 'react';
+import { deepEqual, useStoreSelector } from '../state/use-store.ts';
 import type { BuilderStore } from '../state/builder-store.ts';
 import { wallPart } from '../../rack-generator/wall-registry.ts';
 import { floorOptions, coerceFloorParams } from '../../rack-generator/floor-part.ts';
@@ -9,8 +9,8 @@ import type { NumericParams } from '../../rack-generator/types.ts';
 import { NumericControl } from './NumericControl.tsx';
 /** Registry-driven like FloorInspector: param selects, wall + [along, height], and the wall's own distance. */
 export function WallInspector({store,id}:{store:BuilderStore;id:string}) {
-  const state=useSyncExternalStore(store.subscribe,store.getSnapshot),item=state.doc.wallItems!.find(i=>i.id===id)!,part=wallPart(item.part)!;
-  const noun=part.noun,room=roomOf(state.doc),frame=wallFrames(room)[item.wall];
+  const {item,room}=useStoreSelector(store,s=>({item:s.doc.wallItems!.find(i=>i.id===id)!,room:roomOf(s.doc)}),deepEqual),part=wallPart(item.part)!;
+  const noun=part.noun,frame=wallFrames(room)[item.wall];
   const setParams=(params:NumericParams)=>store.updateWall(id,{params:coerceFloorParams(part,params)});
   const gesture={onGestureStart:store.beginGesture,onGestureEnd:store.endGesture};
   return <><h2 id="selection-title">{part.name}</h2><div id="inspector" className="inspector-fields">

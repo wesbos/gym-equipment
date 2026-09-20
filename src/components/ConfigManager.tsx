@@ -1,7 +1,8 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
+import { shallowEqual, useStoreSelector } from "../state/use-store.ts";
 import type { BuilderStore } from "../state/builder-store.ts";
 export function ConfigManager({ store }: { store: BuilderStore }) {
-  const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
+  const state = useStoreSelector(store, s => ({ configs: s.configs, activeId: s.activeId, dirty: s.dirty, storageReady: s.storageReady, storageError: s.storageError, draftAvailable: s.draftAvailable }), shallowEqual);
   const [name, setName] = useState("My rack");
   const [busy, setBusy] = useState(false);
   const savedName = state.configs.find((c) => c.id === state.activeId)?.name;

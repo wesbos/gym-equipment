@@ -1,13 +1,14 @@
 import { LOGO_DEFAULTS, defaultLogoSource, isDefaultLogoSource } from './logo-defaults.ts';
 import { ResetButton } from './ResetButton.tsx';
 import { GestureRange } from './GestureInputs.tsx';
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { deepEqual, useStoreSelector } from '../state/use-store.ts';
 import type { BuilderStore } from '../state/builder-store.ts';
 import type { LogoSource, ValidatedLogo } from '../../rack-generator/logos/types.ts';
 
 export function LogoControls({ store }: { store: BuilderStore }) {
-  const { doc, inputRevision } = useSyncExternalStore(store.subscribe, store.getSnapshot);
-  const [source, setSource] = useState<LogoSource>(doc.logo?.source ?? defaultLogoSource());
+  const { logo, inputRevision } = useStoreSelector(store, s => ({ logo: s.doc.logo, inputRevision: s.inputRevision }), deepEqual);
+  const [source, setSource] = useState<LogoSource>(logo?.source ?? defaultLogoSource());
   const [bridges, setBridges] = useState<boolean>(LOGO_DEFAULTS.bridges), [preview, setPreview] = useState<ValidatedLogo | null>(null);
   const [error, setError] = useState(''), [busy, setBusy] = useState(false);
   const job = useRef<Worker | null>(null), timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -15,9 +16,9 @@ export function LogoControls({ store }: { store: BuilderStore }) {
   const generation = useRef(0);
   const stop = () => { generation.current++; job.current?.terminate(); job.current = null; if (timer.current) clearTimeout(timer.current); timer.current = null; };
   useEffect(() => () => stop(), []);
-  const savedSource = JSON.stringify(doc.logo?.source ?? null);
+  const savedSource = JSON.stringify(logo?.source ?? null);
   useEffect(() => {
-    stop(); setBusy(false); setSource(doc.logo?.source ?? defaultLogoSource()); setBridges(LOGO_DEFAULTS.bridges); setPreview(null); setError('');
+    stop(); setBusy(false); setSource(logo?.source ?? defaultLogoSource()); setBridges(LOGO_DEFAULTS.bridges); setPreview(null); setError('');
   }, [savedSource, inputRevision]);
   function update(next: LogoSource) { stop(); setBusy(false); setSource(next); setPreview(null); setError(''); }
   function inspect() {
@@ -61,7 +62,7 @@ export function LogoControls({ store }: { store: BuilderStore }) {
   }
   // Raster tuning is draft-only today; bracketing keeps a single entry if it ever commits live.
   const gesture = { onGestureStart: store.beginGesture, onGestureEnd: store.endGesture, onGestureCancel: store.cancelGesture };
-  const canResetStock = !!doc.logo || !isDefaultLogoSource(source) || bridges !== LOGO_DEFAULTS.bridges || !!preview || !!error || busy;
+  const canResetStock = !!logo || !isDefaultLogoSource(source) || bridges !== LOGO_DEFAULTS.bridges || !!preview || !!error || busy;
   return <details className="appearance-controls logo-controls">
     <summary>Custom logo</summary>
     <label className="field"><span>Logo source</span><select aria-label="Logo source" value={source.kind} onChange={e => update(defaultLogoSource(e.target.value as LogoSource['kind']))}>

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { VendorParameter } from './VendorParameter.tsx';
 import { partDefaults } from '../../rack-generator/reset.ts';
 import { darkoTopMounts, darkoGuidance } from '../../rack-generator/darko-mounts.ts';
@@ -6,11 +7,14 @@ import type { Accessory } from '../../rack-generator/types.ts';
 import type { BuilderStore } from '../state/builder-store.ts';
 import { isVoltra, isDarko, isDarkoTop } from '../../rack-generator/vendor-metadata.ts';
 import { partAttribution } from '../../rack-generator/attribution.ts';
-export function VendorCredit({part,compact=false}:{part:string;compact?:boolean}) {
- const credit=partAttribution(part);
+// Attribution is static registry metadata: resolve each part once (the catalog renders hundreds of credits).
+const credits = new Map<string, ReturnType<typeof partAttribution>>();
+export const creditOf = (part: string) => { if (!credits.has(part)) credits.set(part, partAttribution(part)); return credits.get(part); };
+export const VendorCredit = memo(function VendorCredit({part,compact=false}:{part:string;compact?:boolean}) {
+ const credit=creditOf(part);
  if(!credit)return null;
  return compact ? <small>{credit.credit}</small> : <div className="note"><a href={credit.url} target="_blank" rel="noreferrer">{credit.credit}</a><p>{credit.trademark}</p></div>;
-}
+});
 export function VendorControls({store,entry}:{store:BuilderStore;entry:Accessory}) {
  if(!isVoltra(entry.part) && !isDarko(entry.part))return null;
  const change=(key:string,value:number)=>store.act(()=>{const doc=structuredClone(store.getSnapshot().doc);doc.accessories.find(a=>a.id===entry.id)!.params[key]=value;store.commit(doc);});
