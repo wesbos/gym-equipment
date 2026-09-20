@@ -11,7 +11,7 @@
  *  - 'out': a horizontal hinge on the bracket lets the sleeve rise straight out of the face (REP, BOS Manticore). The
  *    joint frame has the sleeve along joint +Y from the hinge and is rotated about local X by the sleeve angle. */
 import { defineRackPart, PIN_1IN, PIN_5_8IN, type FloorParam } from '../rack-part.ts';
-import type { LocalBox, NumericParams, Vec3 } from '../types.ts';
+import type { LocalBox, NumericParams, RackDimensions, Vec3 } from '../types.ts';
 const inch = (v: number) => v * 25.4;
 export type LandmineKinematics = 'face' | 'out';
 export interface LandmineLayout {
@@ -115,7 +115,7 @@ function bosLandmineLayout(p: NumericParams): LandmineLayout {
 export const REP_LM_SERIES = ['4000 Series · 5/8 in pin', '5000/1000 Series · 1 in pin'] as const;
 /** REP publishes no dimensions: a bent-strap bracket that turns on a long chrome T-handle pin, with hinge ears and a
  * bolt on top. Everything here is estimated from the four REP photos (the pin and sleeve scaled to the 3 in upright). */
-export const REP_LM = { sleeve: inch(11), od: inch(2.5), id: 52, legs: [10, 16, 68, 74], width: 35, legZ: [-24, 50], strap: 6, ear: [33, 39], hinge: [37, 100], earR: 23, rear: 28, washer: [30, 10], tHandle: 110 } as const;
+export const REP_LM = { sleeve: inch(11), od: inch(2.5), id: 52, legs: [10, 16, 68, 74], width: 35, legZ: [-24, 50], strap: 6, ear: [33, 39], hinge: [52, 100], earR: 23, rear: 28, washer: [30, 10], tHandle: 110 } as const;
 function repLandmineLayout(p: NumericParams): LandmineLayout {
   const f = face(p), R = REP_LM, d = p.series ? inch(1) : inch(5 / 8), top = R.legZ[1] + R.strap, tY = f + R.legs[3] + R.washer[1] + d / 2;
   return {
@@ -130,7 +130,7 @@ function repLandmineLayout(p: NumericParams): LandmineLayout {
 /** REP tech specs (rack-mounted): 11.75 in attachment height, 6.9 in tube, 3.5 in extension from the upright, 2 in
  * tube, 3.56 lb; 5/8 in stud with a removable 1 in adapter sleeve, acetal hand nut, magnetic storage mount. Ball joint,
  * clevis, stem, window slots and magnet puck estimated from the REP and Kleva photos. */
-export const ADROIT = { sleeve: inch(6.9), od: 66, id: 58, liner: [58, 51], axisY: 60, stud: inch(5 / 8), adapter: inch(1), nut: [64, 22], boss: [44, 28], cheek: [22, 16, 22], ball: 30, knob: [54, 16], stem: [22, 12, 70], cap: 10, puck: [38, 27], puckZ: 205, height: inch(11.75), extension: inch(3.5) } as const;
+export const ADROIT = { sleeve: inch(6.9), od: 66, id: 58, liner: [58, 51], axisY: 60, stud: inch(5 / 8), adapter: inch(1), nut: [64, 22], boss: [44, 28], cheek: [22, 16, 22], ball: 30, knob: [54, 16], stem: [22, 12, 90], cap: 10, puck: [38, 27], puckZ: 220, height: inch(11.75), extension: inch(3.5) } as const;
 export const ADROIT_HARDWARE = ['5/8 in stud', '1 in adapter sleeve'] as const;
 /** Magnet puck station above the pivot: the stowed sleeve rests on it just below its top. */
 export const adroitPuckHole = (p: NumericParams) => Math.max(2, Math.round(ADROIT.puckZ / (p.mountSpacing ?? 50)));
@@ -203,6 +203,7 @@ const landmineMount = (id: string, pin: (p: NumericParams) => number, holes?: (p
   pin, ...(holes ? { holes } : {}), extent: (p: NumericParams) => landmineExtent(id, p),
 });
 const LOW = 115;
+const post = (rack: RackDimensions) => [Math.min(rack.tube, rack.tubeDepth ?? rack.tube), Math.max(rack.tube, rack.tubeDepth ?? rack.tube)];
 // ---- Entries ----
 export const ROGUE_LANDMINE = defineRackPart({
   id: 'rogue-landmine', name: 'Rogue Landmine', title: 'Rogue Landmine (Infinity / Monster Lite)', noun: 'landmine', section: 'Dips & landmines',
@@ -221,6 +222,8 @@ export const ROGUE_LANDMINE = defineRackPart({
   pair: { default: false },
   // Rogue: install on the outside face of the upright, low, the sleeve along the side of the rack.
   placement: { height: LOW, face: 'outside' },
+  // The 6 in bolt and nut set is for 2x3 Infinity posts; the band peg and collar for 3x3 Monster Lite.
+  autoFit: rack => ({ hardware: post(rack)[0] < 74 ? 0 : 1 }),
 });
 export const ROGUE_MONSTER_LANDMINE = defineRackPart({
   id: 'rogue-monster-landmine-2', name: 'Rogue Monster Landmine 2.0', title: 'Rogue Monster Landmine 2.0', noun: 'landmine', section: 'Dips & landmines',
@@ -231,7 +234,7 @@ export const ROGUE_MONSTER_LANDMINE = defineRackPart({
     credit: 'Rogue Fitness — Monster Landmine 2.0 (RA1671) · Made in USA', trademark: 'Rogue and Monster are trademarks of Rogue Fitness.',
     reconstruction: 'Published 2 in ID x 10 in DOM sleeve, 11.56 lb, 1 in axle with the Monster knurled knob, machined aluminium joint, bronze bushings and the finishes (Cerakote joint, MG Black sleeve, matte black knob, spacer, collar and axle). Joint block, clevis and spacer sizes estimated from photos; physical fit unverified.',
   },
-  mount: landmineMount('rogue-monster-landmine-2', () => PIN_1IN),
+  mount: { ...landmineMount('rogue-monster-landmine-2', () => PIN_1IN), validate: rack => { if (post(rack)[0] < 74) throw Error('The Monster Landmine 2.0 fits 3x3 in Monster uprights only.'); } },
   bodies: p => landmineBodies('rogue-monster-landmine-2', p),
   pair: { default: false },
   placement: { height: LOW, face: 'outside' },
@@ -251,8 +254,12 @@ export const BOS_LANDMINE = defineRackPart({
   },
   mount: {
     ...landmineMount('bells-of-steel-landmine-rack-attachment', p => p.variant ? PIN_1IN : PIN_5_8IN),
-    // The Manticore bracket wraps the upright and its mag pin crosses it through the side holes.
-    pinAxis: 'normal',
+    // BOS: the 5/8 in version fits tubes up to 3 in; the Manticore 2.0 bracket wraps a 3x3 post (its mag pin crosses
+    // the post through the side holes, checked here against the same bore).
+    validate: (rack, p) => {
+      if (!p.variant && post(rack)[1] > 77) throw Error('The 5/8 in BOS landmine fits uprights up to 3 in.');
+      if (p.variant && post(rack)[0] < 74) throw Error('The Manticore landmine fits 3x3 in uprights only.');
+    },
   },
   bodies: p => landmineBodies('bells-of-steel-landmine-rack-attachment', p),
   pair: { default: false },
@@ -312,4 +319,3 @@ export const KLEVA_ADROIT_2 = defineRackPart({
   placement: { height: LOW, face: 'outside' },
   autoFit: rack => ({ hardware: rack.holeDiameter < 20 ? 0 : 1 }),
 });
-export const LANDMINES = [ROGUE_MONSTER_LANDMINE, REP_KLEVA_ADROIT, KLEVA_ADROIT_2, ROGUE_LANDMINE, BOS_LANDMINE, REP_LANDMINE] as const;

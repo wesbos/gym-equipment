@@ -2,4 +2,5 @@
  * Family slot: catalog.ts already spreads `definitions`; add one `rackDefinition(PART, build)` per entry. */
 import type { PartDefinition } from '../types.ts';
 import { definitions as landmines } from './rack-dips-landmines-landmines.ts';
-export const definitions: PartDefinition[] = [...landmines];
+import { definitions as dips } from './rack-dips-landmines-dips.ts';
+export const definitions: PartDefinition[] = [...dips, ...landmines];

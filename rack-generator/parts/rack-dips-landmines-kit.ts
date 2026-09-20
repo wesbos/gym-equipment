@@ -61,7 +61,8 @@ export function kit(s: Scope) {
     const end = (p: Vec3) => k(k(M.cube([w, w, h], true)).translate(p));
     return k(M.hull([end(a), end(b)]));
   };
-  const poly = (points: Vec2[]) => k(new C([points]));
+  /** Polygon from points in either winding (normalised counter-clockwise). */
+  const poly = (points: Vec2[]) => { const area = points.reduce((a, [x, y], i) => { const [u, v] = points[(i + 1) % points.length]; return a + x * v - u * y; }, 0); return k(new C([area < 0 ? [...points].reverse() : points])); };
   return { alongX, alongY, alongZ, tube, plateXZ, plateXY, plateYZ, rect, circle, union2, tongue, hexY, hexZ, star, starY, starZ, sphere, bent, rod, bar, poly };
 }
 /** Re-pose every solid added after `from` (a joint group); `move` must return a solid it already kept. */
