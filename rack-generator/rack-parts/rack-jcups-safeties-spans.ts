@@ -38,7 +38,7 @@ function strapBodies(p: NumericParams, s: StrapSpec): LocalBox[] {
     { min: [run[0], f + s.plate + 4, s.earZ - s.sag - 12], max: [run[1], f + s.plate + 4 + s.strapW, s.earZ + 8] },
   ];
 }
-const strapExtent = (s: StrapSpec) => ({ below: -Math.min(s.bottom, s.earZ - s.earH / 2 - 26, s.earZ - s.sag - 12) + 1, above: s.top + 1 });
+const strapExtent = (s: StrapSpec) => ({ below: -Math.min(s.bottom, s.earZ - s.earH / 2 - 26, s.earZ - s.sag - 16) + 1, above: s.top + 1 });
 const strapFits = (name: string) => (_r: RackDimensions, p: NumericParams) => {
   const w = faceWidth(p); if (Math.abs(w - inch(3)) > 2.5) throw Error(`${name} brackets fit a 3 in upright face, not ${(w / 25.4).toFixed(2)} in.`);
 };

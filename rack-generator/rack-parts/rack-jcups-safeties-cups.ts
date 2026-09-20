@@ -35,7 +35,7 @@ const pinFit = (rack: RackDimensions) => rack.holeDiameter >= PIN_1IN ? 1 : 0;
  * 3/8 in formed channel, 7 x 8.25 x 10.5 in, 22 lb pair. Liner, roller profile and clasp sizes estimated from photos. */
 export const GHOST = {
   width: inch(2.75), plate: inch(3 / 8), backLiner: 3, faceLiner: inch(1 / 4), back: inch(10.5), floorDrop: inch(.125), rackable: inch(2.875),
-  lipLiner: inch(1 / 4), lipTop: 76, rollerZ: 45, rollerLength: 70, claspBack: 64, claspTop: 52, pinFromTop: 25.4, pinBehind: 88,
+  lipLiner: inch(1 / 4), lipTop: 76, rollerZ: 45, rollerLength: 70, claspBack: 30, claspTop: 46, pinFromTop: 25.4, pinBehind: 88,
   /** Half profile (radius, t along the roller from the back): cylindrical base, cone, concave waist, front flare. */
   roller: [[0, 0], [18, 0], [19.5, 1.5], [19.5, 22], [14.5, 48], [14.5, 55], [20.5, 65], [21.5, 67], [21.5, 70], [0, 70]] as Pt[],
   waistT: 51.5,
