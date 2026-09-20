@@ -259,15 +259,14 @@ export const sculptedFootprint = (o: ReturnType<typeof sculptedLayout>, reach = 
  * copies): overall heights 1 : 0.91 : 0.82 : 0.72 (72 → 18 lb), handle width ≈ constant (the "enlarged handles"), head width with
  * ears 0.98 / 0.87 / 0.80 / 0.76 of the handle width (widened ~6 % in review so the cheeks and jaw fill the face as in the photos), head 63 / 65 / 60 / 55 % of the height. Absolute scale: the 2-pood
  * Mega Dead is taken at the 14.5" of Onnit's 2-pood Primal Gorilla; grips 35–40 mm from the handle-leg widths. Depth ≈ 0.95 ×
- * head height (Onnit side view). */
+ * head height (Onnit side view). `reach`: how far the face comes forward of the skull, as a share of the half depth (the brow and
+ * teeth on the skull-nosed heads, the fleshy nose on the Mega Dead and Brain Goblin). */
 export const ZOMBIE_HEADS = [
-  { name: 'Brain Goblin', lb: 18, height: 266, width: 202, grip: 35, head: [.62, .52, .55] },
-  { name: 'Staple Head', lb: 36, height: 303, width: 227, grip: 38, head: [.64, .57, .6] },
-  { name: 'Ghostface Thrilla', lb: 54, height: 335, width: 231, grip: 40, head: [.64, .62, .65] },
-  { name: 'Mega Dead', lb: 72, height: inch(14.5), width: 228, grip: 40, head: [.64, .6, .63] },
+  { name: 'Brain Goblin', lb: 18, height: 266, width: 202, grip: 35, head: [.62, .52, .55], reach: 1.18 },
+  { name: 'Staple Head', lb: 36, height: 303, width: 227, grip: 38, head: [.64, .57, .6], reach: 1 },
+  { name: 'Ghostface Thrilla', lb: 54, height: 335, width: 231, grip: 40, head: [.64, .62, .65], reach: 1 },
+  { name: 'Mega Dead', lb: 72, height: inch(14.5), width: 228, grip: 40, head: [.64, .6, .63], reach: 1.18 },
 ] as const;
-/** The brow ridge and teeth (and the Mega Dead / Brain Goblin nose, trimmed) reach this share of the half depth forward of the skull. */
-export const ZOMBIE_FACE_REACH = 1;
 export function zombieLayout(head: number) {
   const z = ZOMBIE_HEADS[head]; if (!z) throw Error('Unsupported kettlebell head.');
   return { zombie: z, ...sculptedLayout(z) };
@@ -416,7 +415,7 @@ export const ONNIT_ZOMBIE_KETTLEBELL = defineFloorPart({
   ...common, id: 'onnit-zombie-kettlebell', name: 'Onnit Zombie Bell', title: 'Onnit Zombie Kettlebells',
   description: 'Onnit Zombie Bells, the 2013 limited-edition cast iron kettlebells with hand-sculpted undead human heads and enlarged handles: Brain Goblin 18 lb, Staple Head 36 lb, Ghostface Thrilla 54 lb, Mega Dead 72 lb (discontinued). Independent reconstruction; Onnit trademarks belong to Onnit.',
   params: [{ key: 'head', label: 'Bell', default: 1, options: ZOMBIE_HEADS.map((_, i) => i), format: v => ZOMBIE_HEADS[v] ? `${ZOMBIE_HEADS[v].name} · ${ZOMBIE_HEADS[v].lb} lb` : String(v) }],
-  footprint: p => sculptedFootprint(zombieLayout(p.head), ZOMBIE_FACE_REACH),
+  footprint: p => { const o = zombieLayout(p.head); return sculptedFootprint(o, o.zombie.reach); },
   vendor: { vendor: 'Onnit', url: 'https://www.onnit.com/zombie-bells/', credit: 'Onnit — Zombie Bells (Brain Goblin, Staple Head, Ghostface Thrilla, Mega Dead)', trademark: 'Onnit and Zombie Bells are trademarks of Onnit Labs.', reconstruction: 'Weights, names and the enlarged handles published (archived onnit.com/zombie-bells, 2013–2025). No dimensions were published: relative sizes are measured on Onnit\'s same-distance studio lineup and the Mega Dead is scaled to the 14.5" of Onnit\'s 2-pood Primal Gorilla, with depth from the side view. Heads are sculpted from smooth-blended primitives after the Onnit photos, not scanned; scenery only.' },
 });
 export const KBK_COMPETITION_KETTLEBELL = defineFloorPart({

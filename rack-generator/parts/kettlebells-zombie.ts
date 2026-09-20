@@ -3,7 +3,7 @@
  * (exposed brain folds, a stapled scar, cheek bolts and rivet straps), meshed with Manifold.levelSet under the enlarged
  * handle. Proportions follow the archived Onnit photos (research/kettlebells.md); no scan or artwork is used. */
 import type { ManifoldAPI, NumericParams, SolidPart } from '../types.ts';
-import { ZOMBIE_FACE_REACH, ZOMBIE_HEADS, zombieLayout } from '../floor-parts/kettlebells.ts';
+import { ZOMBIE_HEADS, zombieLayout } from '../floor-parts/kettlebells.ts';
 import { ellipsoid, mirrorX, smax, smin, type Sdf } from './kettlebells-onnit.ts';
 import { kettlebellKit } from './kettlebells-kit.ts';
 
@@ -23,7 +23,7 @@ export const ZOMBIE_FACES: Record<(typeof ZOMBIE_HEADS)[number]['name'], ZombieF
   'Mega Dead': { nose: 'flesh', mouthW: .9, mouthH: .85, fangs: false, hollow: .5, brow: 1.15, eyes: 1.1, earZ: .5, earH: 1, rot: 1.3, brain: false, staples: false, bolts: true },
 };
 
-export function zombieField(hw: number, hd: number, hh: number, f: ZombieFace): Sdf {
+export function zombieField(hw: number, hd: number, hh: number, f: ZombieFace, reach: number): Sdf {
   const W = hw / 2, D = hd / 2, k = hh * .07;
   // Masses: cranium over a narrower face, jaw and chin, and a neck stump at the back that carries the flat base.
   const cranium = ellipsoid([0, D * .12, hh * .62], [W * .88, D * .86, hh * .39]);
@@ -69,7 +69,7 @@ export function zombieField(hw: number, hd: number, hh: number, f: ZombieFace): 
   const boltSlots = mirrorX(ellipsoid([W * .47, -D * .79, hh * .31], [W * .055, D * .03, hh * .007]));
   const straps = mirrorX(ellipsoid([W * .52, -D * .05, hh * .84], [W * .09, D * .34, hh * .06]));
   const rivets = mirrorX((x, y, z) => Math.min(...[-.28, .2].map(v => ellipsoid([W * .6, D * v, hh * .87], [W * .035, W * .035, hh * .02])(x, y, z))));
-  const clip = (d: number, x: number, y: number, z: number) => Math.max(d, -z, Math.abs(x) - W, y - D, -y - D * ZOMBIE_FACE_REACH);
+  const clip = (d: number, x: number, y: number, z: number) => Math.max(d, -z, Math.abs(x) - W, y - D, -y - D * reach);
   return (x, y, z) => {
     let d = smin(cranium(x, y, z), face(x, y, z), k * 1.2);
     // Cull: features reach at most ~25 mm outside and ~40 mm inside the main masses, so skip them away from the surface.
@@ -85,9 +85,9 @@ export function zombieField(hw: number, hd: number, hh: number, f: ZombieFace): 
     d = smin(d, brow(x, y, z), k * .8);
     if (f.nose === 'flesh') { d = smin(d, fleshNose(x, y, z), k * .4); d = smax(d, -nostrils(x, y, z), k * .12); }
     else { d = smin(d, bridge(x, y, z), k * .3); d = smax(d, -cavity(x, y, z), k * .15); }
-    d = smax(d, -sockets(x, y, z), k * .3);
+    d = smax(d, -sockets(x, y, z), k * .45);
     d = smin(d, eyeballs(x, y, z), k * .12);
-    d = smax(d, -mouth(x, y, z), k * .2);
+    d = smax(d, -mouth(x, y, z), k * .3);
     d = Math.min(d, upper(x, y, z), lower(x, y, z));
     if (f.fangs) d = Math.min(d, fangs(x, y, z));
     if (f.staples) { d = smax(d, -scar(x, y, z), k * .08); d = Math.min(d, staple(x, y, z)); }
@@ -104,10 +104,10 @@ export function buildOnnitZombie(api: ManifoldAPI, p: NumericParams): SolidPart[
   const o = zombieLayout(p.head), face = ZOMBIE_FACES[o.zombie.name];
   const t = kettlebellKit(api);
   try {
-    const field = zombieField(o.hw, o.hd, o.hh, face);
+    const field = zombieField(o.hw, o.hd, o.hh, face, o.zombie.reach);
     const W = o.hw / 2, D = o.hd / 2;
     // ~60 voxels over the head height keeps the biggest head under the 80k triangle budget.
-    const head = t.k(t.M.levelSet(([x, y, z]) => -field(x, y, z), { min: [-W - 2, -D * ZOMBIE_FACE_REACH - 2, -2], max: [W + 2, D + 2, o.hh + 4] }, Math.max(2.8, o.hh / 60)));
+    const head = t.k(t.M.levelSet(([x, y, z]) => -field(x, y, z), { min: [-W - 2, -D * o.zombie.reach - 2, -2], max: [W + 2, D + 2, o.hh + 4] }, Math.max(2.8, o.hh / 60)));
     const handle = t.move(t.tube(o.layout.path, true, 32), [0, 0, o.shift]);
     t.add('Cast iron head and handle', t.union([head, handle]), 'source', '#2c2d30', .25, .62);
     return t.finish(`Onnit ${o.zombie.name} Zombie Bell`);
