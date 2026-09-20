@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import type { NumericParams } from '../../rack-generator/types.ts';
 import { prebuiltThumbnail } from '../thumbnails/prebuilt.ts';
 import { revealed, revealWhenVisible } from '../thumbnails/reveal.ts';
@@ -7,13 +7,16 @@ import { requestThumbnail, retainThumbnails } from '../thumbnails/service.ts';
 import { partIcon } from './part-icon.ts';
 import './part-thumbnail.css';
 
-/** Build-time WebP for catalog defaults; live geometry only for other params. The parent owns the accessible part name. */
-export function PartThumbnail({ part, params = {}, className = '', enabled = true }: { part: string; params?: NumericParams; className?: string; enabled?: boolean }) {
+const noParams: NumericParams = {};
+
+/** Build-time WebP for catalog defaults; live geometry only for other params. The parent owns the accessible part name.
+ *  Memoized: catalog rows pass stable definition `defaults`, so parent re-renders (drags, edits) skip every thumbnail. */
+export const PartThumbnail = memo(function PartThumbnail({ part, params = noParams, className = '', enabled = true }: { part: string; params?: NumericParams; className?: string; enabled?: boolean }) {
   const element = useRef<HTMLSpanElement>(null);
   const [result, setResult] = useState<{ key: string; image: string | null }>();
-  const key = thumbnailKey({ part, params });
+  const key = useMemo(() => thumbnailKey({ part, params }), [part, params]);
   // A static image (or known build failure) needs no CAD, render, observer or worker.
-  const prebuilt = prebuiltThumbnail(part, params, key);
+  const prebuilt = useMemo(() => prebuiltThumbnail(part, params, key), [part, params, key]);
   const live = prebuilt === undefined;
   useEffect(() => (live ? retainThumbnails() : undefined), [live]);
   // Prebuilt images get a src once near view (then are never observed again), or at once if already seen.
@@ -53,4 +56,4 @@ export function PartThumbnail({ part, params = {}, className = '', enabled = tru
       {image ? <img src={image} alt="" width="128" height="128" decoding="async" draggable={false} /> : <span dangerouslySetInnerHTML={{ __html: partIcon(part) }} />}
     </span>
   );
-}
+});
