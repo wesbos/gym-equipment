@@ -1,0 +1,515 @@
+{
+  "slug": "guns-powerlifting-club",
+  "title": "Guns Powerlifting Club",
+  "owner": "Big Joe",
+  "sourceUrl": "https://gymradar.com/gym/guns-powerlifting-club",
+  "summary": "Big Joe's 200 sq ft shed gym in Mint Hill, North Carolina: \"No heat, no AC, no problem.\" A gun-metal-grey Rogue RML-390 covered in stickers, calibrated plates on the wall behind it, a cable tower in the corner and a comp combo rack by the door. Recreated from its Gym Radar page with our catalog parts.",
+  "highlights": [
+    "Massenomics Certified Training Facility in a 10′ × 20′ shed",
+    "Rogue RML-390 with fat/skinny bar, Matador dip and Mammoth belt squat",
+    "Titan competition bench/squat combo rack at the door end",
+    "Bells of Steel cable tower and Concept2 BikeErg at the far end",
+    "Calibrated plates stored on wall horns behind the rack"
+  ],
+  "equipment": [
+    "Rogue RML-390 Monster Lite Rack 3.0 (Gun Metal Gray)",
+    "Rogue 43″ Fat/Skinny Pull-up Bar",
+    "Rogue Monster Lite J-cups",
+    "Rogue Infinity / Monster Lite Pin and Pipe Safeties (shown as generic pin-and-pipe safeties)",
+    "Rogue Monster Lite Matador",
+    "Fringe Sport Mammoth Belt Squat",
+    "Rogue Monster Lite Single Bar Holder",
+    "Titan Competition Bench and Squat Rack Combo (shown as the TSS Combo Rack, the closest catalog combo rack)",
+    "Bells of Steel Cable Tower",
+    "Concept2 BikeErg",
+    "REP FB-5000 Competition Flat Bench",
+    "REP AB-4100 Adjustable Bench",
+    "REP x PEPIN FAST Series Adjustable Dumbbells",
+    "Titan Dumbbell Stand and Plate Tree",
+    "REP Bar and Weight Plate Tree",
+    "Titan Barbell Storage Holder",
+    "Titan wall-mounted barbell holder (shown as the Titan wall-mounted 6 barbell rack)",
+    "Rogue 45 lb Ohio Power Bar",
+    "Rogue Ohio Deadlift Bar",
+    "Titan 12″ Rackable Strongman Log",
+    "DIY farmer's handles (shown as Titan farmers walk handles)",
+    "Cerberus Dual-Ply Sandbag",
+    "Vulcan Absolute calibrated KG plates (shown as REP wall-mounted plate storage, loaded)",
+    "The Strength Co. Olympic iron plates",
+    "AbMat",
+    "Horse stall mat flooring"
+  ],
+  "doc": {
+    "version": 2,
+    "rack": {
+      "height": 2295.525,
+      "width": 1092.2,
+      "depth": 762,
+      "tube": 76.2,
+      "holeDiameter": 17.4625,
+      "pitch": 50.8,
+      "firstHole": 63.5,
+      "benchStart": 419.09999999999997,
+      "benchEnd": 1181.1,
+      "benchSpacing": 25.4
+    },
+    "uprights": {
+      "front-left": {
+        "x": -584.2,
+        "y": -419.1
+      },
+      "front-right": {
+        "x": 584.2,
+        "y": -419.1
+      },
+      "rear-left": {
+        "x": -584.2,
+        "y": 419.1
+      },
+      "rear-right": {
+        "x": 584.2,
+        "y": 419.1
+      }
+    },
+    "connections": [
+      {
+        "id": "left-upper-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "upper"
+      },
+      {
+        "id": "left-lower-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "lower"
+      },
+      {
+        "id": "right-upper-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "upper"
+      },
+      {
+        "id": "right-lower-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "lower"
+      },
+      {
+        "id": "rear-crossmember",
+        "from": "rear-left",
+        "to": "rear-right",
+        "level": "upper"
+      }
+    ],
+    "profileId": "rogue-rml-3",
+    "removed": [],
+    "structure": {},
+    "accessories": [
+      {
+        "id": "accessory-2",
+        "part": "rogue-fat-skinny-pull-up-bar",
+        "target": {
+          "uprightId": "front-left",
+          "face": "right",
+          "hole": 36
+        },
+        "paired": false,
+        "params": {}
+      },
+      {
+        "id": "accessory-3",
+        "part": "rogue-monster-lite-j-cups",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 21
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-4",
+        "part": "safety-pin-pipe",
+        "target": {
+          "uprightId": "front-left",
+          "face": "right",
+          "hole": 11
+        },
+        "paired": true,
+        "params": {
+          "pinDiameter": 16
+        },
+        "spanTo": "rear-left",
+        "pairTo": "front-right",
+        "pairedSpanTo": "rear-right"
+      },
+      {
+        "id": "accessory-5",
+        "part": "rogue-monster-lite-matador",
+        "target": {
+          "uprightId": "front-right",
+          "face": "front",
+          "hole": 16
+        },
+        "paired": false,
+        "params": {
+          "pin": 0
+        }
+      },
+      {
+        "id": "accessory-6",
+        "part": "fringe-sport-mammoth-belt-squat",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 8
+        },
+        "paired": true,
+        "params": {
+          "hardware": 1
+        },
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-7",
+        "part": "single-bar-holder",
+        "target": {
+          "uprightId": "rear-left",
+          "face": "left",
+          "hole": 10
+        },
+        "paired": false,
+        "params": {}
+      }
+    ],
+    "nextId": 33,
+    "appearance": {
+      "frameColor": "#5b5f63"
+    },
+    "floorItems": [
+      {
+        "id": "floor-8",
+        "part": "rogue-ohio-power-bar",
+        "position": [
+          0,
+          0
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 0
+        },
+        "cradle": "accessory-3:left#0+accessory-3:right#0"
+      },
+      {
+        "id": "floor-9",
+        "part": "tractor-supply-horse-stall-mat",
+        "position": [
+          1148,
+          164
+        ],
+        "rotation": 0,
+        "params": {
+          "across": 5,
+          "deep": 1,
+          "side": 0
+        }
+      },
+      {
+        "id": "floor-10",
+        "part": "tractor-supply-horse-stall-mat",
+        "position": [
+          843,
+          1688
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "across": 1,
+          "deep": 3,
+          "side": 0
+        }
+      },
+      {
+        "id": "floor-11",
+        "part": "rep-fb-5000",
+        "position": [
+          0,
+          1130
+        ],
+        "rotation": 0,
+        "params": {
+          "pad": 0
+        }
+      },
+      {
+        "id": "floor-12",
+        "part": "rogue-ohio-deadlift-bar",
+        "position": [
+          100,
+          2010
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 0
+        },
+        "plates": {
+          "both": [
+            "strength-co-iron:45",
+            "strength-co-iron:45",
+            "strength-co-iron:45"
+          ]
+        }
+      },
+      {
+        "id": "floor-13",
+        "part": "bells-of-steel-cable-tower",
+        "position": [
+          -1360,
+          -250
+        ],
+        "rotation": 0,
+        "params": {
+          "loading": 0,
+          "pin": 100,
+          "loaded": 0,
+          "carriage": 26,
+          "upright": 0
+        }
+      },
+      {
+        "id": "floor-14",
+        "part": "concept2-bikeerg",
+        "position": [
+          -1540,
+          1000
+        ],
+        "rotation": 0,
+        "params": {
+          "seat": 35,
+          "bars": 5
+        }
+      },
+      {
+        "id": "floor-15",
+        "part": "tss-combo-rack",
+        "position": [
+          3330,
+          770
+        ],
+        "rotation": -1.5707963267948966,
+        "params": {
+          "hooks": 40,
+          "bench": 1,
+          "color": 0,
+          "accent": 0
+        }
+      },
+      {
+        "id": "floor-16",
+        "part": "titan-dumbbell-stand-plate-tree",
+        "position": [
+          1080,
+          -410
+        ],
+        "rotation": 0,
+        "params": {
+          "dumbbells": 1,
+          "loaded": 0
+        }
+      },
+      {
+        "id": "floor-17",
+        "part": "rep-pepin-dumbbell",
+        "position": [
+          1000,
+          150
+        ],
+        "rotation": 0,
+        "params": {
+          "variant": 85,
+          "weight": 85,
+          "rest": 0
+        }
+      },
+      {
+        "id": "floor-18",
+        "part": "rep-pepin-dumbbell",
+        "position": [
+          1200,
+          150
+        ],
+        "rotation": 0,
+        "params": {
+          "variant": 85,
+          "weight": 85,
+          "rest": 0
+        }
+      },
+      {
+        "id": "floor-19",
+        "part": "rep-bar-weight-plate-tree",
+        "position": [
+          1850,
+          -430
+        ],
+        "rotation": 0,
+        "params": {
+          "loaded": 1,
+          "plates": 0,
+          "bars": 1
+        }
+      },
+      {
+        "id": "floor-20",
+        "part": "rep-ab-4100",
+        "position": [
+          1500,
+          700
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "backrestAngle": 0,
+          "seatAngle": 0,
+          "pad": 0
+        }
+      },
+      {
+        "id": "floor-21",
+        "part": "titan-farmers-walk-handles",
+        "position": [
+          2230,
+          1000
+        ],
+        "rotation": 0,
+        "params": {
+          "load": 0
+        }
+      },
+      {
+        "id": "floor-22",
+        "part": "titan-rackable-strongman-log",
+        "position": [
+          2300,
+          2000
+        ],
+        "rotation": 0,
+        "params": {
+          "size": 2,
+          "load": 0
+        }
+      },
+      {
+        "id": "floor-23",
+        "part": "titan-barbell-storage-holder",
+        "position": [
+          3950,
+          2130
+        ],
+        "rotation": 0,
+        "params": {
+          "size": 0,
+          "loaded": 1
+        }
+      },
+      {
+        "id": "floor-24",
+        "part": "cerberus-dual-ply-sandbag",
+        "position": [
+          3560,
+          2080
+        ],
+        "rotation": 0,
+        "params": {
+          "size": 3
+        }
+      },
+      {
+        "id": "floor-25",
+        "part": "abmat",
+        "position": [
+          1000,
+          1300
+        ],
+        "rotation": 0,
+        "params": {
+          "model": 0
+        }
+      }
+    ],
+    "wallItems": [
+      {
+        "id": "wall-26",
+        "part": "rep-wall-mounted-plate-storage",
+        "wall": "back",
+        "position": [
+          -1150,
+          900
+        ],
+        "params": {
+          "variant": 0,
+          "loaded": 1
+        }
+      },
+      {
+        "id": "wall-27",
+        "part": "titan-wall-mounted-6-barbell-rack",
+        "wall": "front",
+        "position": [
+          -350,
+          1350
+        ],
+        "params": {
+          "spacing": 1168.3999999999999,
+          "loaded": 2
+        }
+      },
+      {
+        "id": "wall-28",
+        "part": "pegboard-panel",
+        "wall": "left",
+        "position": [
+          -225,
+          1500
+        ],
+        "params": {
+          "width": 1219
+        }
+      }
+    ],
+    "room": {
+      "back": 750,
+      "left": 1900,
+      "right": 4196,
+      "front": 2298,
+      "height": 2600
+    },
+    "hangItems": [
+      {
+        "id": "hang-29",
+        "part": "rep-lat-bar-48",
+        "panel": "wall-28",
+        "slot": 5
+      },
+      {
+        "id": "hang-30",
+        "part": "rep-tricep-rope",
+        "panel": "wall-28",
+        "slot": 27
+      },
+      {
+        "id": "hang-31",
+        "part": "rep-d-handles",
+        "panel": "wall-28",
+        "slot": 25
+      },
+      {
+        "id": "hang-32",
+        "part": "bells-of-steel-swivel-shackles",
+        "panel": "wall-28",
+        "slot": 29
+      }
+    ]
+  }
+}

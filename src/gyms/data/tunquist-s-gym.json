@@ -1,0 +1,597 @@
+{
+  "slug": "tunquist-s-gym",
+  "title": "Tunquist's Gym",
+  "owner": "Brandon Tunquist",
+  "sourceUrl": "https://gymradar.com/gym/tunquist-s-gym",
+  "summary": "Brandon Tunquist's 775 sq ft basement in Easton, Massachusetts, from Gym Radar's top-ranked member: \"A full powerlifting gym with everything you'll ever need.\" An EliteFTS 3×3 rack, a monolift that fits a basement, calibrated kilo plates, chrome calibrated dumbbells, a Hansu combo rack, competition and specialty bars and a functional trainer. Recreated from its Gym Radar page with our catalog parts.",
+  "highlights": [
+    "Gym Radar's #1 leaderboard member and a Massenomics Certified Training Facility",
+    "EliteFTS 3×3 power rack with Ghost roller J-cups, Monster Landmine and Velocidor",
+    "Deadlift platform with a Texas Deadlift Bar on calibrated kilo plates",
+    "Hansu combo rack, Abram GHD and a long row of chrome calibrated dumbbells",
+    "Cable corner with a functional trainer and TSS lat pulldown / low row"
+  ],
+  "equipment": [
+    "EliteFTS 3X3 Power Rack (shown as a Rogue RM-3 Monster Rack 2.0)",
+    "Ghost Strong Ghost Roller J-Cups",
+    "Spud Inc. suspension / safety straps (shown as Rogue Monster strap safeties)",
+    "Rogue Monster Landmine 2.0",
+    "Rogue Velocidor",
+    "Rogue Monster Pritchett Pad",
+    "Rogue SP3358 Plate Storage",
+    "Rogue Monster band pegs",
+    "EliteFTS Deluxe Monolift (shown as Rogue AM-2 monolift arms on the power rack)",
+    "Hansu Power Ultimate Combo Rack (shown as the TSS Combo Rack)",
+    "Texas Strength Systems 4×8 platform with band pegs (shown as a DIY lifting platform)",
+    "Rogue Calibrated KG Steel Plates 2.0",
+    "Texas Power Bar Pro 29 mm and Texas Deadlift Bar",
+    "Rogue Vertical Plate Tree 2.0",
+    "Rogue Abram GHD 2.0",
+    "SHOGUN NORD-EX (shown as the Freak Athlete Nordic Mini Pro)",
+    "Kensui calibrated chrome dumbbells (shown on Rogue 3-tier dumbbell racks)",
+    "Rogue Adjustable Bench 3.0 and Flat Utility Bench 2.0",
+    "Valor Fitness adjustable decline bench (shown as the Titan Elite FID bench)",
+    "Gronk Fitness TKO kettlebell rack (shown as the REP Kettlebell Rack 2.0)",
+    "Titan Fitness Functional Trainer (shown as the Inspire FTX)",
+    "Texas Strength Systems Lat Pulldown-Low Row (shown as the Bells of Steel lat pulldown)",
+    "Rogue V2 Gun Rack and 3 Bar Gun Rack",
+    "Rogue Belt & Band Hanger and Multi-Use Hanger",
+    "Wall Control panels with BLUSLM lat bars, ropes, handles and ankle cuffs",
+    "Titan squat wedge and ProsourceFit medicine ball"
+  ],
+  "doc": {
+    "version": 2,
+    "rack": {
+      "height": 2295.525,
+      "width": 1092.2,
+      "depth": 762,
+      "tube": 76.2,
+      "holeDiameter": 26.9875,
+      "pitch": 50.8,
+      "firstHole": 63.5
+    },
+    "uprights": {
+      "front-left": {
+        "x": -584.2,
+        "y": -419.1
+      },
+      "front-right": {
+        "x": 584.2,
+        "y": -419.1
+      },
+      "rear-left": {
+        "x": -584.2,
+        "y": 419.1
+      },
+      "rear-right": {
+        "x": 584.2,
+        "y": 419.1
+      }
+    },
+    "connections": [
+      {
+        "id": "left-upper-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "upper"
+      },
+      {
+        "id": "left-lower-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "lower"
+      },
+      {
+        "id": "right-upper-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "upper"
+      },
+      {
+        "id": "right-lower-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "lower"
+      },
+      {
+        "id": "rear-crossmember",
+        "from": "rear-left",
+        "to": "rear-right",
+        "level": "upper"
+      }
+    ],
+    "profileId": "rogue-rm-monster-2",
+    "removed": [],
+    "structure": {
+      "rear-crossmember": {
+        "part": "profile-nameplate",
+        "params": {}
+      }
+    },
+    "accessories": [
+      {
+        "id": "accessory-1",
+        "part": "pullup-straight",
+        "target": {
+          "uprightId": "front-left",
+          "hole": 39,
+          "face": "right"
+        },
+        "paired": false,
+        "params": {
+          "diameter": 31.75
+        },
+        "spanTo": "front-right"
+      },
+      {
+        "id": "accessory-2",
+        "part": "ghost-strong-ghost-roller-j-cup",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 23
+        },
+        "paired": true,
+        "params": {
+          "pin": 1
+        },
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-3",
+        "part": "rogue-monster-strap-safety-2",
+        "target": {
+          "uprightId": "front-left",
+          "face": "right",
+          "hole": 12
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-4",
+        "part": "rogue-monster-landmine-2",
+        "target": {
+          "uprightId": "front-left",
+          "face": "left",
+          "hole": 1
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-5",
+        "part": "rogue-velocidor",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 21
+        },
+        "paired": true,
+        "params": {
+          "series": 1
+        },
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-6",
+        "part": "rogue-monster-pritchett-pad",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 4
+        },
+        "paired": false,
+        "params": {
+          "series": 0
+        }
+      },
+      {
+        "id": "accessory-7",
+        "part": "rogue-sp3358-plate-storage",
+        "target": {
+          "uprightId": "front-left",
+          "face": "left",
+          "hole": 11
+        },
+        "paired": true,
+        "params": {
+          "version": 1,
+          "load": 2
+        },
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-8",
+        "part": "rogue-monster-band-peg-2",
+        "target": {
+          "uprightId": "front-left",
+          "face": "left",
+          "hole": 0
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-9",
+        "part": "rogue-am-2-monolift",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 27
+        },
+        "paired": true,
+        "params": {
+          "line": 0
+        },
+        "pairTo": "front-right"
+      }
+    ],
+    "nextId": 40,
+    "appearance": {
+      "frameColor": "#1c1d1f"
+    },
+    "floorItems": [
+      {
+        "id": "floor-10",
+        "part": "texas-power-bar-pro",
+        "position": [
+          0,
+          0
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 0,
+          "knurl": 0
+        },
+        "cradle": "accessory-2:left#0+accessory-2:right#0"
+      },
+      {
+        "id": "floor-11",
+        "part": "diy-lifting-platform",
+        "position": [
+          -2900,
+          700
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 2,
+          "logo": 0
+        }
+      },
+      {
+        "id": "floor-12",
+        "part": "texas-deadlift-bar",
+        "position": [
+          -2900,
+          900
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 0
+        },
+        "plates": {
+          "both": [
+            "rogue-calibrated-kg:25",
+            "rogue-calibrated-kg:25",
+            "rogue-calibrated-kg:25",
+            "rogue-calibrated-kg:25",
+            "rogue-calibrated-kg:20"
+          ]
+        }
+      },
+      {
+        "id": "floor-13",
+        "part": "rogue-vertical-plate-tree-2",
+        "position": [
+          -1250,
+          -300
+        ],
+        "rotation": 0,
+        "params": {
+          "loaded": 2,
+          "plates": 1,
+          "wheels": 0
+        }
+      },
+      {
+        "id": "floor-14",
+        "part": "rogue-abram-ghd-2",
+        "position": [
+          -1150,
+          2600
+        ],
+        "rotation": 0,
+        "params": {
+          "station": 5
+        }
+      },
+      {
+        "id": "floor-15",
+        "part": "freak-athlete-nordic-mini-pro",
+        "position": [
+          -2600,
+          2900
+        ],
+        "rotation": 0,
+        "params": {
+          "ankle": 2,
+          "pose": 0
+        }
+      },
+      {
+        "id": "floor-16",
+        "part": "tss-combo-rack",
+        "position": [
+          -6450,
+          1300
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "hooks": 40,
+          "bench": 1,
+          "color": 0,
+          "accent": 0
+        }
+      },
+      {
+        "id": "floor-17",
+        "part": "rogue-3-tier-dumbbell-rack",
+        "position": [
+          1400,
+          1000
+        ],
+        "rotation": -1.5707963267948966,
+        "params": {
+          "loaded": 2
+        }
+      },
+      {
+        "id": "floor-18",
+        "part": "rogue-3-tier-dumbbell-rack",
+        "position": [
+          1400,
+          3500
+        ],
+        "rotation": -1.5707963267948966,
+        "params": {
+          "loaded": 2
+        }
+      },
+      {
+        "id": "floor-19",
+        "part": "rogue-adjustable-bench-3",
+        "position": [
+          150,
+          2350
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "backAngle": 30,
+          "seatAngle": 0,
+          "color": 0,
+          "plates": 0
+        }
+      },
+      {
+        "id": "floor-20",
+        "part": "titan-elite-adjustable-fid-bench",
+        "position": [
+          150,
+          3800
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "backAngle": 0,
+          "seatAngle": 0,
+          "color": 0
+        }
+      },
+      {
+        "id": "floor-21",
+        "part": "rogue-flat-utility-bench-2",
+        "position": [
+          0,
+          1250
+        ],
+        "rotation": 0,
+        "params": {}
+      },
+      {
+        "id": "floor-22",
+        "part": "rep-kettlebell-rack-2",
+        "position": [
+          700,
+          6100
+        ],
+        "rotation": 3.141592653589793,
+        "params": {
+          "tiers": 0,
+          "loaded": 1
+        }
+      },
+      {
+        "id": "floor-23",
+        "part": "titan-squat-wedge",
+        "position": [
+          -2200,
+          4300
+        ],
+        "rotation": 0,
+        "params": {
+          "angle": 15,
+          "style": 0
+        }
+      },
+      {
+        "id": "floor-24",
+        "part": "rogue-medicine-ball",
+        "position": [
+          -1300,
+          4400
+        ],
+        "rotation": 0,
+        "params": {
+          "weight": 20
+        }
+      },
+      {
+        "id": "floor-25",
+        "part": "inspire-ftx-functional-trainer",
+        "position": [
+          -5600,
+          5850
+        ],
+        "rotation": 3.141592653589793,
+        "params": {
+          "pin": 55,
+          "left": 28,
+          "right": 28
+        }
+      },
+      {
+        "id": "floor-26",
+        "part": "bells-of-steel-lat-pulldown-low-row",
+        "position": [
+          -3500,
+          5550
+        ],
+        "rotation": 3.141592653589793,
+        "params": {
+          "loading": 0,
+          "pin": 100,
+          "loaded": 0,
+          "thigh": 3
+        }
+      }
+    ],
+    "wallItems": [
+      {
+        "id": "wall-27",
+        "part": "rogue-v2-gun-rack",
+        "wall": "left",
+        "position": [
+          -50,
+          1250
+        ],
+        "params": {
+          "spacing": 1168.3999999999999,
+          "liners": 1,
+          "loaded": 3
+        }
+      },
+      {
+        "id": "wall-28",
+        "part": "rogue-3-bar-gun-rack",
+        "wall": "back",
+        "position": [
+          -2125,
+          1350
+        ],
+        "params": {
+          "spacing": 1168.3999999999999,
+          "liners": 1,
+          "loaded": 3
+        }
+      },
+      {
+        "id": "wall-29",
+        "part": "rogue-belt-band-hanger",
+        "wall": "back",
+        "position": [
+          -3525,
+          1600
+        ],
+        "params": {
+          "depth": 127
+        }
+      },
+      {
+        "id": "wall-30",
+        "part": "rogue-multi-use-hanger",
+        "wall": "back",
+        "position": [
+          -4125,
+          1600
+        ],
+        "params": {
+          "depth": 127
+        }
+      },
+      {
+        "id": "wall-31",
+        "part": "wall-control-pegboard",
+        "wall": "left",
+        "position": [
+          -2050,
+          1450
+        ],
+        "params": {
+          "size": 2,
+          "panels": 2,
+          "color": 0
+        }
+      }
+    ],
+    "room": {
+      "back": 700,
+      "left": 7344,
+      "right": 1800,
+      "front": 6615,
+      "height": 2450
+    },
+    "hangItems": [
+      {
+        "id": "hang-32",
+        "part": "bluslm-wave-lat-bar-84",
+        "panel": "wall-31",
+        "slot": 13
+      },
+      {
+        "id": "hang-33",
+        "part": "bluslm-v-lat-bar-62",
+        "panel": "wall-31",
+        "slot": 69
+      },
+      {
+        "id": "hang-34",
+        "part": "bluslm-close-grip-26",
+        "panel": "wall-31",
+        "slot": 125
+      },
+      {
+        "id": "hang-35",
+        "part": "rep-tricep-rope",
+        "panel": "wall-31",
+        "slot": 83
+      },
+      {
+        "id": "hang-36",
+        "part": "rep-d-handles",
+        "panel": "wall-31",
+        "slot": 115
+      },
+      {
+        "id": "hang-37",
+        "part": "rep-curl-bar",
+        "panel": "wall-31",
+        "slot": 216
+      },
+      {
+        "id": "hang-38",
+        "part": "rogue-ankle-cuff",
+        "panel": "wall-31",
+        "slot": 131
+      },
+      {
+        "id": "hang-39",
+        "part": "spud-long-ab-strap",
+        "panel": "wall-31",
+        "slot": 226
+      }
+    ]
+  }
+}
