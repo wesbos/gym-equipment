@@ -5,9 +5,10 @@ import type { PartDefinition } from '../types.ts';
 import { floorDefinition } from '../floor-part.ts';
 import {
   ROGUE_PLATE_TREE, TITAN_BARBELL_HOLDER, REP_DUMBBELL_RACK, TITAN_PLATE_TREE, REP_PLATE_TREE, REP_DUMBBELL_CART, TITAN_DUMBBELL_STAND,
-  REP_KETTLEBELL_RACK, ROGUE_DUMBBELL_RACK,
+  REP_KETTLEBELL_RACK, ROGUE_DUMBBELL_RACK, YES4ALL_BARBELL_HOLDER, CAP_A_FRAME_PLATE_RACK,
 } from '../floor-parts/floor-storage.ts';
 import { buildRogueTree, buildRepTree, buildTitanTree, buildTitanHolder } from './floor-storage-trees.ts';
+import { buildYes4AllHolder, buildCapAFrame } from './floor-storage-open.ts';
 import { buildRepDumbbellRack, buildRogueDumbbellRack, buildRepCart, buildTitanStand, buildRepKettlebellRack } from './floor-storage-racks.ts';
 export const definitions: PartDefinition[] = [
   floorDefinition(ROGUE_PLATE_TREE, buildRogueTree),
@@ -19,4 +20,6 @@ export const definitions: PartDefinition[] = [
   floorDefinition(TITAN_DUMBBELL_STAND, buildTitanStand),
   floorDefinition(REP_KETTLEBELL_RACK, buildRepKettlebellRack),
   floorDefinition(ROGUE_DUMBBELL_RACK, buildRogueDumbbellRack),
+  floorDefinition(YES4ALL_BARBELL_HOLDER, buildYes4AllHolder),
+  floorDefinition(CAP_A_FRAME_PLATE_RACK, buildCapAFrame),
 ];

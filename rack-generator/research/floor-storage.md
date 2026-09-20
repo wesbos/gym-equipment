@@ -153,9 +153,47 @@ Estimates: end-plate outline (arched opening between front/rear legs, stepped ti
 tier rail tops 9 / 21 / 32″ with centre lines at −8 / −0.5 / +7″, 9″ between the front and rear saddle rows, 2″ rails with a
 downturned flange, saddles 3.8″ × 2.4″ × 1.25″ with a concave seat. Loaded: lightest pairs on the top tier (5–25, 30–50, 55–75 lb).
 
+## 10. Yes4All Vertical Barbell Storage Rack (22) — `yes4all-vertical-barbell-holder`
+
+Source: the Yes4All Deluxe Vertical Barbell Holder, 5 bars (model RW6H, UPC 810019296963), sold on Amazon
+([B07WFB6Z93](https://www.amazon.com/dp/B07WFB6Z93), reachable directly this time) and the item Gym Radar links
+([gymradar.com/equipment/vertical-barbell-storage-rack](https://gymradar.com/equipment/vertical-barbell-storage-rack)); yes4all.com
+has no shop. The 9-bar flat-plate variant (B07KP8PVV4) is a different product. Photos looked at (16): nine Amazon images (hero
+three-quarter, dimension diagram, bar insert, low three-quarters, loaded lifestyle, near side elevation, before/after) and seven
+Gym Radar owner photos (logo side loaded, open end with the base tray and weld beads, liners close-up, top view of the hole layout).
+
+Published: 12″ × 12″ × 7.5″ overall; 11.75″ × 11.75″ box body 6.05″ to the top plate (dimension image); 2″ liner bore ("fits most
+bars 2 inch or less"); five bars; heavy-gauge steel; 100 lb capacity; weight listed both as 30.86 lb and 10.02 kg (conflict).
+
+Construction read from photos: a 12″ base tray with ~15 mm upturned lips on the two open ends, a shell of top plate and two side
+walls with the Yes4All logo cut through, five tubes welded to the tray and passing through the top plate, flanged black plastic
+liners standing proud to the published 7.5″, a chamfered relief notch in each wall's bottom edge. Estimates: quincunx corner
+pitch 152 mm (owner top view: 235 px against the 455 px 11.75″ edge), tube OD 61 mm, liner flange Ø63 mm (1.24 × the bore in the
+hero image), notch 150 × 9.5 mm, 3 mm sheet. The logo is typeset (Helvetiker), not the artwork. Params: stored bars 0–5.
+
+## 11. CAP A-Frame Olympic Plate Tree (20) — `cap-a-frame-olympic-plate-rack`
+
+Gym Radar's item ([a-frame-olympic-plate-tree-rack](https://gymradar.com/equipment/a-frame-olympic-plate-tree-rack)) mixes two CAP
+racks: its main image, price link and three of four owner photos are the welded 7-post **RK-2A**, the fourth is the bolt-together
+5-peg **RK-2BB** the earlier pass looked at. Both ship as the `model` param (RK-2A default, as most owners have it).
+
+- **RK-2A** — Amazon [B0013SZC8S](https://www.amazon.com/dp/B0013SZC8S): 37″ H × 19″ W × 22″ D, 500 lb. Photos (8): CAP gallery
+  (3 incl. a straight front elevation and a base close-up), Amazon studio three-quarter, Gym Radar main image and three owner
+  photos (empty front, loaded front and three-quarter). Estimated from the front elevation (≈ 2.6 mm/px): legs from ±200 mm at the
+  feet to the apex, 25 × 50 mm tube; welded mid crossbar at 470 mm; side pegs right 880 / 675 / 415 mm and left 845 / 495 mm with
+  tips at the published 19″ width; vertical posts on the base crossmember (100 mm) and the mid crossbar (90 mm); 40 × 45 mm feet
+  with ribbed black end caps.
+- **RK-2BB** — [capbarbell.com](https://www.capbarbell.com/products/cap-a-style-olympic-plate-storage-rack) (2 photos), the
+  RK-2B/RK-2BB assembly manual (1 triangle frame, 2 base feet, 5 × 2″ pegs, 25 mm caps, 25 × 50 mm tube, 4 × M10×70 and 5 × M10×35),
+  Amazon [B00ZEYG9WK](https://www.amazon.com/dp/B00ZEYG9WK) (7 images incl. the dimension diagram: 30″ H, 19.9″ W, 12″ D, 4″ side
+  pegs, 4″ centre post; 13.88 lb; capacity listed 300 and 650 lb), one Gym Radar owner photo. Estimated from the front elevation
+  (1.33 mm/px across, 1.37 mm/px up): legs raked 12.5° from ±171 mm to a flat top cap, foot tubes flat 50 × 25 mm on ±227.5 mm,
+  crossmember on the feet between twin tabs with two bolts a side, pegs upper z 698 mm (root 49 → tip 159 mm) and lower z 292 mm
+  (138 → 240 mm) on saddles, all capped.
+
+Loaded views hang iron plates face-on across X (as in the lifestyle photos) — RK-2A 45 / 35 / 25 lb by tier, RK-2BB 25 / 10 lb, a
+flat 10 lb stack on the bottom post — inside the footprint; a peg's stack stops short of the plates of a lower peg on the same side.
+
 ## Not shipped
 
-- **Yes4All Vertical Barbell Storage Rack (22)** — sold on Amazon only; the listing, its images and dimensions could not be
-  fetched (bot wall), and yes4all.com has no product page. Not sourceable to the fidelity bar.
-- **CAP A-Frame Olympic Plate Tree (20)** — capbarbell.com has only two product photos and the RK-2B/RK-2BB assembly manual
-  (part list, 25 × 50 mm tubes, five 2″ pegs) but no dimensions; retailers (Amazon, Walmart, Dick's) blocked. Left for a later pass.
+Nothing: every product in #123 now ships.
