@@ -10,6 +10,7 @@ import {createAssembly} from './assembly.ts';
 import {PLATE_SPECS} from './plates.ts';
 import type {NumericParams, SolidPart} from './types.ts';
 import {printableMesh} from '../src/exports/print-mesh.ts';
+import {BUILD_BUDGET_MS} from './test-budget.ts';
 const api=await Module();api.setup();
 const inch=(v:number)=>v*25.4;
 /** Published envelopes (research/leg-machines.md), re-typed from the product pages independent of the model constants:
@@ -54,7 +55,7 @@ test('every machine and param extreme builds closed, printable solids whose boun
    assert.ok(Math.abs((b.min[0]+b.max[0])/2-ox)<1 && Math.abs(-(b.min[1]+b.max[1])/2-oz)<1,`${tag} footprint offset`);
    assert.ok(b.min[2]>=-1e-6 && b.min[2]<1,`${tag} stands on the floor`);
    const tris=parts.reduce((n,p)=>n+p.solid.numTri(),0);assert.ok(tris<80000,`${tag}: ${tris} triangles`);
-   assert.ok(ms<3000,`${tag}: ${ms.toFixed(0)} ms`);
+   assert.ok(ms<BUILD_BUDGET_MS,`${tag}: ${ms.toFixed(0)} ms`);
   }finally{parts.forEach(p=>p.solid.delete());}
  }
 });
