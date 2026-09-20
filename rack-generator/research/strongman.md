@@ -56,6 +56,7 @@ The generic "Circus Dumbbell (26, DIY)" is covered by the Titan and Bartos entri
 
 ## Skipped
 
+None: every product in #118 now ships (the Pitbull log was added from the maker's spec post and owner measurements).
 
 ## Pitbull log review rounds
 
