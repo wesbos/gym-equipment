@@ -2,7 +2,11 @@
  * `src/gyms/data/<slug>.json` from the real builder APIs, then `npx tsx scripts/render-gym-previews.ts <slug>`
  * renders its preview. Generators build the RackDoc with presets, addAccessory, addFloorItem, addWallItem,
  * placeHang and friends; `writeGym` normalises it exactly as the builder does on open and refuses anything the
- * gallery test would reject. */
+ * gallery test would reject.
+ *
+ * Gotchas: the edit helpers return a new doc, so add an accessory and load it (setPlateStack) in two statements;
+ * storage pins holding 450 mm plates need a hole high enough that the plates clear the floor; floor-item z is
+ * the rack's front (+z), the opposite sign of the rack graph's y. */
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { cleanDocument } from '../../src/state/history.ts';
