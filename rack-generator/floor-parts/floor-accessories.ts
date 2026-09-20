@@ -215,7 +215,7 @@ export const TITAN_SQUAT_WEDGE = defineFloorPart({
   ],
   footprint: p => { const w = titanWedgeLayout(p); return { width: w.width, depth: w.depth }; }, pair: { gap: 60 },
   vendor: vendorOf('Titan Fitness', 'https://www.titan.fitness/products/squat-wedge', 'Titan Fitness — Squat Wedge', 'Titan Fitness is a trademark of Titan Fitness.',
-    'Independent Manifold reconstruction. Published: 15.5" ramp; 15° / 22.5° / 30° at 4.5" / 6.5" / 8.5" tall; 20.5" single or 8.5" pair. Estimated: 3/16" sheet, toe hem, back-leg slope and foot, tape border and window; the leg logo is a plain plate. Scenery only, excluded from print export.'),
+    'Independent Manifold reconstruction. Published: 15.5" ramp; 15° / 22.5° / 30° at 4.5" / 6.5" / 8.5" tall; 20.5" single or 8.5" pair. Estimated: the folded sheet runs ~16.3" from toe hem to top bend (solved from the published heights, so the 15.5" is the taped surface), 3/16" sheet, 9 mm toe hem, 68° back leg and foot flange, tape border and angle window; the leg logo is a plain plate. Scenery only, excluded from print export.'),
 });
 
 // ── Medicine and slam balls ─────────────────────────────────────────────────────────────────────

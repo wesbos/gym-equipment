@@ -7,6 +7,7 @@ import {
   ROGUE_MEDICINE_BALL, ROGUE_OLY_PLATFORM, ROGUE_PLATFORM, STALL_MAT, TITAN_SQUAT_WEDGE, TITAN_WEDGE, TRIGGERPOINT_GRID, TSC_STALL_MAT, U4C_CALF_CURVE, inch, repWedgePeak,
 } from './floor-parts/floor-accessories.ts';
 import { definitions } from './parts/floor-accessories.ts';
+import { GENESIS_PROFILE } from './parts/floor-accessories-jacks.ts';
 import { coerceFloorParams, floorOptions, resolveBy, validateFloorParams, type FloorPart } from './floor-registry.ts';
 import { addFloorItem, floorBounds, floorWarnings } from './floor-items.ts';
 import { createAssembly } from './assembly.ts';
@@ -98,8 +99,8 @@ test('jacks, blocks, wedges and the calf block hit their published dimensions', 
   const gj = build(REP_GENESIS_JACK), [gw, gd, gh] = size(box(gj)!);
   near(gh, GENESIS_JACK.height, 1, 'Genesis 18.25" tall'); near(gw, inch(7.5), .05, 'Genesis 7.5" foot'); near(gd, inch(2.25), .05, 'Genesis 2.25" foot');
   // The hook's liner bore fits a 30 mm bar: nothing solid within 15 mm of the hook centre.
-  const hookC = api.Manifold.cylinder(80, 14.5, 14.5, 24, true).rotate([90, 0, 0]).translate([inch(.35), 0, inch(9.45)]), all = api.Manifold.union(gj.map(p => p.solid)), hit = api.Manifold.intersection([all, hookC]);
-  assert.ok(hit.isEmpty() || hit.volume() < 1, 'bar fits the hook'); for (const m of [hookC, all, hit]) m.delete(); free(gj);
+  const { cx, cz, rLiner } = GENESIS_PROFILE.hook, bar = api.Manifold.cylinder(80, inch(rLiner) - .3, inch(rLiner) - .3, 24, true), turned = bar.rotate([90, 0, 0]), hookC = turned.translate([inch(cx), 0, inch(cz)]), all = api.Manifold.union(gj.map(p => p.solid)), hit = api.Manifold.intersection([all, hookC]);
+  assert.ok(hit.isEmpty() || hit.volume() < 1, 'bar fits the hook'); assert.ok(2 * inch(rLiner) >= GENESIS_JACK.bar, 'liner bore takes a 30 mm bar'); for (const m of [bar, turned, hookC, all, hit]) m.delete(); free(gj);
   const rf = build(RITFIT_DEADLIFT_JACK), [rw, rd, rh] = size(box(rf)!);
   near(rh, RITFIT_JACK.height, 1, 'RitFit 16.93"'); near(rw, inch(7.87), .05, 'RitFit 7.87" base'); near(rd, inch(4.13), .05, 'RitFit 4.13" base');
   near(size(box(rf, 'handle scales')!)[2], inch(4.7), 3, 'RitFit 4.7" handle'); free(rf);

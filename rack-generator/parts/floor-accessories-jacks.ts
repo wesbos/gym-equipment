@@ -89,7 +89,7 @@ export function buildRitfitJack(api: ManifoldAPI): SolidPart[] {
     const pan = K.slab(J.base - inch(.5), bw - inch(.5), inch(.35), inch(.3), inch(1), -inch(.7));
     const base = K.cut(K.meet(plateOf(K, baseSide, bw + 2), plan), [K.meet(pan, K.box([-J.base / 2, -bw, inch(.3)], [inch(1.1), bw, inch(1)]))]);
     K.add('PVC non-slip base', base, 'liner', '#1b1c1d', 0, .8);
-    K.add('RITFIT print', K.box([inch(-1.15), -t / 2 - .25, inch(1.6)], [inch(.05), -t / 2 + .01, inch(6.4)]), 'source', '#3a3a3c', 0, .7);
+    K.add('RITFIT print', K.box([inch(-.8), -t / 2 - .25, inch(2.2)], [inch(-.3), -t / 2 + .01, inch(5.6)]), 'source', '#2e2f31', 0, .8);
   });
 }
 
@@ -183,7 +183,7 @@ export function buildCalfCurve(api: ManifoldAPI, p: NumericParams): SolidPart[] 
     // Grip tape over the curve, full length less 0.1" at each end.
     const tapeSec = K.k(C.intersection([K.k(C.difference([K.k(K.k(C.circle(Ro + .8, 64)).translate([0, zc])), K.k(K.k(C.circle(Ro - .01, 64)).translate([0, zc]))])), K.poly([[-Ro - 2, zc - 4], [Ro + 2, zc - 4], [Ro + 2, zc + Ro + 2], [-Ro - 2, zc + Ro + 2]])]));
     const tape = K.endProfile(tapeSec, -L + 2.5, L - 2.5);
-    K.add('Grip tape', lift ? K.move(tape, [0, 0, lift]) : tape, 'liner', '#39393b', 0, .98);
+    K.add('Grip tape', lift ? K.move(tape, [0, 0, lift]) : tape, 'liner', '#48484a', 0, .98);
     if (lift) {
       const pads: Manifold[] = [], spans: [number, number][] = [[-L, -L + e1], [-F.legs[2] / 2, F.legs[2] / 2], [L - e1, L]];
       for (const [x0, x1] of spans) for (const s of [-1, 1]) pads.push(K.box([x0 + 2, s > 0 ? Ro - t + 1 : -fw + 2, 0], [x1 - 2, s > 0 ? fw - 2 : -Ro + t - 1, lift]));

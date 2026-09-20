@@ -105,8 +105,8 @@ export function buildEchoSlamBall(api: ManifoldAPI, p: NumericParams): SolidPart
     const { c, body } = ballBody(K, R, 3, 64);
     K.add('Red pebbled PVC shell', K.cut(body, ECHO_SLAM.grooves.map(l => latBand(K, c, R, l, 2.2, 1.3, 64))), 'liner', '#cc2a25', 0, .72);
     // Front: white ESB-<lb> box (red letters cut through it) and the ROGUE plate, on the band just above the equator.
-    const C = K.C, v = R * .05, box = K.k(C.difference([K.k(K.roundRect(58, 21, 2).translate([-R * .42, v])), K.k(K.text(`ESB-${p.weight}`, 12, 2).translate([-R * .42, v]))]));
-    const plate = K.k(K.roundRect(96, 19, 2).translate([R * .2, v]));
+    const C = K.C, v = R * .05, bx = -R * .36, box = K.k(C.difference([K.k(K.roundRect(46, 17, 2).translate([bx, v])), K.k(K.text(`ESB-${p.weight}`, 8, 1.5).translate([bx, v]))]));
+    const plate = K.k(K.roundRect(78, 15, 2).translate([R * .23, v]));
     // Top: the white weight ring with the numerals inside.
     const ring = K.k(C.difference([K.k(C.circle(33, 48)), K.k(C.circle(29, 48))])), num = K.k(K.text(String(p.weight), 22, 3.4));
     K.add('White markings', K.union([K.sphereDecal(box, c, R, .6, [0, 0, 0], 64), K.sphereDecal(plate, c, R, .6, [0, 0, 0], 64), K.sphereDecal(K.k(C.union([ring, num])), c, R, .6, [-90, 0, 0], 64)]), 'source', '#f2f2ee', 0, .55);
