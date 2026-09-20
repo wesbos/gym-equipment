@@ -135,44 +135,455 @@
 .parts-page footer span:last-child {
   display: none;
 }
-@media (max-width: 1050px) {
+
+/* Phone and tablet layouts (#207). Desktop keeps the three columns; below 1050 px the part list becomes a drawer,
+ * phones get a full-height viewer with the parameters in a bottom sheet (portrait) or a side column (landscape). */
+.parts-page .drawer-toggle,
+.parts-page .back-link,
+.parts-page .drawer-close,
+.parts-page .drawer-backdrop,
+.parts-page #sheet-toggle {
+  display: none;
+}
+.parts-page .eyebrow {
+  align-items: center;
+}
+.parts-page #part-note {
+  font-size: 12px;
+  line-height: 1.55;
+  margin: 12px 0 0;
+}
+.parts-page .drawer-toggle svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+@media (pointer: coarse) {
+  .parts-page .view-tools button,
+  .parts-page .display-tools button,
+  .parts-page .display-tools label {
+    min-width: 44px;
+    font-size: 12px;
+  }
+  .parts-page #editor .note a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 8px 0;
+  }
+  .parts-page header button,
+  .parts-page .view-tools button,
+  .parts-page .display-tools button,
+  .parts-page .display-tools label,
+  .parts-page #catalog button,
+  .parts-page #reset,
+  .parts-page .primary {
+    min-height: 44px;
+  }
+  .parts-page .intro a,
+  .parts-page .source-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  /* iOS zooms into inputs under 16 px on focus. */
+  .parts-page #search,
+  .parts-page #editor .input-wrap input {
+    font-size: 16px;
+  }
+  .parts-page #editor label {
+    font-size: 12px;
+  }
+  /* Shared parameter controls (NumericControl, StandardSizeControl), sized for fingers on this page only. */
+  .parts-page #editor .input-wrap input,
+  .parts-page #editor .numeric-control input[type="range"] {
+    min-height: 44px;
+  }
+  .parts-page #editor .field-reset {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0 10px !important;
+    font-size: 12px;
+  }
+  .parts-page #editor .standard-size-control .standard-options button,
+  .parts-page #editor .standard-size-control .custom-size {
+    min-height: 44px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+}
+
+/* Tablet (and phone landscape): the part list slides in as a drawer; viewer and parameters share the screen. */
+@media (max-width: 1050px), (max-height: 520px) and (orientation: landscape) {
   .parts-page {
-    grid-template-columns: 190px minmax(270px, 1fr) 240px;
+    grid-template-columns: minmax(0, 1fr) 280px;
   }
   .parts-page .eyebrow span {
     display: none;
   }
-}
-@media (max-width: 750px) {
-  .parts-page {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    height: auto;
+  .parts-page .drawer-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 44px;
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0;
+    background: #f7f9f4;
   }
-  .parts-page main {
-    grid-column: 1/-1;
-    grid-row: 1;
-    height: 65dvh;
-    min-height: 440px;
+  .parts-page header {
+    gap: 10px;
+    justify-content: flex-start;
   }
-  .parts-page aside {
-    grid-column: 1;
-    grid-row: 2;
-  }
-  .parts-page #editor {
-    grid-column: 2;
-    grid-row: 2;
-  }
-  .parts-page .view-tools {
-    right: auto;
+  .parts-page header .header-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 6px;
   }
   .parts-page header button {
-    padding: 7px;
+    min-height: 44px;
+    padding: 0 12px;
+    font-size: 12px;
   }
-  .parts-page .model-caption {
-    bottom: 83px;
+  .parts-page aside {
+    position: fixed;
+    z-index: 30;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(88vw, 340px);
+    padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    overflow: auto;
+    overscroll-behavior: contain;
+    transform: translateX(-102%);
+    visibility: hidden;
+    transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.3, 1), visibility 0s linear 0.22s;
+    box-shadow: 8px 0 40px #0b180f33;
   }
-  .parts-page h1 {
+  .parts-page.drawer-open aside {
+    transform: none;
+    visibility: visible;
+    transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+  .parts-page .drawer-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 29;
+    background: #16261d73;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .parts-page.drawer-open .drawer-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .parts-page .drawer-close {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    margin-left: auto;
+    font-size: 24px;
+    line-height: 1;
+  }
+  .parts-page aside h1 {
+    margin: 8px 0 4px;
     font-size: 26px;
+  }
+  .parts-page aside .intro {
+    margin: 0;
+  }
+  .parts-page aside .intro a,
+  .parts-page aside .source-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 13px;
+  }
+  .parts-page #search {
+    position: sticky;
+    top: -16px;
+    z-index: 1;
+    margin: 8px 0 4px;
+    font-size: 16px;
+    box-shadow: 0 -16px 0 #f8f9f5, 0 8px 10px -6px #f8f9f5;
+  }
+  .parts-page #catalog h3 {
+    margin-top: 18px;
+    font-size: 10px;
+  }
+  .parts-page #catalog button {
+    min-height: 44px;
+    font-size: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .parts-page aside,
+  .parts-page.drawer-open aside,
+  .parts-page .drawer-backdrop {
+    transition: none;
+  }
+}
+
+/* Phones (portrait, plus the compact chrome shared with landscape): the viewer fills the screen. */
+@media (max-width: 760px), (max-height: 520px) and (orientation: landscape) {
+  .parts-page {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  .parts-page main {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .parts-page header {
+    gap: 6px;
+    padding: calc(6px + env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 6px max(10px, env(safe-area-inset-left));
+  }
+  .parts-page header .study-label {
+    display: none;
+  }
+  .parts-page .back-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 6px;
+    font-size: 13px;
+    color: #517961;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .parts-page header button {
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .parts-page header .long {
+    display: none;
+  }
+  .parts-page .view-tools {
+    top: 8px;
+    left: max(8px, env(safe-area-inset-left));
+    right: auto;
+    gap: 4px;
+    flex-wrap: nowrap;
+  }
+  .parts-page .view-tools button {
+    min-height: 44px;
+    padding: 0 11px;
+    font-size: 12px;
+  }
+  /* The caption and missing-part panel sit in <main>, under the 57 px header; the view tools sit in the viewport. */
+  .parts-page .model-caption {
+    top: calc(57px + env(safe-area-inset-top) + 58px);
+    bottom: auto;
+    left: max(8px, env(safe-area-inset-left));
+    max-width: calc(100% - 16px);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #f8f9f5e6;
+    box-shadow: 0 1px 0 #cdd6ce;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .parts-page .model-caption:has(h2:empty) {
+    display: none;
+  }
+  .parts-page .model-caption h2 {
+    font-size: 14px;
+    letter-spacing: -0.2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .parts-page .model-caption p {
+    flex: none;
+    margin: 0;
+    font-size: 11px;
+    color: #66786b;
+  }
+  .parts-page #compare-label {
+    top: 96px;
+  }
+  .parts-page .display-tools {
+    left: max(8px, env(safe-area-inset-left));
+    right: max(8px, env(safe-area-inset-right));
+    bottom: 8px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .parts-page .display-tools label {
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 22px;
+    background: #f3f6f0e6;
+    border: 1px solid #cbd3cd;
+    font-size: 12px;
+  }
+  /* Most parts have no source mesh: their disabled compare toggles only cost space here. */
+  .parts-page .display-tools label:has(input:disabled) {
+    display: none;
+  }
+  .parts-page .display-tools button {
+    min-height: 44px;
+    padding: 0 14px;
+    font-size: 12px;
+    border-radius: 22px;
+    background: #f3f6f0e6;
+  }
+  .parts-page footer {
+    display: none;
+  }
+  .parts-page .part-missing {
+    inset: calc(57px + env(safe-area-inset-top) + 58px) 8px 8px;
+    padding: 16px;
+  }
+  .parts-page #editor {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    max-height: 58dvh;
+    padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    overflow: hidden;
+    border-left: 0;
+    border-top: 1px solid #cdd6ce;
+    border-radius: 14px 14px 0 0;
+    margin-top: -14px;
+    position: relative;
+    z-index: 3;
+    box-shadow: 0 -8px 24px #1d3a2c1f;
+  }
+  .parts-page #sheet-toggle {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 52px;
+    padding: 14px 18px 8px;
+    border: 0;
+    border-radius: 14px 14px 0 0;
+    background: transparent;
+    font-size: 15px;
+    font-weight: 600;
+    color: #22322e;
+    text-align: left;
+  }
+  .parts-page #sheet-toggle small {
+    font-size: 12px;
+    font-weight: 400;
+    color: #6f8073;
+  }
+  .parts-page .sheet-grip {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    width: 36px;
+    height: 4px;
+    margin-left: -18px;
+    border-radius: 2px;
+    background: #c8d2c9;
+  }
+  .parts-page .sheet-chevron {
+    margin-left: auto;
+    font-size: 16px;
+    transition: transform 0.2s;
+  }
+  .parts-page.sheet-open .sheet-chevron {
+    transform: rotate(180deg);
+  }
+  .parts-page .editor-body {
+    display: none;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: 0 18px 18px;
+  }
+  .parts-page.sheet-open .editor-body {
+    display: block;
+  }
+  .parts-page #editor .section-title {
+    margin: 0 0 10px;
+    padding-top: 10px;
+  }
+  .parts-page #editor .section-title span {
+    display: none;
+  }
+  .parts-page #editor .section-title small {
+    margin-left: 0;
+  }
+  .parts-page #editor .fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
+  .parts-page #editor label {
+    margin-top: 0;
+    font-size: 12px;
+  }
+  .parts-page #editor .input-wrap input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+  .parts-page #editor .primary,
+  .parts-page #reset {
+    min-height: 44px;
+    font-size: 13px;
+  }
+  .parts-page #editor .primary {
+    margin-top: 16px;
+  }
+  .parts-page #editor .source-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 13px;
+  }
+}
+@media (max-width: 360px) {
+  .parts-page .back-link {
+    display: none;
+  }
+}
+
+/* Phone landscape: parameters become a right-hand column; the viewer keeps the full height. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .parts-page {
+    flex-direction: row;
+  }
+  .parts-page #editor {
+    width: min(300px, 42vw);
+    max-height: none;
+    margin: 0;
+    border-radius: 0;
+    border-top: 0;
+    border-left: 1px solid #cdd6ce;
+    box-shadow: none;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) 0;
+  }
+  .parts-page #sheet-toggle {
+    display: none;
+  }
+  .parts-page .editor-body {
+    display: block;
+    padding: 4px 14px 14px;
+  }
+  .parts-page header {
+    padding-right: 10px;
+  }
+  .parts-page .display-tools {
+    right: 8px;
   }
 }

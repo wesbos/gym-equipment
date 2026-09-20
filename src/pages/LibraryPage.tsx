@@ -93,7 +93,8 @@ export default function LibraryPage() {
             <PartThumbnail part={part.id} params={part.defaults} />
             <span className="gallery-category">{part.category}</span>
             <h2>{part.name}</h2>
-            <VendorCredit part={part.id} />
+            {/* Compact: the card is already a link, so the credit is text (no nested anchor). */}
+            <VendorCredit part={part.id} compact />
             <span className="gallery-specs">
               {Object.entries(part.defaults)
                 .filter(([key]) =>
