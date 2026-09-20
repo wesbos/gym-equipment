@@ -1,10 +1,11 @@
 import { test, expect, chromium, type Page } from '@playwright/test';
 import { createAssembly } from '../rack-generator/assembly.ts';
+import { RACK_PRESETS } from '../rack-generator/presets.ts';
 import { addFromGallery, openGallery } from './part-gallery.ts';
 
 test('sidebar systems and curated starters: confirmation, valid bay, cancellation and undo', async () => {
   test.setTimeout(180000);
-  if (!process.env.GYM_SIDEBAR_CDP_URL) throw Error('Start isolated gym-wave4-sidebar on port 5337 and set GYM_SIDEBAR_CDP_URL.');
+  if (!process.env.GYM_SIDEBAR_CDP_URL) throw Error('Serve the builder on an isolated port (GYM_SIDEBAR_BASE_URL, default http://127.0.0.1:5337) and set GYM_SIDEBAR_CDP_URL.');
   const browser = await chromium.connectOverCDP(process.env.GYM_SIDEBAR_CDP_URL);
   let testPage: Page | undefined;
   try {
@@ -12,7 +13,7 @@ test('sidebar systems and curated starters: confirmation, valid bay, cancellatio
     page.setDefaultTimeout(15000);
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.addInitScript(() => { localStorage.removeItem('bos-strength-configurations-v1'); localStorage.removeItem('bos-strength-part-gallery-v1'); });
-    await page.goto('http://127.0.0.1:5337/builder');
+    await page.goto(`${process.env.GYM_SIDEBAR_BASE_URL ?? 'http://127.0.0.1:5337'}/builder`);
     const doc = async () => await page.evaluate(() => {
       const c = JSON.parse(localStorage.getItem('bos-strength-configurations-v1') ?? '{}');
       return c.draft ?? c.configs?.find((s: {id:string}) => s.id === c.activeId)?.doc;
@@ -25,7 +26,8 @@ test('sidebar systems and curated starters: confirmation, valid bay, cancellatio
     };
     await ready();
     const sidebar = page.locator('.catalog-panel');
-    await expect(sidebar.locator('[data-preset]')).toHaveCount(24);
+    // Every featured starter is a sidebar button (the catalog keeps adding brand starters, so count them, don't hardcode).
+    await expect(sidebar.locator('[data-preset]')).toHaveCount(RACK_PRESETS.filter(p => p.featured).length);
     // The full catalog lives in the parts gallery (#183); the sidebar keeps starters, recents and favourites.
     await openGallery(page, 'voltra');
     for (const part of ['voltra-sliding', 'voltra-adaptive', 'voltra-fixed']) await expect(page.locator(`.part-gallery [data-part="${part}"]`)).toHaveCount(1);

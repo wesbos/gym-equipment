@@ -6,11 +6,13 @@ import {addFloorItem} from '../rack-generator/floor-items.ts';
 
 test('gym-wave2-cable_smith-final: raised Kraken, combined systems, contextual resets and GLB',async()=>{
  test.setTimeout(180000);
- const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true,args:['--enable-unsafe-swiftshader']});
+ // Serves from GYM_CABLE_BASE_URL (default :5307); GYM_CABLE_URL (a full /builder URL) is still honoured.
+ const base=process.env.GYM_CABLE_BASE_URL??'http://127.0.0.1:5307';
+ const browser=await chromium.launch({headless:true,args:['--enable-unsafe-swiftshader']});
  try {
   const page=await browser.newPage({viewport:{width:1600,height:1000}}),errors:string[]=[];
   page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(process.env.GYM_CABLE_URL??'http://127.0.0.1:5307/builder');
+  await page.goto(process.env.GYM_CABLE_URL??`${base}/builder`);
   const load=async(doc:ReturnType<typeof applyPreset>)=>page.locator('input[type=file]').setInputFiles({name:'cable-smith-acceptance.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(validateAssembly(doc)))});
   const ready=async()=>{
     await page.locator('#export').click();
@@ -24,7 +26,7 @@ test('gym-wave2-cable_smith-final: raised Kraken, combined systems, contextual r
   await page.screenshot({path:'/tmp/gym-cable-browser-kraken108.png'});
   console.log('108-inch Kraken scene ready');
   const rep=applyPreset(RACK_PRESETS.find(p=>p.profileId==='rep-pr-5000'&&p.kind==='six'&&p.height===2032&&p.depth===762)!.id);
-  const combined=addFloorItem(withSystem(withSystem(rep,'cable-ares2'),'smith-rep',{angle:5,barHeight:600,safetyHeight:400}));
+  const combined=addFloorItem(withSystem(withSystem(rep,'cable-ares2'),'smith-rep',{angle:5,barHeight:600,safetyHeight:400}),'rep-nighthawk');
   await load(combined);
   await page.locator('.system-controls > summary').click();
   const safety=page.getByRole('spinbutton',{name:'Smith safety height',exact:true}),bar=page.getByRole('spinbutton',{name:'Smith bar height',exact:true});
