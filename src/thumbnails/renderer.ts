@@ -3,8 +3,9 @@ import { resolveMaterial } from '../../rack-generator/appearance.ts';
 import * as THREE from 'three';
 import type { LibraryMesh } from '../../rack-generator/worker-types.ts';
 
+export interface ThumbnailEncoding { type?: string; quality?: number }
 /** A single small canvas, rendered once per result; no animation loop or reference GLB work. */
-export function createThumbnailRenderer() {
+export function createThumbnailRenderer({ type = 'image/png', quality }: ThumbnailEncoding = {}) {
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
   renderer.setSize(128, 128, false);
   renderer.setPixelRatio(1);
@@ -55,7 +56,7 @@ export function createThumbnailRenderer() {
         camera.updateProjectionMatrix();
         if (renderer.getContext().isContextLost()) throw new Error('Thumbnail context lost');
         renderer.render(scene, camera);
-        return renderer.domElement.toDataURL('image/png');
+        return renderer.domElement.toDataURL(type, quality);
       } finally { clear(); }
     },
     dispose() { clear(); lighting.dispose(); scene.clear(); renderer.dispose(); renderer.forceContextLoss(); renderer.domElement.remove(); },

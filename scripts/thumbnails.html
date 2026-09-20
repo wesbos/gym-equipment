@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><title>Thumbnail generator harness</title>
+<!-- Loaded by scripts/generate-thumbnails.ts through the Vite dev server: the exact runtime worker + renderer, WebP output. -->
+<script type="module">
+import { createThumbnailBackend } from '/src/thumbnails/backend.ts';
+let backend;
+window.renderThumbnail = (part, params, quality) => {
+  backend ??= createThumbnailBackend({ type: 'image/webp', quality });
+  // A worker crash/timeout disables a backend; start fresh after any failure.
+  return backend.render({ part, params }).catch((error) => { backend.dispose(); backend = undefined; throw error; });
+};
+window.thumbnailHarnessReady = true;
+</script>
