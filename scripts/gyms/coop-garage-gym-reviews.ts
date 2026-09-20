@@ -187,7 +187,7 @@ for (const z of [ZB + 2750, ZB + 4750, ZB + 6650]) wall('decor-window', 'right',
 wall('sonos-five-wall-mount', 'right', ZB + 900, 2150);
 wall('sonos-five-wall-mount', 'right', BAY.z0 - 180, 2150);
 wall('decor-bay-window', 'right', BAY.z0 + BAY.width / 2, 2450 / 2, { width: BAY.width, depth: BAY.depth, mouth: 2450, sill: 900, head: 2200 });
-floor('decor-birch-desk', X1 + 650, BAY.z0 + BAY.width / 2, -Q, { width: 2, monitor: 1 });
+floor('decor-birch-desk', X1 + 300, BAY.z0 + BAY.width / 2, -Q, { width: 2, monitor: 1 });
 const rightX = (depth: number) => X1 - depth / 2 - 60;
 floor('rep-open-trap-bar', rightX(700), ZB + 1250, Q);
 floor('titan-barbell-storage-holder', rightX(305), ZB + 2650, -Q, { loaded: 3 });
