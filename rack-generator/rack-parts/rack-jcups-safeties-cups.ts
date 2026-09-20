@@ -174,11 +174,12 @@ export const ROGUE_MONSTER_SANDWICH_J_CUP = defineRackPart({
 export interface RollerCup {
   /** Heights are from the cup's lowest edge: `floorZ` is the channel floor underside (a gusset fills below it), `lipH` the lip top. */
   backW: number; backH: number; backT: number; faceLiner: number; floorZ: number; floorT: number; channelW: number; inner: number; lipH: number; lipT: number;
+  /** The lip top leans this far out past its foot (Titan's flared lip). */ lipLean?: number;
   rollerR: number; rollerZ: number; pinFromTop: number; clasp: { side: 1 | -1 | 0; z0: number; z1: number; back: number; t: number };
 }
 export function rollerLayout(c: RollerCup, dip: number): CupLayout & { floorY: number; lipY: number } {
   const floorY = c.backT + c.faceLiner, lipY = floorY + c.inner;
-  return { pinZ: c.backH - c.pinFromTop, height: c.backH, reach: lipY + c.lipT, width: Math.max(c.backW, c.channelW), floorY, lipY,
+  return { pinZ: c.backH - c.pinFromTop, height: c.backH, reach: lipY + c.lipT + (c.lipLean ?? 0), width: Math.max(c.backW, c.channelW), floorY, lipY,
     rest: [floorY + c.inner / 2, c.rollerZ + c.rollerR - dip + BAR_R], clasp: c.clasp };
 }
 /** BoS: estimated from product photos (no published dimensions besides fit): Hydra/Manticore 3 in, 60 mm version. */
@@ -197,7 +198,7 @@ export const IRWIN_CUP: RollerCup = { backW: 70, backH: 250, backT: 9.5, faceLin
 export const IRWIN_DIP = 6;
 /** Titan published: 9.5 in tall, 10 in overall depth, 1.5 × 3 in roller pad, 16 mm (5/8 in) locking pop-pin. */
 export const TITAN_SERIES = [{ name: 'X-3 · 3 × 3 in', face: inch(3) }, { name: 'T-3 · 2 × 3 in', face: inch(2) }] as const;
-export const TITAN_CUP: RollerCup = { backW: 58, backH: inch(9.5), backT: 6, faceLiner: 6, floorZ: 45, floorT: 6, channelW: 64, inner: inch(3) + 4, lipH: 103, lipT: 6, rollerR: inch(.75), rollerZ: 72, pinFromTop: 24,
+export const TITAN_CUP: RollerCup = { backW: 58, backH: inch(9.5), backT: 6, faceLiner: 6, floorZ: 45, floorT: 6, channelW: 64, inner: inch(3) + 4, lipH: 103, lipT: 6, lipLean: 22, rollerR: inch(.75), rollerZ: 72, pinFromTop: 24,
   clasp: { side: 0, z0: 40, z1: 94, back: inch(3) + 6, t: 6 } };
 export const TITAN_DIP = 3;
 export const BOS_ROLLER_J_CUPS = defineRackPart({

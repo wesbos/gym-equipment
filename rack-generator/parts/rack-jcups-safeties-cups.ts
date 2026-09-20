@@ -138,7 +138,8 @@ function buildRollerCup(api: ManifoldAPI, p: NumericParams, c: RollerCup, s: Rol
     parts.push(k.rbox([-W, f, z(0)], [W, f + c.backT, z(c.backH)], 8, 'y'));
     const fz = c.floorZ, ft = fz + c.floorT;
     parts.push(k.box([-CW, f + c.backT - .5, z(fz)], [CW, lipY + c.lipT, z(ft)]));
-    parts.push(k.rbox([-CW, lipY, z(fz)], [CW, lipY + c.lipT, z(c.lipH)], 5, 'y'));
+    const lean = c.lipLean ?? 0;
+    parts.push(lean ? k.prism([[lipY, z(fz)], [lipY + c.lipT, z(fz)], [lipY + c.lipT + lean, z(c.lipH)], [lipY + lean, z(c.lipH)]], -CW, CW, 'x') : k.rbox([-CW, lipY, z(fz)], [CW, lipY + c.lipT, z(c.lipH)], 5, 'y'));
     for (const side of s.claspSides) {
       const x0 = side > 0 ? cx : -cx - t, x1 = x0 + t;
       parts.push(k.rbox([x0, f - c.clasp.back, z(c.clasp.z0)], [x1, f + c.backT, z(c.clasp.z1)], 5, 'x'));
@@ -153,7 +154,7 @@ function buildRollerCup(api: ManifoldAPI, p: NumericParams, c: RollerCup, s: Rol
     }
     k.put('Steel back plate, channel and clasp', k.union(parts), s.steel);
     k.put('UHMW face liner', k.rbox([-W + 3, f + c.backT, z(ft + 1)], [W - 3, f + c.backT + c.faceLiner, z(c.backH - 5)], 6, 'y'), FINISH.uhmw, 'liner');
-    k.put('Lip liner cap', k.box([-CW + 2, lipY - 5, z(c.lipH - 4)], [CW - 2, lipY + c.lipT + (s.lipPad ? 6 : 1), z(c.lipH + 4)]), FINISH.uhmw, 'liner');
+    k.put('Lip liner cap', k.box([-CW + 2, lipY - 5 + lean, z(c.lipH - 4)], [CW - 2, lipY + c.lipT + lean + (s.lipPad ? 6 : 1), z(c.lipH + 4)]), FINISH.uhmw, 'liner');
     if (s.lipPad) k.put('UHMW lip pad', k.rbox([-CW + 2, lipY + c.lipT, z(ft)], [CW - 2, lipY + c.lipT + 6, z(c.lipH - 4)], 5, 'y'), FINISH.uhmw, 'liner');
     k.put('Logo mark', k.rbox([-W + 10, f + c.backT + c.faceLiner, z(c.backH - 115)], [W - 10, f + c.backT + c.faceLiner + .5, z(c.backH - 45)], 4, 'y'), { color: s.logo, metalness: 0, roughness: .6 }, 'liner');
     const rz = z(c.rollerZ), ry = floorY + 1, len = lipY - 1 - ry;
