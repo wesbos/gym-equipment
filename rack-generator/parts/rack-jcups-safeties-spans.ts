@@ -122,17 +122,19 @@ export function buildRepMultiGrip(api: ManifoldAPI, params: NumericParams): Soli
     const steel: Manifold[] = [];
     barEnds(k, p, S, { w: c.plateW, t: c.plateT, z0: -(c.plateH - 40), z1: 40 }, [0, c.holeStations], p.series ? 12.4 : 7.9, steel);
     k.put('Bolt-on end plates', k.union(steel), FINISH.black);
-    // Arched side rails from the front bar ends up and back to the fat rear bar; straight 1.25 in front bar.
-    const rail = (y: number): Vec3[] => [[0, y, zF], [d * 70, y, zF + 70], [d * 170, y, zR - 12], [xR, y, zR]];
-    const frame: Manifold[] = [k.path(rail(yA + r), r, 28), k.path(rail(yB - r), r, 28), k.rod([0, yA - .5, zF], [0, yB + .5, zF], r, 32)];
+    // Bridge frame: the 1.25 in front bar and the rails to the 2 in rear bar rise from the end plates to the raised grip
+    // section, converging on each plate (REP: 7.3 in tall overall, the grips sit above the plate bolts).
+    const zT = zR - 15, L1 = 110, L2 = 190, yEnd = [yA + r, yB - r] as const;
+    const front: Vec3[] = [[d * 20, yEnd[0], zF], [0, yA + L1, zT], [0, yB - L1, zT], [d * 20, yEnd[1], zF]];
+    const frame: Manifold[] = [k.path(front, r, 28)];
+    for (const [y0, y1] of [[yEnd[0], yA + L2], [yEnd[1], yB - L2]]) frame.push(k.path([[d * 45, y0, zF], [d * 170, (y0 + y1) / 2, zR - 25], [xR, y1, zR]], r, 28));
     // Neutral grips (6.1 in apart) and angled grips (28.4 in at the front bar to 11.1 in at the rear bar).
     for (const s of [1, -1]) {
-      frame.push(k.rod([0, mid + s * c.neutral / 2, zF], [xR, mid + s * c.neutral / 2, zR], r, 28));
-      frame.push(k.rod([0, mid + s * c.wide / 2, zF], [xR, mid + s * c.close / 2, zR], r, 28));
+      frame.push(k.rod([0, mid + s * c.neutral / 2, zT], [xR, mid + s * c.neutral / 2, zR], r, 28));
+      frame.push(k.rod([0, mid + s * c.wide / 2, zT], [xR, mid + s * c.close / 2, zR], r, 28));
     }
     k.put('14-gauge frame, 1.25 in bar and grips', k.union(frame), FINISH.black, 'handle');
-    k.put('2 in fat rear bar', k.rod([xR, yA + 2 * r, zR], [xR, yB - 2 * r, zR], c.fat / 2, 40), FINISH.black, 'handle');
-    k.put('End caps', k.union([k.rod([xR, yA + 2 * r - 1.5, zR], [xR, yA + 2 * r, zR], c.fat / 2 + .6, 40), k.rod([xR, yB - 2 * r, zR], [xR, yB - 2 * r + 1.5, zR], c.fat / 2 + .6, 40)]), FINISH.uhmw, 'liner');
+    k.put('2 in fat rear bar', k.rod([xR, yA + L2, zR], [xR, yB - L2, zR], c.fat / 2, 40), FINISH.black, 'handle');
     void pitch;
   });
 }

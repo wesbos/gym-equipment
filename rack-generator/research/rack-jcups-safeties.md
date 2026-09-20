@@ -42,7 +42,7 @@ steel replacement rollers.
 | Channel | one-piece 3/8 in formed steel (back plate, floor, lip) | published |
 | UHMW face / back / lip | 6.35 / 3 / 6.35 mm | estimated |
 | Roller | Ø39 mm base, 29 mm waist, 43 mm flare, 70 mm long, axis along +Y 45 mm above the floor | estimated from the replacement-roller photos |
-| Clasp side plate | 3/8 in, 64 mm behind the face, 52 mm tall, on −X | estimated |
+| Clasp side plate | 3/8 in, 30 mm behind the face, 46 mm tall, on −X (carries the Ghost Strong print) | estimated (round 2: shortened to match the side views) |
 | Pin | 1 in or 5/8 in, welded, 25.4 mm below the top, 88 mm long | estimated |
 
 Params: pin (5/8 / 1 in), roller (composite / silicon carbide coated steel), finish (texture black with black pin or a
@@ -105,8 +105,8 @@ Sources: [X-3](https://www.titan.fitness/products/x-3-series-quick-release-rolle
 [T-3](https://www.titan.fitness/products/t-3-series-quick-release-roller-j-hooks) (401951). Photos (18): studio pair,
 installed on a red X-3, lip / roller close-ups, pop-pin knob close-up, two dimension graphics. Published: 9.5 in tall,
 10 in deep, 1.5 × 3 in roller pad, 5/8 in (16 mm) locking pop-pin, 1,000 lb pair, 11 lb pair. Estimated: 6 mm plates,
-back band behind the upright carrying the pop-pin three stations below the top pin, gusset. The model is 231 mm deep
-against the published 10 in (the dimension line includes the knob's full width).
+back band behind the upright carrying the pop-pin three stations below the top pin, gusset, and a lip that flares
+22 mm outward (round 2), which brings the knob-to-lip depth to 250 mm against the published 10 in (254 mm).
 
 ## Spotter arms (`family: 'spotter-arm'`, working cradles on the arm tops)
 
@@ -125,9 +125,9 @@ context), Stealth 11 (installs, handling shots, renders, spec card), Alpha 8 (in
 
 | Product | Published | Estimated |
 |---|---|---|
-| REP Strap Safeties 2.0 / 1.0 (`rep-strap-safeties`, 30 / 48) — [2.0](https://repfitness.com/products/strap-safeties-2-0), [1.0](https://repfitness.com/products/strap-safeties) | 3 in reinforced nylon, 0-gauge brackets (2.0), 26.8 / 37.6 in usable (30 / 41 in), 24 / 30 / 41 in depths, 1,000 lb pair | 2.0 wrap bracket with the strap bolt on ears past the post edge, 18 mm sag; 1.0 flat twin-pin bracket, 45 mm sag |
-| Rogue Monster Safety Strap System 2.0 (`rogue-monster-strap-safety-2`, 43) — [Rogue](https://www.roguefitness.com/rogue-monster-safety-strap-2-0-systems) | 3 in nylon rated 10,000 lb, 0.3125 in brackets, 1 in pins, 3 UHMW pieces, 24 / 30 / 43 in | hanger outline, grey wear sleeve over the middle 60 %, 25 mm sag |
-| Rogue Monster Lite Strap Safety System 2.0 (`rogue-monster-lite-strap-safety-2`, 41) — [Rogue](https://www.roguefitness.com/monster-lite-strap-safety-system-2-0) | 3 in black nylon, 0.3125 in formed brackets, 0.625 in pins, J-cup style pin-and-swing hangers | as above without the sleeve |
+| REP Strap Safeties 2.0 / 1.0 (`rep-strap-safeties`, 30 / 48) — [2.0](https://repfitness.com/products/strap-safeties-2-0), [1.0](https://repfitness.com/products/strap-safeties) | 3 in reinforced nylon, 0-gauge brackets (2.0), 26.8 / 37.6 in usable (30 / 41 in), 24 / 30 / 41 in depths, 1,000 lb pair | 2.0 wrap bracket with the strap bolt on ears past the post edge, 35 mm sag; 1.0 flat twin-pin bracket, 45 mm sag |
+| Rogue Monster Safety Strap System 2.0 (`rogue-monster-strap-safety-2`, 43) — [Rogue](https://www.roguefitness.com/rogue-monster-safety-strap-2-0-systems) | 3 in nylon rated 10,000 lb, 0.3125 in brackets, 1 in pins, 3 UHMW pieces, 24 / 30 / 43 in | hanger outline, grey wear sleeve over the middle 60 %, 70 mm sag (owner photos show a generous droop) |
+| Rogue Monster Lite Strap Safety System 2.0 (`rogue-monster-lite-strap-safety-2`, 41) — [Rogue](https://www.roguefitness.com/monster-lite-strap-safety-system-2-0) | 3 in black nylon, 0.3125 in formed brackets, 0.625 in pins, J-cup style pin-and-swing hangers | as above; the listing photo shows the same grey sleeve |
 | Bells of Steel Safety Straps (`bells-of-steel-safety-straps`, 29) — [BoS](https://bellsofsteel.com/products/safety-straps) | black, blue, purple and orange; 17 / 24 / 30 / 43 in; Hydra and Manticore | 50 mm strap, grey brackets |
 | REP Flip-Down Safeties (`rep-flip-down-safeties`, 39) — [REP](https://repfitness.com/products/flip-down-safeties) | 11-gauge steel, plastic top liner, clevis quick-release pin, 1 in side holes, 24 / 30 / 41 in, 1,000 lb | 2 × 3 in tube on its 2 in side against the inner faces, welded pivot tab at the target hole, clevis lock at the far post one station lower; also a working cradle for rack pulls |
 
@@ -140,7 +140,7 @@ Monster 5 and Monster Lite 4 plus Gym Radar, BoS 16 (hero, every colour and leng
 | Product | Published | Estimated |
 |---|---|---|
 | REP 1.25" Pull-Up Bar (`rep-pull-up-bar`, 36) — [REP](https://repfitness.com/products/1-25-pull-up-bar) | 40.8 in usable, 1.25 in bar, 4 in mounting-hole distance, 4.5 mm steel, 16.5 lb | 57 × 165 mm end plates, bar midway between the two bolts (holes [0, −2]) |
-| REP Multi-Grip Pull-Up Bar (`rep-multi-grip-pull-up-bar`, 46) — [REP](https://repfitness.com/products/multi-grip-pull-up-bar) | 41.4 × 14.6 × 7.3 in, 14 ga, 1.25 in front bar and grips, 2 in rear bar, neutral-wide 28.4, neutral 6.1, close-to-wide 11.1, bars 12.3, straights 28.4 in | arched side rails, end plates with two bolts, a `grips` param for which way the frame reaches (local −X points into the rack from the front posts) |
+| REP Multi-Grip Pull-Up Bar (`rep-multi-grip-pull-up-bar`, 46) — [REP](https://repfitness.com/products/multi-grip-pull-up-bar) | 41.4 × 14.6 × 7.3 in, 14 ga, 1.25 in front bar and grips, 2 in rear bar, neutral-wide 28.4, neutral 6.1, close-to-wide 11.1, bars 12.3, straights 28.4 in | bridge frame: the front bar and the rails to the fat rear bar rise from the end plates to the raised grip section and converge on each plate (round 2, from the REP front view); end plates with two bolts; a `grips` param for which way the frame reaches (local −X points into the rack from the front posts) |
 | Rogue 43" Fat/Skinny Bar X-433 (`rogue-fat-skinny-pull-up-bar`, 26) — [Rogue Monster Lite crossmembers](https://www.roguefitness.com/monster-lite-crossmembers) | 43 in, 1.25 in OD over 2 in OD, 14 in flanges (dimension graphic) | 2 in × 3/8 in flanges, bolts at the top and three stations down, bar heights on the flange |
 
 ## Monolifts (`family: 'monolift'`, working cradles)
@@ -152,6 +152,15 @@ Monster 5 and Monster Lite 4 plus Gym Radar, BoS 16 (hero, every colour and leng
 
 Photos: AM-2 16 (installs, jaw, bracket, detent pin, handle close-ups), Mutant Metals 13 (owner photos in several
 colourways, studio shots of the body and arm).
+
+## Visual review
+
+Two render-vs-photo rounds per product (part viewer side and three-quarter views beside the matching manufacturer or
+owner photo), then the builder with each product placed by the placement suggester on its own rack starter (Rogue
+RM-4 and RML-390, Titan X-3 and T-3, REP PR-4000 and PR-5000, the BOS stock rack) with the Olympic bar parked in the
+brand cradle. Round 2 changes: Ghost clasp shortened, Titan flared lip, REP multi-grip bridge frame, strap sag and the
+Monster Lite sleeve, Snap-Back body arc, lighter UHMW tone. Every solid also passes the print-export mesh check
+(`printableMesh`): builders nudge coplanar union members 0.3 mm apart and `simplify` seams.
 
 ## Skipped
 
