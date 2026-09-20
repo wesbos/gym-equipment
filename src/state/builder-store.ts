@@ -74,6 +74,9 @@ export interface BuilderSnapshot {
   status: string;
   error: boolean;
   loading: boolean;
+  /** The document the scene last finished building (successfully or not); `builtDoc === doc` means settled.
+   * Set by the scene once per completed rebuild, including cached rebuilds that never set `loading`. */
+  builtDoc: RackDoc | null;
   dimensions: string;
   placementText: string;
   proposal: PlacementProposal | null;
@@ -142,6 +145,7 @@ export class BuilderStore {
       status,
       error,
       loading: true,
+      builtDoc: null,
       dimensions: "",
       placementText: "",
       proposal: null,

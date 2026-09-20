@@ -24,10 +24,11 @@ test('failed current CAD build cannot export stale GLB, even after status change
       const viewport = document.createElement('div');
       viewport.style.cssText = 'position:fixed;inset:0;width:800px;height:600px'; document.body.append(viewport);
       const scene = createBuilderScene(viewport, store);
+      // `builtDoc` is set when the scene finishes building the current doc, including cached rebuilds that never set `loading`.
       const settled = async () => {
-        const end = Date.now() + 45000;
-        while (store.getSnapshot().loading && Date.now() < end) await new Promise(r => setTimeout(r, 25));
-        if (store.getSnapshot().loading) throw Error('CAD build timed out');
+        const end = Date.now() + 45000, built = () => store.getSnapshot().builtDoc === store.getSnapshot().doc;
+        while (!built() && Date.now() < end) await new Promise(r => setTimeout(r, 25));
+        if (!built()) throw Error('CAD build timed out');
       };
       const rejection = async () => { try { await scene.exportGLB(); return 'unexpected success'; } catch (e) { return String(e); } };
       try {
@@ -82,7 +83,7 @@ test('builder and standalone GLB retain system product credits with identity and
       try { builder = createBuilderScene(viewport, store); } finally { window.Worker = NativeWorker; }
       const json = (buffer: ArrayBuffer) => JSON.parse(new TextDecoder().decode(new Uint8Array(buffer, 20, new DataView(buffer).getUint32(12, true))));
       try {
-        while (store.getSnapshot().loading) await new Promise(r => setTimeout(r, 10));
+        while (store.getSnapshot().builtDoc !== store.getSnapshot().doc) await new Promise(r => setTimeout(r, 10));
         const assembly = json(await builder.exportGLB());
         builder.dispose();
         const part = createPartScene(viewport, () => {}); part.setMeshes([mesh]);
