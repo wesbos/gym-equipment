@@ -25,6 +25,7 @@ const port = Number(flag('port', '5661')), view = flag('view', 'iso'), external 
 const ZOOMS: Record<string, number> = {
   'b3-brian-s-barbells-and-brewskis': 1.6,
   'cable-compound': 1.6,
+  'coop-garage-gym-reviews': 1.3,
   'erik-mains-s-gym': 1.5,
   'fe-strength-lab': 1.6,
 };

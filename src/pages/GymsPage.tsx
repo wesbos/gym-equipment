@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useParams } from "@tanstack/react-router";
 import { loadGym, loadGyms } from "../gyms/gyms.ts";
-import { gymPreviewUrl, type GymEntry } from "../gyms/types.ts";
+import { gymPreviewUrl, sourceName, type GymEntry } from "../gyms/types.ts";
 import { GYM_PARAM } from "../gyms/useOpenGym.ts";
 import "../gyms/gyms.css";
 
@@ -20,7 +20,7 @@ function OwnerCredit({ gym }: { gym: GymEntry }) {
     <p className="gym-credit">
       by <strong>{gym.owner}</strong> ·{" "}
       <a href={gym.sourceUrl} target="_blank" rel="noreferrer">
-        on Gym Radar ↗
+        on {sourceName(gym.sourceUrl)} ↗
       </a>
     </p>
   );
@@ -94,8 +94,8 @@ export default function GymsPage() {
           Real home and garage gyms from{" "}
           <a href={GYM_RADAR} target="_blank" rel="noreferrer">
             Gym Radar
-          </a>
-          , recreated piece by piece with the builder's catalog. Open one to remix it; your own design stays saved.
+          </a>{" "}
+          and gym tours, recreated piece by piece with the builder's catalog. Open one to remix it; your own design stays saved.
         </p>
       </PageHeader>
       <p role="status" className="gyms-status">
@@ -137,8 +137,8 @@ function GalleryFooter() {
       Gyms and equipment lists belong to their owners and are shared on{" "}
       <a href={GYM_RADAR} target="_blank" rel="noreferrer">
         Gym Radar
-      </a>
-      . Previews are our own renders of each recreation; where a product isn't in our catalog, the closest match stands in.
+      </a>{" "}
+      or in the owners' own tours. Previews are our own renders of each recreation; where a product isn't in our catalog, the closest match stands in.
     </footer>
   );
 }

@@ -1,0 +1,694 @@
+{
+  "slug": "coop-garage-gym-reviews",
+  "title": "Coop’s Basement Gym",
+  "owner": "Coop · Garage Gym Reviews",
+  "sourceUrl": "https://www.youtube.com/watch?v=QCfulhfSSNo",
+  "summary": "Coop’s brand-new ~1,300 sq ft basement gym from his Garage Gym Reviews build tour: a long, bright room with white walls over birch plywood, grey-fleck PLAE rubber and a turf sprint lane, a long silver-upright rig on the end wall, plate-loaded and cable machines down the window wall, and a storage cove of kettlebells and cable attachments. The rig is shown as an extended Rogue Monster 2.0; the turf lane, monkey bars and Lever Rack cabinets are not in the catalog.",
+  "highlights": [
+    "About 1,300 sq ft of finished basement",
+    "Three-bay rig across the end wall",
+    "PLAE Achieve 18 mm rubber, turf sprint lane",
+    "Storage cove: kettlebells and a pegboard of handles",
+    "Six new windows and high-CRI linear lights"
+  ],
+  "equipment": [
+    "Two racks joined by a middle landmine bay across the end wall, silver uprights and black crossmembers (closest match: a Rogue RM-3 Monster Rack 2.0 extended to three 43″ bays) with J-cups, spotter arms, strap safeties, a landmine and plate horns",
+    "Wall-mounted bumper and change-plate pegs beside the rig (closest match: REP Wall Mounted Plate Storage and Bells of Steel change plate pegs)",
+    "Colour bumper plates (closest match: Rogue Color Echo)",
+    "Power bar and safety squat bar (closest match: Rogue Ohio Power Bar and REP Safety Squat Bar), open trap bar, EZ and straight bars in a vertical bar holder (closest match: REP open trap bar, Titan vertical holder)",
+    "Flat utility bench (closest match: Rogue Monster Utility Bench 2.0)",
+    "Leg extension / curl on the window wall (closest match: Temple of Gainz selectorized leg extension + seated curl)",
+    "PRIME plate-loaded and cam cable machines (closest match: Titan plate-loaded lat pulldown, REP Arcadia functional trainer, Force USA compact leg press / hack squat)",
+    "Curved treadmill under the “Stay Weird” flag (closest match: AssaultRunner Pro)",
+    "PRIME round urethane dumbbells on a three-tier rack (closest match: Rogue 3-Tier Dumbbell Rack with Rogue urethane 5–75 lb)",
+    "PLAE 3×3 11-gauge storage rack full of colour-banded kettlebells (closest match: REP Kettlebell Rack 2.0 with REP kettlebells)",
+    "OmniWall pegboard with cable attachments, bands, rings and straps (closest match: black Wall Control pegboard)",
+    "Wall-hung rack attachment storage by the door (closest match: Rogue Multi-Use Hangers)",
+    "PLAE Achieve 18 mm grey-fleck rolled rubber and a PLAE turf sprint lane, white walls over a birch plywood wainscot (the builder shows its own black rubber floor and black slat walls; the turf and wall finish are not shown)",
+    "Not placed: Lever Rack (Levrack) storage cabinets and workbench, kids’ monkey-bar course and rings under the beam, Sorinex machine beside the kettlebells, hip thrust / plate-loaded machine and vertical knee raise on the window wall, H.E. Williams linear lights, Big Ass Fans, Sonos Five speakers, birch-clad beam and posts, and the desk in the bay-window cove"
+  ],
+  "doc": {
+    "version": 2,
+    "rack": {
+      "height": 2295.525,
+      "width": 1092.2,
+      "depth": 762,
+      "tube": 76.2,
+      "holeDiameter": 26.9875,
+      "pitch": 50.8,
+      "firstHole": 63.5
+    },
+    "uprights": {
+      "front-left": {
+        "x": -584.2,
+        "y": -419.1
+      },
+      "front-right": {
+        "x": 584.2,
+        "y": -419.1
+      },
+      "rear-left": {
+        "x": -584.2,
+        "y": 419.1
+      },
+      "rear-right": {
+        "x": 584.2,
+        "y": 419.1
+      },
+      "upright-2": {
+        "x": 1752.6000000000001,
+        "y": -419.1
+      },
+      "upright-5": {
+        "x": 1752.6000000000001,
+        "y": 419.1
+      },
+      "upright-10": {
+        "x": 2921,
+        "y": -419.1
+      },
+      "upright-13": {
+        "x": 2921,
+        "y": 419.1
+      }
+    },
+    "connections": [
+      {
+        "id": "left-upper-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "upper"
+      },
+      {
+        "id": "left-lower-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "lower"
+      },
+      {
+        "id": "right-upper-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "upper"
+      },
+      {
+        "id": "right-lower-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "lower"
+      },
+      {
+        "id": "rear-crossmember",
+        "from": "rear-left",
+        "to": "rear-right",
+        "level": "upper"
+      },
+      {
+        "id": "connection-3",
+        "from": "front-right",
+        "to": "upright-2",
+        "level": "upper"
+      },
+      {
+        "id": "connection-4",
+        "from": "front-right",
+        "to": "upright-2",
+        "level": "lower"
+      },
+      {
+        "id": "connection-6",
+        "from": "rear-right",
+        "to": "upright-5",
+        "level": "upper"
+      },
+      {
+        "id": "connection-7",
+        "from": "rear-right",
+        "to": "upright-5",
+        "level": "lower"
+      },
+      {
+        "id": "connection-8",
+        "from": "upright-2",
+        "to": "upright-5",
+        "level": "upper"
+      },
+      {
+        "id": "connection-9",
+        "from": "upright-2",
+        "to": "upright-5",
+        "level": "lower"
+      },
+      {
+        "id": "connection-11",
+        "from": "upright-2",
+        "to": "upright-10",
+        "level": "upper"
+      },
+      {
+        "id": "connection-12",
+        "from": "upright-2",
+        "to": "upright-10",
+        "level": "lower"
+      },
+      {
+        "id": "connection-14",
+        "from": "upright-5",
+        "to": "upright-13",
+        "level": "upper"
+      },
+      {
+        "id": "connection-15",
+        "from": "upright-5",
+        "to": "upright-13",
+        "level": "lower"
+      },
+      {
+        "id": "connection-16",
+        "from": "upright-10",
+        "to": "upright-13",
+        "level": "upper"
+      },
+      {
+        "id": "connection-17",
+        "from": "upright-10",
+        "to": "upright-13",
+        "level": "lower"
+      }
+    ],
+    "profileId": "rogue-rm-monster-2",
+    "removed": [],
+    "structure": {
+      "rear-crossmember": {
+        "part": "profile-nameplate",
+        "params": {}
+      }
+    },
+    "accessories": [
+      {
+        "id": "accessory-1",
+        "part": "pullup-straight",
+        "target": {
+          "uprightId": "front-left",
+          "hole": 39,
+          "face": "right"
+        },
+        "paired": false,
+        "params": {
+          "diameter": 31.75
+        },
+        "spanTo": "front-right"
+      },
+      {
+        "id": "accessory-18",
+        "part": "rogue-monster-sandwich-j-cup",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 24
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-19",
+        "part": "rogue-monster-spotter-arms-2",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 12
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-20",
+        "part": "rogue-monster-sandwich-j-cup",
+        "target": {
+          "uprightId": "upright-2",
+          "face": "front",
+          "hole": 22
+        },
+        "paired": false,
+        "params": {}
+      },
+      {
+        "id": "accessory-21",
+        "part": "rogue-monster-sandwich-j-cup",
+        "target": {
+          "uprightId": "upright-10",
+          "face": "front",
+          "hole": 22
+        },
+        "paired": false,
+        "params": {}
+      },
+      {
+        "id": "accessory-22",
+        "part": "rogue-monster-strap-safety-2",
+        "target": {
+          "uprightId": "upright-2",
+          "face": "right",
+          "hole": 14
+        },
+        "paired": true,
+        "pairTo": "upright-10",
+        "params": {}
+      },
+      {
+        "id": "accessory-23",
+        "part": "rogue-monster-landmine-2",
+        "target": {
+          "uprightId": "front-right",
+          "face": "front",
+          "hole": 1
+        },
+        "paired": false,
+        "params": {}
+      },
+      {
+        "id": "accessory-24",
+        "part": "storage-pin-long",
+        "target": {
+          "uprightId": "rear-left",
+          "face": "left",
+          "hole": 6
+        },
+        "paired": false,
+        "params": {},
+        "plates": [
+          "rogue-color-echo:45",
+          "rogue-color-echo:45",
+          "rogue-color-echo:35"
+        ]
+      },
+      {
+        "id": "accessory-25",
+        "part": "storage-pin-long",
+        "target": {
+          "uprightId": "rear-left",
+          "face": "left",
+          "hole": 16
+        },
+        "paired": false,
+        "params": {},
+        "plates": [
+          "rogue-color-echo:25",
+          "rogue-color-echo:25",
+          "rogue-color-echo:10"
+        ]
+      },
+      {
+        "id": "accessory-26",
+        "part": "storage-pin-long",
+        "target": {
+          "uprightId": "upright-13",
+          "face": "right",
+          "hole": 6
+        },
+        "paired": false,
+        "params": {},
+        "plates": [
+          "rogue-color-echo:55",
+          "rogue-color-echo:45",
+          "rogue-color-echo:45"
+        ]
+      },
+      {
+        "id": "accessory-27",
+        "part": "storage-pin-long",
+        "target": {
+          "uprightId": "upright-13",
+          "face": "right",
+          "hole": 16
+        },
+        "paired": false,
+        "params": {},
+        "plates": [
+          "rogue-color-echo:35",
+          "rogue-color-echo:25",
+          "rogue-color-echo:15"
+        ]
+      }
+    ],
+    "nextId": 62,
+    "appearance": {
+      "finishOverrides": {
+        "front-left": "clear-grind",
+        "front-right": "clear-grind",
+        "upright-2": "clear-grind",
+        "upright-10": "clear-grind"
+      },
+      "frameColor": "#17191a"
+    },
+    "floorItems": [
+      {
+        "id": "floor-28",
+        "part": "rogue-ohio-power-bar",
+        "position": [
+          0,
+          535.7
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 0
+        },
+        "cradle": "accessory-18:left#0+accessory-18:right#0"
+      },
+      {
+        "id": "floor-29",
+        "part": "rep-safety-squat-bar",
+        "position": [
+          2336.8,
+          535.7
+        ],
+        "rotation": 0,
+        "params": {},
+        "cradle": "accessory-20#0+accessory-21#0"
+      },
+      {
+        "id": "floor-30",
+        "part": "rogue-monster-utility-bench-2",
+        "position": [
+          0,
+          1350
+        ],
+        "rotation": 0,
+        "params": {
+          "height": 0,
+          "pad": 0,
+          "handle": 0
+        }
+      },
+      {
+        "id": "floor-31",
+        "part": "rep-open-trap-bar",
+        "position": [
+          3890,
+          700
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "pose": 0,
+          "handles": 1
+        }
+      },
+      {
+        "id": "floor-32",
+        "part": "titan-barbell-storage-holder",
+        "position": [
+          4087.5,
+          2400
+        ],
+        "rotation": -1.5707963267948966,
+        "params": {
+          "size": 0,
+          "loaded": 3
+        }
+      },
+      {
+        "id": "floor-33",
+        "part": "tog-selectorized-leg-extension-seated-curl-v3",
+        "position": [
+          3500,
+          4300
+        ],
+        "rotation": -1.5707963267948966,
+        "params": {
+          "mode": 0,
+          "rep": 0,
+          "roller": 3,
+          "thighPad": 4,
+          "backPad": 4,
+          "pin": 30
+        }
+      },
+      {
+        "id": "floor-34",
+        "part": "assaultrunner-pro",
+        "position": [
+          3355,
+          6300
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {}
+      },
+      {
+        "id": "floor-35",
+        "part": "titan-plate-loaded-lat-pulldown",
+        "position": [
+          3400,
+          8500
+        ],
+        "rotation": -1.5707963267948966,
+        "params": {
+          "loaded": 2,
+          "thigh": 2
+        }
+      },
+      {
+        "id": "floor-36",
+        "part": "force-usa-compact-leg-press-hack-squat",
+        "position": [
+          3300,
+          10100
+        ],
+        "rotation": -1.5707963267948966,
+        "params": {
+          "mode": 0,
+          "sled": 0,
+          "footplate": 2,
+          "plates": 0
+        }
+      },
+      {
+        "id": "floor-37",
+        "part": "rep-arcadia-functional-trainer",
+        "position": [
+          3785,
+          11600
+        ],
+        "rotation": -1.5707963267948966,
+        "params": {
+          "stack": 0,
+          "pin": 60,
+          "left": 26,
+          "right": 26,
+          "bar": 0
+        }
+      },
+      {
+        "id": "floor-38",
+        "part": "rogue-3-tier-dumbbell-rack",
+        "position": [
+          -3759,
+          7800
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "loaded": 2
+        }
+      },
+      {
+        "id": "floor-39",
+        "part": "rep-kettlebell-rack-2",
+        "position": [
+          -3845,
+          11200
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "tiers": 1,
+          "loaded": 2
+        }
+      }
+    ],
+    "wallItems": [
+      {
+        "id": "wall-40",
+        "part": "rep-wall-mounted-plate-storage",
+        "wall": "back",
+        "position": [
+          -1550,
+          1100
+        ],
+        "params": {
+          "variant": 0,
+          "loaded": 2
+        }
+      },
+      {
+        "id": "wall-41",
+        "part": "bells-of-steel-change-plate-pegs",
+        "wall": "back",
+        "position": [
+          -2350,
+          1300
+        ],
+        "params": {
+          "version": 1,
+          "loaded": 1
+        }
+      },
+      {
+        "id": "wall-42",
+        "part": "rogue-3-bar-gun-rack",
+        "wall": "left",
+        "position": [
+          -5400,
+          1750
+        ],
+        "params": {
+          "spacing": 1168.3999999999999,
+          "liners": 1,
+          "loaded": 3
+        }
+      },
+      {
+        "id": "wall-43",
+        "part": "rogue-multi-use-hanger",
+        "wall": "left",
+        "position": [
+          -3400,
+          1900
+        ],
+        "params": {
+          "depth": 127
+        }
+      },
+      {
+        "id": "wall-44",
+        "part": "rogue-multi-use-hanger",
+        "wall": "left",
+        "position": [
+          -3400,
+          1300
+        ],
+        "params": {
+          "depth": 127
+        }
+      },
+      {
+        "id": "wall-45",
+        "part": "wall-control-pegboard",
+        "wall": "front",
+        "position": [
+          3450,
+          1400
+        ],
+        "params": {
+          "size": 2,
+          "panels": 3,
+          "color": 0
+        }
+      }
+    ],
+    "room": {
+      "back": 600,
+      "left": 4200,
+      "right": 4300,
+      "front": 12400,
+      "height": 2750
+    },
+    "hangItems": [
+      {
+        "id": "hang-46",
+        "part": "rep-lat-bar-48",
+        "panel": "wall-45",
+        "slot": 20
+      },
+      {
+        "id": "hang-47",
+        "part": "rogue-stainless-straight-lat-bar-20",
+        "panel": "wall-45",
+        "slot": 104
+      },
+      {
+        "id": "hang-48",
+        "part": "mag-wide-grip",
+        "panel": "wall-45",
+        "slot": 188
+      },
+      {
+        "id": "hang-49",
+        "part": "mag-medium-grip-neutral",
+        "panel": "wall-45",
+        "slot": 272
+      },
+      {
+        "id": "hang-50",
+        "part": "mag-close-grip-neutral",
+        "panel": "wall-45",
+        "slot": 117
+      },
+      {
+        "id": "hang-51",
+        "part": "rep-tricep-rope",
+        "panel": "wall-45",
+        "slot": 287
+      },
+      {
+        "id": "hang-52",
+        "part": "rogue-rotating-v-grip",
+        "panel": "wall-45",
+        "slot": 88
+      },
+      {
+        "id": "hang-53",
+        "part": "rep-d-handles",
+        "panel": "wall-45",
+        "slot": 256
+      },
+      {
+        "id": "hang-54",
+        "part": "rogue-ankle-cuff",
+        "panel": "wall-45",
+        "slot": 293
+      },
+      {
+        "id": "hang-55",
+        "part": "spud-long-ab-strap",
+        "panel": "wall-45",
+        "slot": 356
+      },
+      {
+        "id": "hang-56",
+        "part": "generic-daisy-chains",
+        "panel": "wall-45",
+        "slot": 349
+      },
+      {
+        "id": "hang-57",
+        "part": "rogue-monster-band-1",
+        "panel": "wall-45",
+        "slot": 362
+      },
+      {
+        "id": "hang-58",
+        "part": "rogue-monster-band-2",
+        "panel": "wall-45",
+        "slot": 364
+      },
+      {
+        "id": "hang-59",
+        "part": "rogue-monster-band-3",
+        "panel": "wall-45",
+        "slot": 366
+      },
+      {
+        "id": "hang-60",
+        "part": "rep-wood-gymnastic-rings",
+        "panel": "wall-45",
+        "slot": 425
+      },
+      {
+        "id": "hang-61",
+        "part": "rogue-ohio-lifting-straps",
+        "panel": "wall-45",
+        "slot": 419
+      }
+    ]
+  }
+}
