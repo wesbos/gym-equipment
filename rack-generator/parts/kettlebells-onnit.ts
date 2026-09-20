@@ -5,16 +5,16 @@ import type { ManifoldAPI, NumericParams, SolidPart, Vec3 } from '../types.ts';
 import { ONNIT_FACE_REACH, onnitLayout } from '../floor-parts/kettlebells.ts';
 import { kettlebellKit } from './kettlebells-kit.ts';
 
-type Sdf = (x: number, y: number, z: number) => number;
+export type Sdf = (x: number, y: number, z: number) => number;
 /** Ellipsoid distance bound (negative inside). */
-const ellipsoid = (c: Vec3, r: Vec3): Sdf => (x, y, z) => {
+export const ellipsoid = (c: Vec3, r: Vec3): Sdf => (x, y, z) => {
   const px = (x - c[0]) / r[0], py = (y - c[1]) / r[1], pz = (z - c[2]) / r[2];
   const k0 = Math.hypot(px, py, pz), k1 = Math.hypot(px / r[0], py / r[1], pz / r[2]);
   return k1 < 1e-9 ? -Math.min(...r) : k0 * (k0 - 1) / k1;
 };
-const smin = (a: number, b: number, k: number) => { const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k / 4; };
-const smax = (a: number, b: number, k: number) => -smin(-a, -b, k);
-const mirrorX = (f: Sdf): Sdf => (x, y, z) => f(Math.abs(x), y, z);
+export const smin = (a: number, b: number, k: number) => { const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k / 4; };
+export const smax = (a: number, b: number, k: number) => -smin(-a, -b, k);
+export const mirrorX = (f: Sdf): Sdf => (x, y, z) => f(Math.abs(x), y, z);
 
 interface Face {
   ears: number; earZ: number; muzzle: number; muzzleY: number; brow: number; crest: number; flange: number; cheeks: number;

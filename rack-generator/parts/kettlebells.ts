@@ -4,7 +4,7 @@ import type { CrossSection, Manifold, ManifoldAPI, NumericParams, PartDefinition
 import { floorDefinition } from '../floor-part.ts';
 import {
   BOS_ADJUSTABLE_KETTLEBELL, BOWFLEX_840_KETTLEBELL, CAP_KETTLEBELL, FREAK_KETTLEBELL, FRINGE_PRIME_KETTLEBELL, FRINGE_SAVAGE_KETTLEBELL, IRONMASTER_KETTLEBELL,
-  KBK_COMPETITION_KETTLEBELL, ONNIT_PRIMAL_KETTLEBELL, REP_ADJUSTABLE_KETTLEBELL, REP_KETTLEBELL, ROGUE_KETTLEBELL, ROGUE_USA_FINISHES, ROGUE_USA_KETTLEBELL,
+  KBK_COMPETITION_KETTLEBELL, ONNIT_PRIMAL_KETTLEBELL, ONNIT_ZOMBIE_KETTLEBELL, REP_ADJUSTABLE_KETTLEBELL, REP_KETTLEBELL, ROGUE_KETTLEBELL, ROGUE_USA_FINISHES, ROGUE_USA_KETTLEBELL,
   TITAN_CAST_KETTLEBELL, TITAN_COMPETITION_KETTLEBELL, YES4ALL_KETTLEBELL,
   capBell, fringePrimeBell, fringeSavageBell, kbkBell, repBell, rogueBell, titanCastBell, titanCompBell, yes4allBell,
   type CastBellModel, type CompetitionModel,
@@ -12,6 +12,7 @@ import {
 import { kettlebellKit, shade, type KettlebellKit } from './kettlebells-kit.ts';
 import { buildBosAdjustable, buildBowflex840, buildFreakAthlete, buildIronmaster, buildRepAdjustable } from './kettlebells-adjustable.ts';
 import { buildOnnitPrimal } from './kettlebells-onnit.ts';
+import { buildOnnitZombie } from './kettlebells-zombie.ts';
 
 
 /** Front (-Y) and back (+Y) markings of a cast body of radius R centred at zc; returns cuts, raised iron and ink solids. */
@@ -135,6 +136,7 @@ export const definitions: PartDefinition[] = [
   floorDefinition(YES4ALL_KETTLEBELL, (api, p) => buildCastBell(api, yes4allBell(p.weight), 'Yes4All kettlebell')),
   floorDefinition(BOS_ADJUSTABLE_KETTLEBELL, buildBosAdjustable),
   floorDefinition(ONNIT_PRIMAL_KETTLEBELL, buildOnnitPrimal),
+  floorDefinition(ONNIT_ZOMBIE_KETTLEBELL, buildOnnitZombie),
   floorDefinition(BOWFLEX_840_KETTLEBELL, buildBowflex840),
   floorDefinition(KBK_COMPETITION_KETTLEBELL, (api, p) => buildCompetitionBell(api, kbkBell(p.weight), 'Kettlebell Kings kettlebell')),
   floorDefinition(FRINGE_PRIME_KETTLEBELL, (api, p) => buildCastBell(api, fringePrimeBell(p.weight), 'Fringe Prime kettlebell')),
