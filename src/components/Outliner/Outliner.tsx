@@ -30,6 +30,7 @@ const selectSelection = (s: BuilderSnapshot) => s.selection;
 const selectHidden = (s: BuilderSnapshot) => s.hidden;
 const selectLocked = (s: BuilderSnapshot) => s.locked;
 const selectDefinitions = (s: BuilderSnapshot) => s.definitions;
+const VIRTUALIZE_AT = 80;
 const coarse = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
 
 const Eye = ({ off }: { off: boolean }) => <svg viewBox="0 0 16 16" aria-hidden="true">{off
@@ -108,7 +109,8 @@ export const Outliner = memo(function Outliner({ api, variant = 'floating' }: { 
     else if (top + rowHeight > element.scrollTop + element.clientHeight) element.scrollTop = top + rowHeight - element.clientHeight;
   };
 
-  const [first, lastRow] = windowRows(rows.length, rowHeight, scroll.top, scroll.height);
+  // Small designs render every row; big gyms (Coop's ~90 rows, the heavy scene more) render only the visible window.
+  const [first, lastRow] = rows.length <= VIRTUALIZE_AT ? [0, rows.length - 1] : windowRows(rows.length, rowHeight, scroll.top, scroll.height);
   const rowId = (row: OutlineRow) => `ol-${row.node.key.replace(/[^a-z0-9-]/gi, '-')}`;
   const activeRow = rows[Math.min(active, rows.length - 1)];
   const items = [];

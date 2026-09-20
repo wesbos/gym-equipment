@@ -125,6 +125,15 @@ test('editor tools: palette, shortcuts overlay, outliner, hide/lock and clickabl
     await expect.poll(async () => (await draft(page))?.floorItems?.length ?? 0).toBe(0);
     await page.keyboard.press('Meta+z');
     await expect.poll(async () => (await draft(page))?.floorItems?.length ?? 0).toBe(2);
+    // A big gym (Coop's, 73 parts): the outliner windows its rows; hang items nest under the pegboard; Plates last.
+    await page.goto(`${base}/?gym=coop-garage-gym-reviews`);
+    await expect(page.locator('#parts-toggle')).toHaveText('Outliner (73)', { timeout: 60000 });
+    await page.locator('body').press('o');
+    await expect(page.locator('#outliner')).toBeVisible();
+    expect(await page.locator('#outliner [role=treeitem]').count()).toBeLessThan(60);
+    await page.locator('.ol-scroller').evaluate(element => { element.scrollTop = element.scrollHeight; });
+    await expect(page.locator('#outliner [data-group="group:plates"]')).toBeVisible();
+    await expect(page.locator('#outliner [role=treeitem][aria-level="3"]', { hasText: 'Monster Band' }).first()).toBeVisible();
     expect(errors).toEqual([]);
 
     // iPhone: the toolbar search button opens the palette as a full-screen sheet; a command runs from it.
