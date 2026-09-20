@@ -108,9 +108,9 @@ unless the raised deck reaches further. Hydraulic strut drawn between base and d
 - NTL17915 (2016–2022, now redirected to the T Series page): 73.5 × 36 × 54 in, 20 × 55 in, folded 38 in long × 66 in
   high (Treadmill Factory listing + dimension graphic), 5 in display.
 - Details: silver uprights, black console with silver side panels and blue LCD, side bins, orange deck accents.
-- Estimates: step-up 225 mm, upright positions (no side profile published). Photos (7: Treadmill Factory gallery incl.
-  folded dimension graphic) — below the 8-photo target; the product is discontinued and no further gallery was reachable
-  (web search budget exhausted).
+- Details: gunmetal-grey uprights (not bright silver: both 3/4 studio shots), black console with silver side panels.
+- Estimates: step-up 225 mm, upright positions (no side profile published). Photos (8: Treadmill Factory gallery incl.
+  the folded dimension graphic, plus the Treadmill Review Guru 3/4 studio shot); the product is discontinued.
 
 ### ProForm Pro 2000 — `proform-pro-2000`
 - PFTL13113 (https://www.proformfitness.ca/treadmills/pro2000-pftl13113): 63 × 39.5 × 80 in (H × W × D), 22 × 60 in,

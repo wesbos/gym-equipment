@@ -119,7 +119,7 @@ export const NT_T65S_SPEC: TreadmillSpec = {
   upright: { s0: 120, h0: 40, s1: 330, h1: 990, depth: 74, thick: 50, x: 380 }, console: 'nt65',
   display: { w: 150, h: 115, t: 10, glass: [120, 90], s: 230, top: 1290, tilt: 32 },
   fold: { s: 330, h: 150, L: inch(38), H: inch(66) },
-  colors: { frame: '#9ea3a8', accent: '#e8751a', trim: '#2a2c2f' }, brand: 'NordicTrack',
+  colors: { frame: '#868a8f', accent: '#e8751a', trim: '#2a2c2f' }, brand: 'NordicTrack',
 };
 /** ProForm Pro 2000 (PFTL13113): 80 × 39.5 × 63 in, 22 × 60 in belt, SpaceSaver fold. */
 export const PROFORM_PRO2000_SPEC: TreadmillSpec = {
