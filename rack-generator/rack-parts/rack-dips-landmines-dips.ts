@@ -196,7 +196,7 @@ export const REP_DIP_STATION = defineRackPart({
  * 44 mm handles, 18.3-24 in handle width, 16.5 in depth added, 11-gauge, 18.2 lb per side, 810 lb. Double C-cup,
  * peg, arm tube and bolt positions estimated from the drawing and photos. The first unit reaches toward local -X
  * (the rack centre from a left post); the pair's second unit is mirrored. */
-export const DROP_IN = { h: inch(12.2), width: inch(15.7), plate: 3.05, liner: 1.5, cupH: 76, cupDepth: 60, topFlat: 95, arm: inch(2), handle: 44, usable: inch(14), cant: 11.8, depth: inch(16.5), logo: [-155, 55, 60, 85] } as const;
+export const DROP_IN = { h: inch(12.2), width: inch(15.7), plate: 3.05, liner: 1.5, cupH: 76, cupDepth: 60, topFlat: 95, arm: inch(2), handle: 44, usable: inch(14), cant: 11.8, depth: inch(16.5), logo: [-120, 70, 60, 85] } as const;
 export const DROP_IN_SERIES = ['4000 Series · 5/8 in peg', '5000 Series · 1 in peg'] as const;
 export function dropInLayout(p: NumericParams) {
   const f = face(p), D = DROP_IN, half = D.h / 2, y0 = f + D.liner, y1 = y0 + D.plate, xo = f + D.liner + D.plate, xi = xo - D.width;
