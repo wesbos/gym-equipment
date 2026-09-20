@@ -27,6 +27,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import { toCreasedNormals } from "three/addons/utils/BufferGeometryUtils.js";
 import { createStudioLighting } from './studio-lighting.ts';
+import { createRenderLoop, pinPrograms } from './render-loop.ts';
 import { detectCollisions } from "../../rack-generator/assembly-collisions.ts";
 import type {
   Mount,
@@ -47,6 +48,8 @@ export interface BuilderScene {
   /** Cinematic self-assembly of the rendered rack; presentation only. False when it cannot (or, reduced-motion, need not) run. */
   playBuild(onEnd?: () => void): boolean;
   stopBuild(): void;
+  /** Request a frame. The builder renders on demand only; call after changing anything it draws. */
+  invalidate(): void;
   dispose(): void;
 }
 const message = (error: unknown) =>
@@ -83,12 +86,12 @@ export function createBuilderScene(
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#343b38");
   scene.fog = new THREE.Fog("#343b38", 18000, 42000);
-  const renderer = new THREE.WebGLRenderer({
-    antialias: true,
-    preserveDrawingBuffer: true,
-  });
+  // Nothing reads the canvas back (thumbnails/export use their own paths), so let the browser swap buffers.
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   const lighting = createStudioLighting(scene, renderer, true);
+  // The shadow map is redrawn only when fitRackShadow (a rebuild) flags the key light, never on camera moves.
+  renderer.shadowMap.autoUpdate = false;
   const finishes = new FrameFinishResources(renderer.capabilities.getMaxAnisotropy());
   viewport.append(renderer.domElement);
   renderer.domElement.setAttribute(
@@ -98,13 +101,25 @@ export function createBuilderScene(
   const camera = new THREE.PerspectiveCamera(35, 1, 1, 40000),
     controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
+  let updatingControls = false;
+  // Pointer/wheel input moves the camera outside the frame; damping continues inside it.
+  controls.addEventListener("change", () => { if (!updatingControls) invalidate(); });
+  controls.addEventListener("end", () => invalidate());
   const assemblyRoot = new THREE.Group(),
     ghostRoot = new THREE.Group(),
     mountsRoot = new THREE.Group(),
     cradleRoot = new THREE.Group();
+  const pinned = new WeakSet<object>();
+  const loop = createRenderLoop(renderFrame);
+  const invalidate = () => loop.invalidate();
   for (const root of [assemblyRoot, ghostRoot, mountsRoot, cradleRoot]) {
     root.rotation.x = -Math.PI / 2;
     scene.add(root);
+  }
+  // Instances, ghosts, mount dots, cradles, selection boxes and swap regions all enter or leave through these.
+  for (const root of [scene, assemblyRoot, ghostRoot, mountsRoot, cradleRoot]) {
+    root.addEventListener("childadded", invalidate);
+    root.addEventListener("childremoved", invalidate);
   }
   const floor = createGymFloor(renderer.capabilities.getMaxAnisotropy());
   scene.add(floor.mesh);
@@ -112,6 +127,8 @@ export function createBuilderScene(
   scene.add(backdrop.group);
   const walls = createGymWalls();
   scene.add(walls.group);
+  walls.group.addEventListener("childadded", invalidate);
+  walls.group.addEventListener("childremoved", invalidate);
   const placingWall = () => isWallPart(snapshot.placing?.part), placingHang = () => isHangPart(snapshot.placing?.part);
   const updateWalls = () => walls.update(roomOf(snapshot.doc), !!snapshot.doc.wallItems?.length || placingWall() || placingHang());
   const raycaster = new THREE.Raycaster(),
@@ -645,7 +662,7 @@ export function createBuilderScene(
     if (candidate) {
       if (hoveredSwap?.ownerId === candidate.ownerId) return;
       hoveredSwap = candidate; previewTarget = null;
-      swapRegions?.hover(candidate.valid ? candidate.ownerId : null);
+      swapRegions?.hover(candidate.valid ? candidate.ownerId : null); invalidate();
       if (!candidate.valid) { store.patch({ proposal: null, placementText: "Won’t fit: " + candidate.reason }); return; }
       const proposal = { ...candidate, label: 'Swap ' + candidate.ownerId };
       const collision = proposalCollision(snapshot.resolved, proposal);
@@ -653,7 +670,7 @@ export function createBuilderScene(
       return;
     }
     const hadSwap = !!hoveredSwap;
-    hoveredSwap = null; swapRegions?.hover(null);
+    hoveredSwap = null; swapRegions?.hover(null); invalidate();
     const target = snapshot.placing ? nearestMount(event) : null;
     if (!target || (!hadSwap && JSON.stringify(target) === JSON.stringify(previewTarget))) return;
     try {
@@ -897,6 +914,7 @@ export function createBuilderScene(
     window.addEventListener('pointerdown', cancelBuildPointer, true);
     window.addEventListener('wheel', cancelBuildPointer, { capture: true, passive: false });
     window.addEventListener('keydown', cancelBuildKey, true);
+    invalidate();
     return true;
   }
   function stopBuild() {
@@ -910,6 +928,7 @@ export function createBuilderScene(
     controls.enabled = !floorDrag && !snapshot.selectionTool;
     controls.update();
     refreshSelection();
+    invalidate();
     onEnd?.();
   }
   function fit(mode: BuilderView = view) {
@@ -954,6 +973,7 @@ export function createBuilderScene(
     camera.position.copy(center).addScaledVector(direction, distance * 1.3);
     controls.target.copy(center);
     controls.update();
+    invalidate();
   }
   const resize = () => {
     const rect = viewport.getBoundingClientRect(),
@@ -962,16 +982,26 @@ export function createBuilderScene(
     renderer.setSize(width, height);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    // Resizing clears the canvas; repaint before the browser presents it.
+    loop.renderNow();
   };
   const observer = new ResizeObserver(resize);
   observer.observe(viewport);
   resize();
-  let frame = 0;
-  function animate() {
-    if (disposed) return;
-    frame = requestAnimationFrame(animate);
-    if (build && !build.animation.update((performance.now() - build.start) / 1000)) stopBuild();
-    if (!build) controls.update();
+  renderer.domElement.addEventListener("webglcontextrestored", invalidate);
+  /** One frame; true while damping or the build animation needs another. */
+  function renderFrame() {
+    if (disposed) return false;
+    let again = false;
+    if (build) {
+      if (build.animation.update((performance.now() - build.start) / 1000)) again = true;
+      else stopBuild();
+    }
+    if (!build) {
+      updatingControls = true;
+      again = controls.update() || again;
+      updatingControls = false;
+    }
     const focus = build ? build.animation.focus : controls.target;
     backdrop.follow(camera, focus);
     walls.follow(camera);
@@ -982,13 +1012,18 @@ export function createBuilderScene(
     );
     camera.updateProjectionMatrix();
     positionHandles();
+    if (lighting.key.shadow.needsUpdate) renderer.shadowMap.needsUpdate = true;
     renderer.render(scene, camera);
+    pinPrograms(renderer, pinned);
+    return again;
   }
-  animate();
+  const drawnKeys = ["doc", "resolved", "selection", "placing", "proposal", "structureChoice", "systemChoice", "structureMode", "paired"] as const;
   const unsubscribe = store.subscribe(() => {
     const previous = snapshot;
     snapshot = store.getSnapshot();
     if (disposed) return;
+    // Only these reach the canvas; status, catalog, history and storage churn must not wake the renderer.
+    if (drawnKeys.some(key => snapshot[key] !== previous[key])) invalidate();
     if (snapshot.doc !== previous.doc || snapshot.placing || snapshot.structureChoice || snapshot.systemChoice) stopBuild();
     // History navigation finalizes/cancels the store gesture; never let an old
     // pointer capture or floor origin apply a stale drag to the new document.
@@ -1025,6 +1060,7 @@ export function createBuilderScene(
     },
     playBuild,
     stopBuild,
+    invalidate,
     async exportGLB() {
       if (disposed) throw Error("Scene has been disposed.");
       stopBuild();
@@ -1050,7 +1086,7 @@ export function createBuilderScene(
       generation++;
       previewSerial++;
       unsubscribe();
-      cancelAnimationFrame(frame);
+      loop.dispose();
       observer.disconnect();
       pointerGesture.dispose();
       controls.dispose();
@@ -1058,6 +1094,7 @@ export function createBuilderScene(
       structureHandles.remove();
       marquee.remove();
       document.removeEventListener("keydown",floorKey);
+      renderer.domElement.removeEventListener("webglcontextrestored", invalidate);
       renderer.domElement.removeEventListener("wheel", onWheel, true);
       renderer.domElement.removeEventListener("dblclick", onDoubleClick);
       renderer.domElement.removeEventListener("pointerdown", onDown, true);
