@@ -25,7 +25,8 @@
 .export-print-facts { font-size: 13px; margin: 12px 0; }
 .export-print-facts dt { font-weight: 600; margin-top: 8px; }
 .export-print-facts dd { margin: 0; }
-.export-menu-actions { display: flex; gap: 8px; margin-top: 16px; }
+/* Pinned to the bottom of the scrolling menu, so Download stays on screen at short windows. */
+.export-menu-actions { display: flex; gap: 8px; margin-top: 16px; position: sticky; bottom: -16px; padding: 12px 0 16px; margin-bottom: -16px; background: white; border-top: 1px solid #e3e9dd; }
 /* Keep the consolidated trigger visible beside JSON and configurations on phones. */
 @media (max-width: 480px) {
   .builder-page .toolbar:has(.export-menu) .brand {
