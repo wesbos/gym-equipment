@@ -11,7 +11,28 @@ export interface TimelineData { version: 1; base: RackDoc; events: HistoryEvent[
 export interface SessionDocument { format: 'bos-strength-session'; version: 1; doc: RackDoc; timeline: TimelineData }
 export interface TimelineSnapshot { entries: readonly HistoryEntry[]; position: number; latest: number; applied: number; viewing: boolean }
 const fields = ['version','rack','uprights','connections','profileId','removed','structure','accessories','nextId','appearance','logo','floorItems','systems','wallItems','room','hangItems'] as const;
-const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+/** Structural equality with the semantics of comparing JSON text (undefined-valued keys match missing ones; key
+ * order counts) without serialising. Shared subtrees short-circuit on reference equality, so comparing an edited doc with its source only
+ * walks the parts that were copied. */
+export function sameValue(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+  if (Array.isArray(a)) {
+    if (!Array.isArray(b) || a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (!sameValue(a[i], b[i])) return false;
+    return true;
+  }
+  if (Array.isArray(b)) return false;
+  // Same defined keys in the same order, like the JSON text comparison this replaces (a reordered map is an edit).
+  const x = a as Record<string, unknown>, y = b as Record<string, unknown>, kx = Object.keys(x), ky = Object.keys(y);
+  for (let i = 0, j = 0; ; i++, j++) {
+    while (i < kx.length && x[kx[i]] === undefined) i++;
+    while (j < ky.length && y[ky[j]] === undefined) j++;
+    if (i === kx.length || j === ky.length) return i === kx.length && j === ky.length;
+    if (kx[i] !== ky[j] || !sameValue(x[kx[i]], y[ky[j]])) return false;
+  }
+}
+const equal = sameValue;
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 /** Never copy unknown document fields (notably an embedded timeline) into geometry or keyframes. */
 export function cleanDocument(input: unknown): RackDoc {
@@ -96,33 +117,64 @@ export function describeChange(before: RackDoc, after: RackDoc): Required<Pick<H
   if (!equal(before.uprights, after.uprights) || !equal(before.connections, after.connections) || !equal(before.structure, after.structure) || !equal(before.removed, after.removed)) return { category: 'structure', label: 'Edit structure' };
   return { category: 'edit', label: 'Edit rack' };
 }
+/** A point to roll an append-only journal back to (a gesture whose entry was materialised early). */
+export interface HistoryMark { length: number; applied: number; redo: number[]; keyframes: number }
 export class DocumentHistory {
   data: TimelineData;
+  /** Step -> document, most recently used last. Events are append-only, so entries never go stale except on rewind. */
   private cache = new Map<number, RackDoc>();
+  private entryCache: { events: HistoryEvent[]; length: number; entries: readonly HistoryEntry[] } | null = null;
   constructor(doc: RackDoc, data?: TimelineData) { this.data = data ?? { version: 1, base: cleanDocument(doc), events: [], applied: 0, redo: [], keyframes: [] }; }
-  seek(step: number): RackDoc {
-    if (!Number.isInteger(step) || step < 0 || step > this.data.events.length) throw Error('Invalid history step.');
-    const cached = this.cache.get(step); if (cached) return structuredClone(cached);
-    const frame = [...this.data.keyframes].reverse().find(frame => frame.step <= step);
-    let doc = frame ? JSON.parse(frame.json) as RackDoc : this.data.base;
-    for (let i = frame?.step ?? 0; i < step; i++) doc = applyOps(doc, this.data.events[i].ops);
-    if (this.cache.size >= 8) this.cache.delete(this.cache.keys().next().value!);
-    this.cache.set(step, doc);
-    return structuredClone(doc);
+  private remember(step: number, doc: RackDoc) {
+    this.cache.delete(step); this.cache.set(step, doc);
+    if (this.cache.size > 8) this.cache.delete(this.cache.keys().next().value!);
   }
+  /** Read-only document at `step` (shared with the cache: never mutate it). */
+  private docAt(step: number): RackDoc {
+    if (!Number.isInteger(step) || step < 0 || step > this.data.events.length) throw Error('Invalid history step.');
+    const cached = this.cache.get(step);
+    if (cached) { this.remember(step, cached); return cached; }
+    let frame: { step: number; json: string } | undefined;
+    for (let i = this.data.keyframes.length - 1; i >= 0; i--) if (this.data.keyframes[i].step <= step) { frame = this.data.keyframes[i]; break; }
+    let start = frame?.step ?? 0, doc = frame ? JSON.parse(frame.json) as RackDoc : this.data.base;
+    // Replay from the nearest cached step when it is closer than the keyframe.
+    for (const [cachedStep, cachedDoc] of this.cache) if (cachedStep <= step && cachedStep > start) { start = cachedStep; doc = cachedDoc; }
+    for (let i = start; i < step; i++) doc = applyOps(doc, this.data.events[i].ops);
+    this.remember(step, doc);
+    return doc;
+  }
+  seek(step: number): RackDoc { return structuredClone(this.docAt(step)); }
   append(doc: RackDoc, metadata: HistoryMetadata = {}, force = false) {
-    const applied = this.seek(this.data.applied);
+    const applied = this.docAt(this.data.applied);
     if (!force && equal(applied, doc)) return false;
     const id = this.data.events.length + 1;
     const description = { ...describeChange(applied, doc), ...metadata };
-    const event: HistoryEvent = { id, parent: this.data.applied, label: description.label, category: description.category, ops: diffDocuments(this.seek(id - 1), doc) };
+    const event: HistoryEvent = { id, parent: this.data.applied, label: description.label, category: description.category, ops: diffDocuments(this.docAt(id - 1), doc) };
     delete (event as HistoryEvent & HistoryMetadata).replacement;
     this.data.events.push(event); this.data.applied = id; this.data.redo = [];
-    if (id % 32 === 0) this.data.keyframes.push({ step: id, json: JSON.stringify(doc) });
-    this.cache.clear();
+    const head = structuredClone(doc);
+    if (id % 32 === 0) this.data.keyframes.push({ step: id, json: JSON.stringify(head) });
+    this.remember(id, head);
     return true;
   }
-  snapshot(position: number): TimelineSnapshot { return { entries: this.data.events.map(({id,label,category}) => ({id,label,category})), position, latest: this.data.events.length, applied: this.data.applied, viewing: position !== this.data.applied }; }
+  mark(): HistoryMark { return { length: this.data.events.length, applied: this.data.applied, redo: [...this.data.redo], keyframes: this.data.keyframes.length }; }
+  /** Drop events appended after `mark` and restore its cursor and redo stack. */
+  rewind(mark: HistoryMark) {
+    this.data.events.length = mark.length; this.data.keyframes.length = mark.keyframes;
+    this.data.applied = mark.applied; this.data.redo = [...mark.redo];
+    for (const step of [...this.cache.keys()]) if (step > mark.length) this.cache.delete(step);
+    this.entryCache = null;
+  }
+  entries(): readonly HistoryEntry[] {
+    const events = this.data.events, cache = this.entryCache;
+    if (cache && cache.events === events && cache.length === events.length) return cache.entries;
+    const entries = cache && cache.events === events && cache.length < events.length
+      ? [...cache.entries, ...events.slice(cache.length).map(({id,label,category}) => ({id,label,category}))]
+      : events.map(({id,label,category}) => ({id,label,category}));
+    this.entryCache = { events, length: events.length, entries };
+    return entries;
+  }
+  snapshot(position: number): TimelineSnapshot { return { entries: this.entries(), position, latest: this.data.events.length, applied: this.data.applied, viewing: position !== this.data.applied }; }
   undo() { const current = this.data.applied; if (!current) return false; this.data.redo.push(current); this.data.applied = this.data.events[current - 1].parent; return true; }
   redo() { const next = this.data.redo.pop(); if (next === undefined) return false; this.data.applied = next; return true; }
 }

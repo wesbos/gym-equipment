@@ -62,17 +62,20 @@ export function rackBounds(doc: RackDoc): Bounds | null {
   return posts.length ? {min:[Math.min(...posts.map(p=>p.x))-doc.rack.tube/2,Math.min(...posts.map(p=>-p.y))-doc.rack.tube/2],max:[Math.max(...posts.map(p=>p.x))+doc.rack.tube/2,Math.max(...posts.map(p=>-p.y))+doc.rack.tube/2]} : null;
 }
 const title = (part: FloorPart) => part.noun[0].toUpperCase() + part.noun.slice(1);
-export function floorWarnings(doc: RackDoc) {
+/** Overlap and clearance warnings. With `only`, just the warnings that involve one of those ids (same order). */
+export function floorWarnings(doc: RackDoc, only?: readonly string[]) {
   const items=(doc.floorItems ?? []).filter(i=>!i.cradle), warnings: {ids:[string,string];message:string}[]=[], rack=rackBounds(doc);
   // Bounds once per item, then cheap box tests (was O(n²) footprint solves per call).
-  const under=items.map(i=>!!entry(i.part).underlay), all=items.map(floorBounds);
+  const bounds=items.map(floorBounds), under=items.map(i=>!!entry(i.part).underlay), wanted=(id:string)=>!only || only.includes(id);
   for (const [i,item] of items.entries()) {
     if(under[i]) continue;
-    const bounds=all[i],clear=clearanceBounds(item),noun=title(entry(item.part));
-    if(rack && overlaps(bounds,rack)) warnings.push({ids:[item.id,'rack'],message:`${noun} overlaps the rack footprint.`});
-    else if(rack && clear && overlaps(clear,rack)) warnings.push({ids:[item.id,'rack'],message:`${noun} use clearance overlaps the rack.`});
-    for(let j=i+1;j<items.length;j++) if(!under[j] && overlaps(bounds,all[j])) warnings.push({ids:[item.id,items[j].id],message:'Floor items overlap.'});
-    if(clear) for(const [j,other] of items.entries()) if(j!==i && !under[j] && overlaps(clear,all[j]) && !overlaps(bounds,all[j])) warnings.push({ids:[item.id,other.id],message:`${noun} use clearance overlaps another floor item.`});
+    const mine=wanted(item.id);
+    if(!mine && !items.some((other,j)=>j!==i && wanted(other.id))) continue;
+    const clear=clearanceBounds(item),noun=title(entry(item.part));
+    if(mine && rack && overlaps(bounds[i],rack)) warnings.push({ids:[item.id,'rack'],message:`${noun} overlaps the rack footprint.`});
+    else if(mine && rack && clear && overlaps(clear,rack)) warnings.push({ids:[item.id,'rack'],message:`${noun} use clearance overlaps the rack.`});
+    for(let j=i+1;j<items.length;j++) if((mine || wanted(items[j].id)) && !under[j] && overlaps(bounds[i],bounds[j])) warnings.push({ids:[item.id,items[j].id],message:'Floor items overlap.'});
+    if(clear) for(const [j,other] of items.entries()) if(j!==i && (mine || wanted(other.id)) && !under[j] && overlaps(clear,bounds[j]) && !overlaps(bounds[i],bounds[j])) warnings.push({ids:[item.id,other.id],message:`${noun} use clearance overlaps another floor item.`});
   }
   return warnings;
 }
