@@ -37,15 +37,19 @@ import { ConfigManager } from "../components/ConfigManager.tsx";
 import { PartThumbnail } from "../components/PartThumbnail.tsx";
 import { AppearanceControls } from "../components/AppearanceControls.tsx";
 import {
+  memo,
+  useDeferredValue,
   useEffect,
+  useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
   type FormEvent,
   type ReactNode,
+  type RefObject,
 } from "react";
 import { Link } from "@tanstack/react-router";
-import { getBuilderStore, type BuilderStore } from "../state/builder-store.ts";
+import { getBuilderStore, type BuilderSnapshot, type BuilderStore, type CatalogPart } from "../state/builder-store.ts";
+import { shallowEqual, useStoreSelector } from "../state/use-store.ts";
 import { createBuilderScene } from "../scenes/builder-scene.ts";
 import {
   createAssembly,
@@ -111,6 +115,27 @@ const groups: [string, readonly PartId[]][] = [
   ["Storage", ["single-bar-holder", "storage-pin-short", "storage-pin-long"]],
 ];
 const allParts = groups.flatMap(([, ids]) => ids);
+/** Parts whose placement info can list structure slots; only these can lose `draggable` as the rack changes. */
+const slotCandidates = allParts.filter(id => getPartPlacementInfo(id)?.slots !== undefined || getPartPlacementInfo(id, createAssembly())?.slots !== undefined);
+const cleanName = (name: string) => name.replace(/^BOS STRENGTH\s*/, "");
+/** Display and search names per definitions list (computed once per worker load, shared by every component). */
+const namesCache = new WeakMap<readonly CatalogPart[], { name: (part: string) => string; lower: (part: string) => string; defaults: (part: string) => CatalogPart["defaults"] | undefined }>();
+function partNames(definitions: readonly CatalogPart[]) {
+  let names = namesCache.get(definitions);
+  if (!names) {
+    const byId = new Map(definitions.map(d => [d.id as string, d]));
+    const display = new Map<string, string>(), lower = new Map<string, string>();
+    const name = (part: string) => { let n = display.get(part); if (n === undefined) { n = (byId.has(part) ? cleanName(byId.get(part)!.name) : "") || part; display.set(part, n); } return n; };
+    names = {
+      name,
+      lower: part => { let n = lower.get(part); if (n === undefined) { n = name(part).toLowerCase(); lower.set(part, n); } return n; },
+      defaults: part => byId.get(part)?.defaults,
+    };
+    namesCache.set(definitions, names);
+  }
+  return names;
+}
+const usePartNames = (store: BuilderStore) => partNames(useStoreSelector(store, s => s.definitions));
 function download(blob: Blob, filename: string) {
   const a = document.createElement("a"),
     url = URL.createObjectURL(blob);
@@ -127,14 +152,34 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
     </label>
   );
 }
+type InspectorRoute = { kind: "floor" | "wall" | "hang"; id: string } | { kind: "full" };
+/** Which inspector the selection needs. Floor, wall and hang items get their own inspectors, which subscribe to their
+ * item only, so dragging one does not re-render the generic inspector. */
+function inspectorRoute(s: BuilderSnapshot): InspectorRoute {
+  if (s.structureChoice || s.selection.length > 1) return { kind: "full" };
+  const ownerId = s.resolved.find(r => r.id === s.selected)?.ownerId || s.selected;
+  const entry = s.doc.accessories.find(a => a.id === ownerId),
+    physical = s.resolved.find(r => r.id === s.selected) || s.resolved.find(r => r.ownerId === s.selected);
+  const part = entry?.part || (ownerId ? s.doc.structure[ownerId]?.part : undefined) || physical?.part;
+  if (!part || !physical || isSystemPart(part)) return { kind: "full" };
+  if (physical.kind === "floor-item") return { kind: "floor", id: physical.id };
+  if (physical.kind === "wall-item") return { kind: s.doc.hangItems?.some(h => h.id === physical.id) ? "hang" : "wall", id: physical.id };
+  return { kind: "full" };
+}
 function Inspector({ store }: { store: BuilderStore }) {
   const [snapHint, setSnapHint] = useState("");
-  const state = useSyncExternalStore(store.subscribe, store.getSnapshot),
+  const route = useStoreSelector(store, inspectorRoute, shallowEqual);
+  if (route.kind === "floor") return <FloorInspector store={store} id={route.id} />;
+  if (route.kind === "hang") return <HangInspector store={store} id={route.id} />;
+  if (route.kind === "wall") return <WallInspector store={store} id={route.id} />;
+  return <FullInspector store={store} snapHint={snapHint} setSnapHint={setSnapHint} />;
+}
+function FullInspector({ store, snapHint, setSnapHint }: { store: BuilderStore; snapHint: string; setSnapHint: (hint: string) => void }) {
+  // Everything this inspector reads, and nothing placement previews change (proposal, placement text, pointer state).
+  const state = useStoreSelector(store, s => ({ doc: s.doc, resolved: s.resolved, selected: s.selected, selection: s.selection,
+    structureChoice: s.structureChoice, structureMode: s.structureMode, structureMoveId: s.structureMoveId, definitions: s.definitions }), shallowEqual),
     { doc, resolved, selected, structureChoice, definitions } = state;
-  const nameOf = (part: string) =>
-    definitions
-      .find((d) => d.id === part)
-      ?.name.replace(/^BOS STRENGTH\s*/, "") || part;
+  const nameOf = partNames(definitions).name;
   const ownerId = store.ownerOf(selected);
   const entry = doc.accessories.find((a) => a.id === ownerId),
     physical =
@@ -426,22 +471,281 @@ function Inspector({ store }: { store: BuilderStore }) {
     </>
   );
 }
+// Each region below subscribes to the store slices it shows, so a drag or pointer move that only moves a part does not
+// re-render the catalog, toolbar or timeline. Keep new store reads inside the smallest component that needs them.
+function HistoryButtons({ store }: { store: BuilderStore }) {
+  const { canUndo, canRedo } = useStoreSelector(store, s => ({ canUndo: s.canUndo, canRedo: s.canRedo }), shallowEqual);
+  return (
+    <div className="history-actions">
+      <button
+        id="undo"
+        aria-label="Undo"
+        disabled={!canUndo}
+        onClick={() => store.history("undo")}
+      >
+        ↶
+      </button>
+      <button
+        id="redo"
+        aria-label="Redo"
+        disabled={!canRedo}
+        onClick={() => store.history("redo")}
+      >
+        ↷
+      </button>
+    </div>
+  );
+}
+function ExportControl({ store, controller }: { store: BuilderStore; controller: RefObject<ReturnType<typeof createBuilderScene> | null> }) {
+  const { loading, empty } = useStoreSelector(store, s => ({ loading: s.loading, empty: !s.resolved.length }), shallowEqual);
+  return <ExportMenu store={store} loading={loading} empty={empty}
+    exportGLB={() => {
+      if (!controller.current) return Promise.reject(new Error('Rack scene is not ready.'));
+      return controller.current.exportGLB();
+    }} />;
+}
+function PairControl({ store }: { store: BuilderStore }) {
+  // Unpairable parts show unchecked, not a disabled "pair on".
+  const { paired, unpairable } = useStoreSelector(store, s => ({
+    paired: s.paired,
+    unpairable: !!s.placing && !getPartPlacementInfo(s.placing.part, s.doc)?.paired && !(floorPart(s.placing.part)?.pair && !s.placing.movingId),
+  }), shallowEqual);
+  return (
+    <label className="pair-control">
+      <input
+        id="paired"
+        type="checkbox"
+        checked={paired && !unpairable}
+        disabled={unpairable}
+        onChange={(e) => store.patch({ paired: e.target.checked })}
+      />
+      <span>
+        Add matching pair
+      </span>
+    </label>
+  );
+}
+const systemHint = (id: string) => id === "cable-kraken" ? "Hydra / Manticore · supported 4/6-post bay" : id.includes("ares") ? "REP · 6-post or anchored PR-5000 16″ bay" : "REP · supported 4/6-post bay";
+const PartCard = memo(function PartCard({ store, id, name, pressed, draggable, enabled, params }: {
+  store: BuilderStore; id: PartId; name: string; pressed: boolean; draggable: boolean; enabled: boolean; params: CatalogPart["defaults"] | undefined;
+}) {
+  return (
+    <button
+      className="part-card"
+      data-part={id}
+      aria-pressed={pressed}
+      draggable={draggable}
+      onClick={() => store.startPlacement(id)}
+      onDragStart={(e) => {
+        e.dataTransfer.setData("text/plain", id);
+        e.dataTransfer.effectAllowed = "copy";
+        store.startPlacement(id);
+      }}
+    >
+      <PartThumbnail
+        enabled={enabled}
+        part={id}
+        params={params}
+        className="thumb"
+      />
+      <span>{name}{!isSystemPart(id) && <VendorCredit part={id} compact />}{isSystemPart(id) && <small className="system-hint">{systemHint(id)}</small>}</span>
+      <span className="part-plus">+</span>
+    </button>
+  );
+});
+type ActiveChoice = readonly [string | null, string | null, string | null];
+const CatalogSection = memo(function CatalogSection({ store, label, ids, query, definitions, active, slotted }: {
+  store: BuilderStore; label: string; ids: readonly PartId[]; query: string; definitions: readonly CatalogPart[]; active: ActiveChoice; slotted: string;
+}) {
+  const names = partNames(definitions);
+  const matches = query ? ids.filter((id) => names.lower(id).includes(query)) : ids;
+  if (!matches.length) return null;
+  const blocked = new Set(slotted.split(" "));
+  return (
+    <section>
+      <h3>{label}</h3>
+      {matches.map((id) => (
+        <PartCard
+          key={id}
+          store={store}
+          id={id}
+          name={names.name(id)}
+          pressed={active[0] === id || active[1] === id || active[2] === id}
+          draggable={!isSystemPart(id) && id !== "upright" && !blocked.has(id)}
+          enabled={definitions.length > 0}
+          params={names.defaults(id)}
+        />
+      ))}
+      {label === "Systems" && <SystemPlacementOptions store={store} />}
+    </section>
+  );
+});
+/** The parts sidebar. It reads search, pairing, definitions and the active placement only. */
+const CatalogPanel = memo(function CatalogPanel({ store }: { store: BuilderStore }) {
+  const [search, setSearch] = useState("");
+  // Typing stays responsive: the input updates at once and the 400+ card filter renders at lower priority.
+  const query = useDeferredValue(search).toLowerCase();
+  const definitions = useStoreSelector(store, s => s.definitions);
+  const active = useStoreSelector(store, s => [s.systemChoice, s.placing?.part ?? null, s.structureChoice] as ActiveChoice, shallowEqual);
+  const slotted = useStoreSelector(store, s => slotCandidates.filter(id => getPartPlacementInfo(id, s.doc)?.slots?.length).join(" "));
+  return (
+    <aside className="catalog-panel">
+      <div className="panel-heading">
+        <h1>Parts</h1>
+
+      </div>
+      <div className="search-wrap">
+        <input
+          id="search"
+          aria-label="Search parts"
+          placeholder="Search parts…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+      <PairControl store={store} />
+      <div id="catalog">
+        <RackPresets store={store} />
+        {groups.map(([label, ids]) => (
+          <CatalogSection key={label} store={store} label={label} ids={ids} query={query} definitions={definitions} active={active} slotted={slotted} />
+        ))}
+      </div>
+      <div className="catalog-footer">
+        <Link to="/library">Browse parts library ↗</Link>
+        <Link to="/parts/$partId" params={{ partId: "upright" }}>Part detail viewer ↗</Link>
+      </div>
+    </aside>
+  );
+});
+function SelectToolButton({ store }: { store: BuilderStore }) {
+  const selectionTool = useStoreSelector(store, s => s.selectionTool);
+  return <button aria-pressed={selectionTool} onClick={() => store.patch({ selectionTool: !selectionTool })}>Select</button>;
+}
+function StageCaption({ store }: { store: BuilderStore }) {
+  const { viewing, dimensions } = useStoreSelector(store, s => ({ viewing: s.timeline.viewing, dimensions: s.dimensions }), shallowEqual);
+  return (
+    <div className="stage-caption">
+      <span className="eyebrow">{viewing ? "Viewing history · edits apply to latest" : "Your rack"}</span>
+      <div id="dimensions">{dimensions}</div>
+    </div>
+  );
+}
+function PartsCount({ store }: { store: BuilderStore }) {
+  return <>{useStoreSelector(store, s => s.resolved.length)}</>;
+}
+function PlacementHint({ store }: { store: BuilderStore }) {
+  const nameOf = usePartNames(store).name;
+  const hint = useStoreSelector(store, s => (s.placing || s.structureChoice || s.systemChoice) ? {
+    placingPart: s.placing?.part ?? null, structureChoice: s.structureChoice, placementText: s.placementText,
+    hasProposal: !!s.proposal, rotationOnly: !!s.placing?.rotationOnly, addMode: !!s.structureChoice && s.structureMode === "add",
+    movePair: !!s.placing?.movingId && !!getPartPlacementInfo(s.placing.part, s.doc)?.paired, paired: s.paired,
+  } : null, shallowEqual);
+  if (!hint) return null;
+  return (
+    <div className="placement-hint" id="placement-hint">
+      <span id="placement-text">
+        {hint.placementText ||
+          `Place ${nameOf(hint.placingPart ?? hint.structureChoice!)}`}
+      </span>
+      {!hint.addMode && <button id="accept-placement" disabled={!hint.hasProposal} onClick={store.acceptProposal}>{hint.rotationOnly ? "Apply rotation" : "Place"}</button>}
+      {hint.movePair && <label><input type="checkbox" checked={hint.paired} onChange={e => store.patch({ paired: e.target.checked })} /> Move pair together</label>}
+      <button id="cancel-placement" onClick={store.cancelPlacement}>
+        Cancel <kbd>ESC</kbd>
+      </button>
+    </div>
+  );
+}
+function PartsDrawer({ store, close }: { store: BuilderStore; close: () => void }) {
+  const nameOf = usePartNames(store).name;
+  const { resolved, selection } = useStoreSelector(store, s => ({ resolved: s.resolved, selection: s.selection }), shallowEqual);
+  return (
+    <section className="parts-drawer" id="parts-drawer">
+      <div className="drawer-heading">
+        <h2>Parts list</h2>
+        <button onClick={close}>Close ×</button>
+      </div>
+      <div id="parts-list">
+        {resolved.map(row => (
+          <button key={row.id} className="bom-row" data-instance-id={row.id}
+            aria-pressed={selection.includes(row.id)}
+            onClick={e => store.select(row.id, e, resolved.map(r => r.id))}>
+            {nameOf(row.part)} · {row.id.replaceAll('-', ' ')}
+            <VendorCredit part={row.part} compact />
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+function SelectionCount({ store }: { store: BuilderStore }) {
+  const count = useStoreSelector(store, s => s.selection.length);
+  return count > 1 ? <h2 id="selection-title">{count} parts</h2> : null;
+}
+function SwapAccessory({ store }: { store: BuilderStore }) {
+  const swap = useStoreSelector(store, s => s.placing && !s.placing.movingId ? { part: s.placing.part, doc: s.doc } : null, shallowEqual);
+  if (!swap) return null;
+  return <details><summary>Swap an existing accessory</summary>
+    {swap.doc.accessories.map(a => {
+      const candidate = swapCandidate(swap.doc, a.id, swap.part);
+      return candidate.valid ? <button key={a.id} onClick={() => store.act(() => { store.commit(candidate.doc); store.select(candidate.ownerId); })}>Swap {a.id}</button> : null;
+    })}
+  </details>;
+}
+function InspectorSlot({ store }: { store: BuilderStore }) {
+  return <Inspector key={useStoreSelector(store, s => s.inputRevision)} store={store} />;
+}
+function Warnings({ store }: { store: BuilderStore }) {
+  const { doc, resolved } = useStoreSelector(store, s => ({ doc: s.doc, resolved: s.resolved }), shallowEqual);
+  const warnings = useMemo(() => [...detectCollisions(resolved), ...floorWarnings(doc), ...wallWarnings(doc), ...hangWarnings(doc)], [doc, resolved]);
+  return (
+    <div id="warnings">
+      {warnings.map((warning, i) => (
+        <button
+          key={i}
+          className="warning-item"
+          onClick={() => store.select(warning.ids[0])}
+        >
+          △ {warning.message}
+        </button>
+      ))}
+    </div>
+  );
+}
+/** Timeline changes only on commits and navigation; entries are compared by content since snapshots are rebuilt. */
+function sameTimeline(a: BuilderSnapshot["timeline"], b: BuilderSnapshot["timeline"]) {
+  return a === b || a.position === b.position && a.latest === b.latest && a.applied === b.applied && a.viewing === b.viewing &&
+    a.entries.length === b.entries.length && a.entries.every((e, i) => { const f = b.entries[i]; return e === f || e.id === f.id && e.label === f.label && e.category === f.category; });
+}
+function TimelineBar({ store, controller }: { store: BuilderStore; controller: RefObject<ReturnType<typeof createBuilderScene> | null> }) {
+  const [building, setBuilding] = useState(false);
+  const timeline = useStoreSelector(store, s => s.timeline, sameTimeline);
+  const { loading, busy } = useStoreSelector(store, s => ({ loading: s.loading, busy: !!s.placing || !!s.structureChoice || !!s.systemChoice }), shallowEqual);
+  return <HistoryTimeline timeline={timeline} loading={loading}
+    seek={store.seekHistory} restore={() => store.restoreHistory()} clear={store.clearHistory}
+    build={{ playing: building, disabled: loading || busy,
+      toggle: () => building ? controller.current?.stopBuild() : setBuilding(!!controller.current?.playBuild(() => setBuilding(false))) }} />;
+}
+function StatusBar({ store }: { store: BuilderStore }) {
+  const { status, error } = useStoreSelector(store, s => ({ status: s.status, error: s.error }), shallowEqual);
+  return (
+    <footer className="status-bar">
+      <span
+        id="status"
+        role="status"
+        className={error ? "error" : ""}
+      >
+        {status}
+      </span>
+    </footer>
+  );
+}
 export default function BuilderPage() {
   const [store] = useState(getBuilderStore);
-  const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const viewport = useRef<HTMLDivElement>(null),
     controller = useRef<ReturnType<typeof createBuilderScene> | null>(null),
     importFile = useRef<HTMLInputElement>(null);
-  const [search, setSearch] = useState(""),
-    [drawer, setDrawer] = useState(false),
-    [view, setView] = useState<"iso" | "front" | "side" | "top">("iso"),
-    [building, setBuilding] = useState(false);
-  const nameOf = (part: string) =>
-    state.definitions
-      .find((d) => d.id === part)
-      ?.name.replace(/^BOS STRENGTH\s*/, "") || part;
-  // Unpairable parts show unchecked, not a disabled "pair on".
-  const unpairable = !!state.placing && !getPartPlacementInfo(state.placing.part, state.doc)?.paired && !(floorPart(state.placing.part)?.pair && !state.placing.movingId);
+  const [drawer, setDrawer] = useState(false),
+    [view, setView] = useState<"iso" | "front" | "side" | "top">("iso");
   useEffect(() => {
     const scene = createBuilderScene(viewport.current!, store);
     controller.current = scene;
@@ -476,7 +780,6 @@ export default function BuilderPage() {
       controller.current = null;
     };
   }, [store]);
-  const warnings = [...detectCollisions(state.resolved), ...floorWarnings(state.doc), ...wallWarnings(state.doc), ...hangWarnings(state.doc)];
   const fit = (mode = view) => {
     setView(mode);
     controller.current?.fit(mode);
@@ -493,24 +796,7 @@ export default function BuilderPage() {
           </div>
           <div className="toolbar-actions">
             <ConfigManager store={store} />
-            <div className="history-actions">
-              <button
-                id="undo"
-                aria-label="Undo"
-                disabled={!state.canUndo}
-                onClick={() => store.history("undo")}
-              >
-                ↶
-              </button>
-              <button
-                id="redo"
-                aria-label="Redo"
-                disabled={!state.canRedo}
-                onClick={() => store.history("redo")}
-              >
-                ↷
-              </button>
-            </div>
+            <HistoryButtons store={store} />
             <button id="load" onClick={() => importFile.current?.click()}>
               Load JSON
             </button>
@@ -527,11 +813,7 @@ export default function BuilderPage() {
             >
               Save JSON
             </button>
-            <ExportMenu store={store} loading={state.loading} empty={!state.resolved.length}
-              exportGLB={() => {
-                if (!controller.current) return Promise.reject(new Error('Rack scene is not ready.'));
-                return controller.current.exportGLB();
-              }} />
+            <ExportControl store={store} controller={controller} />
             <input
               hidden
               ref={importFile}
@@ -556,86 +838,11 @@ export default function BuilderPage() {
             />
           </div>
         </header>
-        <aside className="catalog-panel">
-          <div className="panel-heading">
-            <h1>Parts</h1>
-
-          </div>
-          <div className="search-wrap">
-            <input
-              id="search"
-              aria-label="Search parts"
-              placeholder="Search parts…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <label className="pair-control">
-            <input
-              id="paired"
-              type="checkbox"
-              checked={state.paired && !unpairable}
-              disabled={unpairable}
-              onChange={(e) => store.patch({ paired: e.target.checked })}
-            />
-            <span>
-              Add matching pair
-            </span>
-          </label>
-          <div id="catalog">
-            <RackPresets store={store} />
-            {groups.map(([label, ids]) => {
-              const matches = ids.filter((id) =>
-                nameOf(id).toLowerCase().includes(search.toLowerCase()),
-              );
-              return matches.length ? (
-                <section key={label}>
-                  <h3>{label}</h3>
-                  {matches.map((id) => (
-                    <button
-                      className="part-card"
-                      key={id}
-                      data-part={id}
-                      aria-pressed={
-                        state.systemChoice === id ||
-                        state.placing?.part === id ||
-                        state.structureChoice === id
-                      }
-                      draggable={
-                        !isSystemPart(id) && id !== "upright" &&
-                        !getPartPlacementInfo(id, state.doc)?.slots?.length
-                      }
-                      onClick={() => store.startPlacement(id)}
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData("text/plain", id);
-                        e.dataTransfer.effectAllowed = "copy";
-                        store.startPlacement(id);
-                      }}
-                    >
-                      <PartThumbnail
-                        enabled={state.definitions.length > 0}
-                        part={id}
-                        params={state.definitions.find((d) => d.id === id)?.defaults}
-                        className="thumb"
-                      />
-                      <span>{nameOf(id)}{!isSystemPart(id) && <VendorCredit part={id} compact />}{isSystemPart(id) && <small className="system-hint">{id === "cable-kraken" ? "Hydra / Manticore · supported 4/6-post bay" : id.includes("ares") ? "REP · 6-post or anchored PR-5000 16″ bay" : "REP · supported 4/6-post bay"}</small>}</span>
-                      <span className="part-plus">+</span>
-                    </button>
-                  ))}
-                  {label === "Systems" && <SystemPlacementOptions store={store} />}
-                </section>
-              ) : null;
-            })}
-          </div>
-          <div className="catalog-footer">
-            <Link to="/library">Browse parts library ↗</Link>
-            <Link to="/parts/$partId" params={{ partId: "upright" }}>Part detail viewer ↗</Link>
-          </div>
-        </aside>
+        <CatalogPanel store={store} />
         <main className="stage">
           <div id="viewport" ref={viewport} />
           <div className="view-controls">
-            <button aria-pressed={state.selectionTool} onClick={() => store.patch({ selectionTool: !state.selectionTool })}>Select</button>
+            <SelectToolButton store={store} />
             {(["iso", "front", "side", "top"] as const).map((mode) => (
               <button
                 key={mode}
@@ -647,10 +854,7 @@ export default function BuilderPage() {
               </button>
             ))}
           </div>
-          <div className="stage-caption">
-            <span className="eyebrow">{state.timeline.viewing ? "Viewing history · edits apply to latest" : "Your rack"}</span>
-            <div id="dimensions">{state.dimensions}</div>
-          </div>
+          <StageCaption store={store} />
           <div className="stage-actions">
             <button id="fit" onClick={() => fit()}>
               Fit view
@@ -660,40 +864,11 @@ export default function BuilderPage() {
               aria-expanded={drawer}
               onClick={() => setDrawer(!drawer)}
             >
-              Parts list ({state.resolved.length})
+              Parts list (<PartsCount store={store} />)
             </button>
           </div>
-          {(state.placing || state.structureChoice || state.systemChoice) && (
-            <div className="placement-hint" id="placement-hint">
-              <span id="placement-text">
-                {state.placementText ||
-                  `Place ${nameOf(state.placing?.part ?? state.structureChoice!)}`}
-              </span>
-              {!(state.structureChoice && state.structureMode === "add") && <button id="accept-placement" disabled={!state.proposal} onClick={store.acceptProposal}>{state.placing?.rotationOnly ? "Apply rotation" : "Place"}</button>}
-              {state.placing?.movingId && getPartPlacementInfo(state.placing.part, state.doc)?.paired && <label><input type="checkbox" checked={state.paired} onChange={e => store.patch({ paired: e.target.checked })} /> Move pair together</label>}
-              <button id="cancel-placement" onClick={store.cancelPlacement}>
-                Cancel <kbd>ESC</kbd>
-              </button>
-            </div>
-          )}
-          {drawer && (
-            <section className="parts-drawer" id="parts-drawer">
-              <div className="drawer-heading">
-                <h2>Parts list</h2>
-                <button onClick={() => setDrawer(false)}>Close ×</button>
-              </div>
-              <div id="parts-list">
-                {state.resolved.map(row => (
-                  <button key={row.id} className="bom-row" data-instance-id={row.id}
-                    aria-pressed={state.selection.includes(row.id)}
-                    onClick={e => store.select(row.id, e, state.resolved.map(r => r.id))}>
-                    {nameOf(row.part)} · {row.id.replaceAll('-', ' ')}
-                    <VendorCredit part={row.part} compact />
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
+          <PlacementHint store={store} />
+          {drawer && <PartsDrawer store={store} close={() => setDrawer(false)} />}
         </main>
         <aside className="inspector-panel">
           <div className="inspector-topline">
@@ -707,28 +882,13 @@ export default function BuilderPage() {
           >
             ← Rack settings
           </button>
-          {state.selection.length > 1 && <h2 id="selection-title">{state.selection.length} parts</h2>}
+          <SelectionCount store={store} />
           <AppearanceControls store={store} />
           <CableSmithControls store={store} />
           <LogoControls store={store} />
-          {state.placing && !state.placing.movingId && <details><summary>Swap an existing accessory</summary>
-            {state.doc.accessories.map(a => {
-              const candidate = swapCandidate(state.doc, a.id, state.placing!.part);
-              return candidate.valid ? <button key={a.id} onClick={() => store.act(() => { store.commit(candidate.doc); store.select(candidate.ownerId); })}>Swap {a.id}</button> : null;
-            })}
-          </details>}
-          <Inspector key={state.inputRevision} store={store} />
-          <div id="warnings">
-            {warnings.map((warning, i) => (
-              <button
-                key={i}
-                className="warning-item"
-                onClick={() => store.select(warning.ids[0])}
-              >
-                △ {warning.message}
-              </button>
-            ))}
-          </div>
+          <SwapAccessory store={store} />
+          <InspectorSlot store={store} />
+          <Warnings store={store} />
           <div className="inspector-bottom">
             <button
               id="reset-design"
@@ -744,19 +904,8 @@ export default function BuilderPage() {
             </button>
           </div>
         </aside>
-        <HistoryTimeline timeline={state.timeline} loading={state.loading}
-          seek={store.seekHistory} restore={() => store.restoreHistory()} clear={store.clearHistory}
-          build={{ playing: building, disabled: state.loading || !!state.placing || !!state.structureChoice || !!state.systemChoice,
-            toggle: () => building ? controller.current?.stopBuild() : setBuilding(!!controller.current?.playBuild(() => setBuilding(false))) }} />
-        <footer className="status-bar">
-          <span
-            id="status"
-            role="status"
-            className={state.error ? "error" : ""}
-          >
-            {state.status}
-          </span>
-        </footer>
+        <TimelineBar store={store} controller={controller} />
+        <StatusBar store={store} />
       </div>
     </div>
   );
