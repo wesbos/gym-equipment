@@ -20,9 +20,11 @@ type ByParams<T> = T | ((params: NumericParams) => T);
  * 1-inch hardware in 1-1/16" holes checks as 24.8 mm, 5/8-inch hardware in 11/16" holes as 15.5 mm. */
 export const PIN_1IN = 24.8, PIN_5_8IN = 15.5;
 /** Resolved-only params the builder, bodies and cradle slots receive (never saved, never user-editable):
- * `upright` tube size (mm), `mountSpacing` hole pitch (mm), `holeDiameter` rack bore (mm), and `mirror` = 1 on
- * the second unit of a `handed` pair (mirror your geometry across local X). */
-export const RACK_CONTEXT_KEYS = ['upright', 'mountSpacing', 'holeDiameter', 'mirror'] as const;
+ * `upright` tube size through the mounting face (mm, so the mating face is y = upright / 2), `mountSpacing` hole
+ * pitch (mm), `holeDiameter` rack bore (mm), and `mirror` = 1 on the second unit of a `handed` pair (mirror your
+ * geometry across local X). On rectangular 2x3 posts `uprightWidth` is the face width along local X when it differs
+ * from `upright`. Entries with `mount.span` receive `uprightSpan` (see RackMount.span) when the post they span to exists. */
+export const RACK_CONTEXT_KEYS = ['upright', 'mountSpacing', 'holeDiameter', 'mirror', 'uprightWidth', 'uprightSpan'] as const;
 export type RackTargetKind = 'upright' | 'crossmember-top';
 export interface RackMount {
   /** Accepted target kinds (default ['upright']). 'crossmember-top' uses the Darko Anchor rail stations: an active
@@ -44,6 +46,11 @@ export interface RackMount {
   faces?: readonly Face[];
   /** Extra fit rules (throw with a user-facing message), e.g. a required pitch. */
   validate?: (rack: RackDimensions, params: NumericParams) => void;
+  /** Parts that reach a second upright (pull-up bars, strap and flip-down safeties). The builder draws the whole
+   * span from its own mount; `uprightSpan` is the centre-to-centre distance to the nearest in-line post:
+   * 'across' along local X (signed; a strap on the inner side face runs to the post behind it), 'normal' along +Y
+   * (the post this face looks at; a bar between the inner side faces). Absent when there is no such post. */
+  span?: 'across' | 'normal';
 }
 /** Bar rest points (local frame, shaft axis) that make brand J-cups/spotters/storage park barbells like the built-in J-hooks. */
 export interface RackCradles { kind: 'working' | 'storage'; /** Plural product label for cradle names, e.g. 'Ghost Roller J-Cups'. */ label: string; slots: (params: NumericParams) => { point: Vec3; axis: Vec3 }[] }
