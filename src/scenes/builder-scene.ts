@@ -25,6 +25,7 @@ import { cloneInstanceMaterials } from './instance-materials.ts';
 import { BuildAnimation, planBuild } from './build-animation.ts';
 import { InstanceSync, placeInstance } from './instance-sync.ts';
 import { isBuilt, whenBuilt } from '../state/build-status.ts';
+import { matches, snapOff, isTyping } from '../state/shortcuts.ts';
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
@@ -64,6 +65,8 @@ export interface BuilderScene {
   /** Client (CSS px) position of a part's bounds centre, e.g. to anchor an action bar to the selection. The
    * placement ghost wins while one shows that id. Null for unknown ids; `visible` is false behind the camera. */
   screenPoint(id: string): { x: number; y: number; visible: boolean } | null;
+  /** Frame these physical instances (the outliner, warnings, F), keeping the current view direction. */
+  focus(ids: readonly string[]): void;
   dispose(): void;
 }
 const message = (error: unknown) =>
@@ -354,6 +357,7 @@ export function createBuilderScene(
       });
       // Allocate per-instance materials only after rejecting stale/failed batches; unchanged instances only move.
       assembly.sync(entries, models, snapshot.doc.appearance, partAttribution);
+      if (snapshot.hidden.length) applyVisibility();
       invalidate(); // Kept instances only move: no child is added or removed to wake the renderer.
       releaseAssembly();
       releaseAssembly = releaseBatch;
@@ -517,8 +521,8 @@ export function createBuilderScene(
     if (!candidates.some(c => c.key === structuralPreview?.key)) previewStructure([...candidates].sort((a,b) => distance(a)-distance(b))[0] ?? null);
   }
   const onStructureKey = (event: KeyboardEvent) => {
-    if (!addingStructure() || !visibleCandidates.length || (event.target instanceof HTMLElement && event.target.matches('input,select,textarea'))) return;
-    if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Alt'].includes(event.key)) return;
+    if (!addingStructure() || !visibleCandidates.length || isTyping(event.target)) return;
+    if (!matches('structure-cycle', event)) return;
     event.preventDefault();
     const direction = event.key === 'ArrowLeft' || event.key === 'ArrowUp' || event.shiftKey ? -1 : 1;
     const index = visibleCandidates.findIndex(c => c.key === structuralPreview?.key);
@@ -655,13 +659,29 @@ export function createBuilderScene(
     return best;
   }
   const shown = (o: THREE.Object3D | null): boolean => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
+  /** Hidden and locked parts (outliner, #206) are click-through: hidden ones are invisible, locked ones are skipped. */
+  let unpickable = new Set<string>();
+  function applyVisibility() {
+    const hidden = new Set(snapshot.hidden);
+    unpickable = new Set([...snapshot.hidden, ...snapshot.locked]);
+    for (const g of instances.values()) g.visible = !hidden.has(g.userData.id as string);
+    invalidate();
+  }
+  /** The first visible, pickable object among `hits`, walked up to its part. */
+  function pickableOwner(hits: readonly THREE.Intersection[]) {
+    for (const hit of hits) {
+      if (!(hit.object instanceof THREE.Mesh) || !shown(hit.object)) continue;
+      let object: THREE.Object3D | null = hit.object;
+      while (object && !object.userData.ownerId) object = object.parent;
+      if (!object || !unpickable.has(object.userData.id ?? object.userData.ownerId)) return object;
+    }
+    return null;
+  }
   /** The first visible `roots` object under a canvas point (cut-away wall items are hidden), walked up to its part. */
   function rayObject(roots: THREE.Object3D[], x: number, y: number, rect: DOMRect) {
     pointer.set((x - rect.left) / rect.width * 2 - 1, -(y - rect.top) / rect.height * 2 + 1);
     raycaster.setFromCamera(pointer, camera);
-    let object: THREE.Object3D | null = raycaster.intersectObjects(roots, true).find(hit => hit.object instanceof THREE.Mesh && shown(hit.object))?.object ?? null;
-    while (object && !object.userData.ownerId) object = object.parent;
-    return object;
+    return pickableOwner(raycaster.intersectObjects(roots, true));
   }
   const corner = new THREE.Vector3(), bounds = new THREE.Box3();
   /** Client-space rectangle of an object's bounds and its larger side; null when any corner is behind the camera. */
@@ -695,7 +715,7 @@ export function createBuilderScene(
       const centre = object && screenRect(object, rect), found = object ? [{ item: object, distance: 0, screenSize: centre?.size ?? Infinity }] : [];
       const toBeat = object ? pickScore(0, centre?.size ?? Infinity) : Infinity;
       const near = [...instances.values()].flatMap(group => {
-        const r = group === object || !shown(group) ? null : screenRect(group, rect), d = r ? outside(r, x, y) : Infinity;
+        const r = group === object || !shown(group) || unpickable.has(group.userData.id) ? null : screenRect(group, rect), d = r ? outside(r, x, y) : Infinity;
         return r && d <= radius && (!object || r.size < SMALL_PART_PX) && pickScore(d, r.size) < toBeat ? [{ group, r, d }] : [];
       }).sort((a, b) => pickScore(a.d, a.r.size) - pickScore(b.d, b.r.size));
       for (const { group, r } of near.slice(0, 8)) {
@@ -765,7 +785,7 @@ export function createBuilderScene(
     if (!snapshot.placing && !snapshot.structureChoice || snapshot.placing?.rotationOnly) return;
     if (parksInCradles(snapshot.placing?.part)) { const cradle = cradleAt(event); if (cradle) { store.previewCradle(cradle.key); return; } }
     if(isFloorPart(snapshot.placing?.part)) { const point=floorPoint(event); if(point) store.previewFloor(point); return; }
-    if(placingWall()) { const hit=wallRay(event); if(hit) store.previewWall(hit.wall,[hit.u,hit.h],!(event as {altKey?:boolean}).altKey); return; }
+    if(placingWall()) { const hit=wallRay(event); if(hit) store.previewWall(hit.wall,[hit.u,hit.h],!snapOff(event as {altKey?:boolean})); return; }
     if(placingHang()) { const target=nearestHang(event), key=target ? `${target.panel}:${target.slot}` : ''; if(target && key!==hoveredHang) store.previewHang(target.panel,target.slot); hoveredHang=key; return; }
     if (addingStructure()) { updateStructure(event); return; }
     const candidate = candidateAt(event);
@@ -814,25 +834,26 @@ export function createBuilderScene(
     raycaster.setFromCamera(pointer,camera);
     const point=raycaster.ray.intersectPlane(floorPlane,new THREE.Vector3());
     if(!point) return null;
-    const grid=(v:number)=>snap && !event.altKey ? Math.round(v/25)*25 : v;
+    const grid=(v:number)=>snap && !snapOff(event) ? Math.round(v/25)*25 : v;
     return [grid(point.x),grid(point.z)];
   }
   const floorKey=(event:KeyboardEvent)=>{
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !(event.target instanceof HTMLElement && (/INPUT|SELECT|TEXTAREA/.test(event.target.tagName) || event.target.isContentEditable))) {
+    if ((matches('undo', event) || matches('redo', event)) && !isTyping(event.target)) {
       // BuilderPage invokes history next; leave store gesture finalization to history.
       floorDrag = null; hangDrag = null; pointerGesture.finish(); selecting = false; marquee.style.display = 'none';
       controls.enabled = !snapshot.selectionTool;
       return;
     }
-    if(event.key==='Escape') { floorDrag=null; hangDrag=null; store.cancelGesture(); controls.enabled=true; pointerGesture.finish(); return; }
-    if(event.key.toLowerCase()!=='r' || event.ctrlKey || event.metaKey || (event.target instanceof HTMLElement && (/INPUT|SELECT|TEXTAREA/.test(event.target.tagName) || event.target.isContentEditable))) return;
+    if(matches('escape', event)) { floorDrag=null; hangDrag=null; store.cancelGesture(); controls.enabled=true; pointerGesture.finish(); return; }
+    const back=matches('rotate-back', event);
+    if((!back && !matches('rotate', event)) || isTyping(event.target)) return;
     if (snapshot.systemChoice) return;
-    const delta=(event.shiftKey?-1:1)*Math.PI/12;
+    const delta=(back?-1:1)*Math.PI/12;
     if(isFloorPart(snapshot.placing?.part)) {event.preventDefault();store.previewFloor(undefined,delta);return;}
     const mounted = rotationTarget();
-    if (mounted && store.rotateMounted(mounted, event.shiftKey ? -1 : 1)) { event.preventDefault(); return; }
+    if (mounted && store.rotateMounted(mounted, back ? -1 : 1)) { event.preventDefault(); return; }
     const id=floorDrag?.id ?? (snapshot.selection.length===1?snapshot.selected:null);
-    const item=store.getAppliedDoc().floorItems?.find(i=>i.id===id && !i.cradle);
+    const item=store.getAppliedDoc().floorItems?.find(i=>i.id===id && !i.cradle && !unpickable.has(i.id));
     if(item) {event.preventDefault();if(floorDrag)floorDrag.moved=true;store.updateFloor(item.id,{rotation:item.rotation+delta});}
   };
   document.addEventListener('keydown',floorKey);
@@ -846,12 +867,12 @@ export function createBuilderScene(
     if (snapshot.systemChoice) return null;
     if (snapshot.placing) return snapshot.placing.movingId && rotationMode(snapshot.doc, snapshot.placing.movingId).supported ? snapshot.placing.movingId : null;
     const candidates = [hoveredId, snapshot.selection.length === 1 ? snapshot.selected : null];
-    return candidates.find(id => id && rotationMode(snapshot.doc, store.ownerOf(id)!).supported) ?? null;
+    return candidates.find(id => id && !unpickable.has(id) && rotationMode(snapshot.doc, store.ownerOf(id)!).supported) ?? null;
   }
   const onWheel = (event: WheelEvent) => {
     if (snapshot.systemChoice) return;
     const floorId = floorDrag?.id ?? hoveredId ?? (snapshot.selection.length === 1 ? snapshot.selected : null);
-    const floorItem = store.getAppliedDoc().floorItems?.find(i => i.id === floorId && !i.cradle);
+    const floorItem = store.getAppliedDoc().floorItems?.find(i => i.id === floorId && !i.cradle && !unpickable.has(i.id));
     const mounted = rotationTarget();
     if (!isFloorPart(snapshot.placing?.part) && !floorItem && !mounted) return;
     event.preventDefault(); event.stopImmediatePropagation();
@@ -903,9 +924,9 @@ export function createBuilderScene(
     }
     if(floorDrag && pointerGesture.start) {
       if(Math.hypot(event.clientX-pointerGesture.start[0],event.clientY-pointerGesture.start[1])>4)floorDrag.moved=true;
-      if(floorDrag.wall) { const hit=wallRay(event,floorDrag.wall); if(hit && floorDrag.moved) store.updateWall(floorDrag.id,{position:[floorDrag.position[0]+hit.u-floorDrag.start[0],floorDrag.position[1]+hit.h-floorDrag.start[1]]},!event.altKey); return; }
+      if(floorDrag.wall) { const hit=wallRay(event,floorDrag.wall); if(hit && floorDrag.moved) store.updateWall(floorDrag.id,{position:[floorDrag.position[0]+hit.u-floorDrag.start[0],floorDrag.position[1]+hit.h-floorDrag.start[1]]},!snapOff(event)); return; }
       const point=floorPoint(event,false);
-      if(point && floorDrag.moved) {const grid=(v:number)=>event.altKey?v:Math.round(v/25)*25;store.updateFloor(floorDrag.id,{position:[grid(floorDrag.position[0]+point[0]-floorDrag.start[0]),grid(floorDrag.position[1]+point[1]-floorDrag.start[1])]});}
+      if(point && floorDrag.moved) {const grid=(v:number)=>snapOff(event)?v:Math.round(v/25)*25;store.updateFloor(floorDrag.id,{position:[grid(floorDrag.position[0]+point[0]-floorDrag.start[0]),grid(floorDrag.position[1]+point[1]-floorDrag.start[1])]});}
       return;
     }
     if (selecting && pointerGesture.start) {
@@ -926,6 +947,7 @@ export function createBuilderScene(
       const top = Math.min(pointerGesture.start[1], event.clientY), bottom = Math.max(pointerGesture.start[1], event.clientY);
       const ids: string[] = [];
       for (const g of instances.values()) {
+        if (unpickable.has(g.userData.id as string)) continue;
         const center = new THREE.Box3().setFromObject(g).getCenter(new THREE.Vector3()).project(camera);
         const x = rect.left + (center.x + 1) * rect.width / 2, y = rect.top + (1 - center.y) * rect.height / 2;
         if (center.z >= -1 && center.z <= 1 && x >= left && x <= right && y >= top && y <= bottom) ids.push(g.userData.id as string);
@@ -956,9 +978,7 @@ export function createBuilderScene(
       (-(event.clientY - rect.top) / rect.height) * 2 + 1,
     );
     raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObject(assemblyRoot, true)[0];
-    let object: THREE.Object3D | null = hit?.object ?? null;
-    while (object && !object.userData.ownerId) object = object.parent;
+    const object = pickableOwner(raycaster.intersectObject(assemblyRoot, true));
     // A bare wall or the ceiling selects the room (#200): its finishes open in the inspector.
     if (!object && !event.shiftKey && !event.metaKey && !event.ctrlKey && (walls.group.visible && wallHit(roomOf(snapshot.doc), raycaster.ray.origin.toArray(), raycaster.ray.direction.toArray()) || roomScenery.ceilingVisible && raycaster.ray.direction.y > 0)) {
       store.openRoom();
@@ -1234,6 +1254,7 @@ export function createBuilderScene(
   }
   function fit(mode: BuilderView = view) {
     stopBuild();
+    flight = null;
     view = mode;
     const box = new THREE.Box3().setFromObject(assemblyRoot);
     if (box.isEmpty())
@@ -1291,6 +1312,35 @@ export function createBuilderScene(
     if (x || y) camera.setViewOffset(width, height, x, y, width, height);
     else camera.clearViewOffset();
   }
+  /** Camera move in flight (focus): eased in renderFrame, cancelled by any orbit input. */
+  let flight: { from: THREE.Vector3; to: THREE.Vector3; fromTarget: THREE.Vector3; toTarget: THREE.Vector3; start: number } | null = null;
+  controls.addEventListener("start", () => { flight = null; });
+  function focus(ids: readonly string[]) {
+    stopBuild();
+    const box = new THREE.Box3(), wanted = new Set(ids);
+    for (const g of instances.values()) if (wanted.has(g.userData.id as string)) box.expandByObject(g);
+    if (box.isEmpty()) return;
+    const center = box.getCenter(new THREE.Vector3()), radius = Math.max(150, box.getSize(new THREE.Vector3()).length() / 2);
+    const direction = camera.position.clone().sub(controls.target).normalize();
+    // Like fit: frame the canvas area not covered by overlaid UI (the phone sheet, the top bar).
+    const [shownX, shownY] = shownFraction();
+    const tangent = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * Math.min(camera.aspect * shownX, shownY);
+    const to = center.clone().addScaledVector(direction, (radius / tangent) * 1.25);
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      flight = null; camera.position.copy(to); controls.target.copy(center); controls.update(); invalidate(); return;
+    }
+    flight = { from: camera.position.clone(), to, fromTarget: controls.target.clone(), toTarget: center, start: performance.now() };
+    invalidate();
+  }
+  /** Advances a focus flight; true while it needs another frame. */
+  function fly() {
+    if (!flight) return false;
+    const t = Math.min(1, (performance.now() - flight.start) / 420), ease = 1 - Math.pow(1 - t, 3);
+    camera.position.lerpVectors(flight.from, flight.to, ease);
+    controls.target.lerpVectors(flight.fromTarget, flight.toTarget, ease);
+    if (t >= 1) flight = null;
+    return !!flight;
+  }
   const resize = () => {
     const rect = viewport.getBoundingClientRect(),
       width = Math.max(1, rect.width),
@@ -1332,6 +1382,7 @@ export function createBuilderScene(
       else stopBuild();
     }
     if (!build) {
+      if (fly()) again = true;
       updatingControls = true;
       const damping = controls.update();
       updatingControls = false;
@@ -1365,7 +1416,7 @@ export function createBuilderScene(
     }
     return again;
   }
-  const drawnKeys = ["doc", "resolved", "selection", "placing", "proposal", "structureChoice", "systemChoice", "structureMode", "paired"] as const;
+  const drawnKeys = ["doc", "resolved", "selection", "placing", "proposal", "structureChoice", "systemChoice", "structureMode", "paired", "hidden"] as const;
   const unsubscribe = store.subscribe(() => {
     const previous = snapshot;
     snapshot = store.getSnapshot();
@@ -1382,6 +1433,7 @@ export function createBuilderScene(
     if (snapshot.doc !== previous.doc) requestRebuild();
     if (snapshot.doc !== previous.doc || snapshot.placing !== previous.placing) updateWalls();
     if (snapshot.selection !== previous.selection) refreshSelection();
+    if (snapshot.hidden !== previous.hidden || snapshot.locked !== previous.locked) applyVisibility();
     // A finger orbiting during placement keeps the controls (a tap, not the press, chooses the spot on touch).
     controls.enabled = !floorDrag && !snapshot.selectionTool && !selecting && !(pointerGesture.start && !addingStructure() && (snapshot.placing || snapshot.structureChoice) && (!touchInput || sceneTouch || longPressed));
     updateTouchBar();
@@ -1430,6 +1482,7 @@ export function createBuilderScene(
       positionTouchBar();
       invalidate();
     },
+    focus,
     async exportGLB() {
       if (disposed) throw Error("Scene has been disposed.");
       stopBuild();
@@ -1443,6 +1496,7 @@ export function createBuilderScene(
       if (renderedGeneration !== generation)
         throw Error("The current rack has not built successfully. Fix the build error before exporting.");
       const output = cloneAppliedAssembly(assemblyRoot);
+      for (const child of output.children) child.visible = true; // Hiding (outliner) is a view choice, not an edit.
       output.name = "BOS STRENGTH rack";
       output.scale.setScalar(0.001);
       try {

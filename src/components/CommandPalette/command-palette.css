@@ -1,0 +1,65 @@
+/* Command palette (#206). Builder palette: paper, sage, deep green ink. A centred dialog; a full-screen sheet on
+ * phones. Only transform/opacity animate; no backdrop-filter over the live WebGL canvas. */
+.command-palette {
+  --cp-paper: #f8f9f4; --cp-sage: #e8eee6; --cp-line: #d6ded2; --cp-ink: #233b30; --cp-muted: #7d8f78; --cp-green: #264d3a; --cp-accent: #bdcd78;
+  position: fixed; inset: 0; z-index: 70; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--cp-ink);
+}
+.command-palette * { box-sizing: border-box; }
+.cp-backdrop { position: absolute; inset: 0; background: #16261d99; animation: cp-fade .12s ease-out; }
+.cp-panel {
+  position: absolute; left: 50%; top: 12vh; width: min(640px, calc(100vw - 32px)); max-height: min(560px, 76vh);
+  transform: translateX(-50%); display: flex; flex-direction: column; background: var(--cp-paper); border-radius: 12px; overflow: hidden;
+  box-shadow: 0 30px 80px #0b180f66, 0 0 0 1px #ffffff14; animation: cp-rise .14s cubic-bezier(.2, .8, .3, 1);
+}
+@keyframes cp-fade { from { opacity: 0; } }
+@keyframes cp-rise { from { opacity: 0; transform: translate(-50%, 8px) scale(.99); } }
+@media (prefers-reduced-motion: reduce) { .cp-backdrop, .cp-panel { animation: none; } }
+
+.cp-search { display: flex; align-items: center; gap: 10px; padding: 0 12px 0 16px; border-bottom: 1px solid var(--cp-line); background: #fff; }
+.cp-search svg { width: 16px; height: 16px; fill: none; stroke: #7d9175; stroke-width: 1.6; flex: none; }
+.cp-search input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; padding: 17px 0; font: inherit; font-size: 15px; color: var(--cp-ink); }
+.cp-search input::placeholder { color: #98a590; }
+.command-palette .cp-search input:focus-visible { outline: none; }
+.cp-close { font: inherit; font-size: 10px; font-weight: 600; color: var(--cp-muted); border: 1px solid var(--cp-line); background: var(--cp-paper); border-radius: 5px; padding: 5px 8px; cursor: pointer; }
+.cp-close:focus-visible { outline: 2px solid #648455; outline-offset: 2px; }
+
+.cp-results { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 6px; }
+.cp-section { padding: 10px 10px 4px; font-size: 9px; letter-spacing: 1.4px; text-transform: uppercase; font-weight: 650; color: var(--cp-muted); }
+.cp-option { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 44px; padding: 5px 10px; border-radius: 7px; cursor: pointer; user-select: none; }
+.cp-option[aria-selected="true"] { background: var(--cp-green); color: #fff; }
+.cp-option[aria-selected="true"] .cp-detail { color: #c4d6ba; }
+.cp-option[aria-selected="true"] .cp-icon { background: #ffffff1c; color: #fff; }
+.cp-option[aria-selected="true"] kbd { background: #ffffff1c; border-color: #ffffff38; color: #fff; }
+.cp-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 6px; background: var(--cp-sage); color: var(--cp-green); font-size: 14px; font-weight: 600; }
+.cp-thumb { width: 34px !important; height: 34px !important; border-radius: 6px; background: #fff; }
+.cp-thumb img, .cp-thumb svg { width: 100%; height: 100%; object-fit: contain; }
+.cp-text { display: flex; flex-direction: column; min-width: 0; }
+.cp-label { font-size: 13px; font-weight: 550; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cp-detail { font-size: 10.5px; color: var(--cp-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cp-keys { display: flex; gap: 3px; }
+.command-palette kbd { font: inherit; font-size: 10px; font-weight: 600; min-width: 20px; text-align: center; padding: 2px 5px; border-radius: 4px; border: 1px solid var(--cp-line); background: #fff; color: var(--cp-ink); }
+.cp-empty { padding: 28px 16px; text-align: center; color: var(--cp-muted); font-size: 13px; margin: 0; }
+.cp-footer { display: flex; gap: 16px; padding: 9px 16px; border-top: 1px solid var(--cp-line); font-size: 10px; color: var(--cp-muted); background: var(--cp-sage); }
+.cp-footer span { display: flex; align-items: center; gap: 4px; }
+.cp-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Phones: a full-screen sheet with finger-sized rows; 16px input text keeps iOS from zooming. */
+@media (max-width: 760px) {
+  .cp-panel { inset: 0; top: 0; left: 0; width: 100%; max-height: none; height: 100dvh; transform: none; border-radius: 0; animation-name: cp-sheet;
+    padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+  @keyframes cp-sheet { from { opacity: 0; transform: translateY(12px); } }
+  .cp-search input { font-size: 16px; padding: 15px 0; }
+  .cp-option { min-height: 52px; }
+  .cp-close { padding: 8px 12px; font-size: 12px; }
+  .cp-footer { display: none; }
+}
+@media (pointer: coarse) { .cp-option { min-height: 52px; } .cp-keys { display: none; } }
+
+/* Toolbar launcher (the palette's entry point on touch screens). */
+.builder-page .palette-launch { display: inline-flex; align-items: center; gap: 7px; color: #5d7056; }
+.builder-page .toolbar-actions .palette-launch span { margin-left: 0; }
+.builder-page .palette-launch svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.builder-page .palette-launch kbd { font: inherit; font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 4px; border: 1px solid #d6ded2; background: #fff; color: #7d8f78; }
+@media (max-width: 1100px) { .builder-page .palette-launch kbd { display: none; } }
+@media (max-width: 760px) { .builder-page .palette-launch .palette-launch-label { display: none; } .builder-page .palette-launch { padding: 8px 10px; } }
+@media (pointer: coarse) { .builder-page .palette-launch kbd { display: none; } }

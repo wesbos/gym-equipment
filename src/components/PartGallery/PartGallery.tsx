@@ -18,31 +18,20 @@ import {
   useGalleryOpen, useGalleryPrefs,
 } from './gallery-state.ts';
 import { shallowEqual, useStoreSelector } from '../../state/use-store.ts';
+import { ariaKeys, isTyping, matches } from '../../state/shortcuts.ts';
 import './part-gallery.css';
 
 const CARD_MIN = 168, GAP = 12, ROW_HEIGHT = 218, HEADER_HEIGHT = 40, BRAND_CHIPS = 12;
-const isTyping = (target: EventTarget | null) => target instanceof HTMLElement && (/INPUT|SELECT|TEXTAREA/.test(target.tagName) || target.isContentEditable);
-
-/** Always mounted: owns the "/" and "A" shortcuts and renders the dialog while open. */
+/** Always mounted: renders the dialog while open. The "/" and "A" shortcuts that open it live in the builder's
+ * shortcut registry (src/state/shortcuts.ts, dispatched by BuilderPage). */
 export const PartGallery = memo(function PartGallery({ store }: { store: BuilderStore }) {
   const open = useGalleryOpen();
-  useEffect(() => {
-    const key = (event: globalThis.KeyboardEvent) => {
-      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || isTyping(event.target) || galleryView.get().open) return;
-      if (event.key !== '/' && event.key.toLowerCase() !== 'a') return;
-      if (event.target instanceof Element && event.target.closest('[role="menu"],[role="dialog"]')) return;
-      event.preventDefault();
-      openGallery();
-    };
-    document.addEventListener('keydown', key);
-    return () => document.removeEventListener('keydown', key);
-  }, []);
   return open ? <GalleryDialog store={store} /> : null;
 });
 
 /** The sidebar entry point. */
 export const GalleryLauncher = memo(function GalleryLauncher({ total = CATALOG_PART_IDS.length }: { total?: number }) {
-  return <button type="button" id="open-gallery" className="gallery-launch" aria-haspopup="dialog" aria-keyshortcuts="/ A" onClick={() => openGallery()}>
+  return <button type="button" id="open-gallery" className="gallery-launch"  aria-haspopup="dialog" aria-keyshortcuts={ariaKeys('open-gallery')} onClick={() => openGallery()}>
     <span className="gallery-launch-plus" aria-hidden="true">+</span>
     <span><strong>Add parts</strong><small>Browse all {total} parts</small></span>
     <kbd aria-hidden="true">/</kbd>
@@ -132,8 +121,8 @@ function GalleryDialog({ store }: { store: BuilderStore }) {
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     // Builder shortcuts (Delete, undo, R, history arrows) never see keys typed in the gallery.
     event.stopPropagation();
-    if (event.key === 'Escape') { event.preventDefault(); close(); return; }
-    if (event.key === '/' && !isTyping(event.target)) { event.preventDefault(); search.current?.select(); search.current?.focus(); return; }
+    if (matches('gallery-close', event)) { event.preventDefault(); close(); return; }
+    if (matches('gallery-search', event) && !isTyping(event.target)) { event.preventDefault(); search.current?.select(); search.current?.focus(); return; }
     if (event.key === 'Tab') {
       const focusable = [...root.current!.querySelectorAll<HTMLElement>('button:not([disabled]):not([tabindex="-1"]),input,a[href],[tabindex="0"]')].filter(el => el.offsetParent !== null);
       const first = focusable[0], last = focusable.at(-1);
@@ -143,7 +132,7 @@ function GalleryDialog({ store }: { store: BuilderStore }) {
   };
   const onSearchKey = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'ArrowDown') { event.preventDefault(); root.current?.querySelector<HTMLElement>('.pg-card[tabindex="0"]')?.focus(); }
-    if (event.key === 'Enter' && active) { event.preventDefault(); actions.add(active.id); }
+    if (matches('gallery-add', event) && active) { event.preventDefault(); actions.add(active.id); }
   };
   const scopeTitle = scope.kind === 'all' ? 'All parts' : scope.kind === 'recent' ? 'Recently added' : scope.kind === 'favourites' ? 'Favourites' : scope.section ?? scope.category;
   const shownFacets = allBrands ? facets : facets.slice(0, BRAND_CHIPS);
@@ -276,7 +265,7 @@ const GalleryGrid = memo(function GalleryGrid({ items, grouped, activeIndex, act
     scroller.current?.querySelector<HTMLElement>(`[data-index="${activeIndex}"] .pg-card, .pg-card[tabindex="0"]`)?.focus({ preventScroll: true });
   });
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key.toLowerCase() === 'f' && !event.metaKey && !event.ctrlKey && items[activeIndex]) { event.preventDefault(); toggleFavouritePart(items[activeIndex].id); return; }
+    if (matches('gallery-favourite', event) && items[activeIndex]) { event.preventDefault(); toggleFavouritePart(items[activeIndex].id); return; }
     const pageRows = Math.max(1, Math.floor(size.height / (ROW_HEIGHT + GAP)));
     const next = moveIndex(layout, activeIndex, event.key, pageRows);
     if (next === null) return;

@@ -1,0 +1,33 @@
+/* Keyboard shortcuts overlay (#206): the registry as a multi-column sheet; full screen on phones. */
+.shortcuts-overlay {
+  --so-paper: #f8f9f4; --so-sage: #e8eee6; --so-line: #d6ded2; --so-ink: #233b30; --so-muted: #7d8f78; --so-deep: #1d3a2c;
+  position: fixed; inset: 0; z-index: 70; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--so-ink);
+}
+.shortcuts-overlay * { box-sizing: border-box; }
+.so-backdrop { position: absolute; inset: 0; background: #16261d99; animation: so-fade .12s ease-out; }
+.so-panel {
+  position: absolute; inset: clamp(8px, 6vh, 64px) clamp(8px, 4vw, 64px); max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column;
+  background: var(--so-paper); border-radius: 12px; overflow: hidden; box-shadow: 0 30px 80px #0b180f66; animation: so-rise .14s cubic-bezier(.2, .8, .3, 1);
+}
+@keyframes so-fade { from { opacity: 0; } }
+@keyframes so-rise { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { .so-backdrop, .so-panel { animation: none; } }
+.so-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px 16px 24px; background: var(--so-deep); color: #eef3ea; }
+.so-header h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -.5px; }
+.so-close { font: inherit; font-size: 11px; font-weight: 600; color: #fff; background: #ffffff12; border: 1px solid #ffffff2e; border-radius: 6px; padding: 7px 10px; cursor: pointer; }
+.so-close:focus-visible { outline: 2px solid #bdcd78; outline-offset: 2px; }
+.so-groups { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px 24px 24px; columns: 300px 3; column-gap: 32px; }
+.so-group { break-inside: avoid; padding-top: 14px; }
+.so-group h3 { margin: 0 0 6px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 650; color: var(--so-muted); }
+.so-group dl { margin: 0; }
+.so-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--so-line); }
+.so-row dt { font-size: 12px; line-height: 1.35; }
+.so-row dt small { color: var(--so-muted); font-size: 10.5px; }
+.so-row dd { margin: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; flex: none; max-width: 55%; }
+.so-combo { display: inline-flex; align-items: center; gap: 3px; }
+.so-or { font-size: 9px; color: var(--so-muted); margin: 0 2px; }
+.shortcuts-overlay kbd { font: inherit; font-size: 10px; font-weight: 600; min-width: 20px; text-align: center; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--so-line); border-bottom-width: 2px; background: #fff; }
+@media (max-width: 760px) {
+  .so-panel { inset: 0; border-radius: 0; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+  .so-groups { columns: auto; padding: 4px 16px 24px; }
+}

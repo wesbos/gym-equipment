@@ -1,4 +1,12 @@
-import { HistoryTimeline, historyKeyStep } from '../components/HistoryTimeline.tsx';
+import { HistoryTimeline } from '../components/HistoryTimeline.tsx';
+import { CommandPalette } from '../components/CommandPalette/CommandPalette.tsx';
+import { builderShortcutHandlers, type EditorApi } from '../components/CommandPalette/commands.ts';
+import { ShortcutsOverlay } from '../components/ShortcutsOverlay/ShortcutsOverlay.tsx';
+import { Outliner } from '../components/Outliner/Outliner.tsx';
+import { WarningsList, WarningsButton } from '../components/Warnings/Warnings.tsx';
+import { requestExport } from '../components/ExportMenu.tsx';
+import { ariaKeys, dispatchShortcut, shortcutLabel } from '../state/shortcuts.ts';
+import { openPanel, toggleOutliner, useOutlinerOpen } from '../state/editor-ui.ts';
 import { rotationMode } from '../../rack-generator/assembly.ts';
 import { CableSmithControls, SystemPlacementOptions } from '../components/CableSmithControls.tsx';
 import { isSystemPart } from '../../rack-generator/system-types.ts';
@@ -6,10 +14,7 @@ import { FloorInspector } from '../components/FloorInspector.tsx';
 import { PlateStackEditor } from '../components/PlateStackEditor.tsx';
 import { WallInspector } from '../components/WallInspector.tsx';
 import { RoomInspector } from '../components/RoomInspector.tsx';
-import { wallWarnings } from '../../rack-generator/wall-items.ts';
 import { HangInspector } from '../components/HangInspector.tsx';
-import { hangWarnings } from '../../rack-generator/hang-items.ts';
-import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { floorPart } from '../../rack-generator/floor-registry.ts';
 import { RackPartControls } from '../components/RackPartControls.tsx';
 import { isUprightTarget } from '../../rack-generator/rack-targets.ts';
@@ -31,19 +36,18 @@ import { snapDimensions, stepDimension } from '../../rack-generator/grid.ts';
 import { NumericControl } from "../components/NumericControl.tsx";
 import { ConfigManager } from "../components/ConfigManager.tsx";
 import { PartGallery, GalleryLauncher, CompactCatalog, BrowseCategories, CATALOG_PART_IDS, openGallery } from "../components/PartGallery/index.ts";
-import { BuilderSheet, OverflowMenu, PanelToggles, useLayoutMode, type SheetTab } from "../components/MobileShell/index.ts";
+import { BuilderSheet, OverflowMenu, PanelToggles, isPhoneLayout, useLayoutMode, type SheetTab } from "../components/MobileShell/index.ts";
 import { AppearanceControls } from "../components/AppearanceControls.tsx";
 import {
   memo,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type FormEvent,
   type ReactNode,
   type RefObject,
 } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { getBuilderStore, type BuilderSnapshot, type BuilderStore, type CatalogPart } from "../state/builder-store.ts";
 import { shallowEqual, useStoreSelector } from "../state/use-store.ts";
 import { useOpenGym } from "../gyms/useOpenGym.ts";
@@ -60,7 +64,6 @@ import {
   unpairAccessory,
   STRUCTURE_SLOTS,
 } from "../../rack-generator/assembly.ts";
-import { detectCollisions } from "../../rack-generator/assembly-collisions.ts";
 import type {
   PartId,
   Face,
@@ -569,6 +572,7 @@ const SHEET_TABS: readonly SheetTab[] = [
   { id: "inspector", label: "Inspector" },
   { id: "timeline", label: "Timeline" },
   { id: "room", label: "Room", panel: "inspector" },
+  { id: "outliner", label: "Outliner" },
 ];
 function StageCaption({ store }: { store: BuilderStore }) {
   const { viewing, dimensions } = useStoreSelector(store, s => ({ viewing: s.timeline.viewing, dimensions: s.dimensions }), shallowEqual);
@@ -604,28 +608,6 @@ function PlacementHint({ store }: { store: BuilderStore }) {
     </div>
   );
 }
-function PartsDrawer({ store, close }: { store: BuilderStore; close: () => void }) {
-  const nameOf = usePartNames(store).name;
-  const { resolved, selection } = useStoreSelector(store, s => ({ resolved: s.resolved, selection: s.selection }), shallowEqual);
-  return (
-    <section className="parts-drawer" id="parts-drawer">
-      <div className="drawer-heading">
-        <h2>Parts list</h2>
-        <button onClick={close}>Close ×</button>
-      </div>
-      <div id="parts-list">
-        {resolved.map(row => (
-          <button key={row.id} className="bom-row" data-instance-id={row.id}
-            aria-pressed={selection.includes(row.id)}
-            onClick={e => store.select(row.id, e, resolved.map(r => r.id))}>
-            {nameOf(row.part)} · {row.id.replaceAll('-', ' ')}
-            <VendorCredit part={row.part} compact />
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
 function SelectionCount({ store }: { store: BuilderStore }) {
   const count = useStoreSelector(store, s => s.selection.length);
   return count > 1 ? <h2 id="selection-title">{count} parts</h2> : null;
@@ -642,23 +624,6 @@ function SwapAccessory({ store }: { store: BuilderStore }) {
 }
 function InspectorSlot({ store }: { store: BuilderStore }) {
   return <Inspector key={useStoreSelector(store, s => s.inputRevision)} store={store} />;
-}
-function Warnings({ store }: { store: BuilderStore }) {
-  const { doc, resolved } = useStoreSelector(store, s => ({ doc: s.doc, resolved: s.resolved }), shallowEqual);
-  const warnings = useMemo(() => [...detectCollisions(resolved), ...floorWarnings(doc), ...wallWarnings(doc), ...hangWarnings(doc)], [doc, resolved]);
-  return (
-    <div id="warnings">
-      {warnings.map((warning, i) => (
-        <button
-          key={i}
-          className="warning-item"
-          onClick={() => store.select(warning.ids[0])}
-        >
-          △ {warning.message}
-        </button>
-      ))}
-    </div>
-  );
 }
 /** Timeline changes only on commits and navigation; entries are compared by content since snapshots are rebuilt. */
 function sameTimeline(a: BuilderSnapshot["timeline"], b: BuilderSnapshot["timeline"]) {
@@ -690,49 +655,46 @@ function StatusBar({ store }: { store: BuilderStore }) {
 }
 export default function BuilderPage() {
   const [store] = useState(getBuilderStore);
-  const layout = useLayoutMode();
+  const layout = useLayoutMode(), phoneLayout = isPhoneLayout(layout);
   useViewportFitCover();
   const shell = useRef<HTMLDivElement>(null);
   const viewport = useRef<HTMLDivElement>(null),
     controller = useRef<ReturnType<typeof createBuilderScene> | null>(null),
     importFile = useRef<HTMLInputElement>(null);
   useOpenGym(store, () => controller.current?.refitOnNextBuild());
-  const [drawer, setDrawer] = useState(false),
+  const outliner = useOutlinerOpen(),
     [view, setView] = useState<BuilderView>("iso");
+  const navigate = useNavigate(), navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
+  // Page-level actions the command palette, shortcuts, outliner and warnings share (#206). Stable for the page's life.
+  const [api] = useState<EditorApi>(() => ({
+    store,
+    scene: () => controller.current,
+    view: mode => { setView(mode); controller.current?.fit(mode); },
+    saveJSON: () => download(new Blob([store.exportJSON()], { type: "application/json" }), "bos-strength-rack.json"),
+    loadJSON: () => importFile.current?.click(),
+    openGyms: () => { void navigateRef.current({ to: "/gyms" }); },
+    exportFile: format => requestExport(format),
+    resetRack: () => {
+      if (window.confirm('Reset entire rack to the stock BOS starting assembly? All dimensions, parts and appearance will reset. You can Undo this change.')) {
+        store.endGesture(); store.commit(createAssembly(), { category: "preset", label: "Reset entire rack", replacement: true }); store.select(null);
+        controller.current?.refitOnNextBuild();
+      }
+    },
+  }));
   useEffect(() => {
     const scene = createBuilderScene(viewport.current!, store);
     controller.current = scene;
-    const keyboard = (e: KeyboardEvent) => {
-      if (e.key === "Escape") store.escape();
-      if (
-        e.target instanceof HTMLElement &&
-        (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName) || e.target.isContentEditable)
-      )
-        return;
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
-        e.preventDefault();
-        store.history(e.shiftKey ? "redo" : "undo");
-      }
-      if (!e.defaultPrevented && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
-        const timeline = store.getSnapshot().timeline;
-        const step = historyKeyStep(e.key, timeline.position, timeline.latest);
-        if (step !== undefined) { e.preventDefault(); store.seekHistory(step); }
-      }
-      const selected = store.getSnapshot().selected;
-      if ((e.key === "Delete" || e.key === "Backspace") && selected) {
-        e.preventDefault();
-        store.act(() => {
-          store.removeSelected();
-        });
-      }
-    };
+    // Every builder shortcut, from the one registry (src/state/shortcuts.ts); the "?" overlay lists the same entries.
+    const handlers = builderShortcutHandlers(api);
+    const keyboard = (e: KeyboardEvent) => { dispatchShortcut(e, handlers); };
     document.addEventListener("keydown", keyboard);
     return () => {
       document.removeEventListener("keydown", keyboard);
       scene.dispose();
       controller.current = null;
     };
-  }, [store]);
+  }, [store, api]);
   const fit = (mode = view) => {
     setView(mode);
     controller.current?.fit(mode);
@@ -749,9 +711,14 @@ export default function BuilderPage() {
             <span className="live-dot" /> YOUR WORKSPACE
           </div>
           <div className="toolbar-actions">
-            {/* Toolbar actions slot (#203): components that belong in the top bar at every size (e.g. a command palette
-             * trigger) mount here. */}
-            <div className="toolbar-slot" data-slot="toolbar-actions" />
+            {/* Toolbar actions slot (#203): components that belong in the top bar at every size. */}
+            <div className="toolbar-slot" data-slot="toolbar-actions">
+              <button id="open-palette" className="palette-launch" aria-haspopup="dialog" aria-keyshortcuts={ariaKeys("command-palette")}
+                title={`Search actions and parts (${shortcutLabel("command-palette")})`} onClick={() => openPanel("palette")}>
+                <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" /><path d="m11 11 3.5 3.5" /></svg>
+                <span className="palette-launch-label">Search</span><kbd aria-hidden="true">{shortcutLabel("command-palette")}</kbd>
+              </button>
+            </div>
             <HistoryButtons store={store} />
             <button type="button" className="toolbar-add primary" aria-haspopup="dialog" onClick={() => openGallery()}>
               <span aria-hidden="true">+</span> Add parts
@@ -765,14 +732,7 @@ export default function BuilderPage() {
               <button
                 id="save"
                 data-menu-close
-                onClick={() =>
-                  download(
-                    new Blob([store.exportJSON()], {
-                      type: "application/json",
-                    }),
-                    "bos-strength-rack.json",
-                  )
-                }
+                onClick={api.saveJSON}
               >
                 Save JSON
               </button>
@@ -814,18 +774,23 @@ export default function BuilderPage() {
             </button>
             <button
               id="parts-toggle"
-              aria-expanded={drawer}
-              onClick={() => setDrawer(!drawer)}
+              aria-expanded={phoneLayout ? undefined : outliner}
+              aria-controls={outliner && !phoneLayout ? "outliner" : undefined}
+              aria-keyshortcuts={ariaKeys("toggle-outliner")}
+              title={`Outliner (${shortcutLabel("toggle-outliner")})`}
+              onClick={toggleOutliner}
             >
-              Parts list (<PartsCount store={store} />)
+              Outliner (<PartsCount store={store} />)
             </button>
+            <button id="shortcuts-button" aria-label="Keyboard shortcuts" aria-keyshortcuts={ariaKeys("shortcuts")} title="Keyboard shortcuts (?)" onClick={() => openPanel("shortcuts")}>?</button>
+            <WarningsButton api={api} />
           </div>
           <PanelToggles shell={shell} />
           <PlacementHint store={store} />
           {/* Floating overlay slot (#203): overlays over the canvas (e.g. the selection action bar) mount here. The slot
            * ignores pointer events and its children receive them; on phones it ends above the sheet. */}
           <div className="stage-overlay" data-slot="stage-overlay" />
-          {drawer && <PartsDrawer store={store} close={() => setDrawer(false)} />}
+          {outliner && !phoneLayout && <Outliner api={api} />}
         </main>
         <BuilderSheet store={store} tabs={SHEET_TABS}>
           <CatalogPanel store={store} />
@@ -850,22 +815,21 @@ export default function BuilderPage() {
             </RackPanels>
             <SwapAccessory store={store} />
             <InspectorSlot store={store} />
-            <Warnings store={store} />
+            <WarningsList api={api} />
             <div className="inspector-bottom">
               <button
                 id="reset-design"
                 className="new-rack-button"
-                onClick={() => {
-                  if (window.confirm('Reset entire rack to the stock BOS starting assembly? All dimensions, parts and appearance will reset. You can Undo this change.')) {
-                    store.endGesture(); store.commit(createAssembly(), { category: "preset", label: "Reset entire rack", replacement: true }); store.select(null);
-                    controller.current?.refitOnNextBuild();
-                  }
-                }}
+                onClick={api.resetRack}
               >
                 Reset entire rack
               </button>
             </div>
           </aside>
+          {/* Outliner tab on phones (#206); on tablet and desktop the outliner floats over the stage instead. */}
+          <div className="outliner-region" data-sheet-panel="outliner" hidden={!phoneLayout}>
+            {phoneLayout && <Outliner api={api} variant="sheet" />}
+          </div>
           <div className="timeline-region" data-sheet-panel="timeline">
             <TimelineBar store={store} controller={controller} />
           </div>
@@ -873,6 +837,8 @@ export default function BuilderPage() {
         </BuilderSheet>
       </div>
       <PartGallery store={store} />
+      <CommandPalette api={api} />
+      <ShortcutsOverlay />
     </div>
   );
 }

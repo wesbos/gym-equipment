@@ -18,6 +18,10 @@ function appliedIsEmpty(store: BuilderStore, timeline: object) {
   return empty;
 }
 
+/** Command palette hook (#206): "Export GLB/3MF" opens this menu on that format and starts the download when it can. */
+const exportRequests = new EventTarget();
+export const requestExport = (format: ExportFormat) => { exportRequests.dispatchEvent(new CustomEvent<ExportFormat>('export', { detail: format })); };
+
 export function ExportMenu({ store, exportGLB, loading, empty }: {
   store: BuilderStore; exportGLB: () => Promise<ArrayBuffer>; loading: boolean; empty: boolean;
 }) {
@@ -70,6 +74,19 @@ export function ExportMenu({ store, exportGLB, loading, empty }: {
   }, [open]);
 
   const exportEmpty = format === '3mf' ? appliedEmpty : empty;
+  const latest = useRef({ busy, appliedEmpty, empty, loading, viewing, layout, scale });
+  latest.current = { busy, appliedEmpty, empty, loading, viewing, layout, scale };
+  useEffect(() => {
+    const onRequest = (event: Event) => {
+      const requested = (event as CustomEvent<ExportFormat>).detail, now = latest.current;
+      setFormat(requested); setFocusedFormat(requested); setOpen(true);
+      if (now.busy || (requested === '3mf' ? now.appliedEmpty : now.empty) || (requested === 'glb' && (now.loading || now.viewing))) return;
+      try { rememberExportFormat(sessionStorage, requested); } catch { /* Storage may be unavailable. */ }
+      void job.start(requested, store.getAppliedDoc(), now.layout, now.scale);
+    };
+    exportRequests.addEventListener('export', onRequest);
+    return () => exportRequests.removeEventListener('export', onRequest);
+  }, [job, store]);
   const start = () => {
     if (busy || exportEmpty || (format === 'glb' && (loading || viewing))) return;
     try { rememberExportFormat(sessionStorage, format); } catch { /* Storage may be unavailable. */ }

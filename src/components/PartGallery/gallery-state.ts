@@ -7,7 +7,7 @@ import type { PartId, RackDimensions } from '../../../rack-generator/types.ts';
 import { buildGalleryItems, loadPrefs, savePrefs, pushRecent, rackFitCache, toggleFavourite, CATALOG_PART_IDS, type GalleryDefinition, type GalleryItem, type GalleryPrefs, type GalleryScope, type RackFit } from './gallery-model.ts';
 
 type Listener = () => void;
-function createAtom<T>(initial: () => T) {
+export function createAtom<T>(initial: () => T) {
   let value: T | undefined, ready = false;
   const listeners = new Set<Listener>();
   const get = () => { if (!ready) { value = initial(); ready = true; } return value as T; };

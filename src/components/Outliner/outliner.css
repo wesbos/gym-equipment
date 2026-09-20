@@ -1,0 +1,42 @@
+/* Outliner (#206): a floating scene tree over the stage (a bottom sheet on phones). Rows are absolutely positioned
+ * for windowing; only transform changes per row. */
+.outliner {
+  --ol-paper: #fafbf6; --ol-line: #d6ded2; --ol-ink: #233b30; --ol-muted: #819180; --ol-green: #264d3a; --ol-sel: #c77c3622; --ol-sel-line: #c77c36;
+  position: absolute; z-index: 6; right: 16px; top: 16px; bottom: 76px; width: min(340px, calc(100% - 32px));
+  display: flex; flex-direction: column; background: var(--ol-paper); border: 1px solid #c8d5bd; border-radius: 9px;
+  box-shadow: 0 8px 40px #35502a1f; color: var(--ol-ink); font-size: 11px; overflow: hidden;
+}
+.outliner * { box-sizing: border-box; }
+.ol-heading { display: flex; align-items: center; gap: 8px; padding: 10px 10px 8px 14px; border-bottom: 1px solid var(--ol-line); }
+.ol-heading h2 { flex: 1; margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.3px; }
+.ol-total { font-size: 10px; font-weight: 600; color: var(--ol-muted); margin-left: 4px; }
+.outliner .ol-show-all { font-size: 10px; padding: 5px 8px; }
+.outliner .ol-close { font-size: 16px; line-height: 1; padding: 4px 9px; }
+.ol-filter { margin: 8px 10px 4px; padding: 7px 10px; border: 1px solid var(--ol-line); border-radius: 6px; background: #fff; font: inherit; font-size: 12px; color: var(--ol-ink); }
+.ol-scroller { position: relative; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 6px; }
+.ol-tree { position: relative; outline: none; }
+.ol-tree:focus-visible { box-shadow: inset 0 0 0 2px #648455; }
+.ol-row { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: 6px; padding-right: 6px; cursor: pointer; user-select: none; contain: layout style; }
+.ol-row:hover { background: #eaf0e3; }
+.ol-row[aria-selected="true"] { background: var(--ol-sel); box-shadow: inset 3px 0 0 var(--ol-sel-line); }
+.ol-tree:focus-visible .ol-row.ol-active { outline: 2px solid #648455; outline-offset: -2px; }
+.ol-group .ol-name { font-weight: 650; font-size: 10px; letter-spacing: .8px; text-transform: uppercase; color: #52664c; }
+.ol-count { margin-left: 6px; font-weight: 600; color: var(--ol-muted); letter-spacing: 0; }
+.outliner .ol-chevron { flex: none; width: 18px; height: 18px; padding: 0; border: 0; background: none; color: var(--ol-muted); font-size: 10px; line-height: 18px; text-align: center; }
+.ol-thumb { width: 24px !important; height: 24px !important; border-radius: 4px; background: #fff; flex: none; }
+.ol-name { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 550; }
+.ol-detail { flex: 0 4 auto; min-width: 0; max-width: 48%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ol-muted); font-size: 10px; }
+.outliner .ol-toggle { flex: none; width: 24px; height: 24px; padding: 0; display: grid; place-items: center; border: 0; background: none; border-radius: 5px; color: #8c9c85; opacity: 0; }
+.outliner .ol-toggle svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; }
+.outliner .ol-toggle:hover { background: #dfe7d8; color: var(--ol-ink); }
+.ol-row:hover .ol-toggle, .ol-row.ol-active .ol-toggle, .outliner .ol-toggle[aria-pressed="true"] { opacity: 1; }
+.outliner .ol-toggle[aria-pressed="true"] { color: var(--ol-green); }
+.ol-hidden .ol-name, .ol-hidden .ol-thumb, .ol-hidden .ol-detail { opacity: .45; }
+.ol-locked .ol-name { font-style: italic; }
+.ol-empty { margin: 18px 14px; color: var(--ol-muted); }
+@media (pointer: coarse) { .outliner .ol-toggle { opacity: 1; width: 36px; height: 36px; } .ol-thumb { width: 32px !important; height: 32px !important; } .ol-name { font-size: 13px; } }
+/* The phone sheet's Outliner tab (#203): fills the sheet panel. */
+.outliner.ol-sheet { position: static; flex: 1; min-height: 0; width: auto; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+.outliner.ol-sheet .ol-heading { display: none; }
+.outliner.ol-sheet .ol-filter { font-size: 16px; }
+.builder-page[data-layout^=phone] .sheet-body > .outliner-region { overflow: hidden; }
