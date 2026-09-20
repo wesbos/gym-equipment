@@ -37,3 +37,6 @@
 /* The toolbar's popovers (export menu, configurations) paint above the stage overlays, the timeline and the status
  * bar: those share the shell's stacking context at z-index 5–8, and the toolbar is its own context. */
 .builder-page .toolbar{z-index:20}
+/* Gym gallery link (#184): reads as a toolbar button. */
+.builder-page .gyms-link{white-space:nowrap;border:1px solid var(--line);border-radius:var(--radius);background:var(--green);color:#fff;padding:10px 12px;font-size:11px;font-weight:600;line-height:1.2;text-decoration:none}.builder-page .gyms-link:hover{background:#183d2b}
+@media(max-width:690px){.builder-page .gyms-link{font-size:9px;padding:8px}}

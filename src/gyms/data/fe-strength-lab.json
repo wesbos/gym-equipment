@@ -1,0 +1,775 @@
+{
+  "slug": "fe-strength-lab",
+  "title": "FE Strength Lab",
+  "owner": "Big DeBo",
+  "sourceUrl": "https://gymradar.com/gym/fe-strength-lab",
+  "summary": "A 2000 sq ft Indiana pole barn built to coach strongman and strength athletes: a black Bells of Steel Manticore 6-post with Kraken cable stacks in the middle of the stall mats, a painted DIY platform, a cardio corner and a full strongman arsenal of kegs, stones, logs and a yoke. The turf sled lane is left out, and a few DIY pieces stand in as their closest catalog match.",
+  "highlights": [
+    "2000 sq ft pole barn",
+    "Manticore 6-post + Kraken stacks",
+    "Kegs, atlas stones, log and yoke",
+    "Painted DIY 8×8 platform",
+    "Coaches competitive athletes"
+  ],
+  "equipment": [
+    "Bells of Steel Manticore 6-post power rack",
+    "Bells of Steel Kraken pulley system",
+    "Bells of Steel sandwich J-cups, safety straps and pull-up bar",
+    "Mutant Metals Ultimate Dip Attachment",
+    "Titan rack landmine (closest match: Bells of Steel landmine)",
+    "Weight horns with black iron plates (closest match: long storage pins)",
+    "Rogue Ohio Bar and Ohio Deadlift Bar",
+    "REP open trap bar",
+    "Rogue LB competition plates and black iron plates",
+    "Titan Elite adjustable FID bench",
+    "DIY 8×8 lifting platform and Tractor Supply stall mats",
+    "CAP hex dumbbells on DIY shelving (closest match: Rogue 3-tier dumbbell rack)",
+    "Rogue and CAP kettlebells (closest match: REP kettlebell rack 2.0)",
+    "PowerBlock Elite USA 90 on column stand",
+    "Titan plate-loaded lat pulldown / row",
+    "GMWD LE11 leg extension / prone curl (closest match: GMWD LE08 2.0)",
+    "NEXO GHD (closest match: Rogue Abram GHD 2.0)",
+    "DIY reverse hyper (closest match: Rogue RH-2)",
+    "DIY belt squat",
+    "AssaultRunner Pro, AssaultBike Classic and Concept2 RowErg",
+    "Rogue 10″ log (closest match: Titan rackable strongman log)",
+    "Titan T-3 short yoke",
+    "Farmers walk handles (closest match: Titan farmers walk handles)",
+    "DIY circus dumbbell (closest match: Titan circus dumbbell)",
+    "DIY steel kegs, atlas stones and stone platform",
+    "Rogue Cyclone and Freedom Strength sandbags",
+    "Sled (closest match: Rogue dog sled)",
+    "DIY plyo boxes (closest match: Rogue Games Box)",
+    "Rogue 9-bar holder, Titan barbell storage holder and plate tree",
+    "Menards slatwall with belts, straps and bands (closest match: white Wall Control pegboard)",
+    "Not placed: turf sled lane, Rogue Echo/Bella/Boneyard bars, specialty bars, grip tools, jerk blocks, Rogue peg board"
+  ],
+  "doc": {
+    "version": 2,
+    "rack": {
+      "height": 2286,
+      "width": 1092.2,
+      "depth": 1092.2,
+      "tube": 76.2,
+      "holeDiameter": 25.4,
+      "pitch": 50.8,
+      "firstHole": 65
+    },
+    "uprights": {
+      "front-left": {
+        "x": -584.2,
+        "y": -584.2
+      },
+      "front-right": {
+        "x": 584.2,
+        "y": -584.2
+      },
+      "rear-left": {
+        "x": -584.2,
+        "y": 584.2
+      },
+      "rear-right": {
+        "x": 584.2,
+        "y": 584.2
+      },
+      "upright-1": {
+        "x": -584.2,
+        "y": 1270
+      },
+      "upright-4": {
+        "x": 584.2,
+        "y": 1270
+      }
+    },
+    "connections": [
+      {
+        "id": "left-upper-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "upper"
+      },
+      {
+        "id": "left-lower-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "lower"
+      },
+      {
+        "id": "right-upper-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "upper"
+      },
+      {
+        "id": "right-lower-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "lower"
+      },
+      {
+        "id": "rear-crossmember",
+        "from": "rear-left",
+        "to": "rear-right",
+        "level": "upper"
+      },
+      {
+        "id": "connection-2",
+        "from": "rear-left",
+        "to": "upright-1",
+        "level": "upper"
+      },
+      {
+        "id": "connection-3",
+        "from": "rear-left",
+        "to": "upright-1",
+        "level": "lower"
+      },
+      {
+        "id": "connection-5",
+        "from": "rear-right",
+        "to": "upright-4",
+        "level": "upper"
+      },
+      {
+        "id": "connection-6",
+        "from": "rear-right",
+        "to": "upright-4",
+        "level": "lower"
+      }
+    ],
+    "profileId": "bos-manticore",
+    "removed": [],
+    "structure": {},
+    "accessories": [
+      {
+        "id": "accessory-8",
+        "part": "j-hook-sandwich",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 24
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-9",
+        "part": "bells-of-steel-safety-straps",
+        "target": {
+          "uprightId": "front-left",
+          "face": "right",
+          "hole": 13
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-10",
+        "part": "pullup-straight",
+        "target": {
+          "uprightId": "front-left",
+          "face": "right",
+          "hole": 39
+        },
+        "paired": false,
+        "params": {},
+        "spanTo": "front-right"
+      },
+      {
+        "id": "accessory-11",
+        "part": "storage-pin-long",
+        "target": {
+          "uprightId": "front-left",
+          "face": "left",
+          "hole": 4
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right",
+        "plates": [
+          "lb45",
+          "lb45",
+          "lb25"
+        ]
+      },
+      {
+        "id": "accessory-12",
+        "part": "mutant-metals-ultimate-dip-attachment",
+        "target": {
+          "uprightId": "upright-4",
+          "face": "back",
+          "hole": 18
+        },
+        "paired": false,
+        "params": {}
+      },
+      {
+        "id": "accessory-13",
+        "part": "bells-of-steel-landmine-rack-attachment",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 1
+        },
+        "paired": false,
+        "params": {}
+      }
+    ],
+    "nextId": 58,
+    "appearance": {
+      "frameColor": "#1d1f21"
+    },
+    "floorItems": [
+      {
+        "id": "floor-14",
+        "part": "tractor-supply-horse-stall-mat",
+        "position": [
+          0,
+          -300
+        ],
+        "rotation": 0,
+        "params": {
+          "across": 4,
+          "deep": 3,
+          "side": 0
+        }
+      },
+      {
+        "id": "floor-15",
+        "part": "rogue-ohio-bar",
+        "position": [
+          8.748823188354208,
+          664.79326
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 0
+        },
+        "cradle": "accessory-8:left#0+accessory-8:right#0",
+        "plates": {
+          "both": [
+            "lb45",
+            "lb45"
+          ]
+        }
+      },
+      {
+        "id": "floor-16",
+        "part": "titan-elite-adjustable-fid-bench",
+        "position": [
+          0,
+          1500
+        ],
+        "rotation": 0,
+        "params": {
+          "backAngle": 0,
+          "seatAngle": 0,
+          "color": 0
+        }
+      },
+      {
+        "id": "floor-17",
+        "part": "rep-open-trap-bar",
+        "position": [
+          -1800,
+          2000
+        ],
+        "rotation": 0,
+        "params": {
+          "pose": 0,
+          "handles": 1
+        }
+      },
+      {
+        "id": "floor-18",
+        "part": "diy-lifting-platform",
+        "position": [
+          -2900,
+          3600
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 0,
+          "logo": 1
+        }
+      },
+      {
+        "id": "floor-19",
+        "part": "rogue-ohio-deadlift-bar",
+        "position": [
+          -2900,
+          3600
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 0
+        },
+        "plates": {
+          "both": [
+            "rogue-lb-competition:55",
+            "rogue-lb-competition:45",
+            "rogue-lb-competition:25"
+          ]
+        }
+      },
+      {
+        "id": "floor-20",
+        "part": "rogue-vertical-plate-tree-2",
+        "position": [
+          -1200,
+          4700
+        ],
+        "rotation": 0,
+        "params": {
+          "loaded": 1,
+          "plates": 0,
+          "wheels": 0
+        }
+      },
+      {
+        "id": "floor-21",
+        "part": "rogue-games-box",
+        "position": [
+          -700,
+          3300
+        ],
+        "rotation": 0,
+        "params": {
+          "height": 24
+        }
+      },
+      {
+        "id": "floor-22",
+        "part": "rogue-3-tier-dumbbell-rack",
+        "position": [
+          -4000,
+          -1400
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "loaded": 1
+        }
+      },
+      {
+        "id": "floor-23",
+        "part": "rep-kettlebell-rack-2",
+        "position": [
+          -4050,
+          900
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "tiers": 0,
+          "loaded": 1
+        }
+      },
+      {
+        "id": "floor-24",
+        "part": "powerblock-column-stand",
+        "position": [
+          -4100,
+          2000
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "finish": 0,
+          "load": 1
+        }
+      },
+      {
+        "id": "floor-25",
+        "part": "diy-belt-squat",
+        "position": [
+          -2000,
+          -1700
+        ],
+        "rotation": 0,
+        "params": {
+          "pose": 0,
+          "plate": 5,
+          "loaded": 2
+        }
+      },
+      {
+        "id": "floor-26",
+        "part": "titan-plate-loaded-lat-pulldown",
+        "position": [
+          -3700,
+          -4300
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "loaded": 2,
+          "thigh": 2
+        }
+      },
+      {
+        "id": "floor-27",
+        "part": "gmwd-le08-leg-extension-curl",
+        "position": [
+          -1900,
+          -4400
+        ],
+        "rotation": 0,
+        "params": {
+          "mode": 0,
+          "rep": 0,
+          "backPad": 4,
+          "color": 0,
+          "plates": 0
+        }
+      },
+      {
+        "id": "floor-28",
+        "part": "titan-barbell-storage-holder",
+        "position": [
+          -400,
+          -4800
+        ],
+        "rotation": 0,
+        "params": {
+          "size": 0,
+          "loaded": 1
+        }
+      },
+      {
+        "id": "floor-29",
+        "part": "rogue-rh-2-reverse-hyper",
+        "position": [
+          900,
+          -4300
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "swing": 0,
+          "load": 0
+        }
+      },
+      {
+        "id": "floor-30",
+        "part": "rogue-abram-ghd-2",
+        "position": [
+          2700,
+          -4200
+        ],
+        "rotation": 0,
+        "params": {
+          "station": 5
+        }
+      },
+      {
+        "id": "floor-31",
+        "part": "diy-atlas-stone-platform",
+        "position": [
+          3200,
+          -2200
+        ],
+        "rotation": 0,
+        "params": {
+          "height": 48
+        }
+      },
+      {
+        "id": "floor-32",
+        "part": "diy-atlas-stone",
+        "position": [
+          2200,
+          -1000
+        ],
+        "rotation": 0,
+        "params": {
+          "diameter": 16
+        }
+      },
+      {
+        "id": "floor-33",
+        "part": "diy-atlas-stone",
+        "position": [
+          2756.4,
+          -1000
+        ],
+        "rotation": 0,
+        "params": {
+          "diameter": 16
+        }
+      },
+      {
+        "id": "floor-34",
+        "part": "diy-strongman-keg",
+        "position": [
+          2200,
+          0
+        ],
+        "rotation": 0,
+        "params": {
+          "size": 0,
+          "fill": 2
+        }
+      },
+      {
+        "id": "floor-35",
+        "part": "diy-strongman-keg",
+        "position": [
+          2728.94,
+          0
+        ],
+        "rotation": 0,
+        "params": {
+          "size": 0,
+          "fill": 2
+        }
+      },
+      {
+        "id": "floor-36",
+        "part": "titan-rackable-strongman-log",
+        "position": [
+          2800,
+          800
+        ],
+        "rotation": 0,
+        "params": {
+          "size": 2,
+          "load": 0
+        }
+      },
+      {
+        "id": "floor-37",
+        "part": "rogue-cyclone-strongman-sandbag",
+        "position": [
+          3700,
+          -1000
+        ],
+        "rotation": 0,
+        "params": {
+          "size": 1
+        }
+      },
+      {
+        "id": "floor-38",
+        "part": "freedom-strength-strongman-sandbag",
+        "position": [
+          3700,
+          -300
+        ],
+        "rotation": 0,
+        "params": {
+          "color": 0,
+          "size": 4
+        }
+      },
+      {
+        "id": "floor-39",
+        "part": "titan-circus-dumbbell",
+        "position": [
+          4200,
+          250
+        ],
+        "rotation": 0,
+        "params": {
+          "bell": 1,
+          "handle": 2.5,
+          "pose": 0
+        }
+      },
+      {
+        "id": "floor-40",
+        "part": "titan-t3-series-yoke",
+        "position": [
+          4600,
+          -4000
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "height": 72,
+          "bar": 56,
+          "load": 0
+        }
+      },
+      {
+        "id": "floor-41",
+        "part": "titan-farmers-walk-handles",
+        "position": [
+          5000,
+          -1800
+        ],
+        "rotation": 0,
+        "params": {
+          "load": 0
+        }
+      },
+      {
+        "id": "floor-42",
+        "part": "titan-farmers-walk-handles",
+        "position": [
+          5572,
+          -1800
+        ],
+        "rotation": 0,
+        "params": {
+          "load": 0
+        }
+      },
+      {
+        "id": "floor-43",
+        "part": "rogue-dog-sled",
+        "position": [
+          5200,
+          1300
+        ],
+        "rotation": 0,
+        "params": {
+          "load": 3
+        }
+      },
+      {
+        "id": "floor-44",
+        "part": "assaultrunner-pro",
+        "position": [
+          1400,
+          4100
+        ],
+        "rotation": 0,
+        "params": {}
+      },
+      {
+        "id": "floor-45",
+        "part": "assault-airbike-classic",
+        "position": [
+          2900,
+          4300
+        ],
+        "rotation": 0,
+        "params": {}
+      },
+      {
+        "id": "floor-46",
+        "part": "concept2-rowerg",
+        "position": [
+          4300,
+          3700
+        ],
+        "rotation": 0,
+        "params": {
+          "legs": 0,
+          "pose": 0
+        }
+      }
+    ],
+    "systems": [
+      {
+        "id": "system-7",
+        "part": "cable-kraken",
+        "params": {
+          "sides": 3,
+          "loading": 1,
+          "upgrade": 0,
+          "shroud": 0,
+          "trolley": 979.4,
+          "adapter": 0,
+          "anchored": 0
+        },
+        "bay": [
+          "front-left",
+          "front-right",
+          "rear-left",
+          "rear-right",
+          "upright-1",
+          "upright-4"
+        ]
+      }
+    ],
+    "wallItems": [
+      {
+        "id": "wall-47",
+        "part": "rogue-9-bar-holder",
+        "wall": "back",
+        "position": [
+          -1100,
+          1119.05
+        ],
+        "params": {
+          "loaded": 3
+        }
+      },
+      {
+        "id": "wall-48",
+        "part": "wall-control-pegboard",
+        "wall": "left",
+        "position": [
+          3300,
+          1500
+        ],
+        "params": {
+          "size": 1,
+          "panels": 4,
+          "color": 2
+        }
+      }
+    ],
+    "room": {
+      "back": 5200,
+      "left": 4600,
+      "right": 6000,
+      "front": 5800,
+      "height": 3500
+    },
+    "hangItems": [
+      {
+        "id": "hang-49",
+        "part": "inzer-forever-lever-belt-10mm",
+        "panel": "wall-48",
+        "slot": 59
+      },
+      {
+        "id": "hang-50",
+        "part": "rogue-ohio-lifting-straps",
+        "panel": "wall-48",
+        "slot": 66
+      },
+      {
+        "id": "hang-51",
+        "part": "rogue-wrist-wraps-2",
+        "panel": "wall-48",
+        "slot": 49
+      },
+      {
+        "id": "hang-52",
+        "part": "mark-bell-sling-shot-original",
+        "panel": "wall-48",
+        "slot": 69
+      },
+      {
+        "id": "hang-53",
+        "part": "rogue-monster-band-2",
+        "panel": "wall-48",
+        "slot": 71
+      },
+      {
+        "id": "hang-54",
+        "part": "rogue-monster-band-3",
+        "panel": "wall-48",
+        "slot": 73
+      },
+      {
+        "id": "hang-55",
+        "part": "rogue-monster-band-4",
+        "panel": "wall-48",
+        "slot": 45
+      },
+      {
+        "id": "hang-56",
+        "part": "rep-wood-gymnastic-rings",
+        "panel": "wall-48",
+        "slot": 79
+      },
+      {
+        "id": "hang-57",
+        "part": "fat-gripz",
+        "panel": "wall-48",
+        "slot": 42
+      }
+    ]
+  }
+}

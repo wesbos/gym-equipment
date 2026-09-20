@@ -44,6 +44,7 @@ import {
 import { Link } from "@tanstack/react-router";
 import { getBuilderStore, type BuilderSnapshot, type BuilderStore, type CatalogPart } from "../state/builder-store.ts";
 import { shallowEqual, useStoreSelector } from "../state/use-store.ts";
+import { useOpenGym } from "../gyms/useOpenGym.ts";
 import { createBuilderScene } from "../scenes/builder-scene.ts";
 import {
   createAssembly,
@@ -495,6 +496,7 @@ const CatalogPanel = memo(function CatalogPanel({ store }: { store: BuilderStore
       </div>
       <div className="catalog-footer">
         <Link to="/library">Browse parts library ↗</Link>
+        <Link to="/gyms">Pre-built gym gallery ↗</Link>
         <Link to="/parts/$partId" params={{ partId: "upright" }}>Part detail viewer ↗</Link>
       </div>
     </aside>
@@ -627,6 +629,7 @@ export default function BuilderPage() {
   const viewport = useRef<HTMLDivElement>(null),
     controller = useRef<ReturnType<typeof createBuilderScene> | null>(null),
     importFile = useRef<HTMLInputElement>(null);
+  useOpenGym(store, () => controller.current?.refitOnNextBuild());
   const [drawer, setDrawer] = useState(false),
     [view, setView] = useState<"iso" | "front" | "side" | "top">("iso");
   useEffect(() => {
@@ -678,6 +681,7 @@ export default function BuilderPage() {
             <span className="live-dot" /> YOUR WORKSPACE
           </div>
           <div className="toolbar-actions">
+            <Link className="gyms-link" to="/gyms">Gym gallery</Link>
             <ConfigManager store={store} />
             <HistoryButtons store={store} />
             <button id="load" onClick={() => importFile.current?.click()}>

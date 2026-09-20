@@ -125,3 +125,4 @@
     margin-top: 12px;
   }
 }
+.library-gallery .library-links{display:flex;gap:8px;flex-wrap:wrap}

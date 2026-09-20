@@ -1,0 +1,582 @@
+{
+  "slug": "erik-mains-s-gym",
+  "title": "Erik Mains's Gym",
+  "owner": "Erik Mains",
+  "sourceUrl": "https://gymradar.com/gym/erik-mains-s-gym",
+  "summary": "A long, dark 13 × 42 ft powerlifting building: a black folding rack bolted to one long wall faces a second cable rack and plate-loaded machines across the aisle, with a painted platform at the entry end and old iron everywhere. The Titan T-3 folding rack is shown as the closest catalog match, a Rogue RML-3W fold-back rack.",
+  "highlights": [
+    "13 × 42 ft \"bowling-lane\" gym",
+    "Folding rack bolted over a mirror wall",
+    "Full Texas Power Bars set",
+    "Two gun racks of specialty bars",
+    "Painted 力 platform at the entry"
+  ],
+  "equipment": [
+    "Titan T-3 Series Folding Power Rack (closest match: Rogue RML-3W Fold Back Wall Mount Rack, 41.5″ deep)",
+    "GarveeLife power rack with pulleys (closest match: Force USA Functional Trainer Rack)",
+    "Rogue Adjustable Monolift 1.0 (closest match: generic rack monolift)",
+    "Rogue SAML-24 Monster Lite Spotter Arms",
+    "Rogue Monster Lite J-Cups",
+    "Weight storage horns with old iron (closest match: CAP 2″ Olympic iron, black)",
+    "Rogue Flat Utility Bench",
+    "Titan Seated Stationary Bench",
+    "Titan Performance adjustable bench and Tru Grit flat utility bench (not placed)",
+    "Texas Power Bars: Deadlift Bar, Power Bar Original (Squat and Bench bars stored)",
+    "Titan Safety Squat Bar",
+    "Titan Multi-Grip Camber / multi-grip bars (closest match: Titan Multi-Grip Barbell)",
+    "Titan 84″ and 60″ axles, rackable EZ curl, rackable camber, Yukon bow bar, cambered bench bar, 34″ triceps bar, Bandbell Earthquake Bar (stored on the gun racks)",
+    "Titan Vertical Leg Press (closest match: Titan Leg Press Hack Squat)",
+    "EVERYMATE leg extension / curl (closest match: Titan Leg Extension & Hamstring Curl)",
+    "Titan Single Leg Squat Roller",
+    "Titan plate-loaded seated dip, GMWD JX01 incline chest fly, Yukon seated calf (not in the catalog)",
+    "Titan T-3 Series Yoke",
+    "Titan 45 lb Wagon Wheel Pulling Blocks on an Olympic bar",
+    "Steel kegs (DIY strongman kegs)",
+    "Rogue Vertical Plate Trees and Titan portable plate tree with old iron",
+    "Titan Barbell Storage Holder",
+    "Titan wall-mounted barbell rack and Rogue V2 gun rack",
+    "Titan belt & band hanger (closest match: Rogue Belt & Band Hanger)",
+    "Pegboard with belt, straps, wraps, bands and cable handles (Fitvids, SYL; closest match: REP handles)",
+    "Everyday Essentials bumpers (closest match: REP black bumper plates)",
+    "Titan and BalanceFrom plyo boxes (closest match: Titan 3-in-1 soft foam plyo box)",
+    "DIY platform at the entry end; stall-mat zone around the rack",
+    "Green turf runner down the aisle, hex LED ceiling and wall mural (not modelled)"
+  ],
+  "doc": {
+    "version": 2,
+    "rack": {
+      "height": 2295.525,
+      "width": 1092.2,
+      "depth": 1054.1,
+      "tube": 76.2,
+      "holeDiameter": 17.4625,
+      "pitch": 50.8,
+      "firstHole": 63.5,
+      "benchStart": 419.09999999999997,
+      "benchEnd": 1181.1,
+      "benchSpacing": 25.4
+    },
+    "uprights": {
+      "front-left": {
+        "x": -584.2,
+        "y": -565.15
+      },
+      "front-right": {
+        "x": 584.2,
+        "y": -565.15
+      }
+    },
+    "connections": [],
+    "profileId": "rogue-rml-3w",
+    "removed": [],
+    "structure": {},
+    "accessories": [
+      {
+        "id": "accessory-1",
+        "part": "pullup-straight",
+        "target": {
+          "uprightId": "front-left",
+          "hole": 39,
+          "face": "right"
+        },
+        "paired": false,
+        "params": {
+          "diameter": 31.75
+        },
+        "spanTo": "front-right"
+      },
+      {
+        "id": "accessory-2",
+        "part": "rogue-monster-lite-j-cups",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 22
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-3",
+        "part": "monolift",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 30
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-4",
+        "part": "rogue-saml-24-spotter-arms",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 8
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-5",
+        "part": "storage-pin-long",
+        "target": {
+          "uprightId": "front-left",
+          "face": "left",
+          "hole": 4
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right",
+        "plates": [
+          "cap-olympic-iron:45@black",
+          "cap-olympic-iron:45@black",
+          "cap-olympic-iron:45@black",
+          "cap-olympic-iron:35@black"
+        ]
+      },
+      {
+        "id": "accessory-6",
+        "part": "storage-pin-long",
+        "target": {
+          "uprightId": "front-left",
+          "face": "left",
+          "hole": 12
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right",
+        "plates": [
+          "cap-olympic-iron:25@black",
+          "cap-olympic-iron:25@black",
+          "cap-olympic-iron:10@black",
+          "cap-olympic-iron:10@black"
+        ]
+      }
+    ],
+    "nextId": 42,
+    "appearance": {
+      "frameColor": "#1c1d1f"
+    },
+    "floorItems": [
+      {
+        "id": "floor-7",
+        "part": "tractor-supply-horse-stall-mat",
+        "position": [
+          -915,
+          300
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "across": 1,
+          "deep": 1,
+          "side": 0
+        }
+      },
+      {
+        "id": "floor-8",
+        "part": "tractor-supply-horse-stall-mat",
+        "position": [
+          915,
+          300
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "across": 1,
+          "deep": 1,
+          "side": 0
+        }
+      },
+      {
+        "id": "floor-9",
+        "part": "rogue-flat-utility-bench-2",
+        "position": [
+          0,
+          1245
+        ],
+        "rotation": 0,
+        "params": {}
+      },
+      {
+        "id": "floor-10",
+        "part": "texas-power-bar",
+        "position": [
+          -0.0019999999999527063,
+          682.57804
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 0
+        },
+        "cradle": "accessory-3:left#0+accessory-3:right#0"
+      },
+      {
+        "id": "floor-11",
+        "part": "diy-lifting-platform",
+        "position": [
+          -4150,
+          1380
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 0,
+          "logo": 0
+        }
+      },
+      {
+        "id": "floor-12",
+        "part": "texas-deadlift-bar",
+        "position": [
+          -4150,
+          1380
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 0
+        },
+        "plates": {
+          "both": [
+            "rep-black-bumper:45",
+            "rep-black-bumper:45",
+            "cap-olympic-iron:45@black"
+          ]
+        }
+      },
+      {
+        "id": "floor-13",
+        "part": "titan-3-in-1-soft-foam-plyo-box",
+        "position": [
+          -1200,
+          -130
+        ],
+        "rotation": 0,
+        "params": {
+          "height": 20
+        }
+      },
+      {
+        "id": "floor-14",
+        "part": "rogue-vertical-plate-tree-2",
+        "position": [
+          -2150,
+          -210
+        ],
+        "rotation": 0,
+        "params": {
+          "loaded": 2,
+          "plates": 1,
+          "wheels": 0
+        }
+      },
+      {
+        "id": "floor-15",
+        "part": "titan-barbell-storage-holder",
+        "position": [
+          -2800,
+          -360
+        ],
+        "rotation": 0,
+        "params": {
+          "size": 0,
+          "loaded": 3
+        }
+      },
+      {
+        "id": "floor-16",
+        "part": "titan-leg-extension-curl",
+        "position": [
+          1500,
+          -40
+        ],
+        "rotation": 0,
+        "params": {
+          "mode": 0,
+          "rep": 0,
+          "thighPad": 4,
+          "backPad": 4,
+          "seatAngle": 10.5,
+          "plates": 0
+        }
+      },
+      {
+        "id": "floor-17",
+        "part": "titan-single-leg-squat-roller",
+        "position": [
+          2600,
+          -240
+        ],
+        "rotation": 0,
+        "params": {
+          "height": 18
+        }
+      },
+      {
+        "id": "floor-18",
+        "part": "titan-t3-series-yoke",
+        "position": [
+          3950,
+          160
+        ],
+        "rotation": 0,
+        "params": {
+          "height": 72,
+          "bar": 56,
+          "load": 0
+        }
+      },
+      {
+        "id": "floor-19",
+        "part": "diy-strongman-keg",
+        "position": [
+          5150,
+          -300
+        ],
+        "rotation": 0,
+        "params": {
+          "size": 0,
+          "fill": 2
+        }
+      },
+      {
+        "id": "floor-20",
+        "part": "diy-strongman-keg",
+        "position": [
+          5678.9400000000005,
+          -300
+        ],
+        "rotation": 0,
+        "params": {
+          "size": 0,
+          "fill": 2
+        }
+      },
+      {
+        "id": "floor-21",
+        "part": "titan-portable-plate-barbell-tree",
+        "position": [
+          6400,
+          -190
+        ],
+        "rotation": 0,
+        "params": {
+          "loaded": 2,
+          "plates": 1,
+          "bars": 2
+        }
+      },
+      {
+        "id": "floor-22",
+        "part": "force-usa-functional-trainer-rack",
+        "position": [
+          -800,
+          2800
+        ],
+        "rotation": 3.141592653589793,
+        "params": {
+          "stack": 0,
+          "pin": 60,
+          "left": 32,
+          "right": 32
+        }
+      },
+      {
+        "id": "floor-23",
+        "part": "titan-seated-stationary-bench",
+        "position": [
+          -2400,
+          2800
+        ],
+        "rotation": 3.141592653589793,
+        "params": {}
+      },
+      {
+        "id": "floor-24",
+        "part": "olympic-barbell",
+        "position": [
+          2600,
+          2860
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 0
+        },
+        "plates": {
+          "both": [
+            "titan-wagon-wheel:45",
+            "titan-wagon-wheel:45"
+          ]
+        }
+      },
+      {
+        "id": "floor-25",
+        "part": "titan-leg-press-hack-squat",
+        "position": [
+          5500,
+          2820
+        ],
+        "rotation": -1.5707963267948966,
+        "params": {
+          "mode": 0,
+          "sled": 0,
+          "footplate": 2,
+          "plates": 0
+        }
+      },
+      {
+        "id": "floor-26",
+        "part": "rogue-vertical-plate-tree-2",
+        "position": [
+          7030,
+          3030
+        ],
+        "rotation": 3.141592653589793,
+        "params": {
+          "loaded": 1,
+          "plates": 1,
+          "wheels": 0
+        }
+      },
+      {
+        "id": "floor-27",
+        "part": "titan-safety-squat-bar",
+        "position": [
+          0,
+          651.125
+        ],
+        "rotation": 0,
+        "params": {},
+        "cradle": "accessory-2:left#0+accessory-2:right#0"
+      },
+      {
+        "id": "floor-28",
+        "part": "titan-multi-grip-barbell",
+        "position": [
+          3900,
+          1500
+        ],
+        "rotation": 0,
+        "params": {}
+      }
+    ],
+    "wallItems": [
+      {
+        "id": "wall-29",
+        "part": "titan-wall-mounted-6-barbell-rack",
+        "wall": "back",
+        "position": [
+          900,
+          1750
+        ],
+        "params": {
+          "spacing": 1168.3999999999999,
+          "loaded": 6
+        }
+      },
+      {
+        "id": "wall-30",
+        "part": "rogue-v2-gun-rack",
+        "wall": "back",
+        "position": [
+          -3000,
+          1800
+        ],
+        "params": {
+          "spacing": 1168.3999999999999,
+          "liners": 1,
+          "loaded": 4
+        }
+      },
+      {
+        "id": "wall-31",
+        "part": "pegboard-panel",
+        "wall": "back",
+        "position": [
+          -5300,
+          1500
+        ],
+        "params": {
+          "width": 1219
+        }
+      },
+      {
+        "id": "wall-32",
+        "part": "rogue-belt-band-hanger",
+        "wall": "left",
+        "position": [
+          -1625,
+          1400
+        ],
+        "params": {
+          "depth": 127
+        }
+      }
+    ],
+    "room": {
+      "back": 600,
+      "left": 5400,
+      "right": 7400,
+      "front": 3360,
+      "height": 2400
+    },
+    "hangItems": [
+      {
+        "id": "hang-33",
+        "part": "inzer-forever-lever-belt-10mm",
+        "panel": "wall-31",
+        "slot": 5
+      },
+      {
+        "id": "hang-34",
+        "part": "rogue-ohio-lifting-straps",
+        "panel": "wall-31",
+        "slot": 2
+      },
+      {
+        "id": "hang-35",
+        "part": "rogue-wrist-wraps-2",
+        "panel": "wall-31",
+        "slot": 8
+      },
+      {
+        "id": "hang-36",
+        "part": "rep-tricep-rope",
+        "panel": "wall-31",
+        "slot": 0
+      },
+      {
+        "id": "hang-37",
+        "part": "rep-d-handles",
+        "panel": "wall-31",
+        "slot": 10
+      },
+      {
+        "id": "hang-38",
+        "part": "rogue-monster-band-2",
+        "panel": "wall-31",
+        "slot": 3
+      },
+      {
+        "id": "hang-39",
+        "part": "rogue-monster-band-3",
+        "panel": "wall-31",
+        "slot": 7
+      },
+      {
+        "id": "hang-40",
+        "part": "rogue-monster-band-4",
+        "panel": "wall-31",
+        "slot": 49
+      },
+      {
+        "id": "hang-41",
+        "part": "mark-bell-sling-shot-original",
+        "panel": "wall-31",
+        "slot": 48
+      }
+    ]
+  }
+}

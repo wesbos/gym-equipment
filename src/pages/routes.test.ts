@@ -29,3 +29,9 @@ test('parts live at real /parts/<id> paths; a bare /parts goes to the library', 
   for (const path of ['/parts', '/parts/', '/parts.html']) assert.equal(redirectOf(path)?.to, '/library', path);
   assert.equal(leaf('/library').routeId, '/library');
 });
+
+test('the gym gallery lives at /gyms with a detail page per gym', () => {
+  assert.equal(leaf('/gyms').routeId, '/gyms');
+  const gym = leaf('/gyms/cable-compound');
+  assert.deepEqual([gym.routeId, gym.params.slug], ['/gyms/$slug', 'cable-compound']);
+});
