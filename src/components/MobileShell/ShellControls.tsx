@@ -21,7 +21,13 @@ export function OverflowMenu({ children }: { children: ReactNode }) {
         onClick={() => setOpen(!open)}>
         <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><circle cx="4" cy="10" r="1.8" /><circle cx="10" cy="10" r="1.8" /><circle cx="16" cy="10" r="1.8" /></svg>
       </button>
-      <div className="toolbar-menu" onClick={e => { if ((e.target as Element).closest('[data-menu-close]')) setOpen(false); }}>{children}</div>
+      <div className="toolbar-menu" onClick={e => {
+        const target = e.target as Element;
+        if (target.closest('[data-menu-close]')) return setOpen(false);
+        // A section that expands in place (Export's options, Configurations) scrolls into view once it has rendered.
+        const section = target.closest<HTMLElement>('.export-menu, .config-manager');
+        if (section) requestAnimationFrame(() => section.scrollIntoView({ block: 'nearest' }));
+      }}>{children}</div>
     </div>
   );
 }

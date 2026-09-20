@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { layoutFor, openSheet, setSheetSnap, settleSnap, sheetSizes, sheetState, stepSnap, LAYOUT_QUERIES } from './MobileShell/shell-state.ts';
+import { contentDragMode, layoutFor, openSheet, setSheetSnap, settleSnap, sheetSizes, sheetState, stepSnap, LAYOUT_QUERIES } from './MobileShell/shell-state.ts';
 
 /** Evaluates the layout queries against a viewport (the subset of media query syntax they use). */
 function matcher(width: number, height: number) {
@@ -28,6 +28,12 @@ test('sheet sizes: bottom sheet leaves canvas above full, side sheet stays withi
   assert.deepEqual(bottom, { peek: 90, half: 422, full: 736 });
   const side = sheetSizes(true, { width: 844, height: 390, top: 44 }, 76);
   assert.ok(side.peek < side.half && side.half < side.full && side.full <= 844 - 180);
+  // A right notch inset widens the peek; the panel beyond it keeps its width.
+  const notched = sheetSizes(true, { width: 750, height: 340, top: 44 }, 127), plain = sheetSizes(true, { width: 750, height: 340, top: 44 }, 80);
+  assert.equal(notched.half - notched.peek, plain.half - plain.peek);
+  assert.ok(notched.half - notched.peek >= 240);
+  const se = sheetSizes(true, { width: 568, height: 320, top: 44 }, 80);
+  assert.ok(se.full <= 568 - 180 && se.half - se.peek >= 240);
   // Tiny viewports never invert the order.
   const tiny = sheetSizes(false, { width: 320, height: 300, top: 52 }, 90);
   assert.ok(tiny.peek <= tiny.half && tiny.half <= tiny.full);
@@ -57,4 +63,16 @@ test('openSheet raises a peeking sheet to half and keeps a taller one', () => {
   assert.deepEqual(sheetState.get(), { tab: 'timeline', snap: 'full' });
   openSheet(undefined, 'peek');
   assert.deepEqual(sheetState.get(), { tab: 'timeline', snap: 'peek' });
+});
+
+test('content drags: the sheet moves below full and from a scrolled-to-top panel at full; the rest scrolls', () => {
+  assert.equal(contentDragMode('half', 0, 0, 4), undefined); // within the slop
+  assert.equal(contentDragMode('half', 0, 30, 10), 'native'); // horizontal
+  assert.equal(contentDragMode('half', 0, 0, -20), 'sheet'); // up grows
+  assert.equal(contentDragMode('half', 0, 0, 20), 'sheet'); // down lowers
+  assert.equal(contentDragMode('half', 120, 0, 20), 'native'); // scrolled: scroll back first
+  assert.equal(contentDragMode('half', 120, 0, -20), 'sheet');
+  assert.equal(contentDragMode('full', 0, 0, 20), 'sheet');
+  assert.equal(contentDragMode('full', 0, 0, -20), 'native');
+  assert.equal(contentDragMode('full', 50, 0, 20), 'native');
 });

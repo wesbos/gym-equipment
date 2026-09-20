@@ -66,8 +66,11 @@ export interface SnapSizes { peek: number; half: number; full: number }
 /** Sheet sizes in px along its axis (height for the bottom sheet, width for the side sheet). */
 export function sheetSizes(side: boolean, viewport: { width: number; height: number; top: number }, peek: number): SnapSizes {
   if (side) {
-    const full = Math.max(peek, Math.round(Math.min(viewport.width * 0.62, viewport.width - 180)));
-    const half = Math.min(full, Math.max(peek, Math.round(Math.min(Math.max(viewport.width * 0.42, 300), 420))));
+    // Sized by the panel's own width beyond the peek (tab rail plus any right safe area), so a notch never squeezes
+    // the panel; at least 180 px of canvas always stays visible.
+    const room = Math.max(peek, viewport.width - 180), content = Math.min(380, Math.max(240, viewport.width * 0.38));
+    const half = Math.round(Math.min(room, peek + content));
+    const full = Math.round(Math.max(half, Math.min(room, peek + viewport.width * 0.55)));
     return { peek, half, full };
   }
   // Full leaves a strip of canvas under the top bar, so the rack stays in view.
@@ -83,6 +86,18 @@ export function settleSnap(sizes: SnapSizes, size: number, velocity: number): Sh
     return [...SNAPS].reverse().find(s => sizes[s] < size - 1) ?? 'peek';
   }
   return SNAPS.reduce((best, s) => Math.abs(sizes[s] - size) < Math.abs(sizes[best] - size) ? s : best, 'peek' as SheetSnap);
+}
+export type ContentDrag = 'sheet' | 'native';
+/** What a vertical drag on the sheet's content does, once it has moved past the slop (undefined: not decided yet).
+ * Mostly horizontal drags scroll natively. Below full, the sheet follows the finger, except a downward drag on a
+ * scrolled panel, which scrolls it back first. At full, only a downward drag on a panel scrolled to the top moves the
+ * sheet (like a native iOS sheet); the rest scrolls. `dy` is positive downward. */
+export function contentDragMode(snap: SheetSnap, scrollTop: number, dx: number, dy: number): ContentDrag | undefined {
+  if (Math.hypot(dx, dy) < 8) return undefined;
+  if (Math.abs(dx) > Math.abs(dy)) return 'native';
+  const atTop = scrollTop <= 0;
+  if (snap === 'full') return dy > 0 && atTop ? 'sheet' : 'native';
+  return dy > 0 && !atTop ? 'native' : 'sheet';
 }
 export const stepSnap = (snap: SheetSnap, direction: 1 | -1): SheetSnap =>
   SNAPS[Math.min(SNAPS.length - 1, Math.max(0, SNAPS.indexOf(snap) + direction))];

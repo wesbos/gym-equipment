@@ -8,8 +8,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import type { BuilderStore } from '../../state/builder-store.ts';
 import {
-  isPhoneLayout, openSheet, setSheetSnap, settleSnap, sheetSizes, sheetState, stepSnap, useLayoutMode, useSheetState,
-  SNAPS, type SheetSnap, type SheetTabId, type SnapSizes,
+  contentDragMode, isPhoneLayout, openSheet, setSheetSnap, settleSnap, sheetSizes, sheetState, stepSnap, useLayoutMode, useSheetState,
+  SNAPS, type ContentDrag, type SheetSnap, type SheetTabId, type SnapSizes,
 } from './shell-state.ts';
 
 /** A sheet tab. Its panel is the element inside the sheet with `data-sheet-panel` containing `panel` (default: `id`);
@@ -18,6 +18,15 @@ import {
 export interface SheetTab { id: SheetTabId; label: string; panel?: string; icon?: ReactNode; onSelect?: () => void }
 
 interface SheetDrag { id: number; start: number; startSize: number; size: number; active: boolean; samples: { t: number; size: number }[] }
+/** Controls that use vertical drags themselves (sliders, scrubbable numbers, the timeline rail, text) keep them. */
+function ownsVerticalDrag(target: Element, body: Element) {
+  if (target.closest('input, textarea, select, [role=slider], [contenteditable=true]')) return true;
+  for (let el: Element | null = target; el && el !== body; el = el.parentElement) {
+    const action = getComputedStyle(el).touchAction;
+    if (action === 'none' || action.includes('pan-x') && !action.includes('pan-y')) return true;
+  }
+  return false;
+}
 const SNAP_LABEL: Record<SheetSnap, string> = { peek: 'Collapsed', half: 'Half open', full: 'Fully open' };
 
 export function BuilderSheet({ store, tabs, children }: { store: BuilderStore; tabs: readonly SheetTab[]; children: ReactNode }) {
@@ -28,8 +37,8 @@ export function BuilderSheet({ store, tabs, children }: { store: BuilderStore; t
   const placed = useRef<{ layout: string; size: number } | null>(null);
   const drag = useRef<SheetDrag | null>(null);
   const suppressClick = useRef(false);
-  const layoutRef = useRef(layout);
-  layoutRef.current = layout;
+  const layoutRef = useRef(layout), snapRef = useRef(snap), sideRef = useRef(side);
+  layoutRef.current = layout; snapRef.current = snap; sideRef.current = side;
 
   // Size the sheet for the current snap point, and inset the canvas once it has settled.
   useLayoutEffect(() => {
@@ -91,51 +100,101 @@ export function BuilderSheet({ store, tabs, children }: { store: BuilderStore; t
   };
 
   const axis = (e: { clientX: number; clientY: number }) => side ? -e.clientX : -e.clientY;
-  // The drag follows the pointer on the window (it soon leaves the header); the header captures it once it moves, so
-  // the canvas never sees the gesture. A press that does not move stays a click on the tab or handle.
+  const beginDrag = (id: number, coord: number, t: number): SheetDrag => {
+    const size = sizes.current[snapRef.current];
+    return drag.current = { id, start: coord, startSize: size, size, active: false, samples: [{ t, size }] };
+  };
+  /** Moves the sheet with the gesture: a transform only, no render. */
+  const moveDrag = (d: SheetDrag, coord: number, t: number) => {
+    const el = dock.current;
+    if (!el) return;
+    if (!d.active) { d.active = true; el.classList.add('dragging'); }
+    const { peek, full } = sizes.current, raw = d.startSize + coord - d.start;
+    // Rubber-band a little past the end snaps.
+    d.size = raw > full ? full + (raw - full) * 0.2 : raw < peek ? peek - (peek - raw) * 0.2 : raw;
+    d.samples.push({ t, size: d.size });
+    if (d.samples.length > 6) d.samples.shift();
+    el.style.transform = sideRef.current ? `translateX(${full - d.size}px)` : `translateY(${full - d.size}px)`;
+  };
+  /** Settles on a snap point from the release position and velocity. */
+  const finishDrag = (d: SheetDrag, t: number, cancelled: boolean) => {
+    if (drag.current === d) drag.current = null;
+    const el = dock.current;
+    if (!d.active || !el) return;
+    suppressClick.current = true;
+    const first = d.samples[0], last = d.samples[d.samples.length - 1], dt = last.t - first.t;
+    const velocity = cancelled || dt <= 0 || t - last.t > 80 ? 0 : (last.size - first.size) / dt;
+    el.classList.remove('dragging');
+    el.style.transform = '';
+    setSheetSnap(settleSnap(sizes.current, d.size, velocity));
+  };
+  // Header drags follow the pointer on the window (it soon leaves the header); the header captures it once it moves,
+  // so the canvas never sees the gesture. A press that does not move stays a click on the tab or handle.
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
     suppressClick.current = false;
     if (!phone || drag.current || (e.pointerType === 'mouse' && e.button !== 0)) return;
-    const target = e.currentTarget, size = sizes.current[snap];
-    const d: SheetDrag = { id: e.pointerId, start: axis(e), startSize: size, size, active: false, samples: [{ t: e.timeStamp, size }] };
-    drag.current = d;
+    const target = e.currentTarget, d = beginDrag(e.pointerId, axis(e), e.timeStamp);
     const move = (ev: globalThis.PointerEvent) => {
-      const el = dock.current;
-      if (ev.pointerId !== d.id || !el) return;
-      const delta = axis(ev) - d.start;
+      if (ev.pointerId !== d.id) return;
       if (!d.active) {
-        if (Math.abs(delta) < 6) return;
-        d.active = true;
+        if (Math.abs(axis(ev) - d.start) < 6) return;
         try { target.setPointerCapture(d.id); } catch { /* The pointer may already be gone. */ }
-        el.classList.add('dragging');
       }
       ev.preventDefault();
-      const { peek, full } = sizes.current, raw = d.startSize + delta;
-      // Rubber-band a little past the end snaps.
-      d.size = raw > full ? full + (raw - full) * 0.2 : raw < peek ? peek - (peek - raw) * 0.2 : raw;
-      d.samples.push({ t: ev.timeStamp, size: d.size });
-      if (d.samples.length > 6) d.samples.shift();
-      el.style.transform = side ? `translateX(${full - d.size}px)` : `translateY(${full - d.size}px)`;
+      moveDrag(d, axis(ev), ev.timeStamp);
     };
     const end = (ev: globalThis.PointerEvent) => {
       if (ev.pointerId !== d.id) return;
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', end);
       window.removeEventListener('pointercancel', end);
-      drag.current = null;
-      const el = dock.current;
-      if (!d.active || !el) return;
-      suppressClick.current = true;
-      const first = d.samples[0], last = d.samples[d.samples.length - 1], dt = last.t - first.t;
-      const velocity = ev.type === 'pointercancel' || dt <= 0 || ev.timeStamp - last.t > 80 ? 0 : (last.size - first.size) / dt;
-      el.classList.remove('dragging');
-      el.style.transform = '';
-      setSheetSnap(settleSnap(sizes.current, d.size, velocity));
+      finishDrag(d, ev.timeStamp, ev.type === 'pointercancel');
     };
     window.addEventListener('pointermove', move, { passive: false });
     window.addEventListener('pointerup', end);
     window.addEventListener('pointercancel', end);
   };
+  // Content drags (bottom sheet, touch): below full the content moves the sheet (up grows it, down lowers it unless
+  // the panel is scrolled); at full, a downward drag on a panel scrolled to the top lowers the sheet. Anything else is
+  // a native scroll. Touch events, so a sheet drag can preventDefault the scroll it replaces.
+  useEffect(() => {
+    const body = dock.current?.querySelector<HTMLElement>('.sheet-body');
+    if (!body || !phone || side) return;
+    let touch: { id: number; x: number; y: number; panel: HTMLElement | null; mode: ContentDrag | undefined; d: SheetDrag | null } | null = null;
+    const start = (e: TouchEvent) => {
+      if (touch || drag.current || e.touches.length !== 1) { touch = null; return; }
+      const t = e.touches[0], target = e.target as Element;
+      touch = { id: t.identifier, x: t.clientX, y: t.clientY, panel: target.closest<HTMLElement>('[data-sheet-panel]'), d: null,
+        mode: ownsVerticalDrag(target, body) ? 'native' : undefined };
+    };
+    const move = (e: TouchEvent) => {
+      const t = touch && [...e.changedTouches].find(c => c.identifier === touch!.id);
+      if (!touch || !t || touch.mode === 'native') return;
+      if (!touch.mode) {
+        touch.mode = contentDragMode(snapRef.current, touch.panel?.scrollTop ?? 0, t.clientX - touch.x, t.clientY - touch.y);
+        if (touch.mode !== 'sheet') return;
+        touch.d = beginDrag(-1, -touch.y, e.timeStamp);
+      }
+      if (e.cancelable) e.preventDefault();
+      moveDrag(touch.d!, -t.clientY, e.timeStamp);
+    };
+    const end = (e: TouchEvent) => {
+      if (!touch || ![...e.changedTouches].some(c => c.identifier === touch!.id)) return;
+      const d = touch.d;
+      touch = null;
+      if (d) finishDrag(d, e.timeStamp, e.type === 'touchcancel');
+    };
+    body.addEventListener('touchstart', start, { passive: true });
+    body.addEventListener('touchmove', move, { passive: false });
+    body.addEventListener('touchend', end);
+    body.addEventListener('touchcancel', end);
+    return () => {
+      body.removeEventListener('touchstart', start);
+      body.removeEventListener('touchmove', move);
+      body.removeEventListener('touchend', end);
+      body.removeEventListener('touchcancel', end);
+    };
+  }, [phone, side]);
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const grow = e.key === 'ArrowUp' || (side && e.key === 'ArrowLeft') || e.key === 'PageUp';
     const shrink = e.key === 'ArrowDown' || (side && e.key === 'ArrowRight') || e.key === 'PageDown';
