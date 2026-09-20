@@ -1,4 +1,4 @@
-/** Brand J-cups, safeties, spotter arms, pull-up bars and monoliths (#133): published dimensions come out of the builds;
+/** Brand J-cups, safeties, spotter arms, pull-up bars and monolifts (#133): published dimensions come out of the builds;
  * spans reach the real neighbouring posts; 2x3 faces get the right mating plane; bars park in the brand cradles on the
  * real Rogue, Titan and REP starters. The registry contract (rack-registry.test.ts) sweeps every option separately. */
 import { test } from 'node:test';
