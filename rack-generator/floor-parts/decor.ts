@@ -37,7 +37,7 @@ export const BIRCH_BEAM = defineFloorPart({
   id: 'decor-birch-beam', name: 'Birch-clad beam', title: 'Birch-clad basement beam', noun: 'beam', section: 'Room decor', underlay: true,
   description: 'A dropped basement beam boxed in birch plywood with 1/8″ reveals between the 8 ft panels and stainless screw heads, hung at the ceiling. Independent reconstruction of Coop’s DIY cladding; no brand shown.',
   params: [
-    { key: 'length', label: 'Length', default: 12000, options: BEAM_LENGTHS, format: (v: number) => `${(v / 1000).toFixed(2)} m` },
+    { key: 'length', label: 'Length', default: 5000, options: BEAM_LENGTHS, format: (v: number) => `${(v / 1000).toFixed(2)} m` },
     { key: 'width', label: 'Width', default: 400, options: range(200, 600, 25), format: (v: number) => `${v} mm` },
     { key: 'drop', label: 'Drop below ceiling', default: 350, options: range(150, 600, 25), format: (v: number) => `${v} mm` },
     ceilingParam(),
@@ -99,7 +99,7 @@ export const CEILING_RIG = defineFloorPart({
   id: 'decor-ceiling-rig', name: 'Ceiling rig', title: 'Ceiling-mounted rings and monkey-bar rig', noun: 'rig', section: 'Room decor', underlay: true,
   description: 'A birch board lagged to the ceiling joists with pairs of eye bolts, carrying wooden gymnastic rings and trapeze-style monkey bars on adjustable straps (and an optional climbing rope), like the kids’ course over Coop’s turf lane. Independent reconstruction of a DIY build; no brand shown.',
   params: [
-    { key: 'stations', label: 'Stations', default: 8, options: range(2, 16, 1), format: (v: number) => `${v} stations` },
+    { key: 'stations', label: 'Stations', default: 6, options: range(2, 16, 1), format: (v: number) => `${v} stations` },
     { key: 'spacing', label: 'Spacing', default: 750, options: range(450, 1200, 50), format: (v: number) => `${v} mm` },
     { key: 'layout', label: 'Hanging', default: 2, options: [0, 1, 2], format: (v: number) => RIG_LAYOUTS[v] ?? String(v) },
     { key: 'hang', label: 'Grip height', default: 1900, options: range(1200, 2600, 50), format: (v: number) => `${v} mm` },
