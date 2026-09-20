@@ -131,7 +131,9 @@ toes turned outward to match the front photo; footprint depth 1016.7 mm (≈40")
 Shared lat-tower builder: bolted two-plate arm, BELLS OF STEEL seat-box lettering, square knee pads, plate-loaded carriage with
 cross horns. Estimates: 600 mm upright spacing, 660 mm arm reach, 48" bar.
 
-## 10. Rogue Monster Rhino + INDY Functional Trainer (9) — skipped
+## 10. Rogue Monster Rhino + INDY Functional Trainer (9) — skipped here
+
+Update (2026-09-20): this has since shipped as a rack part (`rogue-monster-rhino-indy-trainer`). See [rack-digital-cable-trainers.md](rack-digital-cable-trainers.md).
 
 Rogue sells this as a configurator bundle on a Monster RM-6/43"-depth rack (92"/102" heights, 12 colours) rather than a
 stand-alone machine. Only single-angle configurator renders of the rack bundle and one Gym Radar thumbnail were available — not

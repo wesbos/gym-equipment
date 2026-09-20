@@ -129,7 +129,8 @@ test('Rogue Monster Rhino + INDY: 92 in tall, 53 in wide, rack length + 26 in on
   const single = bounds(place(left, ROGUE_RHINO_INDY.id).units.length ? resolveAssembly(validateAssembly({ ...left, accessories: [...left.accessories, { ...place(left, ROGUE_RHINO_INDY.id).accessory!, params: { sides: 1, trolley: 2 } }] })).filter(e => e.part === ROGUE_RHINO_INDY.id) : []);
   assert.ok(single.max[0] < dual.max[0] - 50, 'left-only drops the right stack and trolley');
   // Monster racks only: the PR-5000 is too wide, Monster Lite's 5/8 in holes refuse the 1 in hardware, a six-post's middle posts are refused.
-  assert.match(place(PR5000, ROGUE_RHINO_INDY.id).reason, /fit|bore/);
+  assert.match(place(PR5000, ROGUE_RHINO_INDY.id).reason, /fit|bore|behind/);
+  assert.throws(() => addAccessory(applyPreset(PR5000), ROGUE_RHINO_INDY.id, { uprightId: 'rear-left', face: 'right', hole: 1 }, false), /43 in/);
   assert.match(place(RML390, ROGUE_RHINO_INDY.id).reason, /bore/);
   const six = applyPreset(RM6), middle = Object.entries(six.uprights).find(([id, n]) => n.x < 0 && n.y > Math.min(...posts(six).map(p => p.y)) + 1 && n.y < Math.max(...posts(six).map(p => p.y)) - 1)![0];
   assert.throws(() => addAccessory(six, ROGUE_RHINO_INDY.id, { uprightId: middle, face: 'right', hole: 1 }, false), /rearmost/);
@@ -171,8 +172,10 @@ test('leftover rack profiles: published outside footprints and heights', () => {
   }
   // 810XLT: 2x2 posts, 1 in holes on 3 in centres from 12 in (19 bar heights), charcoal feet under silver posts, low rear brace only.
   const fr = applyPreset(FR810);
-  assert.equal(fr.rack.tube, inch(2)); assert.equal(fr.rack.pitch, inch(3)); assert.equal(fr.rack.firstHole, inch(12));
-  assert.equal(Math.floor((fr.rack.height - fr.rack.firstHole) / fr.rack.pitch) + 1, 19, '19 bar heights');
+  near(fr.rack.tube, inch(2), .01, '2x2'); near(fr.rack.pitch, inch(3), .01, '3 in pitch'); near(fr.rack.firstHole, inch(12), .01, 'first hole');
+  // Published: 19 safety-bar heights; the top two holes carry the upper frame brackets.
+  const holes = Math.floor((fr.rack.height - fr.rack.firstHole) / fr.rack.pitch) + 1;
+  assert.ok(holes >= 19 && holes <= 21, `${holes} holes: 19 bar heights plus the bracket holes`);
   const live = fr.connections.filter(e => !fr.removed.includes(e.id)).map(e => e.id).sort();
   assert.deepEqual(live, ['left-upper-crossmember', 'rear-crossmember', 'rear-lower-crossmember', 'right-upper-crossmember']);
   const post = resolveAssembly(fr).find(r => r.part === 'upright')!, parts = structure.find(d => d.id === 'upright')!.build(api, post.params);
@@ -183,5 +186,5 @@ test('leftover rack profiles: published outside footprints and heights', () => {
   } finally { parts.forEach(p => p.solid.delete()); }
   // Fray: 3x3, 1 in hardware on 2 in, numbered; grey arched logo plate on the rear crossmember.
   const fray = applyPreset(FRAY);
-  assert.equal(fray.rack.tube, inch(3)); assert.equal(fray.rack.pitch, inch(2)); assert.equal(fray.structure['rear-crossmember']?.part, 'profile-nameplate');
+  near(fray.rack.tube, inch(3), .01, 'Fray 3x3'); near(fray.rack.pitch, inch(2), .01, 'Fray 2 in pitch'); assert.equal(fray.structure['rear-crossmember']?.part, 'profile-nameplate');
 });

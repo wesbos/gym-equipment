@@ -63,6 +63,8 @@ Tests (`rack-profiles.test.ts`) build every starter frame and check the outside 
 
 ## Not shipped
 
+Update (2026-09-20): The Dane 2.0, the Fitness Reality 810XLT and the Fray Savage Series F-1 have since shipped. See [rack-digital-cable-trainers.md](rack-digital-cable-trainers.md).
+
 - **Fringe Sport The Dane 2.0 (23):** a half rack fused with a dual-stack functional trainer; without the stacks, pulleys and towers it is not recognisable. It belongs with rack-mounted cable systems / functional trainers (#136, #122).
 - **Fitness Reality 810XLT power cage (11):** no manufacturer page or spec table could be reached (fitnessreality.com now redirects to an unrelated catalogue), and retail listings were not accessible.
 - **Texas Strength Systems Combo Rack (10):** a competition bench/squat combo with hand-jack adjusted hooks and a drop-in bench, not a hole-lattice rack; it fits better as a floor item.

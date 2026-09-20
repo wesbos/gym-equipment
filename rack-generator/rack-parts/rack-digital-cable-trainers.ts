@@ -164,8 +164,8 @@ function rhinoBodies(p: NumericParams): LocalBox[] {
       // INDY shroud: the part outboard of the posts' outer faces (inside, it shares the side plane with the crossmembers
       // and the rack's own safeties), between the low and top side crossmembers.
       b([l.stackU - R.stack.shroud / 2, Math.min(s * (half + f.T / 2 + 2), s * (half + R.stack.out)), inch(8)], [l.stackU + R.stack.shroud / 2, Math.max(s * (half + f.T / 2 + 2), s * (half + R.stack.out)), l.top - inch(12)]),
-      // Swivel trolley pulley outboard of the front upright.
-      b([l.front - inch(3), Math.min(s * (half + f.T / 2 + 20), s * (half + f.T / 2 + inch(7))), l.trolleyZ - inch(5)], [l.front + inch(3), Math.max(s * (half + f.T / 2 + 20), s * (half + f.T / 2 + inch(7))), l.trolleyZ + inch(3)]),
+      // Trolley carriage outboard of the front upright and the forward-facing swivel pulley under it.
+      b([l.front - inch(3.5), Math.min(s * (half + f.T / 2 + 10), s * (half + f.T / 2 + 40)), l.trolleyZ - R.trolley.h / 2 - R.trolley.pulley / 2], [l.front + inch(2), Math.max(s * (half + f.T / 2 + 10), s * (half + f.T / 2 + 40)), l.trolleyZ + R.trolley.h / 2]),
     ]),
   ];
 }
@@ -217,13 +217,13 @@ export function daneLayout(p: NumericParams) {
 }
 function daneBodies(p: NumericParams): LocalBox[] {
   const l = daneLayout(p), D = DANE, box = (min: Vec3, max: Vec3): LocalBox => ({ min, max }), sx = (a: number, b: number) => [Math.min(l.o * a, l.o * b), Math.max(l.o * a, l.o * b)];
-  const [x0, x1] = sx(-D.stack.across / 2, D.stack.across / 2), [px0, px1] = sx(l.W / 2 + 20, l.W / 2 + inch(6));
+  const [x0, x1] = sx(-D.stack.across / 2, D.stack.across / 2), [px0, px1] = sx(l.W / 2 + 10, l.W / 2 + 40);
   return [
     // Lower weight stack (to 18.5 in): the plates reach about 22 in, so a box safety pinned low in the same side plane
     // would really touch the top plates; the body stops short so the rack's default safeties can stay (research notes).
     box([x0, l.stackY - D.stack.along / 2, l.floor + D.stack.z0], [x1, l.stackY + D.stack.along / 2, Math.min(l.stackTop, l.floor + inch(18.5))]),
-    // Swivel trolley pulley outboard of the front upright.
-    box([px0, l.span - inch(3), l.trolleyZ - inch(5)], [px1, l.span + inch(3), l.trolleyZ + inch(3)]),
+    // Trolley carriage outboard of the front upright and the forward-facing swivel pulley under it.
+    box([px0, l.span - l.T / 2, l.trolleyZ - D.trolley.h / 2 - D.trolley.pulley / 2], [px1, l.span + l.T / 2 + inch(2.5), l.trolleyZ + D.trolley.h / 2]),
     // Extension foot ahead of the front upright.
     box([-D.feet.w / 2, l.span + l.T / 2 + 10, l.floor + 5], [D.feet.w / 2, l.span + D.feet.reach - 10, l.floor + D.feet.rise + D.feet.h / 2]),
   ];
