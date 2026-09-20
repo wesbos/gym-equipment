@@ -1,25 +1,20 @@
 import { HistoryTimeline, historyKeyStep } from '../components/HistoryTimeline.tsx';
 import { rotationMode } from '../../rack-generator/assembly.ts';
 import { CableSmithControls, SystemPlacementOptions } from '../components/CableSmithControls.tsx';
-import { isSystemPart, SYSTEM_PARTS } from '../../rack-generator/system-types.ts';
+import { isSystemPart } from '../../rack-generator/system-types.ts';
 import { FloorInspector } from '../components/FloorInspector.tsx';
 import { PlateStackEditor } from '../components/PlateStackEditor.tsx';
 import { WallInspector } from '../components/WallInspector.tsx';
 import { wallWarnings } from '../../rack-generator/wall-items.ts';
-import { WALL_PARTS } from '../../rack-generator/wall-registry.ts';
 import { HangInspector } from '../components/HangInspector.tsx';
 import { hangWarnings } from '../../rack-generator/hang-items.ts';
-import { HANG_PARTS } from '../../rack-generator/hang-registry.ts';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
-import { FLOOR_PARTS, floorPart } from '../../rack-generator/floor-registry.ts';
-import { FLOOR_SECTIONS, WALL_SECTIONS, HANG_SECTIONS, RACK_SECTIONS, DEFAULT_FLOOR_SECTION, DEFAULT_WALL_SECTION, DEFAULT_HANG_SECTION, DEFAULT_RACK_SECTION, sectionGroups } from '../../rack-generator/catalog-sections.ts';
-import { RACK_PARTS } from '../../rack-generator/rack-registry.ts';
+import { floorPart } from '../../rack-generator/floor-registry.ts';
 import { RackPartControls } from '../components/RackPartControls.tsx';
 import { isUprightTarget } from '../../rack-generator/rack-targets.ts';
 import { LogoControls } from '../components/LogoControls.tsx';
 import { addsStructure } from '../../rack-generator/structure-candidates.ts';
 import { VendorControls, VendorCredit } from '../components/VendorControls.tsx';
-import { VOLTRA_IDS, DARKO_IDS } from '../../rack-generator/vendor-metadata.ts';
 import { editableFields } from '../state/selection.ts';
 import { BulkInspector } from '../components/BulkInspector.tsx';
 import { ExportMenu } from '../components/ExportMenu.tsx';
@@ -34,11 +29,10 @@ import { structureSlots } from '../../rack-generator/topology.ts';
 import { snapDimensions, stepDimension } from '../../rack-generator/grid.ts';
 import { NumericControl } from "../components/NumericControl.tsx";
 import { ConfigManager } from "../components/ConfigManager.tsx";
-import { PartThumbnail } from "../components/PartThumbnail.tsx";
+import { PartGallery, GalleryLauncher, CompactCatalog, BrowseCategories, CATALOG_PART_IDS } from "../components/PartGallery/index.ts";
 import { AppearanceControls } from "../components/AppearanceControls.tsx";
 import {
   memo,
-  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
@@ -72,51 +66,8 @@ import type {
 } from "../../rack-generator/types.ts";
 import "../../rack-generator/builder.css";
 import "../components/history-timeline.css";
-const groups: [string, readonly PartId[]][] = [
-  ["Systems", SYSTEM_PARTS],
-  // Floor, wall and hang parts group under their registry `section` (catalog-sections.ts).
-  ...sectionGroups(FLOOR_PARTS, FLOOR_SECTIONS, DEFAULT_FLOOR_SECTION),
-  ...sectionGroups(WALL_PARTS, WALL_SECTIONS, DEFAULT_WALL_SECTION),
-  ...sectionGroups(HANG_PARTS, HANG_SECTIONS, DEFAULT_HANG_SECTION),
-  // Brand rack attachments group under their rack-registry `section`; the built-in VOLTRA mounts lead "Digital & cable".
-  ...sectionGroups<PartId>([...VOLTRA_IDS.map(id => ({ id, section: "Digital & cable" })), ...RACK_PARTS], RACK_SECTIONS, DEFAULT_RACK_SECTION),
-  ["Darko Lifting", DARKO_IDS],
-  [
-    "Frame",
-    [
-      "upright",
-      "crossmember-425",
-      "crossmember-725",
-      "crossmember-1075",
-      "angled-crossmember",
-      "offset-crossmember",
-    ],
-  ],
-  [
-    "Bracing & nameplates",
-    [
-      "branded-crossmember",
-      "branded-crossmember-lite",
-      "nameplate",
-      "foot-400",
-      "foot-800",
-    ],
-  ],
-  ["Pull-up bars", ["pullup-straight", "pullup-multigrip", "pullup-sphere"]],
-  [
-    "J-hooks & monolifts",
-    ["j-hook-standard", "j-hook-roller", "j-hook-sandwich", "monolift"],
-  ],
-  [
-    "Safeties",
-    ["safety-box", "safety-pin-pipe", "safety-webbing", "spotter-arm"],
-  ],
-  ["Training attachments", ["dip-horn", "dip-bar-adjustable", "landmine"]],
-  ["Storage", ["single-bar-holder", "storage-pin-short", "storage-pin-long"]],
-];
-const allParts = groups.flatMap(([, ids]) => ids);
-/** Parts whose placement info can list structure slots; only these can lose `draggable` as the rack changes. */
-const slotCandidates = allParts.filter(id => getPartPlacementInfo(id)?.slots !== undefined || getPartPlacementInfo(id, createAssembly())?.slots !== undefined);
+// Catalog sections (and the parts gallery's categories) live in components/PartGallery/gallery-model.ts.
+const allParts = CATALOG_PART_IDS;
 const cleanName = (name: string) => name.replace(/^BOS STRENGTH\s*/, "");
 /** Display and search names per definitions list (computed once per worker load, shared by every component). */
 const namesCache = new WeakMap<readonly CatalogPart[], { name: (part: string) => string; lower: (part: string) => string; defaults: (part: string) => CatalogPart["defaults"] | undefined }>();
@@ -525,90 +476,22 @@ function PairControl({ store }: { store: BuilderStore }) {
     </label>
   );
 }
-const systemHint = (id: string) => id === "cable-kraken" ? "Hydra / Manticore · supported 4/6-post bay" : id.includes("ares") ? "REP · 6-post or anchored PR-5000 16″ bay" : "REP · supported 4/6-post bay";
-const PartCard = memo(function PartCard({ store, id, name, pressed, draggable, enabled, params }: {
-  store: BuilderStore; id: PartId; name: string; pressed: boolean; draggable: boolean; enabled: boolean; params: CatalogPart["defaults"] | undefined;
-}) {
-  return (
-    <button
-      className="part-card"
-      data-part={id}
-      aria-pressed={pressed}
-      draggable={draggable}
-      onClick={() => store.startPlacement(id)}
-      onDragStart={(e) => {
-        e.dataTransfer.setData("text/plain", id);
-        e.dataTransfer.effectAllowed = "copy";
-        store.startPlacement(id);
-      }}
-    >
-      <PartThumbnail
-        enabled={enabled}
-        part={id}
-        params={params}
-        className="thumb"
-      />
-      <span>{name}{!isSystemPart(id) && <VendorCredit part={id} compact />}{isSystemPart(id) && <small className="system-hint">{systemHint(id)}</small>}</span>
-      <span className="part-plus">+</span>
-    </button>
-  );
-});
-type ActiveChoice = readonly [string | null, string | null, string | null];
-const CatalogSection = memo(function CatalogSection({ store, label, ids, query, definitions, active, slotted }: {
-  store: BuilderStore; label: string; ids: readonly PartId[]; query: string; definitions: readonly CatalogPart[]; active: ActiveChoice; slotted: string;
-}) {
-  const names = partNames(definitions);
-  const matches = query ? ids.filter((id) => names.lower(id).includes(query)) : ids;
-  if (!matches.length) return null;
-  const blocked = new Set(slotted.split(" "));
-  return (
-    <section>
-      <h3>{label}</h3>
-      {matches.map((id) => (
-        <PartCard
-          key={id}
-          store={store}
-          id={id}
-          name={names.name(id)}
-          pressed={active[0] === id || active[1] === id || active[2] === id}
-          draggable={!isSystemPart(id) && id !== "upright" && !blocked.has(id)}
-          enabled={definitions.length > 0}
-          params={names.defaults(id)}
-        />
-      ))}
-      {label === "Systems" && <SystemPlacementOptions store={store} />}
-    </section>
-  );
-});
-/** The parts sidebar. It reads search, pairing, definitions and the active placement only. */
+/** The compact parts sidebar (#183): the gallery launcher, pairing, favourites and recent parts, rack starters and
+ * category shortcuts. The full catalog lives in the parts gallery (components/PartGallery). */
 const CatalogPanel = memo(function CatalogPanel({ store }: { store: BuilderStore }) {
-  const [search, setSearch] = useState("");
-  // Typing stays responsive: the input updates at once and the 400+ card filter renders at lower priority.
-  const query = useDeferredValue(search).toLowerCase();
-  const definitions = useStoreSelector(store, s => s.definitions);
-  const active = useStoreSelector(store, s => [s.systemChoice, s.placing?.part ?? null, s.structureChoice] as ActiveChoice, shallowEqual);
-  const slotted = useStoreSelector(store, s => slotCandidates.filter(id => getPartPlacementInfo(id, s.doc)?.slots?.length).join(" "));
   return (
     <aside className="catalog-panel">
       <div className="panel-heading">
         <h1>Parts</h1>
 
       </div>
-      <div className="search-wrap">
-        <input
-          id="search"
-          aria-label="Search parts"
-          placeholder="Search parts…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
+      <GalleryLauncher />
       <PairControl store={store} />
       <div id="catalog">
+        <SystemPlacementOptions store={store} />
+        <CompactCatalog store={store} />
         <RackPresets store={store} />
-        {groups.map(([label, ids]) => (
-          <CatalogSection key={label} store={store} label={label} ids={ids} query={query} definitions={definitions} active={active} slotted={slotted} />
-        ))}
+        <BrowseCategories />
       </div>
       <div className="catalog-footer">
         <Link to="/library">Browse parts library ↗</Link>
@@ -907,6 +790,7 @@ export default function BuilderPage() {
         <TimelineBar store={store} controller={controller} />
         <StatusBar store={store} />
       </div>
+      <PartGallery store={store} />
     </div>
   );
 }

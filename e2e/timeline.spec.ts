@@ -1,4 +1,5 @@
 import { test, expect, chromium, type Page } from '@playwright/test';
+import { addFromGallery } from './part-gallery.ts';
 import { createAssembly, resizeAssembly, addAccessory, resolveAssembly } from '../rack-generator/assembly.ts';
 import { DocumentHistory } from '../src/state/history.ts';
 import type { ConfigCollection } from '../src/state/config-storage.ts';
@@ -126,7 +127,7 @@ test('full timeline: 30+ edits, pointer scrubbing, replay, restoration, persiste
     console.log('Saved timeline reload + old-step scene dimensions verified');
     // A staged part preview is canceled by history navigation, with no late ghost commit.
     await page.getByRole('button', { name: 'Return to latest', exact: true }).click();
-    await page.locator('[data-part="j-hook-standard"]').click();
+    await addFromGallery(page, 'j-hook-standard');
     await expect(page.locator('#placement-hint')).toBeVisible();
     await slider.focus(); await page.keyboard.press('Home');
     await expect(page.locator('#placement-hint')).toHaveCount(0);

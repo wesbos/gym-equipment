@@ -1,5 +1,6 @@
 import { test, expect, chromium, type Page } from '@playwright/test';
 import { createAssembly } from '../rack-generator/assembly.ts';
+import { addFromGallery, openGallery } from './part-gallery.ts';
 
 test('sidebar systems and curated starters: confirmation, valid bay, cancellation and undo', async () => {
   test.setTimeout(180000);
@@ -10,7 +11,7 @@ test('sidebar systems and curated starters: confirmation, valid bay, cancellatio
     const page = testPage = await browser.contexts()[0].newPage();
     page.setDefaultTimeout(15000);
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.addInitScript(() => localStorage.removeItem('bos-strength-configurations-v1'));
+    await page.addInitScript(() => { localStorage.removeItem('bos-strength-configurations-v1'); localStorage.removeItem('bos-strength-part-gallery-v1'); });
     await page.goto('http://127.0.0.1:5337/builder');
     const doc = async () => await page.evaluate(() => {
       const c = JSON.parse(localStorage.getItem('bos-strength-configurations-v1') ?? '{}');
@@ -25,10 +26,14 @@ test('sidebar systems and curated starters: confirmation, valid bay, cancellatio
     await ready();
     const sidebar = page.locator('.catalog-panel');
     await expect(sidebar.locator('[data-preset]')).toHaveCount(24);
-    for (const part of ['voltra-sliding', 'voltra-adaptive', 'voltra-fixed']) await expect(sidebar.locator(`[data-part="${part}"]`)).toHaveCount(1);
+    // The full catalog lives in the parts gallery (#183); the sidebar keeps starters, recents and favourites.
+    await openGallery(page, 'voltra');
+    for (const part of ['voltra-sliding', 'voltra-adaptive', 'voltra-fixed']) await expect(page.locator(`.part-gallery [data-part="${part}"]`)).toHaveCount(1);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.part-gallery')).toHaveCount(0);
     console.log('Catalog loaded');
     const initial = await doc();
-    await sidebar.locator('[data-part="cable-ares2"]').click();
+    await addFromGallery(page, 'cable-ares2');
     await expect(page.locator('#placement-text')).toContainText("Doesn't fit:");
     await expect(page.locator('#accept-placement')).toBeDisabled();
     await page.locator('#cancel-placement').click();
@@ -40,17 +45,17 @@ test('sidebar systems and curated starters: confirmation, valid bay, cancellatio
     await ready();
     console.log('Six-post starter applied');
     const sixPost = await doc();
-    await sidebar.locator('[data-part="cable-ares2"]').click();
+    await addFromGallery(page, 'cable-ares2');
     await expect(page.locator('#placement-text')).toContainText('6-post bay');
     await expect(page.locator('#accept-placement')).toBeEnabled();
     expect(await doc()).toEqual(sixPost);
     await page.locator('#cancel-placement').click();
     expect(await doc()).toEqual(sixPost);
-    await sidebar.locator('[data-part="cable-ares2"]').click();
+    await addFromGallery(page, 'cable-ares2');
     await page.keyboard.press('Escape');
     await expect(page.locator('#placement-hint')).toHaveCount(0);
     expect(await doc()).toEqual(sixPost);
-    await sidebar.locator('[data-part="cable-ares2"]').click();
+    await addFromGallery(page, 'cable-ares2');
     await page.locator('#accept-placement').click();
     await expect.poll(async () => (await doc()).systems?.[0]?.part).toBe('cable-ares2');
     await ready();
@@ -58,6 +63,7 @@ test('sidebar systems and curated starters: confirmation, valid bay, cancellatio
     await page.getByRole('button', { name: 'Undo', exact: true }).click();
     await expect.poll(doc).toEqual(sixPost);
     await ready();
+    await expect(sidebar.locator('.compact-section [data-part="cable-ares2"]')).toBeVisible();
     await sidebar.locator('[data-part="cable-ares2"]').click();
     await expect(sidebar.locator('[data-part="cable-ares2"] [data-thumbnail="ready"]')).toBeVisible({ timeout: 60000 });
     await page.screenshot({ path: '/tmp/gym-wave4/sidebar-ares-preview.png' });
@@ -86,7 +92,7 @@ test('sidebar systems and curated starters: confirmation, valid bay, cancellatio
     await expect.poll(async () => (await doc()).profileId).toBe('rep-pr-4000');
     await expect.poll(async () => (await doc()).rack.depth).toBe(609.6);
     await sidebar.getByText('More configurations', { exact: true }).click();
-    await sidebar.locator('[data-part="cable-athena"]').click();
+    await addFromGallery(page, 'cable-athena');
     await expect(page.locator('#placement-text')).toContainText('six posts');
     await expect(page.locator('#accept-placement')).toBeDisabled();
     await page.locator('#cancel-placement').click();
