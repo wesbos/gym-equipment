@@ -30,9 +30,15 @@ export interface ConnectionEdge { id: string; from: string; to: string; level: "
 /** `tube` is the upright face width along X; `tubeDepth` (default `tube`) is its front-to-back size along Y for rectangular 2x3 uprights. */
 export interface RackDimensions { height: number; width: number; depth: number; tube: number; tubeDepth?: number; holeDiameter: number; pitch: number; firstHole: number; benchStart?: number; benchEnd?: number; benchSpacing?: number }
 export interface UprightTarget { orientation?: number; kind?: 'upright'; uprightId: UprightId; face: Face; hole: number }
-/** Upper rail bearing tab with a side through-bolt at an actual rail station. */
-export interface CrossmemberTopTarget { orientation?: number; kind: 'crossmember-top'; connectionId: string; station: number; side: 1 | -1; uprightId: UprightId; face: Face; hole: number }
-export type Target = UprightTarget | CrossmemberTopTarget;
+/** Upper rail station with a side through-bolt: on the top bearing tab (`crossmember-top`) or hanging under the rail
+ * with the bolt through the same side hole (`crossmember-under`, #178). */
+export interface CrossmemberTopTarget { orientation?: number; kind: 'crossmember-top' | 'crossmember-under'; connectionId: string; station: number; side: 1 | -1; uprightId: UprightId; face: Face; hole: number }
+/** A registry part mounted on another accessory (#178): hole `station` of a spotter arm or box safety, or a clamp station
+ * along a pull-up bar. `host` is the host accessory id, `unit` its pair unit (0, or 1 for the second unit of a pair) and
+ * `frame` which of its tubes or bars (a fat/skinny bar has two). `uprightId`/`face` mirror the host's own target;
+ * `hole` is 0. The part follows the host when it moves and is removed with it. */
+export interface HostedTarget { orientation?: number; kind: 'spotter-arm' | 'pull-up-bar'; host: string; unit: number; frame: number; station: number; uprightId: UprightId; face: Face; hole: number }
+export type Target = UprightTarget | CrossmemberTopTarget | HostedTarget;
 export interface Accessory { /** Radians about the adapter-defined axis; omitted means zero. */ rotation?: number; id: string; part: PartId; target: Target; paired: boolean; params: NumericParams; spanTo?: string; pairTo?: string; pairedSpanTo?: string; pairTarget?: CrossmemberTopTarget; /** Storage-pin plate stack, root outward; each side of a pair carries it. */ plates?: PlateId[] }
 export interface StructureVariant { part: PartId; params: NumericParams }
 /** `cradle` (parking parts only, #83): bar-cradle key from barbell-cradles.ts; position/rotation are then its floor drop spot. */
@@ -48,7 +54,7 @@ export interface RackDoc { room?: Room; wallItems?: WallItem[]; hangItems?: Hang
 
 export interface StructureSlot { id: string; part: PartId; connectedTo: UprightId[] }
 export interface LocalBox { min: Vec3; max: Vec3 }
-export type Mount = Target & { position: Vec3; center: Vec3; localAnchor?: Vec3; pinAxis?: Vec3; label?: string; connectorId?: string }
+export type Mount = Target & { position: Vec3; center: Vec3; localAnchor?: Vec3; pinAxis?: Vec3; label?: string; connectorId?: string; /** Hosted mounts: the resolved host instance id (its bodies are not a collision). */ hostId?: string }
 export interface ResolvedInstance { logo?: ValidatedLogo; id: string; part: PartId; params: NumericParams; position: Vec3; rotation: Vec3; mount: Mount | null; mounts: Mount[]; ownerId: string; kind: 'structure' | 'accessory' | 'floor-item' | 'wall-item'; paired: boolean; connectedTo: string[]; collisionEnabled?: boolean; collisionBoxes?: LocalBox[]; localOutward?: Vec3; name?: string }
 export interface PlacementField { key: string; label: string; min: number; max: number; step: number }
 export interface PlacementInfo { family: string; label: string; paired: boolean; /** Initial pair choice; omitted means `paired`. */ defaultPaired?: boolean; slots?: string[]; fields: PlacementField[]; faces?: Face[]; fixedHole?: number; requiredPitch?: number; handed?: boolean; mountType?: string; description?: string }
