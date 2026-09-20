@@ -69,7 +69,14 @@ export function kit(v: Scope) {
     return pts;
   };
   const rotate = (s: Manifold, deg: Vec3, pivot: Vec3 = [0, 0, 0]) => k(k(k(s.translate([-pivot[0], -pivot[1], -pivot[2]])).rotate(deg)).translate(pivot));
-  return { M, C, k, add, move, union, cut, box, rod, revolve, prism, ring, tubeX, plateXZ, plateYZ, roundRect, rotate, parts: v.parts };
+  const sphere = (c: Vec3, r: number, n = 24) => k(k(M.sphere(r, n)).translate(c));
+  /** Bent tube through `pts` (rods with spheres at the bends). */
+  const path = (pts: Vec3[], r: number, n = 24) => union([...pts.slice(1).map((q, i) => rod(pts[i], q, r, 0, 0, n)), ...pts.slice(1, -1).map(q => sphere(q, r, n))]);
+  /** Transform every part built so far (e.g. pose a lever about its pivot), releasing the originals. */
+  const transformAll = (f: (s: Manifold) => Manifold, from = 0) => {
+    for (const part of v.parts.slice(from)) { const next = f(part.solid); part.solid = v.owned.includes(next) ? next : k(next); }
+  };
+  return { M, C, k, add, move, union, cut, box, rod, revolve, prism, ring, tubeX, plateXZ, plateYZ, roundRect, rotate, sphere, path, transformAll, parts: v.parts };
 }
 export type Kit = ReturnType<typeof kit>;
 /** Run a builder with the kit inside a vendorSolid ownership scope. */

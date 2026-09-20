@@ -10,12 +10,12 @@ const face = (p: NumericParams) => (p.upright ?? 75) / 2;
 const pitch = (p: NumericParams) => p.mountSpacing ?? 50;
 const rad = (deg: number) => deg * Math.PI / 180;
 /** Axis-aligned box around points, padded by `pad` on every axis. */
-export function hull(points: Vec3[], pad = 0): LocalBox {
-  const min: Vec3 = [Infinity, Infinity, Infinity], max: Vec3 = [-Infinity, -Infinity, -Infinity];
-  for (const q of points) for (let i = 0; i < 3; i++) { min[i] = Math.min(min[i], q[i] - pad); max[i] = Math.max(max[i], q[i] + pad); }
+export function hull(points: Vec3[], pad: number | Vec3 = 0): LocalBox {
+  const min: Vec3 = [Infinity, Infinity, Infinity], max: Vec3 = [-Infinity, -Infinity, -Infinity], d: Vec3 = typeof pad === 'number' ? [pad, pad, pad] : pad;
+  for (const q of points) for (let i = 0; i < 3; i++) { min[i] = Math.min(min[i], q[i] - d[i]); max[i] = Math.max(max[i], q[i] + d[i]); }
   return { min, max };
 }
-const zExtent = (boxes: LocalBox[]) => ({ below: Math.max(0, ...boxes.map(b => -b.min[2])) + 1, above: Math.max(0, ...boxes.map(b => b.max[2])) + 1 });
+const zExtent = (boxes: LocalBox[], margin = 1) => ({ below: Math.max(0, ...boxes.map(b => -b.min[2])) + margin, above: Math.max(0, ...boxes.map(b => b.max[2])) + margin });
 
 /** Loads for loading horns and lever sleeves, root outward. Offered only when they fit the loadable length. */
 export const HORN_LOADS: readonly { label: string; plates: readonly PlateId[] }[] = [
@@ -49,7 +49,7 @@ export const MAMMOTH = {
   eyeFromTip: inch(1), foot: inch(1.2), footHeight: inch(0.9), bolts: [inch(14.7), inch(22.1), inch(24.7)], spacer: inch(4.5),
 } as const;
 export const MAMMOTH_LENGTHS = ['39 in', '42.25 in', '45.5 in', '48.75 in'] as const;
-export const MAMMOTH_POSES = [{ name: 'Resting on the floor', deg: -22 }, { name: 'Level', deg: 0 }, { name: 'Top of the squat', deg: 20 }] as const;
+export const MAMMOTH_POSES = [{ name: 'Resting on the floor', deg: -21 }, { name: 'Level', deg: 0 }, { name: 'Top of the squat', deg: 20 }] as const;
 export const MAMMOTH_SIDES = ['Right of the post', 'Left of the post'] as const;
 export const mammothLength = (p: NumericParams) => { const l = MAMMOTH.lengths[p.length ?? 2]; if (l === undefined) throw Error('Unsupported Mammoth length.'); return l; };
 export const mammothPose = (p: NumericParams) => { const s = MAMMOTH_POSES[p.pose ?? 0]; if (!s) throw Error('Unsupported Mammoth pose.'); return s.deg; };
@@ -67,7 +67,8 @@ function mammothBodies(p: NumericParams): LocalBox[] {
   const { L, tube0, horn, hornBase, h } = mammothLayout(p), M = MAMMOTH, wy = M.tubeWidth / 2 + M.forkThick, u0 = face(p) + 42;
   const seg = (a: number, b: number, w0: number, w1: number, y: number) => hull([a, b].flatMap(u => [w0, w1].flatMap(w => [mammothPoint(p, u, w, -y), mammothPoint(p, u, w, y)])));
   const cuts = [u0, u0 + (L - u0) / 3, u0 + 2 * (L - u0) / 3, L];
-  const boxes = [0, 1, 2].map(i => seg(cuts[i], cuts[i + 1], i === 2 ? -h - M.footHeight : -h - (cuts[i + 1] < M.fork ? M.forkBottom - h : 0), h, cuts[i] < Math.max(tube0, M.fork) ? wy : M.tubeWidth / 2));
+  const boxes = [0, 1, 2].map(i => seg(cuts[i], cuts[i + 1], -h, h, cuts[i] < Math.max(tube0, M.fork) ? wy : M.tubeWidth / 2));
+  const eye = L - M.eyeFromTip; boxes.push(seg(eye - M.foot / 2, eye + M.foot / 2, -h - M.footHeight, -h, M.foot / 2));
   const r = M.hornDiameter / 2;
   boxes.push(seg(horn - r, horn + r, hornBase, hornBase + M.horn, r));
   const load = hornLoad(p.load ?? 0).plates;
@@ -91,7 +92,7 @@ export const FRINGE_MAMMOTH_BELT_SQUAT = defineRackPart({
   },
   mount: {
     pin: p => p.hardware ? PIN_5_8IN : PIN_1IN,
-    extent: p => zExtent([...mammothBodies(p), hull([mammothPoint(p, 0, 0)], MAMMOTH.forkNose + 2), hull([mammothPoint(p, mammothLayout(p).eye, mammothLayout(p).h + 45)], 20)]),
+    extent: p => zExtent([...mammothBodies(p), hull([mammothPoint(p, 0, 0)], MAMMOTH.forkNose + 2), hull([[0, -MAMMOTH.forkBottom], [MAMMOTH.joggle - 70, -MAMMOTH.forkBottom], [MAMMOTH.fork, MAMMOTH.forkTop], [MAMMOTH.fork, -MAMMOTH.tubeHeight / 2]].map(([u, w]) => mammothPoint(p, u, w)), 1), hull([mammothPoint(p, mammothLayout(p).eye, mammothLayout(p).h + 45)], 20)]),
     validate: rack => { if (rack.tube > 80) throw Error('Mammoth belt squat fork fits 2x2, 2x3 and 3x3 uprights.'); },
   },
   bodies: mammothBodies,
@@ -132,7 +133,7 @@ function mlLeverBodies(p: NumericParams): LocalBox[] {
   const box = (x0: number, x1: number, a1: number, a2: number, n0: number, n1: number) => hull([x0, x1].flatMap(x => [a1, a2].flatMap(a => [n0, n1].map(n => mlLeverPoint(p, x, a, n)))));
   const boxes = [box(-h, h, a0, end, -h, h), box(-h - L.handleReach, -h, gHigh - L.handleOD / 2, gLow + L.handleOD / 2, -L.handleOD / 2, L.handleOD / 2), box(h, h + L.collar + L.post, post - L.postDiameter / 2, post + L.postDiameter / 2, -L.postDiameter / 2, L.postDiameter / 2)];
   const load = hornLoad(p.load ?? 0).plates;
-  if (load.length) { const R = hornLoadRadius(p.load ?? 0), x0 = h + L.collar + 2; boxes.push(box(x0, x0 + hornLoadLength(p.load ?? 0), post - R, post + R, -R, R)); }
+  if (load.length) { const R = hornLoadRadius(p.load ?? 0), x0 = h + L.collar + 2; boxes.push(hull([mlLeverPoint(p, x0 + L.plate, post), mlLeverPoint(p, x0 + L.plate + hornLoadLength(p.load ?? 0), post)], [0, R, R])); }
   return boxes;
 }
 export const ROGUE_MONSTER_LITE_LEVER_ARMS = defineRackPart({
@@ -151,7 +152,7 @@ export const ROGUE_MONSTER_LITE_LEVER_ARMS = defineRackPart({
   },
   mount: {
     pin: p => mlLeverSeries(p).pin, pinAxis: 'across', holes: [0, -2], mainStations: true,
-    extent: p => zExtent([...mlLeverBodies(p), { min: [0, 0, -2 * pitch(p) - ML_LEVER.bracketDown], max: [0, 0, ML_LEVER.bracketUp] }, hull([mlLeverPoint(p, 0, -ML_LEVER.stub, 0)], ML_LEVER.tube * .75)]),
+    extent: p => zExtent([...mlLeverBodies(p), { min: [0, 0, -2 * pitch(p) - ML_LEVER.bracketDown], max: [0, 0, ML_LEVER.bracketUp] }, hull([mlLeverPoint(p, 0, -ML_LEVER.stub, 0)], ML_LEVER.tube * .75)], 6),
     faces: ['front', 'back'],
   },
   bodies: mlLeverBodies,
@@ -180,7 +181,7 @@ export function vendettaPoint(p: NumericParams, x: number, a: number, n = 0): Ve
 }
 function vendettaBodies(p: NumericParams): LocalBox[] {
   const h = VENDETTA.tube / 2, a0 = VENDETTA.disc / 2 + 10;
-  return [hull([-h, h].flatMap(x => [a0, VENDETTA.arm - inch(3)].flatMap(a => [-h, h].map(n => vendettaPoint(p, x, a, n)))))];
+  return [hull([-h, h].flatMap(x => [a0, VENDETTA.arm - inch(2)].flatMap(a => [-h, h].map(n => vendettaPoint(p, x, a, n)))))];
 }
 export const VENDETTA_180_LEVER_ARM_ADAPTERS = defineRackPart({
   id: 'vendetta-180-lever-arm-adapters', name: 'Vendetta 180° Lever Arm', title: 'Vendetta 180° Lever Arm Adapters', noun: 'lever arm', section: 'Levers & belt squat',
@@ -196,7 +197,7 @@ export const VENDETTA_180_LEVER_ARM_ADAPTERS = defineRackPart({
   },
   mount: {
     pin: p => p.hardware ? PIN_5_8IN : PIN_1IN,
-    extent: p => zExtent([...vendettaBodies(p), { min: [0, 0, -VENDETTA.rect[1] / 2 - 2], max: [0, 0, VENDETTA.disc / 2 + 2] }]),
+    extent: p => zExtent([...vendettaBodies(p), hull([-inch(2), inch(2)].flatMap(a => [-VENDETTA.tube / 2, VENDETTA.tube / 2].map(n => vendettaPoint(p, 0, a, n)))), { min: [0, 0, -VENDETTA.disc / 2 - 2], max: [0, 0, VENDETTA.disc / 2 + 2] }], 3),
     faces: ['front', 'back'],
     validate: rack => { if (rack.tube < 74 || rack.tube > 78) throw Error('Vendetta 180° trolley fits 3x3 uprights.'); },
   },
@@ -213,7 +214,7 @@ export const VENDETTA_180_LEVER_ARM_ADAPTERS = defineRackPart({
 export const BOULDER = {
   pivotX: 205, pivotZ: -62, crossbar: [50, 60] as const, sleeve: 97, sleeveHeight: 129, sleeveTop: 30, wall: 6, uhmw: 5,
   housing: 30, crank: 307.5, crankTube: 50, horn: 50, hornLength: 172, crankRest: 21.6, crankAbove: 36,
-  disc: 130, discThick: 6, handleArm: 330, handleTube: 40, handleAbove: 70, handleIn: 20, handle: [100, 300] as const, handleOD: 25.4, handleBend: 30, knob: 44,
+  disc: 130, discThick: 6, handleArm: 330, handleTube: 40, handleAbove: 70, handleIn: 20, handle: [100, 330] as const, handleOD: 25.4, handleBend: 24, knob: 44,
 } as const;
 export const BOULDER_SWINGS = [0, 30, 60, 90] as const;
 export const boulderSwing = (p: NumericParams) => { const s = BOULDER_SWINGS[p.swing ?? 0]; if (s === undefined) throw Error('Unsupported swing.'); return s; };
@@ -235,13 +236,13 @@ function boulderBodies(p: NumericParams): LocalBox[] {
   const ct = rad(B.crankRest), ht = rad(B.handleIn), load = hornLoad(p.load ?? 0).plates, R = hornLoadRadius(p.load ?? 0);
   for (const s of [-1, 1]) {
     const hornOut = B.crank * Math.sin(ct), hornDown = B.crank * Math.cos(ct), r = B.horn / 2;
-    boxes.push(hull([[0, -B.crankAbove], [hornOut, hornDown]].flatMap(([o, d]) => [L.crank0, L.crank1].map(y => boulderPoint(p, s, o, d, y))), B.crankTube / 2));
-    boxes.push(hull([L.horn1, L.crank0].map(y => boulderPoint(p, s, hornOut, hornDown, y)), r));
-    if (load.length) boxes.push(hull([L.crank0 - 2, L.crank0 - 2 - hornLoadLength(p.load ?? 0)].map(y => boulderPoint(p, s, hornOut, hornDown, y)), R));
+    boxes.push(hull([[0, -B.crankAbove], [hornOut, hornDown]].flatMap(([o, d]) => [L.crank0, L.crank1].map(y => boulderPoint(p, s, o, d, y))), [B.crankTube / 2, 0, B.crankTube / 2]));
+    boxes.push(hull([L.horn1, L.crank0].map(y => boulderPoint(p, s, hornOut, hornDown, y)), [r, 0, r]));
+    if (load.length) boxes.push(hull([L.crank0 - 2, L.crank0 - 2 - hornLoadLength(p.load ?? 0)].map(y => boulderPoint(p, s, hornOut, hornDown, y)), [R, 0, R]));
     const clevisOut = -B.handleArm * Math.sin(ht), clevisDown = B.handleArm * Math.cos(ht);
-    boxes.push(hull([[0, -B.handleAbove], [clevisOut, clevisDown]].flatMap(([o, d]) => [L.arm0, L.arm1].map(y => boulderPoint(p, s, o, d, y))), B.handleTube / 2));
+    boxes.push(hull([[0, -B.handleAbove], [clevisOut, clevisDown]].flatMap(([o, d]) => [L.arm0, L.arm1].map(y => boulderPoint(p, s, o, d, y))), [B.handleTube / 2, 0, B.handleTube / 2]));
     const hEnd = boulderHandle(p);
-    boxes.push(hull([boulderPoint(p, s, clevisOut, clevisDown, L.arm1), ...hEnd.map(([o, d, y]) => boulderPoint(p, s, o, d, y))], B.handleOD / 2 + 4));
+    boxes.push(hull([boulderPoint(p, s, clevisOut, clevisDown, L.arm1), ...hEnd.map(([o, d, y]) => boulderPoint(p, s, o, d, y))], B.handleOD / 2));
   }
   return boxes;
 }
@@ -250,7 +251,7 @@ export function boulderHandle(p: NumericParams): [number, number, number][] {
   const B = BOULDER, L = boulderLayout(p), ht = rad(B.handleIn), [a, b] = B.handle, bend = rad(B.handleBend), y = (L.arm0 + L.arm1) / 2;
   const c0: [number, number] = [-B.handleArm * Math.sin(ht), B.handleArm * Math.cos(ht)];
   const c1: [number, number] = [c0[0] - a * Math.sin(ht), c0[1] + a * Math.cos(ht)];
-  return [[c0[0], c0[1], y], [c1[0], c1[1], y], [c1[0] - b * Math.cos(bend) * Math.sin(ht) * .6, c1[1] + b * Math.cos(bend), y + b * Math.sin(bend)]];
+  return [[c0[0], c0[1], y], [c1[0], c1[1], y], [c1[0] - b * Math.cos(bend) * Math.sin(ht) * .15, c1[1] + b * Math.cos(bend), y + b * Math.sin(bend)]];
 }
 export const BOS_SHOULDER_BOULDER = defineRackPart({
   id: 'bells-of-steel-shoulder-boulder', name: 'Bells of Steel Shoulder Boulder', title: 'Bells of Steel Shoulder Boulder / Chest Fly', noun: 'shoulder boulder', section: 'Levers & belt squat',
@@ -266,7 +267,7 @@ export const BOS_SHOULDER_BOULDER = defineRackPart({
   },
   mount: {
     pin: PIN_5_8IN, pinAxis: 'across',
-    extent: p => zExtent([...boulderBodies(p), { min: [0, 0, BOULDER.sleeveTop - BOULDER.sleeveHeight], max: [0, 0, BOULDER.sleeveTop] }, hull([boulderPoint(p, 1, 0, -BOULDER.handleAbove, 0)], BOULDER.knob / 2 + 2)]),
+    extent: p => zExtent([...boulderBodies(p), { min: [0, 0, BOULDER.sleeveTop - BOULDER.sleeveHeight], max: [0, 0, BOULDER.sleeveTop] }, hull([boulderPoint(p, 1, 0, -BOULDER.handleAbove, 0)], BOULDER.knob / 2 + 2)], 14),
     validate: rack => { if (rack.tube > BOULDER.sleeve - 2 * BOULDER.uhmw || rack.tube < 60) throw Error('Shoulder Boulder 3x3 sleeve fits 3x3 (75 mm) uprights.'); },
   },
   bodies: boulderBodies,

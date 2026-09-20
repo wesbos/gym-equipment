@@ -43,7 +43,7 @@ export function buildMonsterLitePeg(api: ManifoldAPI, params: NumericParams): So
 export function buildRepPeg(api: ManifoldAPI, params: NumericParams): SolidPart[] {
   const p = { ...REP_BAND_PEGS_2.defaults, ...params }, s = repPegSeries(p), f = (p.upright ?? 75) / 2, r = s.rod / 2;
   return buildKit(api, g => {
-    const bottom = f - REP_PEG.insert, y1 = f + REP_PEG.washer + REP_PEG.usable, pinY = bottom + 5.5;
+    const bottom = f - REP_PEG.insert, y1 = f + REP_PEG.washer + REP_PEG.usable, pinY = bottom + 4.5;
     // Solid chrome rod from the cotter end, through the upright, to the flat head disc (with its turned flare).
     const rod = g.rod([0, bottom, 0], [0, y1, 0], r, 1.2, 0, 32);
     g.add('Chrome solid steel peg', g.cut(rod, [g.rod([-r - 2, pinY, 0], [r + 2, pinY, 0], 1.6, 0, 0, 12)]), CHROME);
@@ -57,8 +57,8 @@ export function buildRepPeg(api: ManifoldAPI, params: NumericParams): SolidPart[
     const wire = 1.3, reach = r + 9;
     g.add('Hairpin cotter pin', g.union([
       g.rod([-reach, pinY, 0], [reach, pinY, 0], wire, 0, .6, 12),
-      g.ring([0, pinY + 2.8, 0], Y, r + 2.4, wire, 32, 200),
-      g.ring([reach + 3, pinY, 0], [0, 0, 1], 3, wire, 16, 180),
+      g.ring([0, pinY - 2.2, 0], Y, r + 2.4, wire, 32, 200),
+      g.ring([reach + 2.5, pinY, 0], [0, 0, 1], 2.5, wire, 16, 180),
     ]), ZINC);
   });
 }
@@ -193,13 +193,16 @@ export function buildIron3(api: ManifoldAPI, params: NumericParams): SolidPart[]
     g.add('Breakaway springs', g.union([-18, 18].map(x => g.rod([x, L.front + 14, rz + 2], [x, L.front + 14, rz + 20], 4, 0, 0, 16))), ZINC);
     g.add('9 in mini rim', g.ring([0, L.rimY, rz], [0, 0, 1], L.rimR, IRON3.rimRod / 2, 64), { color: '#141416', metalness: .5, roughness: .4 });
     // Net: diamond-knotted cord from 12 rim hooks to a narrower bottom ring.
-    const n = 12, pt = (ring: number, i: number): Vec3 => {
-      const [rad, z] = [[L.rimR, rz], [L.rimR * .82, rz - IRON3.net * .5], [L.rimR * .66, L.netBottom]][ring], a = 2 * Math.PI * i / n;
-      return [rad * Math.cos(a), L.rimY + rad * Math.sin(a), z];
+    const n = 16, rows = [[1, 0], [.84, .38], [.72, .72], [.64, 1]] as const, pt = (ring: number, i: number): Vec3 => {
+      const [k, d] = rows[ring], rad = L.rimR * k, a = 2 * Math.PI * i / n;
+      return [rad * Math.cos(a), L.rimY + rad * Math.sin(a), rz - d * IRON3.net];
     };
     const strands: Manifold[] = [];
-    for (let i = 0; i < n; i++) for (const [a, b2] of [[pt(0, i), pt(1, i + .5)], [pt(0, i + 1), pt(1, i + .5)], [pt(1, i + .5), pt(2, i)], [pt(1, i + .5), pt(2, i + 1)]] as const) strands.push(g.rod(a, b2, 1.4, 0, 0, 8));
-    strands.push(g.ring([0, L.rimY, L.netBottom], [0, 0, 1], L.rimR * .66, 1.4, 48));
+    // Diamond mesh: each band zig-zags between hook positions and the half-steps of the band below.
+    for (let r = 0; r < 3; r++) for (let i = 0; i < n; i++) {
+      const o = r % 2 ? .5 : 0;
+      strands.push(g.rod(pt(r, i + o), pt(r + 1, i + o + .5), 1.2, 0, 0, 6), g.rod(pt(r, i + o + 1), pt(r + 1, i + o + .5), 1.2, 0, 0, 6));
+    }
     g.add('Mini hoop net', g.union(strands), { color: '#101012', metalness: 0, roughness: .9 });
   });
 }
