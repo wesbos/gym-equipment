@@ -167,30 +167,32 @@ export const lineSet = (line: string, finish?: string): PlateId[] => {
   const seen = new Set<number>();
   return linePlates(line, finish).filter(id => { const w = specOf(id).weight; return !seen.has(w) && (seen.add(w), true); });
 };
-/** Numeric geometry params: plate1..plateN are spec codes, root outward; plateNc is a non-default finish (1-based). */
-export function plateParams(plates: readonly PlateId[] | undefined): NumericParams {
+/** Numeric geometry params: plate1..plateN are spec codes, root outward; plateNc is a non-default finish (1-based).
+ * `prefix` names other stacks on one part (a barbell's sleeves use plateR / plateL, see bar-loads.ts). */
+export function plateParams(plates: readonly PlateId[] | undefined, prefix: PlatePrefix = 'plate'): NumericParams {
   const params: NumericParams = {};
   for (const [i, p] of (plates ?? []).entries()) {
     const s = specOf(p);
-    params[`plate${i + 1}`] = s.code;
-    if (s.finish) { const f = LINES.get(s.line!)!.finishes!.findIndex(x => x.id === s.finish); if (f > 0) params[`plate${i + 1}c`] = f; }
+    params[`${prefix}${i + 1}`] = s.code;
+    if (s.finish) { const f = LINES.get(s.line!)!.finishes!.findIndex(x => x.id === s.finish); if (f > 0) params[`${prefix}${i + 1}c`] = f; }
   }
   return params;
 }
+export type PlatePrefix = 'plate' | 'plateR' | 'plateL';
 const BY_CODE = new Map<number, { line: PlateLine; weight: PlateWeight } | LegacyPlateId>(PLATE_IDS.map(id => [LEGACY_SPECS[id].code, id]));
 for (const line of PLATE_LINES) if (!line.legacy) for (const w of line.weights) BY_CODE.set(lineCode(line, w), { line, weight: w });
-export function platesFromParams(params: NumericParams): PlateId[] {
+export function platesFromParams(params: NumericParams, prefix: PlatePrefix = 'plate'): PlateId[] {
   const plates: PlateId[] = [];
-  for (let i = 1; params[`plate${i}`] !== undefined; i++) {
-    const hit = BY_CODE.get(params[`plate${i}`]);
-    if (!hit) throw Error(`Unknown plate code ${params[`plate${i}`]}.`);
+  for (let i = 1; params[`${prefix}${i}`] !== undefined; i++) {
+    const hit = BY_CODE.get(params[`${prefix}${i}`]);
+    if (!hit) throw Error(`Unknown plate code ${params[`${prefix}${i}`]}.`);
     if (typeof hit === 'string') { plates.push(hit); continue; }
-    const f = params[`plate${i}c`];
+    const f = params[`${prefix}${i}c`];
     const finish = f === undefined ? undefined : hit.line.finishes?.[f];
     if (f !== undefined && (!finish || f < 1)) throw Error(`Unknown plate finish ${f}.`);
     plates.push(plateId(hit.line.id, hit.weight.key, finish?.id));
   }
   return plates;
 }
-export const isPlateParam = (key: string) => /^plate\d+c?$/.test(key);
+export const isPlateParam = (key: string) => /^plate[RL]?\d+c?$/.test(key);
 export const withoutPlateParams = (params: NumericParams): NumericParams => Object.fromEntries(Object.entries(params).filter(([k]) => !isPlateParam(k)));

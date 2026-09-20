@@ -9,6 +9,7 @@ import { definitions as darko } from './parts/darko.ts';
 import { definitions as cables } from './parts/cable-systems.ts';
 import { definitions as smith } from './parts/smith.ts';
 import { partAttribution } from './attribution.ts';
+import { withBarLoads } from './parts/bar-loads.ts';
 // Floor family slots (one file per family; register entries inside the family files).
 import { definitions as powerBars } from './parts/power-bars.ts';
 import { definitions as specialtyBars } from './parts/specialty-bars.ts';
@@ -94,7 +95,8 @@ const wall: PartDefinition[] = [
 ];
 // Retain PartDefinition's builder signature, including the optional logo argument
 // when that stream integrates; vendor marks remain internal to their builders.
-export const definitions: PartDefinition[] = [...structure, ...bars, ...attachments, ...voltra, ...darko, ...rack, ...cables, ...smith, ...floor, ...wall];
+// Bars with sleeves draw the plates loaded on them (#160).
+export const definitions: PartDefinition[] = [...structure, ...bars, ...attachments, ...voltra, ...darko, ...rack, ...cables, ...smith, ...floor.map(withBarLoads), ...wall];
 export const catalog: CADCatalog = {
   definitions,
   attribution: partAttribution,

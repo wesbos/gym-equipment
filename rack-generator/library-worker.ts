@@ -9,6 +9,7 @@ import wasmUrl from "manifold-3d/manifold.wasm?url";
 import { definitions } from './catalog.ts';
 import { isSystemPart } from './system-types.ts';
 import { floorPart, validateFloorParams } from './floor-registry.ts';
+import { floorBuildParams } from './bar-loads.ts';
 import { wallPart } from './wall-registry.ts';
 import { hangPart } from './hang-registry.ts';
 import { rackPart, validateRackParams } from './rack-registry.ts';
@@ -28,7 +29,8 @@ self.onmessage = async ({ data }: MessageEvent<LibraryWorkerRequest>) => {
     const params = { ...def.defaults, ...data.params }, floor = floorPart(data.part) ?? wallPart(data.part) ?? hangPart(data.part);
     // Floor, wall and hang parts carry their own option lists (negative/zero values allowed where listed).
     const rack = rackPart(data.part);
-    if (floor) validateFloorParams(floor, data.params);
+    // Loadable bars also carry sleeve plate codes and `racked` (bar-loads.ts); those are checked, then set aside.
+    if (floor) validateFloorParams(floor, floorPart(data.part) ? floorBuildParams(floorPart(data.part)!, data.params) : data.params);
     // Rack parts also receive the resolved rack context (upright, mountSpacing, holeDiameter, mirror).
     else if (rack) validateRackParams(rack, data.params);
     else for (const [key, value] of Object.entries(params))

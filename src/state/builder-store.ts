@@ -3,7 +3,7 @@ import { systemProposal } from '../../rack-generator/system-proposal.ts';
 import { isSystemPart, SYSTEM_DEFAULTS, type SystemPartId } from '../../rack-generator/system-types.ts';
 import { addFloorItem, resolveFloorItems, floorWarnings, moveFloorGroup } from '../../rack-generator/floor-items.ts';
 import { floorPart, isFloorPart } from '../../rack-generator/floor-registry.ts';
-import { barSpecOf, freeCradles, parkedPose, parksInCradles, settleBarbells, suggestCradle, type BarCradle } from '../../rack-generator/barbell-cradles.ts';
+import { barSpecOf, freeCradles, parkedParams, parkedPose, parksInCradles, settleBarbells, suggestCradle, type BarCradle } from '../../rack-generator/barbell-cradles.ts';
 import { addWallItem, resolveWallItems, wallWarnings, clampWallPosition, roomOf } from '../../rack-generator/wall-items.ts';
 import { isWallPart } from '../../rack-generator/wall-registry.ts';
 import { isHangPart } from '../../rack-generator/hang-registry.ts';
@@ -657,7 +657,7 @@ export class BuilderStore {
     if (!cradle || item.cradle === key) return;
     this.parkItem(item, cradle);
     const [entry] = resolveFloorItems([item]);
-    this.patch({ proposal: { ...proposal, doc, entries: [{ ...entry, ...parkedPose(cradle, barSpecOf(item)) }] }, placementText: `${cradle.label} · Click to park · ESC cancels` });
+    this.patch({ proposal: { ...proposal, doc, entries: [{ ...entry, ...parkedPose(cradle, barSpecOf(item)), params: parkedParams(item.part, entry.params) }] }, placementText: `${cradle.label} · Click to park · ESC cancels` });
   };
   previewFloor = (position?: [number,number], rotationDelta = 0) => {
     const proposal=this.state.proposal;

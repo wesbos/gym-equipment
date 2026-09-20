@@ -36,7 +36,10 @@ export type Target = UprightTarget | CrossmemberTopTarget;
 export interface Accessory { /** Radians about the adapter-defined axis; omitted means zero. */ rotation?: number; id: string; part: PartId; target: Target; paired: boolean; params: NumericParams; spanTo?: string; pairTo?: string; pairedSpanTo?: string; pairTarget?: CrossmemberTopTarget; /** Storage-pin plate stack, root outward; each side of a pair carries it. */ plates?: PlateId[] }
 export interface StructureVariant { part: PartId; params: NumericParams }
 /** `cradle` (parking parts only, #83): bar-cradle key from barbell-cradles.ts; position/rotation are then its floor drop spot. */
-export interface FloorItem { id: string; part: FloorPartId; position: Vec2; rotation: number; params: NumericParams; cradle?: string }
+/** Plates loaded on a bar's two sleeves (#160), each stack from the inner collar outward. `both` loads the sleeves
+ * alike (the default); uneven loading stores the +X (`right`) and −X (`left`) sleeves separately. */
+export type BarLoad = { both: PlateId[] } | { right: PlateId[]; left: PlateId[] };
+export interface FloorItem { id: string; part: FloorPartId; position: Vec2; rotation: number; params: NumericParams; cradle?: string; /** Bars with sleeves (`bar` spec) only. */ plates?: BarLoad }
 /** Wall-mounted scenery (#85): `position` is [u along the wall from its centre, face-centre height] in mm. */
 export interface WallItem { id: string; part: WallPartId; wall: WallId; position: Vec2; params: NumericParams }
 /** An attachment hanging on hook `slot` of wall item `panel`; it follows the panel. */

@@ -12,7 +12,8 @@ export interface BarSpec {
   /** Bar axis height when the bar lies on the floor (its collars on the ground) */ axisZ: number;
   /** Sleeve axis offset from the shaft axis, mm, in the bar's local frame (y along local Y, z up), for bars whose
    * sleeves are dropped or swung off the rackable shaft (S-cambers, CB-1 legs, Transformer brackets). The bar keeps
-   * its floor roll when parked, so one offset serves both. Omitted: the sleeves are coaxial with the shaft. */
+   * its floor roll when parked, so one offset serves both (a `rackedRoll` bar's spec reads `racked` instead). Omitted:
+   * the sleeves are coaxial with the shaft. */
   sleeveOffset?: { y: number; z: number };
 }
 type ByParams<T> = T | ((params: NumericParams) => T);
@@ -27,7 +28,10 @@ export interface FloorPartSpec<Id extends string = string> {
   /** Pairable: "Add matching pair" places a second unit `gap` mm beside the first along local X. */ pair?: { gap: number };
   colors?: readonly (readonly [string, string])[]; colorLabel?: string; vendor?: VendorAttribution;
   /** Parks in rack bar cradles (barbell-cradles.ts); floor placement is the fallback. */ parks?: boolean;
-  /** Parking bars: own shaft/sleeve/axis geometry; omitted means the 20 kg Olympic bar. */ bar?: ByParams<BarSpec>;
+  /** Bars: own shaft/sleeve/axis geometry. Parking bars without one use the 20 kg Olympic bar's; any part with one
+   * (parking or not, e.g. trap bars) takes plates on its sleeves (bar-loads.ts). */ bar?: ByParams<BarSpec>;
+  /** Parked, the bar hangs in its worn roll instead of keeping its floor roll (a CB-1's legs hang down): the resolved
+   * instance's params gain `racked: 1`, which its builder and `bar` read. */ rackedRoll?: boolean;
 }
 export interface FloorPart<Id extends string = string> extends FloorPartSpec<Id> { defaults: NumericParams }
 /** The param contract shared by floor and wall parts (wall-part.ts). */
