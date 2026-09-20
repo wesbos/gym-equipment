@@ -5,17 +5,23 @@ import fs from 'node:fs/promises';
 
 test('isolated reposition: double-click, pair opt-out, floor, rotation, Escape, undo and applied GLB', async () => {
   test.setTimeout(180000);
-  if (!process.env.GYM_REPOSITION_CDP_URL) throw Error('Use isolated gym-wave4-reposition on port 5333 and set GYM_REPOSITION_CDP_URL.');
+  // Run against an isolated Vite server (GYM_REPOSITION_BASE_URL, default port 5333) and standalone Chromium CDP.
+  if (!process.env.GYM_REPOSITION_CDP_URL) throw Error('Serve the builder on an isolated port (GYM_REPOSITION_BASE_URL, default http://127.0.0.1:5333) and set GYM_REPOSITION_CDP_URL.');
+  await fs.mkdir('/tmp/gym-wave4', { recursive: true });
   const browser = await chromium.connectOverCDP(process.env.GYM_REPOSITION_CDP_URL);
   let testPage: Page | undefined;
   try {
     const page = testPage = await browser.contexts()[0].newPage();
     await page.addInitScript(() => localStorage.removeItem("bos-strength-configurations-v1"));
-    await page.goto("http://127.0.0.1:5333/builder");
+    await page.goto(`${process.env.GYM_REPOSITION_BASE_URL ?? 'http://127.0.0.1:5333'}/builder`);
     page.on('dialog', dialog => dialog.accept());
-    await page.setViewportSize({ width: 1280, height: 633 });
+    // The pixel targets below were authored against a 754x534 canvas. The history timeline strip (#75) now takes
+    // 88px under the viewport, so the window is 88px taller to keep that canvas (and every target) the same.
+    await page.setViewportSize({ width: 1280, height: 721 });
 
-    const doc = async () => await page.evaluate(() => {
+    // The recovery draft is debounced (AUTOSAVE_DELAY_MS, then idle time, #185): let a pending write land before reading it.
+    const doc = async () => await page.evaluate(async () => {
+      await new Promise(r => setTimeout(r, 450)); await new Promise(r => requestIdleCallback(() => r(null), { timeout: 1000 })); await new Promise(r => setTimeout(r, 0));
       const c = JSON.parse(localStorage.getItem('bos-strength-configurations-v1') ?? '{}');
       return c.draft ?? c.configs?.find((s: {id:string}) => s.id === c.activeId)?.doc;
     }) ?? createAssembly();
