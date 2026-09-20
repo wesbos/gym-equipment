@@ -61,7 +61,7 @@ export const WarningsButton = memo(function WarningsButton({ api }: { api: Edito
     <button type="button" id="warnings-button" aria-expanded={open} aria-controls={open ? panel : undefined} onClick={() => setOpen(!open)}
       title="Placement warnings">△ {warnings.length}<span className="wb-label"> warning{warnings.length === 1 ? '' : 's'}</span></button>
     {open && <div id={panel} className="warnings-popover">
-      <WarningItems api={api} warnings={warnings} />
+      <WarningItems api={api} warnings={warnings} onPick={() => setOpen(false)} />
     </div>}
   </div>;
 });

@@ -27,7 +27,10 @@ test('outline groups the default rack into uprights, crossmembers and attachment
 
 test("Coop's gym: floor, walls with pegboard hang items nested, every part exactly once", () => {
   const doc = gym('coop-garage-gym-reviews'), resolved = resolveAssembly(doc), tree = buildOutline(resolved, doc, name);
-  assert.deepEqual(tree.map(n => n.label), ['Rack', 'Floor', 'Walls', 'Plates']);
+  assert.deepEqual(tree.map(n => n.label), ['Rack', 'Floor', 'Walls', 'Room decor', 'Plates']);
+  // Windows, lights, fans and furniture sit apart from the equipment.
+  const decor = tree.find(n => n.label === 'Room decor')!;
+  assert.ok(decor.children.length > 3 && decor.children.every(n => /decor|fans|led|levrack|sonos|plae/.test(n.part!)), decor.children.map(n => n.part).join());
   const ids = leaves(tree.filter(n => n.label !== 'Plates'));
   assert.equal(ids.length, resolved.length);
   assert.equal(new Set(ids).size, resolved.length);
@@ -61,7 +64,7 @@ test('flatten, collapse, window, tree keys, filter and signature', () => {
   const all = flattenOutline(tree, new Set());
   assert.ok(all.length > resolved.length, 'group rows plus every part');
   const collapsed = flattenOutline(tree, new Set(['group:rack']));
-  assert.equal(collapsed.filter(r => r.depth === 0).length, 4);
+  assert.equal(collapsed.filter(r => r.depth === 0).length, 5);
   assert.ok(!collapsed.some(r => r.parent === 'group:rack'));
   assert.equal(rowOrder(all).length, resolved.length);
   assert.deepEqual(windowRows(200, 32, 0, 320, 2), [0, 12]);

@@ -1,9 +1,11 @@
 /** Outliner model (#206): the resolved scene as a tree — Rack (uprights, crossmembers, attachments), Systems, Floor,
- * Walls (hang items nested under their pegboard), Plates — plus the flattening, windowing and selection-order helpers
+ * Walls (hang items nested under their pegboard), Room decor, Plates — plus the flattening, windowing and selection-order helpers
  * the virtualised tree renders. Pure and unit tested (src/components/outliner.test.ts). */
 import type { RackDoc, ResolvedInstance } from '../../../rack-generator/types.ts';
 import { isSystemPart } from '../../../rack-generator/system-types.ts';
 import { plateTotalLabel, type PlateId } from '../../../rack-generator/plates.ts';
+import { floorPart } from '../../../rack-generator/floor-registry.ts';
+import { wallPart } from '../../../rack-generator/wall-registry.ts';
 
 export interface OutlineNode {
   /** Unique tree key: `group:rack`, `group:rack:uprights`, or the physical instance id for parts. */
@@ -47,7 +49,9 @@ function numberDuplicates(nodes: OutlineNode[]) {
 export function buildOutline(resolved: readonly ResolvedInstance[], doc: RackDoc, nameOf: NameOf): OutlineNode[] {
   const leaf = (r: ResolvedInstance): OutlineNode => ({ key: r.id, id: r.id, part: r.part, label: nameOf(r.part, r), detail: detailOf(r, doc), children: [] });
   const uprights: OutlineNode[] = [], crossmembers: OutlineNode[] = [], attachments: OutlineNode[] = [], systems: OutlineNode[] = [];
-  const floor: OutlineNode[] = [], plates: OutlineNode[] = [], walls: OutlineNode[] = [], byId = new Map<string, OutlineNode>();
+  const floor: OutlineNode[] = [], plates: OutlineNode[] = [], walls: OutlineNode[] = [], decor: OutlineNode[] = [], byId = new Map<string, OutlineNode>();
+  // Room decor (#201: windows, doors, lights, fans, furniture) gets its own group, so equipment lists stay equipment.
+  const isDecor = (r: ResolvedInstance) => (r.kind === 'floor-item' ? floorPart(r.part)?.section : wallPart(r.part)?.section)?.endsWith(' decor') ?? false;
   const hangPanel = new Map((doc.hangItems ?? []).map(h => [h.id, h.panel]));
   const panels = new Map<string, OutlineNode>(), hung: [string, OutlineNode][] = [];
   for (const r of resolved) {
@@ -55,6 +59,7 @@ export function buildOutline(resolved: readonly ResolvedInstance[], doc: RackDoc
     byId.set(r.id, node);
     if (r.kind === 'structure') (r.part === 'upright' ? uprights : crossmembers).push(node);
     else if (r.kind === 'accessory') (isSystemPart(r.part) ? systems : attachments).push(node);
+    else if (isDecor(r) && !hangPanel.has(r.id)) decor.push(node);
     else if (r.kind === 'floor-item') floor.push(node);
     else if (hangPanel.has(r.id)) hung.push([hangPanel.get(r.id)!, node]);
     else { walls.push(node); panels.set(r.id, node); }
@@ -64,7 +69,7 @@ export function buildOutline(resolved: readonly ResolvedInstance[], doc: RackDoc
   for (const panel of panels.values()) numberDuplicates(panel.children);
   const rack = [group('rack:uprights', 'Uprights', numberDuplicates(uprights)), group('rack:crossmembers', 'Crossmembers', numberDuplicates(crossmembers)),
     group('rack:attachments', 'Attachments', numberDuplicates(attachments))].filter(g => g.children.length);
-  numberDuplicates(systems); numberDuplicates(floor); numberDuplicates(walls);
+  numberDuplicates(systems); numberDuplicates(floor); numberDuplicates(walls); numberDuplicates(decor);
   const loaded = (id: string, stack: readonly PlateId[]) => {
     const holder = byId.get(id);
     if (!holder || !stack.length) return;
@@ -73,7 +78,7 @@ export function buildOutline(resolved: readonly ResolvedInstance[], doc: RackDoc
   for (const a of doc.accessories) if (a.plates?.length) for (const r of resolved) if (r.ownerId === a.id) loaded(r.id, a.plates);
   for (const f of doc.floorItems ?? []) if (f.plates) loaded(f.id, 'both' in f.plates ? [...f.plates.both, ...f.plates.both] : [...f.plates.right, ...f.plates.left]);
   return [group('rack', 'Rack', rack), group('systems', 'Systems', systems), group('floor', 'Floor', floor),
-    group('walls', 'Walls', walls), group('plates', 'Plates', plates)].filter(g => g.children.length);
+    group('walls', 'Walls', walls), group('decor', 'Room decor', decor), group('plates', 'Plates', plates)].filter(g => g.children.length);
 }
 /** Physical ids under a node (itself included), in tree order. */
 export function descendantIds(node: OutlineNode): string[] {
