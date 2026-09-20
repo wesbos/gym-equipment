@@ -1,0 +1,192 @@
+/* Builder app shell (#203). Loaded after builder.css.
+ * data-layout on .builder-page: phone (portrait, bottom sheet), phone-land (short landscape, side sheet), tablet, desktop. */
+
+/* ---------- Every layout: shell wrappers are transparent, phone-only chrome is hidden ---------- */
+.builder-page .builder-dock, .builder-page .sheet-body, .builder-page .timeline-region,
+.builder-page .toolbar-overflow, .builder-page .toolbar-menu, .builder-page .view-menu { display: contents; }
+.builder-page[data-layout] .sheet-header, .builder-page[data-layout] .sheet-safe, .builder-page[data-layout] .overflow-trigger,
+.builder-page[data-layout] .view-menu-trigger, .builder-page[data-layout] .menu-only, .builder-page[data-layout] .toolbar-add,
+.builder-page[data-layout] .brand-symbol { display: none; }
+.builder-page .toolbar-slot { display: flex; align-items: center; gap: 6px; }
+.builder-page .toolbar-slot:empty { display: none; }
+.builder-page .toolbar-add { align-items: center; gap: 6px; white-space: nowrap; }
+.builder-page .toolbar-add > span { font-size: 16px; line-height: 1; }
+
+/* Floating overlay slot over the canvas: children take pointer events, the slot does not. */
+.builder-page .stage-overlay { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.builder-page .stage-overlay > * { pointer-events: auto; }
+
+/* ---------- Tablet and desktop: toolbar order, collapsible panels ---------- */
+.builder-page:not([data-layout^=phone]) .toolbar-actions .toolbar-add { order: 0; }
+.builder-page:not([data-layout^=phone]) .toolbar-actions .gyms-link { order: 1; }
+.builder-page:not([data-layout^=phone]) .toolbar-actions .config-manager { order: 2; }
+.builder-page:not([data-layout^=phone]) .toolbar-actions .history-actions { order: 3; }
+.builder-page:not([data-layout^=phone]) .toolbar-actions #load,
+.builder-page:not([data-layout^=phone]) .toolbar-actions #save,
+.builder-page:not([data-layout^=phone]) .toolbar-actions .export-menu { order: 4; }
+
+.builder-page:not([data-layout^=phone]) .builder-shell[data-hide-left] { --left-w: 0px; }
+.builder-page:not([data-layout^=phone]) .builder-shell[data-hide-left] .catalog-panel { display: none; }
+.builder-page:not([data-layout^=phone]) .builder-shell[data-hide-left] .toolbar-add { display: inline-flex; }
+.builder-page:not([data-layout^=phone]) .builder-shell[data-hide-right] { --right-w: 0px; }
+.builder-page:not([data-layout^=phone]) .builder-shell[data-hide-right] .inspector-panel { display: none; }
+.builder-page:not([data-layout^=phone]) .builder-shell[data-hide-timeline] { --timeline-h: 0px; }
+.builder-page:not([data-layout^=phone]) .builder-shell[data-hide-timeline] .history-timeline { display: none; }
+
+.builder-page .panel-toggles { position: absolute; z-index: 3; top: 18px; right: 20px; display: flex; gap: 3px; padding: 4px;
+  border: 1px solid #cdd8c5; background: #f6f8f0d9; border-radius: 7px; box-shadow: 0 4px 12px #3b503104; backdrop-filter: blur(10px); }
+.builder-page .panel-toggles button { display: grid; place-items: center; padding: 6px 7px; background: transparent; border-color: transparent; color: #8a9a80; border-radius: 4px; }
+.builder-page .panel-toggles button[aria-pressed=true] { background: #fff; border-color: #cbd7c4; color: #2d4b24; box-shadow: 0 1px 3px #233b3010; }
+@media (max-width: 1150px) { .builder-page .panel-toggles { top: 14px; right: 12px; } }
+/* Tablets are touch-first: roomier targets for the stage controls. */
+.builder-page[data-layout=tablet] .panel-toggles button { min-width: 36px; min-height: 34px; }
+.builder-page[data-layout=tablet] .view-controls button { min-height: 34px; padding-inline: 10px; font-size: 10px; }
+.builder-page[data-layout=tablet] .stage-actions button { min-height: 36px; }
+
+/* ---------- Phones (portrait and landscape) ---------- */
+.builder-page[data-layout^=phone] { --bar-h: 52px; position: fixed; inset: 0; height: auto; overflow: hidden; overscroll-behavior: none; -webkit-text-size-adjust: 100%; touch-action: manipulation; }
+.builder-page[data-layout=phone-land] { --bar-h: 44px; }
+.builder-page[data-layout^=phone] .builder-shell { display: block; position: relative; height: 100%; background: #1f2622; overflow: hidden; }
+
+/* Top bar: logo mark, undo/redo, Add parts, overflow menu. */
+.builder-page[data-layout^=phone] .toolbar { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 4px;
+  height: calc(var(--bar-h) + env(safe-area-inset-top)); padding: env(safe-area-inset-top) max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left)); }
+.builder-page[data-layout^=phone] .brand { flex: none; height: 40px; padding: 0 8px 0 4px; font-size: 0; letter-spacing: 0; gap: 0; }
+.builder-page[data-layout^=phone] .brand small { display: none; }
+.builder-page[data-layout^=phone] .brand-symbol { display: flex; height: 26px; }
+.builder-page[data-layout^=phone] .project-heading { display: none; }
+.builder-page[data-layout^=phone] .toolbar-actions { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 0; }
+.builder-page[data-layout^=phone] .history-actions { order: -1; margin-right: auto; display: flex; gap: 2px; }
+.builder-page[data-layout^=phone] .toolbar-actions .history-actions button { width: 40px; height: 40px; padding: 0; font-size: 20px; border-color: transparent; background: transparent; }
+.builder-page[data-layout^=phone] .toolbar-actions .toolbar-add { display: inline-flex; height: 40px; padding: 0 16px; font-size: 14px; border-radius: 20px; }
+.builder-page[data-layout^=phone] .toolbar-overflow { display: block; }
+.builder-page[data-layout^=phone] .toolbar-actions .overflow-trigger { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border-radius: 20px; }
+.builder-page[data-layout^=phone] .overflow-trigger svg { fill: currentColor; }
+.builder-page[data-layout^=phone] .toolbar-menu { display: none; }
+.builder-page[data-layout^=phone] .toolbar-overflow[data-open] .toolbar-menu { display: flex; flex-direction: column; align-items: stretch; gap: 6px;
+  position: fixed; z-index: 40; top: calc(var(--bar-h) + env(safe-area-inset-top) + 4px); right: max(8px, env(safe-area-inset-right));
+  width: min(320px, calc(100vw - 16px)); max-height: calc(100dvh - var(--bar-h) - env(safe-area-inset-top) - 16px); overflow: auto; overscroll-behavior: contain;
+  padding: 8px; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 40px #1c2f2440; }
+.builder-page[data-layout^=phone] .toolbar-menu > button, .builder-page[data-layout^=phone] .toolbar-menu > a,
+.builder-page[data-layout^=phone] .toolbar-menu .config-manager > summary, .builder-page[data-layout^=phone] .toolbar-menu .export-menu > button {
+  display: flex; align-items: center; width: 100%; min-height: 44px; padding: 10px 14px; font-size: 14px; text-align: left; white-space: normal; }
+.builder-page[data-layout^=phone] .toolbar-menu > a.menu-only { border: 1px solid var(--line); border-radius: var(--radius); background: #f8faf5; }
+.builder-page[data-layout^=phone] .toolbar-menu .config-manager { border: 1px solid var(--line); border-radius: var(--radius); background: #f8faf5; font-size: 14px; }
+.builder-page[data-layout^=phone] .toolbar-menu .config-manager fieldset { position: static; width: auto; box-shadow: none; border: 0; border-top: 1px solid var(--line); margin: 0; padding: 12px; }
+.builder-page[data-layout^=phone] .toolbar-menu .config-manager fieldset button { min-height: 40px; font-size: 13px; }
+.builder-page[data-layout^=phone] .toolbar-menu .export-menu { display: block; }
+.builder-page[data-layout^=phone] .export-menu-options { position: fixed; z-index: 45; top: calc(var(--bar-h) + env(safe-area-inset-top) + 4px);
+  left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); width: auto; max-height: calc(100dvh - var(--bar-h) - env(safe-area-inset-top) - 16px); }
+.builder-page[data-layout^=phone] .export-menu-options button { min-height: 40px; font-size: 13px; }
+
+/* Stage: fills the viewport between the top bar and the settled sheet (the sheet sets --sheet-rest). */
+.builder-page[data-layout^=phone] .stage { position: absolute; top: calc(var(--bar-h) + env(safe-area-inset-top)); left: 0; right: 0; bottom: var(--sheet-rest, 120px); }
+.builder-page[data-layout=phone-land] .stage { bottom: 0; right: var(--sheet-rest, 80px); }
+.builder-page[data-layout^=phone] .view-menu { display: block; position: absolute; z-index: 3; top: 8px; left: max(8px, env(safe-area-inset-left)); }
+.builder-page[data-layout^=phone] .view-menu-trigger { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; font-size: 13px;
+  background: #f6f8f0e8; border-color: #cdd8c5; border-radius: 18px; backdrop-filter: blur(10px); }
+.builder-page[data-layout^=phone] .view-controls { display: none; position: absolute; top: 42px; left: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; width: 196px; padding: 4px; border-radius: 10px; background: #f8faf2f5; }
+.builder-page[data-layout^=phone] .view-menu[data-open] .view-controls { display: grid; }
+.builder-page[data-layout^=phone] .view-controls button { min-height: 40px; padding: 8px 12px; font-size: 13px; text-align: left; }
+.builder-page[data-layout^=phone] .stage-caption { top: 8px; bottom: auto; left: auto; right: max(8px, env(safe-area-inset-right)); height: 36px; display: flex; align-items: center; padding: 0 12px; border-radius: 18px; }
+.builder-page[data-layout^=phone] .stage-caption .eyebrow { display: none; }
+.builder-page[data-layout^=phone] #dimensions { margin: 0; font-size: 11px; white-space: nowrap; }
+.builder-page[data-layout^=phone] .stage-actions { left: auto; right: max(8px, env(safe-area-inset-right)); bottom: 8px; gap: 6px; }
+.builder-page[data-layout^=phone] .stage-actions button { height: 36px; padding: 0 12px; font-size: 12px; border-radius: 18px; }
+.builder-page[data-layout^=phone] .panel-toggles { display: none; }
+.builder-page[data-layout^=phone] .placement-hint { left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); bottom: 52px; transform: none; width: auto; max-width: none;
+  flex-wrap: wrap; gap: 8px; padding: 10px 12px; font-size: 12px; white-space: normal; }
+.builder-page[data-layout^=phone] .placement-hint #placement-text { flex: 1 1 100%; }
+.builder-page[data-layout^=phone] .placement-hint button { min-height: 38px; padding: 8px 14px; font-size: 13px; }
+.builder-page[data-layout^=phone] .parts-drawer { left: 8px; right: 8px; top: 52px; bottom: 52px; max-height: none; min-height: 0; padding: 14px; }
+.builder-page[data-layout^=phone] .parts-drawer .bom-row { min-height: 40px; font-size: 12px; }
+
+/* The sheet. Its box is the full snap size; it slides by --sheet-full - --sheet-size (or an inline transform while
+ * dragging), and its scroller pads by the hidden amount so the last row can scroll into view. */
+.builder-page[data-layout^=phone] .builder-dock { display: flex; flex-direction: column; position: absolute; z-index: 10; left: 0; right: 0; bottom: 0;
+  height: var(--sheet-full, 50%); transform: translate3d(0, calc(var(--sheet-full, 0px) - var(--sheet-size, 0px)), 0);
+  transition: transform .32s cubic-bezier(.2, .8, .2, 1); will-change: transform; contain: layout style;
+  background: var(--paper); border-radius: 16px 16px 0 0; box-shadow: 0 -6px 30px #0b1a1233; }
+.builder-page[data-layout^=phone] .builder-dock.dragging { transition: none; }
+.builder-page[data-layout^=phone] .sheet-safe { display: block; position: absolute; visibility: hidden; pointer-events: none;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+.builder-page[data-layout^=phone] .sheet-header { display: block; flex: none; touch-action: none; user-select: none; -webkit-user-select: none;
+  padding: 0 max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left)); }
+.builder-page[data-layout^=phone] .sheet-handle { height: 22px; display: grid; place-items: center; cursor: grab; outline-offset: -4px; border-radius: 8px; }
+.builder-page[data-layout^=phone] .sheet-handle::before { content: ''; width: 40px; height: 5px; border-radius: 3px; background: #c3cdbd; }
+.builder-page[data-layout^=phone] .sheet-handle:focus-visible { outline: 2px solid #648455; }
+.builder-page[data-layout^=phone] .sheet-tabs { display: flex; gap: 4px; }
+.builder-page[data-layout^=phone] .sheet-tabs [role=tab] { flex: 1; min-width: 0; min-height: 40px; padding: 6px 4px; font-size: 13px; font-weight: 600;
+  border-color: transparent; background: transparent; color: #6b7f62; border-radius: 10px; }
+.builder-page[data-layout^=phone] .sheet-tabs [role=tab][aria-selected=true] { background: #e6ede0; color: var(--ink); }
+.builder-page[data-layout^=phone] .sheet-body { display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; }
+.builder-page[data-layout^=phone] .status-bar { order: -1; flex: none; height: 24px; background: transparent; border: 0; padding: 0 16px; font-size: 11px; }
+.builder-page[data-layout^=phone] [data-sheet-panel] { display: none; }
+.builder-page[data-layout^=phone] .sheet-body > [data-sheet-panel] { flex-direction: column; flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto;
+  overscroll-behavior: contain; -webkit-overflow-scrolling: touch; border: 0; background: transparent;
+  padding-bottom: calc(var(--sheet-full, 0px) - var(--sheet-size, 0px) + env(safe-area-inset-bottom) + 16px); }
+/* Inputs at 16px so iOS does not zoom the page on focus. */
+.builder-page[data-layout^=phone] .sheet-body input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),
+.builder-page[data-layout^=phone] .sheet-body select, .builder-page[data-layout^=phone] .toolbar-menu input,
+.builder-page[data-layout^=phone] .toolbar-menu select, .builder-page[data-layout^=phone] .export-menu-options select { font-size: 16px; }
+.builder-page[data-layout^=phone] .sheet-body button { font-size: 12px; }
+
+/* Panels inside the sheet. */
+.builder-page[data-layout^=phone] .sheet-body > .catalog-panel { padding: 4px max(14px, env(safe-area-inset-left)) 0; padding-right: max(14px, env(safe-area-inset-right)); }
+.builder-page[data-layout^=phone] .catalog-panel .panel-heading { display: none; }
+.builder-page[data-layout^=phone] .catalog-panel #catalog { flex: none; overflow: visible; min-height: auto; }
+.builder-page[data-layout^=phone] .catalog-panel .pair-control { font-size: 12px; padding: 10px; }
+.builder-page[data-layout^=phone] .catalog-panel .pair-control input { width: 18px; height: 18px; }
+.builder-page[data-layout^=phone] .catalog-footer { display: grid; gap: 10px; }
+.builder-page[data-layout^=phone] .catalog-footer a { font-size: 13px; }
+.builder-page[data-layout^=phone] .sheet-body > .inspector-panel { padding: 4px max(16px, env(safe-area-inset-left)) 0; padding-right: max(16px, env(safe-area-inset-right)); }
+.builder-page[data-layout^=phone] .inspector-topline { display: none; }
+.builder-page[data-layout^=phone] .back-button { margin-top: 2px; min-height: 32px; font-size: 13px; }
+.builder-page[data-layout^=phone] #selection-title { font-size: 22px; margin-top: 6px; }
+.builder-page[data-layout^=phone] .field, .builder-page[data-layout^=phone] .inspector-fields label { font-size: 12px; }
+.builder-page[data-layout^=phone] .inspector-fields button { min-height: 42px; }
+.builder-page[data-layout^=phone] .inspector-bottom { padding-top: 24px; }
+/* In the sheet, the selection's own inspector comes first; the rack's appearance, cable and logo panels follow it. */
+.builder-page[data-layout^=phone] .inspector-panel > .rack-panels { order: 1; margin-top: 24px; }
+.builder-page[data-layout^=phone] .inspector-panel > .inspector-bottom { order: 2; }
+.builder-page[data-layout^=phone] .timeline-region .history-timeline { padding: 4px 12px 0; background: transparent; border: 0; }
+.builder-page[data-layout^=phone] .timeline-region .timeline-controls { flex-wrap: wrap; row-gap: 6px; white-space: normal; }
+.builder-page[data-layout^=phone] .timeline-region .timeline-controls button { min-height: 38px; font-size: 12px; }
+.builder-page[data-layout^=phone] .timeline-region .timeline-privacy { margin-left: 0; }
+.builder-page[data-layout^=phone] .timeline-region .timeline-rail { height: 52px; margin-top: 8px; }
+
+/* ---------- Landscape phones: slim top bar, side sheet on the right ---------- */
+.builder-page[data-layout=phone-land] .toolbar-actions .history-actions button, .builder-page[data-layout=phone-land] .toolbar-actions .overflow-trigger { width: 36px; height: 36px; }
+.builder-page[data-layout=phone-land] .toolbar-actions .toolbar-add { height: 34px; font-size: 13px; }
+.builder-page[data-layout=phone-land] .brand { height: 36px; }
+.builder-page[data-layout=phone-land] .brand-symbol { height: 22px; }
+.builder-page[data-layout=phone-land] .builder-dock { top: calc(var(--bar-h) + env(safe-area-inset-top)); left: auto; height: auto; width: var(--sheet-full, 40%);
+  flex-direction: row; transform: translate3d(calc(var(--sheet-full, 0px) - var(--sheet-size, 0px)), 0, 0); border-radius: 14px 0 0 0; box-shadow: -6px 0 30px #0b1a1233; }
+.builder-page[data-layout=phone-land] .sheet-header { display: flex; padding: 0; }
+.builder-page[data-layout=phone-land] .sheet-handle { width: 16px; height: auto; align-self: stretch; }
+.builder-page[data-layout=phone-land] .sheet-handle::before { width: 5px; height: 40px; }
+.builder-page[data-layout=phone-land] .sheet-tabs { flex-direction: column; width: 64px; padding: 8px 6px 8px 0; gap: 4px; overflow-y: auto; }
+.builder-page[data-layout=phone-land] .sheet-tabs [role=tab] { flex: none; min-height: 44px; font-size: 11px; padding: 4px 2px; }
+.builder-page[data-layout=phone-land] .sheet-body { border-left: 1px solid var(--line);
+  padding-right: calc(var(--sheet-full, 0px) - var(--sheet-size, 0px) + env(safe-area-inset-right)); }
+.builder-page[data-layout=phone-land] .sheet-body > [data-sheet-panel] { padding-bottom: calc(env(safe-area-inset-bottom) + 16px); }
+.builder-page[data-layout=phone-land] .sheet-body > .catalog-panel, .builder-page[data-layout=phone-land] .sheet-body > .inspector-panel { padding-left: 14px; padding-right: 14px; }
+.builder-page[data-layout=phone-land] .status-bar { padding: 0 14px; }
+.builder-page[data-layout=phone-land] .view-controls { grid-template-columns: repeat(3, minmax(0, 1fr)); width: 252px; }
+.builder-page[data-layout=phone-land] .view-controls button { min-height: 36px; }
+.builder-page[data-layout=phone-land] .placement-hint { bottom: 50px; }
+.builder-page[data-layout=phone-land] .parts-drawer { top: 50px; bottom: 50px; }
+/* The parts gallery on a short landscape phone: full screen, one-row header, no filter row or detail strip (a tap on a
+ * card adds the part), so the grid keeps most of the height. */
+@media (max-height: 500px) and (max-width: 1000px) {
+  .part-gallery .pg-panel { inset: 0; border-radius: 0; }
+  .part-gallery .pg-header { flex-wrap: nowrap; gap: 12px; padding: 6px max(12px, env(safe-area-inset-right)) 6px max(14px, env(safe-area-inset-left)); }
+  .part-gallery .pg-heading { flex: none; }
+  .part-gallery .pg-heading .pg-eyebrow { display: none; }
+  .part-gallery .pg-heading h2 { font-size: 17px; margin: 0; }
+  .part-gallery .pg-search { order: 0; flex: 1 1 auto; flex-basis: auto; max-width: none; margin: 0; }
+  .part-gallery .pg-search input { padding-block: 8px; font-size: 16px; }
+  .part-gallery .pg-filters, .part-gallery .pg-detail { display: none; }
+  .part-gallery .pg-nav { padding-left: max(10px, env(safe-area-inset-left)); }
+}
+@media (prefers-reduced-motion: reduce) { .builder-page .builder-dock { transition: none; } }

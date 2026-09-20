@@ -1,4 +1,4 @@
-.builder-page .builder-shell{grid-template-rows:70px minmax(0,1fr)88px 29px}
+.builder-page .builder-shell{grid-template-rows:70px minmax(0,1fr) var(--timeline-h,88px) 29px}
 .builder-page .history-timeline{grid-column:1/-1;grid-row:3;min-width:0;background:#eef2e8;border-top:1px solid var(--line);padding:7px 16px 0;z-index:5}
 .builder-page .status-bar{grid-row:4}
 .timeline-controls{display:flex;align-items:center;gap:6px;min-height:29px;white-space:nowrap}
@@ -21,5 +21,4 @@
 .timeline-marker:hover .timeline-marker-icon{display:grid}
 .timeline-playhead{position:absolute;top:3px;height:29px;width:2px;background:#b77935;pointer-events:none}
 .timeline-playhead:before{content:'';position:absolute;left:-4px;top:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid #b77935}
-@media(max-width:900px){.builder-page .builder-shell{grid-template-rows:62px minmax(0,1fr)88px 27px}.builder-page .history-timeline{padding-inline:8px}.timeline-position{margin-inline:2px;gap:5px}.builder-page .timeline-controls button{padding-inline:6px}}
-@media(max-width:690px){.builder-page .builder-shell{grid-template-rows:62px 61dvh auto auto 28px}.builder-page .history-timeline{grid-row:3;padding-top:8px}.builder-page .inspector-panel{grid-row:4}.builder-page .status-bar{grid-row:5}.timeline-controls{flex-wrap:wrap}.timeline-privacy{margin-left:0}.timeline-rail{margin-top:5px}.timeline-position{flex:1}}
+@media(max-width:900px){.builder-page .builder-shell{grid-template-rows:62px minmax(0,1fr) var(--timeline-h,88px) 27px}.builder-page .history-timeline{padding-inline:8px}.timeline-position{margin-inline:2px;gap:5px}.builder-page .timeline-controls button{padding-inline:6px}}

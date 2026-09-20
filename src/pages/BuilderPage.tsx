@@ -30,7 +30,8 @@ import { structureSlots } from '../../rack-generator/topology.ts';
 import { snapDimensions, stepDimension } from '../../rack-generator/grid.ts';
 import { NumericControl } from "../components/NumericControl.tsx";
 import { ConfigManager } from "../components/ConfigManager.tsx";
-import { PartGallery, GalleryLauncher, CompactCatalog, BrowseCategories, CATALOG_PART_IDS } from "../components/PartGallery/index.ts";
+import { PartGallery, GalleryLauncher, CompactCatalog, BrowseCategories, CATALOG_PART_IDS, openGallery } from "../components/PartGallery/index.ts";
+import { BuilderSheet, OverflowMenu, PanelToggles, useLayoutMode, type SheetTab } from "../components/MobileShell/index.ts";
 import { AppearanceControls } from "../components/AppearanceControls.tsx";
 import {
   memo,
@@ -68,6 +69,7 @@ import type {
 } from "../../rack-generator/types.ts";
 import "../../rack-generator/builder.css";
 import "../components/history-timeline.css";
+import "../components/MobileShell/mobile-shell.css";
 // Catalog sections (and the parts gallery's categories) live in components/PartGallery/gallery-model.ts.
 const allParts = CATALOG_PART_IDS;
 const cleanName = (name: string) => name.replace(/^BOS STRENGTH\s*/, "");
@@ -484,7 +486,7 @@ function PairControl({ store }: { store: BuilderStore }) {
  * category shortcuts. The full catalog lives in the parts gallery (components/PartGallery). */
 const CatalogPanel = memo(function CatalogPanel({ store }: { store: BuilderStore }) {
   return (
-    <aside className="catalog-panel">
+    <aside className="catalog-panel" data-sheet-panel="parts">
       <div className="panel-heading">
         <h1>Parts</h1>
 
@@ -511,12 +513,63 @@ function RoomButton({ store }: { store: BuilderStore }) {
 }
 /** The rack's own appearance, logo and cable controls step aside while the room inspector is open. */
 function RackPanels({ children, store }: { children: ReactNode; store: BuilderStore }) {
-  return useStoreSelector(store, s => s.roomInspector) ? null : <>{children}</>;
+  return useStoreSelector(store, s => s.roomInspector) ? null : <div className="rack-panels">{children}</div>;
 }
 function SelectToolButton({ store }: { store: BuilderStore }) {
   const selectionTool = useStoreSelector(store, s => s.selectionTool);
   return <button aria-pressed={selectionTool} onClick={() => store.patch({ selectionTool: !selectionTool })}>Select</button>;
 }
+const VIEW_LABEL = { iso: "3D", front: "Front", side: "Side", top: "Top" } as const;
+type BuilderView = keyof typeof VIEW_LABEL;
+/** The view buttons. On phones they fold into a compact menu behind one button that shows the current view. */
+function ViewControls({ store, view, fit }: { store: BuilderStore; view: BuilderView; fit: (mode: BuilderView) => void }) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const outside = (e: PointerEvent) => { if (!root.current?.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("pointerdown", outside);
+    return () => document.removeEventListener("pointerdown", outside);
+  }, [open]);
+  return (
+    <div className="view-menu" ref={root} data-open={open || undefined}>
+      <button type="button" className="view-menu-trigger" aria-label={`View: ${VIEW_LABEL[view]}`} aria-expanded={open} onClick={() => setOpen(!open)}>
+        {VIEW_LABEL[view]} <span aria-hidden="true">▾</span>
+      </button>
+      <div className="view-controls" onClick={e => { if ((e.target as Element).closest("button")) setOpen(false); }}>
+        <SelectToolButton store={store} />
+        <RoomButton store={store} />
+        {(["iso", "front", "side", "top"] as const).map((mode) => (
+          <button
+            key={mode}
+            data-view={mode}
+            aria-pressed={view === mode}
+            onClick={() => fit(mode)}
+          >
+            {VIEW_LABEL[mode]}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+/** The builder shell reaches into the safe areas (notch, home indicator) on phones; other pages keep the default. */
+function useViewportFitCover() {
+  useEffect(() => {
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
+    if (!meta || meta.content.includes("viewport-fit")) return;
+    const original = meta.content;
+    meta.content = `${original}, viewport-fit=cover`;
+    return () => { meta.content = original; };
+  }, []);
+}
+/** Phone sheet tabs (see components/MobileShell). */
+const SHEET_TABS: readonly SheetTab[] = [
+  { id: "parts", label: "Parts" },
+  { id: "inspector", label: "Inspector" },
+  { id: "timeline", label: "Timeline" },
+  { id: "room", label: "Room", panel: "inspector" },
+];
 function StageCaption({ store }: { store: BuilderStore }) {
   const { viewing, dimensions } = useStoreSelector(store, s => ({ viewing: s.timeline.viewing, dimensions: s.dimensions }), shallowEqual);
   return (
@@ -637,12 +690,15 @@ function StatusBar({ store }: { store: BuilderStore }) {
 }
 export default function BuilderPage() {
   const [store] = useState(getBuilderStore);
+  const layout = useLayoutMode();
+  useViewportFitCover();
+  const shell = useRef<HTMLDivElement>(null);
   const viewport = useRef<HTMLDivElement>(null),
     controller = useRef<ReturnType<typeof createBuilderScene> | null>(null),
     importFile = useRef<HTMLInputElement>(null);
   useOpenGym(store, () => controller.current?.refitOnNextBuild());
   const [drawer, setDrawer] = useState(false),
-    [view, setView] = useState<"iso" | "front" | "side" | "top">("iso");
+    [view, setView] = useState<BuilderView>("iso");
   useEffect(() => {
     const scene = createBuilderScene(viewport.current!, store);
     controller.current = scene;
@@ -682,36 +738,48 @@ export default function BuilderPage() {
     controller.current?.fit(mode);
   };
   return (
-    <div className="builder-page">
-      <div className="builder-shell">
+    <div className="builder-page" data-layout={layout}>
+      <div className="builder-shell" ref={shell}>
         <header className="toolbar">
-          <Link className="brand" to="/">
+          <Link className="brand" to="/" aria-label="BOS STRENGTH rack builder">
+            <span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span>
             BOS STRENGTH<small>RACK BUILDER</small>
           </Link>
           <div className="project-heading">
             <span className="live-dot" /> YOUR WORKSPACE
           </div>
           <div className="toolbar-actions">
-            <Link className="gyms-link" to="/gyms">Gym gallery</Link>
-            <ConfigManager store={store} />
+            {/* Toolbar actions slot (#203): components that belong in the top bar at every size (e.g. a command palette
+             * trigger) mount here. */}
+            <div className="toolbar-slot" data-slot="toolbar-actions" />
             <HistoryButtons store={store} />
-            <button id="load" onClick={() => importFile.current?.click()}>
-              Load JSON
+            <button type="button" className="toolbar-add primary" aria-haspopup="dialog" onClick={() => openGallery()}>
+              <span aria-hidden="true">+</span> Add parts
             </button>
-            <button
-              id="save"
-              onClick={() =>
-                download(
-                  new Blob([store.exportJSON()], {
-                    type: "application/json",
-                  }),
-                  "bos-strength-rack.json",
-                )
-              }
-            >
-              Save JSON
-            </button>
-            <ExportControl store={store} controller={controller} />
+            <OverflowMenu>
+              <Link className="gyms-link" to="/gyms" data-menu-close>Gym gallery</Link>
+              <ConfigManager store={store} />
+              <button id="load" data-menu-close onClick={() => importFile.current?.click()}>
+                Load JSON
+              </button>
+              <button
+                id="save"
+                data-menu-close
+                onClick={() =>
+                  download(
+                    new Blob([store.exportJSON()], {
+                      type: "application/json",
+                    }),
+                    "bos-strength-rack.json",
+                  )
+                }
+              >
+                Save JSON
+              </button>
+              <ExportControl store={store} controller={controller} />
+              <button type="button" className="menu-only" data-menu-close onClick={() => store.openRoom()}>Room: walls, floor & ceiling</button>
+              <Link className="menu-only" to="/library" data-menu-close>Parts library ↗</Link>
+            </OverflowMenu>
             <input
               hidden
               ref={importFile}
@@ -736,23 +804,9 @@ export default function BuilderPage() {
             />
           </div>
         </header>
-        <CatalogPanel store={store} />
         <main className="stage">
           <div id="viewport" ref={viewport} />
-          <div className="view-controls">
-            <SelectToolButton store={store} />
-            <RoomButton store={store} />
-            {(["iso", "front", "side", "top"] as const).map((mode) => (
-              <button
-                key={mode}
-                data-view={mode}
-                aria-pressed={view === mode}
-                onClick={() => fit(mode)}
-              >
-                {mode === "iso" ? "3D" : mode[0].toUpperCase() + mode.slice(1)}
-              </button>
-            ))}
-          </div>
+          <ViewControls store={store} view={view} fit={fit} />
           <StageCaption store={store} />
           <div className="stage-actions">
             <button id="fit" onClick={() => fit()}>
@@ -766,47 +820,57 @@ export default function BuilderPage() {
               Parts list (<PartsCount store={store} />)
             </button>
           </div>
+          <PanelToggles shell={shell} />
           <PlacementHint store={store} />
+          {/* Floating overlay slot (#203): overlays over the canvas (e.g. the selection action bar) mount here. The slot
+           * ignores pointer events and its children receive them; on phones it ends above the sheet. */}
+          <div className="stage-overlay" data-slot="stage-overlay" />
           {drawer && <PartsDrawer store={store} close={() => setDrawer(false)} />}
         </main>
-        <aside className="inspector-panel">
-          <div className="inspector-topline">
-            <span className="eyebrow">DETAILS & PLACEMENT</span>
-            <span className="unit-badge">MM / IN</span>
-          </div>
-          <button
-            id="deselect"
-            className="back-button"
-            onClick={() => store.select(null)}
-          >
-            ← Rack settings
-          </button>
-          <SelectionCount store={store} />
-          <RackPanels store={store}>
-            <AppearanceControls store={store} />
-            <CableSmithControls store={store} />
-            <LogoControls store={store} />
-          </RackPanels>
-          <SwapAccessory store={store} />
-          <InspectorSlot store={store} />
-          <Warnings store={store} />
-          <div className="inspector-bottom">
+        <BuilderSheet store={store} tabs={SHEET_TABS}>
+          <CatalogPanel store={store} />
+          {/* Inspector region (#203): the sheet's Inspector and Room tab on phones, the right column elsewhere. */}
+          <aside className="inspector-panel" data-sheet-panel="inspector">
+            <div className="inspector-topline">
+              <span className="eyebrow">DETAILS & PLACEMENT</span>
+              <span className="unit-badge">MM / IN</span>
+            </div>
             <button
-              id="reset-design"
-              className="new-rack-button"
-              onClick={() => {
-                if (window.confirm('Reset entire rack to the stock BOS starting assembly? All dimensions, parts and appearance will reset. You can Undo this change.')) {
-                  store.endGesture(); store.commit(createAssembly(), { category: "preset", label: "Reset entire rack", replacement: true }); store.select(null);
-                  controller.current?.refitOnNextBuild();
-                }
-              }}
+              id="deselect"
+              className="back-button"
+              onClick={() => store.select(null)}
             >
-              Reset entire rack
+              ← Rack settings
             </button>
+            <SelectionCount store={store} />
+            <RackPanels store={store}>
+              <AppearanceControls store={store} />
+              <CableSmithControls store={store} />
+              <LogoControls store={store} />
+            </RackPanels>
+            <SwapAccessory store={store} />
+            <InspectorSlot store={store} />
+            <Warnings store={store} />
+            <div className="inspector-bottom">
+              <button
+                id="reset-design"
+                className="new-rack-button"
+                onClick={() => {
+                  if (window.confirm('Reset entire rack to the stock BOS starting assembly? All dimensions, parts and appearance will reset. You can Undo this change.')) {
+                    store.endGesture(); store.commit(createAssembly(), { category: "preset", label: "Reset entire rack", replacement: true }); store.select(null);
+                    controller.current?.refitOnNextBuild();
+                  }
+                }}
+              >
+                Reset entire rack
+              </button>
+            </div>
+          </aside>
+          <div className="timeline-region" data-sheet-panel="timeline">
+            <TimelineBar store={store} controller={controller} />
           </div>
-        </aside>
-        <TimelineBar store={store} controller={controller} />
-        <StatusBar store={store} />
+          <StatusBar store={store} />
+        </BuilderSheet>
       </div>
       <PartGallery store={store} />
     </div>
