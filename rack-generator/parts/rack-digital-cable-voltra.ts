@@ -7,7 +7,7 @@ import { vendorSolid } from './vendor-solid.ts';
 import { definitions as voltraDefinitions } from './voltra.ts';
 import {
   ADAPTIVE_BAR, BEYOND_POWER_ADAPTIVE_BAR_MOUNT, BEYOND_POWER_FIXED_BAR_MOUNT, BEYOND_POWER_ROTATOR, BEYOND_POWER_STRAP_MOUNT, DARKO_QUICKMOUNT,
-  FIXED_BAR, QUICKMOUNT, RACK_PEG, ROTATOR, STRAP_MOUNT, barMountLayout, quickMountLayout, rotatorLayout, strapLayout,
+  FIXED_BAR, QUICKMOUNT, RACK_PEG, ROTATOR, STRAP_MOUNT, barMountLayout, barRadius, onBar, quickMountLayout, rotatorLayout, strapLayout,
 } from '../rack-parts/rack-digital-cable.ts';
 type Scope = Parameters<Parameters<typeof vendorSolid>[1]>[0];
 const CHROME = ['#d3d7da', .95, .12] as const, BP_GREY = ['#6f7479', .8, .34] as const, BP_DARK = ['#3b3e42', .7, .38] as const;
@@ -125,18 +125,24 @@ function addPeg(v: Scope, face: number) {
   const head = k(M.union([alongY(v, 0, 0, -face - RACK_PEG.cap, -face - 3, cap, 32), alongY(v, 0, 0, -face - 3.01, -face, cap - 3, 32)]));
   v.add('1 in rack peg (sold separately)', k(M.union([rod, head])), 'source', '#1c1d1f', .5, .55);
 }
-/** Clamp frame: bar along Y, knob up, dock down. `sideways` turns it a quarter about the peg so the dock faces +X. */
-const clampPlacer = (v: Scope, y: number, sideways: boolean) => (m: Manifold) => sideways ? v.keep(v.keep(m.rotate([0, -90, 0])).translate([0, y, 0])) : v.keep(m.translate([0, y, 0]));
+/** Clamp frame: bar along Y, knob up, dock down. `sideways` turns it a quarter about the peg so the dock faces +X.
+ * `shift` drops the clamp below the bar axis (a fat bar rides higher in the Adaptive jaw window, #178). */
+const clampPlacer = (v: Scope, y: number, sideways: boolean, shift = 0) => (m: Manifold) => {
+  const low = shift ? v.keep(m.translate([0, 0, -shift])) : m;
+  return sideways ? v.keep(v.keep(low.rotate([0, -90, 0])).translate([0, y, 0])) : v.keep(low.translate([0, y, 0]));
+};
 export function buildAdaptiveBarMount(api: ManifoldAPI, params: NumericParams): SolidPart[] {
-  const p = { ...BEYOND_POWER_ADAPTIVE_BAR_MOUNT.defaults, ...params }, l = barMountLayout(p, false), a = ADAPTIVE_BAR;
+  const p = { ...BEYOND_POWER_ADAPTIVE_BAR_MOUNT.defaults, ...params }, l = barMountLayout(p, false), a = ADAPTIVE_BAR, r = barRadius(p);
   return vendorSolid(api, v => {
-    const { M, C, keep: k, add, box } = v, place = clampPlacer(v, l.y, !!p.dock);
+    const { M, C, keep: k, add, box } = v, place = clampPlacer(v, l.y, !!p.dock, l.shift);
     const [bw, bd] = a.body, hw = bw / 2, top = a.bodyTop, [jw, jz0, jz1] = a.jaw;
     const outline: Vec2[] = [[-hw, a.bodyBottom], [hw, a.bodyBottom], [hw, top - a.roof], [hw - a.roof, top], [-hw + a.roof, top], [-hw, top - a.roof]];
     const body = k(plateXZ(v, outline, -bd / 2, bd).subtract(box([jw, bd + 2, jz1 - jz0], [0, 0, (jz0 + jz1) / 2])));
     add('Adaptive clamp aluminium body', place(body), 'source', ...BP_GREY);
     add('Lower nylon jaw', place(box([jw - 2, bd - 6, -RACK_PEG.rod / 2 - jz0 - .5], [0, 0, (jz0 - RACK_PEG.rod / 2 - .5) / 2])), 'liner', '#161719', 0, .8);
-    add('Upper nylon jaw', place(box([jw - 4, bd - 6, jz1 - RACK_PEG.rod / 2 - .5], [0, 0, (jz1 + RACK_PEG.rod / 2 + .5) / 2])), 'liner', '#161719', 0, .8);
+    // The upper jaw closes on the bar (its centre is `shift` above the peg axis in the clamp frame).
+    const barTop = l.shift + r + .5;
+    add('Upper nylon jaw', place(box([jw - 4, bd - 6, jz1 - barTop], [0, 0, (jz1 + barTop) / 2])), 'liner', '#161719', 0, .8);
     const [kr, kh] = a.knob;
     add('Tightening knob', place(k(M.union([alongZ(v, 0, 0, top, top + kh - 4, kr, 24), alongZ(v, 0, 0, top + kh - 4.01, top + kh, kr - 4, 24)]))), 'handle', '#141517', .1, .7);
     add('Knob lock tab', place(box([12, 16, 3], [0, 0, top + kh + 1.5])), 'handle', '#2a2c2f', .2, .6);
@@ -149,8 +155,8 @@ export function buildAdaptiveBarMount(api: ManifoldAPI, params: NumericParams): 
     const loop = k(k(k(k(C.square([76, 24], true)).subtract(k(C.square([66, 14], true)))).extrude(5)).translate([0, -fd / 2 - 10, fz + 1]));
     add('Quick-release loop', place(loop), 'handle', ...CHROME);
     add('VOLTRA I dock cup', place(alongZ(v, 0, 0, fz - a.cupDepth, fz, a.cupRadius, 64)), 'source', ...CHROME);
-    addPeg(v, l.face);
-    addVoltra(api, v, p.orientation, m => place(k(k(m.rotate([-90, 0, 0])).translate([0, 0, -l.dockOffset]))));
+    if (!onBar(p)) addPeg(v, l.face);
+    addVoltra(api, v, p.orientation, m => place(k(k(m.rotate([-90, 0, 0])).translate([0, 0, -(l.dockOffset - l.shift)]))));
   });
 }
 export function buildFixedBarMount(api: ManifoldAPI, params: NumericParams): SolidPart[] {
@@ -161,11 +167,13 @@ export function buildFixedBarMount(api: ManifoldAPI, params: NumericParams): Sol
     add('Fixed mount lower block', place(k(v.round(bw, bd, f.split - f.bottom, 10, [0, 0, (f.split + f.bottom) / 2]).subtract(bore(f.bore / 2)))), 'source', '#5c6064', .75, .34);
     const cap: Vec2[] = [[-hw, f.split], [hw, f.split], [hw, f.top - f.chamfer], [hw - f.chamfer, f.top], [-hw + f.chamfer, f.top], [-hw, f.top - f.chamfer]];
     add('Fixed mount clamp cap', place(k(plateXZ(v, cap, -bd / 2 + 4, bd - 8).subtract(bore(f.bore / 2)))), 'source', '#2f3235', .7, .36);
-    add('1 in spacer shells', place(k(alongY(v, 0, 0, -bd / 2 + 2, bd / 2 - 2, f.bore / 2 - .3, 48).subtract(bore(RACK_PEG.rod / 2 + .3)))), 'liner', '#151618', 0, .8);
+    // Spacer shells fill the 2 in bore down to the bar (the 1 in peg, or a pull-up bar under 2 in, #178).
+    const r = barRadius(p);
+    if (r < f.bore / 2 - 2) add(onBar(p) ? 'Bar spacer shells' : '1 in spacer shells', place(k(alongY(v, 0, 0, -bd / 2 + 2, bd / 2 - 2, f.bore / 2 - .3, 48).subtract(bore(r + .3)))), 'liner', '#151618', 0, .8);
     for (const x of [-28, 28]) for (const y of [-44, 44]) add('Cap screw', place(alongZ(v, x, y, f.top - 1, f.top + 2.5, 4.5, 16)), 'fastener', '#b9bcbf', .85, .3);
     add('Beyond Power badge', place(box([1, 34, 14], [hw + .5, -bd / 4, (f.bottom + f.split) / 2])), 'source', '#c9ccce', .6, .4);
     add('VOLTRA I dock cup', place(alongZ(v, 0, 0, f.bottom - f.cupDepth, f.bottom, f.cupRadius, 64)), 'source', ...CHROME);
-    addPeg(v, l.face);
+    if (!onBar(p)) addPeg(v, l.face);
     addVoltra(api, v, p.orientation, m => place(k(k(m.rotate([-90, 0, 0])).translate([0, 0, -l.dockOffset]))));
   });
 }

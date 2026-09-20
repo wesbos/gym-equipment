@@ -52,7 +52,7 @@ export function quickMountLayout(p: NumericParams) {
 }
 export const DARKO_QUICKMOUNT = defineRackPart({
   id: 'darko-quickmount-voltra', name: 'Darko QuickMount', title: 'Darko QuickMount Bracket for VOLTRA I', noun: 'quickmount bracket', section: 'Digital & cable',
-  description: 'Magpin U-bracket that docks a Beyond Power VOLTRA I on a 3 x 3 upright · 1/4 in steel, printed liners · optional handle and PM pulley point. Independent reconstruction; Darko Lifting trademarks belong to Darko Lifting, VOLTRA to Beyond Power.',
+  description: 'Magpin U-bracket that docks a Beyond Power VOLTRA I on a 3 x 3 upright or under an upper crossmember · 1/4 in steel, printed liners · optional handle and PM pulley point. Independent reconstruction; Darko Lifting trademarks belong to Darko Lifting, VOLTRA to Beyond Power.',
   params: [
     { key: 'version', label: 'Version', default: 0, options: [0, 1, 2, 3], format: v => QUICKMOUNT_VERSIONS[v] ?? String(v) },
     // The 1 in hole only brackets have a single round hole for the 0.98 in Magpin.
@@ -66,6 +66,9 @@ export const DARKO_QUICKMOUNT = defineRackPart({
     reconstruction: 'Published 1/4 in steel, printed plastic liners, 0.98 in Magpin, 1 in and 5/8 in racks, black or stainless. Bracket outline, keyhole, liner, dock cup, handle and PM tab sizes estimated from Darko photos; physical fit unverified.',
   },
   mount: {
+    // #178: also hangs under an upper crossmember (the Magpin through the rail's side holes, VOLTRA underneath), as in
+    // the Gym Radar owner photo; the rail frame lays the upright frame along the rail, so the bracket is unchanged.
+    targets: ['upright', 'crossmember-under'],
     pin: p => p.pin ? PIN_5_8IN : PIN_1IN, pinAxis: 'across', mainStations: true,
     extent: p => {
       const l = quickMountLayout(p), [, hz] = voltraHalf(p.orientation ?? 1);
@@ -147,24 +150,42 @@ export const ADAPTIVE_BAR = { body: [94, 70] as const, bodyBottom: -20, bodyTop:
 /** Fixed Bar Mount: published 1–2 in bars; body proportions from the 1 in / 2 in drawing, the 1 in spacer shells fitted. */
 export const FIXED_BAR = { body: [110, 125] as const, bottom: -29, split: 10, top: 52, chamfer: 18, bore: inch(2), cupRadius: 44, cupDepth: 19 } as const;
 export const BAR_DOCKS = ['Dock down · VOLTRA hangs under the peg', 'Dock sideways · VOLTRA beside the peg'] as const;
-/** Dock point and axis of a bar mount (clamp centred on the peg at `clampAt` from the face). */
+/** Published clamp ranges (mm): Adaptive 16–51 mm, Fixed 1–2 in. */
+export const BAR_RANGE = { adaptive: [16, 51], fixed: [inch(1), inch(2)] } as const;
+/** On a pull-up bar (#178, `hostWidth` = bar diameter) the clamp sits on the bar axis at the origin (no peg); otherwise
+ * it clamps the 1 in peg `clampAt` from the face. The Adaptive clamp's fixed lower jaw carries the bar, so a fatter bar
+ * sits higher in the jaw window: the whole clamp and VOLTRA drop by `shift` below the bar axis. */
+export const onBar = (p: NumericParams) => p.hostWidth !== undefined;
+export const barRadius = (p: NumericParams) => (p.hostWidth ?? RACK_PEG.rod) / 2;
+/** Dock point and axis of a bar mount (clamp centred on the peg at `clampAt` from the face, or on the bar). */
 export function barMountLayout(p: NumericParams, fixed: boolean) {
-  const face = faceOf(p), y = face + RACK_PEG.clampAt;
+  const face = faceOf(p), y = onBar(p) ? 0 : face + RACK_PEG.clampAt, shift = fixed ? 0 : barRadius(p) - RACK_PEG.rod / 2;
   const drop = fixed ? -(FIXED_BAR.bottom - FIXED_BAR.cupDepth) : -(ADAPTIVE_BAR.bodyBottom - ADAPTIVE_BAR.flange[2] - ADAPTIVE_BAR.cupDepth);
-  const dockOffset = drop + VOLTRA.dockBack;
-  return { face, y, dockOffset, dock: (p.dock ? [dockOffset, y, 0] : [0, y, -dockOffset]) as Vec3 };
+  const dockOffset = drop + VOLTRA.dockBack + shift;
+  return { face, y, shift, dockOffset, dock: (p.dock ? [dockOffset, y, 0] : [0, y, -dockOffset]) as Vec3 };
 }
+const barFit = (fixed: boolean) => (_r: RackDimensions, p: NumericParams) => {
+  if (!onBar(p)) return;
+  const [lo, hi] = fixed ? BAR_RANGE.fixed : BAR_RANGE.adaptive, d = p.hostWidth!;
+  if (d < lo - .5 || d > hi + .5) throw Error(`The ${fixed ? 'Fixed' : 'Adaptive'} Bar Mount clamps ${fixed ? '1–2 in' : '16–51 mm'} bars, not a ${d.toFixed(1)} mm bar.`);
+};
 const barBodies = (p: NumericParams, fixed: boolean): LocalBox[] => {
   const l = barMountLayout(p, fixed), [hx, hz] = voltraHalf(p.orientation ?? 1), r = RACK_PEG.rod / 2, faceY = l.face;
   const halfW = fixed ? FIXED_BAR.body[0] / 2 : ADAPTIVE_BAR.flange[0] / 2, halfD = fixed ? FIXED_BAR.body[1] / 2 : ADAPTIVE_BAR.flange[1] / 2;
-  const top = fixed ? FIXED_BAR.top : ADAPTIVE_BAR.bodyTop + ADAPTIVE_BAR.knob[1];
+  const top = (fixed ? FIXED_BAR.top : ADAPTIVE_BAR.bodyTop + ADAPTIVE_BAR.knob[1]) - l.shift;
   const clamp: LocalBox = p.dock ? box([-top, l.y - halfD, -halfW], [l.dockOffset - VOLTRA.dockBack, l.y + halfD, halfW]) : box([-halfW, l.y - halfD, -(l.dockOffset - VOLTRA.dockBack)], [halfW, l.y + halfD, top]);
   // Hanging: dock axis -Z, the device's long axis along X (or Y), its height along the peg. Sideways: dock axis +X.
   const device: LocalBox = p.dock
     ? box([l.dockOffset + VOLTRA.dockBack, l.y - hz, -hx], [l.dockOffset + VOLTRA.reach, l.y + hz, hx])
     : box([-hx, l.y - hz, -(l.dockOffset + VOLTRA.reach)], [hx, l.y + hz, -(l.dockOffset + VOLTRA.dockBack)]);
+  if (onBar(p)) return [clamp, device];
   return [box([-r, faceY, -r], [r, faceY + RACK_PEG.proud, r]), box([-RACK_PEG.capDiameter / 2, -faceY - RACK_PEG.cap, -RACK_PEG.capDiameter / 2], [RACK_PEG.capDiameter / 2, -faceY, RACK_PEG.capDiameter / 2]), clamp, device];
 };
+/** #178: the bar mounts clamp a real pull-up bar when the rack has one (preferred for new placements), else the peg. */
+const barMount = (fixed: boolean) => ({
+  targets: ['upright', 'pull-up-bar'] as const, pin: PIN_1IN, extent: (p: NumericParams) => barExtent(p, fixed), validate: barFit(fixed),
+  hostReach: () => { const half = fixed ? FIXED_BAR.body[1] / 2 : ADAPTIVE_BAR.flange[1] / 2 + 12; return { back: half, front: half }; },
+});
 /** Hanging: the device reaches down from the dock, the knob or cap up. Sideways: the clamp and device share the peg height. */
 const barExtent = (p: NumericParams, fixed: boolean) => {
   const l = barMountLayout(p, fixed), [hx] = voltraHalf(p.orientation ?? 1), cap = RACK_PEG.capDiameter / 2;
@@ -179,24 +200,24 @@ const barDockParams = [
 ] as const;
 export const BEYOND_POWER_ADAPTIVE_BAR_MOUNT = defineRackPart({
   id: 'beyond-power-adaptive-bar-mount', name: 'VOLTRA Adaptive Bar Mount', title: 'Beyond Power Adaptive VOLTRA Bar Mount', noun: 'bar mount', section: 'Digital & cable',
-  description: 'Tool-free VOLTRA I bar clamp for 16–51 mm bars, shown on a 1 in rack peg (sold separately) · 245 × 103 × 97 mm, 1.88 kg, knob-driven jaws, quick-release dock. Independent reconstruction; Beyond Power trademarks belong to Beyond Power.',
+  description: 'Tool-free VOLTRA I bar clamp for 16–51 mm bars, on a pull-up bar or a 1 in rack peg (sold separately) · 245 × 103 × 97 mm, 1.88 kg, knob-driven jaws, quick-release dock. Independent reconstruction; Beyond Power trademarks belong to Beyond Power.',
   params: barDockParams,
   vendor: beyondPower('adaptive-bar-mount', 'Adaptive Bar Mount', 'Published 245 × 103 × 97 mm, 1.88 kg, 16–51 mm (0.6–2 in) clamp range, aluminium, stainless, nylon and rubber, 127 mm / 88 mm knob-to-jaw drawing. Jaw, knob, dock and quick-release loop sizes estimated; the 1 in peg it clamps is a separate rack peg. Physical fit unverified.'),
-  mount: { pin: PIN_1IN, extent: p => barExtent(p, false) },
+  mount: barMount(false),
   bodies: p => barBodies(p, false),
   pair: { default: false },
-  placement: { height: 1665, face: 'front' },
+  placement: { height: 1665, face: 'front', target: 'pull-up-bar' },
   family: 'voltra',
 });
 export const BEYOND_POWER_FIXED_BAR_MOUNT = defineRackPart({
   id: 'beyond-power-fixed-bar-mount', name: 'VOLTRA Fixed Bar Mount', title: 'Beyond Power Fixed VOLTRA Bar Mount', noun: 'bar mount', section: 'Digital & cable',
-  description: 'Split aluminium VOLTRA I bar clamp for 1–2 in bars with the 1 in spacer shells, shown on a 1 in rack peg (sold separately) · four-screw cap, dock underneath. Independent reconstruction; Beyond Power trademarks belong to Beyond Power.',
+  description: 'Split aluminium VOLTRA I bar clamp for 1–2 in bars, on a pull-up bar or a 1 in rack peg (sold separately) with the 1 in spacer shells · four-screw cap, dock underneath. Independent reconstruction; Beyond Power trademarks belong to Beyond Power.',
   params: barDockParams,
   vendor: beyondPower('bar-mount', 'Fixed Bar Mount', 'Published 1–2 in (25.4–50.8 mm) bar range, aluminium alloy, 239 × 161 × 126 mm package and the 1 in / 2 in spacer drawing. Body, cap, screws and dock sizes estimated from Beyond Power photos; the 1 in peg it clamps is a separate rack peg. Physical fit unverified.'),
-  mount: { pin: PIN_1IN, extent: p => barExtent(p, true) },
+  mount: barMount(true),
   bodies: p => barBodies(p, true),
   pair: { default: false },
-  placement: { height: 1665, face: 'front' },
+  placement: { height: 1665, face: 'front', target: 'pull-up-bar' },
   family: 'voltra',
 });
 

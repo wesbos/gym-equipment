@@ -4,7 +4,7 @@
  * (along local X for safeties on the inner side faces, along +Y for bars between the inner side faces). Without such a
  * post (the part viewer, or a removed upright) builders fall back to the product's nominal span. Research:
  * research/rack-jcups-safeties.md. */
-import { defineRackPart, PIN_1IN, PIN_5_8IN, type RackPart } from '../rack-part.ts';
+import { defineRackPart, PIN_1IN, PIN_5_8IN, type RackHost, type RackPart } from '../rack-part.ts';
 import type { LocalBox, NumericParams, RackDimensions } from '../types.ts';
 const inch = (v: number) => v * 25.4;
 const face = (p: NumericParams) => (p.upright ?? 75) / 2;
@@ -159,6 +159,9 @@ export const multiRearX = () => REP_MULTI.width - REP_MULTI.fat / 2 - REP_MULTI.
 /** Rogue X-433 Fat/Skinny: published 43 in, 1.25 in OD over 2 in OD, 14 in flanges (Monster Lite 5/8 in hardware). */
 export const ROGUE_FAT_SKINNY = { skinny: inch(1.25), fat: inch(2), usable: inch(43), flangeH: inch(14), flangeW: inch(2), flangeT: inch(3 / 8), topHole: inch(.75), skinnyZ: inch(2.1), fatZ: inch(12.4), holeStations: 3 } as const;
 const barFaces = { faces: ['left', 'right'] as const, span: 'normal' as const };
+/** Host frame (#178): a round bar along +Y from y0 to y1 at height z, clamp stations every 25 mm (VOLTRA bar mounts). */
+const barHost = (label: string, d: number, y0: number, y1: number, z: number, keepOut: number): RackHost => ({
+  kind: 'pull-up-bar', label, origin: [0, y0, z], axis: [0, 1, 0], stations: Math.floor((y1 - y0) / 25) + 1, pitch: 25, span: [keepOut, y1 - y0 - keepOut], width: d, height: d, top: d / 2, hole: 0 });
 function barValidate(name: string) {
   return (_r: RackDimensions, p: NumericParams) => {
     const w = faceWidth(p); if (w < inch(2) - 1.5 || w > inch(3) + 2.5) throw Error(`${name} end plates fit 2 to 3 in upright faces, not ${(w / 25.4).toFixed(2)} in.`);
@@ -182,6 +185,7 @@ export const REP_PULL_UP_BAR = defineRackPart({
   placement: { height: 1900, face: 'inside' },
   autoFit: rack => ({ series: pinFit(rack) }),
   family: 'rack:pull-up-bars',
+  hosts: p => { const f = face(p), S = pullSpan(p, REP_PULLUP.usable); return [barHost('1.25 in bar', REP_PULLUP.bar, f + REP_PULLUP.plateT, S - f - REP_PULLUP.plateT, -REP_PULLUP.holeStations * (p.mountSpacing ?? 50) / 2, 20)]; },
 });
 export const REP_MULTI_GRIP_PULL_UP_BAR = defineRackPart({
   id: 'rep-multi-grip-pull-up-bar', name: 'REP Multi-Grip Pull-Up Bar', title: 'REP Fitness Multi-Grip Pull-Up Bar', noun: 'pull-up bar', section: 'J-cups & safeties',
@@ -223,5 +227,9 @@ export const ROGUE_FAT_SKINNY_PULL_UP_BAR = defineRackPart({
   },
   placement: { height: 1900, face: 'inside' },
   family: 'rack:pull-up-bars',
+  hosts: p => {
+    const f = face(p), S = pullSpan(p, ROGUE_FAT_SKINNY.usable), c = ROGUE_FAT_SKINNY, y0 = f + c.flangeT, y1 = S - f - c.flangeT;
+    return [barHost('Skinny 1.25 in bar', c.skinny, y0, y1, c.topHole - c.skinnyZ, 20), barHost('Fat 2 in bar', c.fat, y0, y1, c.topHole - c.fatZ, 20)];
+  },
 });
 export const SPAN_PARTS = [REP_STRAP_SAFETIES, ROGUE_MONSTER_STRAP_SAFETY_2, ROGUE_MONSTER_LITE_STRAP_SAFETY_2, BOS_SAFETY_STRAPS, REP_FLIP_DOWN_SAFETIES, REP_PULL_UP_BAR, REP_MULTI_GRIP_PULL_UP_BAR, ROGUE_FAT_SKINNY_PULL_UP_BAR] as const satisfies readonly RackPart[];
