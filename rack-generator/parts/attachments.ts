@@ -3,6 +3,8 @@ import { buildPlateStack } from './plates.ts';
 import { platePeg, platesFromParams } from '../plates.ts';
 import type { Manifold, CrossSection, Vec2, Vec3 } from 'manifold-3d';
 import type { ManifoldAPI, NumericParams, PartDefinition, SolidPart } from '../types.ts';
+import { mountFrame } from '../attachment-mounts.ts';
+import { fitMap, paramsFit, type FitFrame, type FitMap } from '../mount-fit.ts';
 type Owned = Manifold | CrossSection;
 const vec3 = (v: number[]): Vec3 => [v[0], v[1], v[2]];
 interface ComponentBase { name: string; color: number[] | string; metalness?: number; roughness?: number }
@@ -22,6 +24,60 @@ const names: Record<string,string> = {
  'landmine':'Landmine attachment', 'monolift':'Monolift', 'single-bar-holder':'Single bar holder',
  'storage-pin-short':'Short weight storage pin', 'storage-pin-long':'Long weight storage pin'
 };
+// Rack fit (#162): on a non-75 mm upright the resolved params carry fitDepth/fitWidth/fitPin/fitPitch. Rack-crossing
+// pins, studs and their nuts first take the rack's pin class (radius scaled about their station axis in the source
+// data), then every solid is warped by the monotone mount map in mount-fit.ts: small hardware and on-axis pins move
+// rigidly so they stay round, and the working body in front of the mating face is left as modelled.
+type Mat3 = readonly (readonly number[])[];
+const toWorld = (b: Mat3, v: readonly number[]): Vec3 => [0, 1, 2].map(i => b[i][0] * v[0] + b[i][1] * v[1] + b[i][2] * v[2]) as Vec3;
+const toLocal = (b: Mat3, v: readonly number[]): Vec3 => [0, 1, 2].map(j => b[0][j] * v[0] + b[1][j] * v[1] + b[2][j] * v[2]) as Vec3;
+const dot = (a: readonly number[], b: readonly number[]) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const HARDWARE = /bolt|nut|hex|pin|stud|washer/i;
+function lineDistance(point: readonly number[], direction: readonly number[], origin: Vec3, axis: Vec3) {
+  if (Math.abs(dot(direction, axis)) < 0.999) return Infinity;
+  const w = [point[0] - origin[0], point[1] - origin[1], point[2] - origin[2]], t = dot(w, axis);
+  return Math.hypot(w[0] - axis[0] * t, w[1] - axis[1] * t, w[2] - axis[2] * t);
+}
+function ringBounds(ring: Vec2[]) {
+  let area = 0, minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  ring.forEach((p, i) => { const q = ring[(i + 1) % ring.length]; area += p[0] * q[1] - q[0] * p[1]; minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]); minY = Math.min(minY, p[1]); maxY = Math.max(maxY, p[1]); });
+  return { area, cx: (minX + maxX) / 2, cy: (minY + maxY) / 2, radius: Math.max(maxX - minX, maxY - minY) / 2 };
+}
+/** Source components with their rack-crossing shafts (and on-axis nuts, washers, heads) resized to the pin class. */
+function fitPins(components: Component[], frame: FitFrame, scale: number): Component[] {
+  if (Math.abs(scale - 1) < 1e-9) return components;
+  const axes = frame.stations.map(s => ({ origin: [frame.center[0], frame.center[1], frame.center[2] + s.z] as Vec3, axis: s.axis }));
+  const onAxis = (point: readonly number[], direction: readonly number[], tolerance: number) => axes.find(a => lineDistance(point, direction, a.origin, a.axis) < tolerance);
+  const shaft = frame.pin / 2;
+  return components.map((component): Component => {
+    if (component.kind === 'tube') {
+      const v = component.b.map((x, i) => x - component.a[i]), length = Math.hypot(...v);
+      return onAxis(component.a, v.map(x => x / length), 1.5) ? { ...component, r: component.r * scale, inner: component.inner * scale } : component;
+    }
+    const b = component.basis, direction = [b[0][2], b[1][2], b[2][2]];
+    if (component.kind === 'revolve') {
+      if (!onAxis(toWorld(b, [component.center[0], component.center[1], 0]), direction, 1.5)) return component;
+      return { ...component, rings: component.rings.map(ring => ring.map(([x, y]): Vec2 => [x > .5 && x <= shaft * 1.08 ? x * scale : x, y])) };
+    }
+    const hardware = HARDWARE.test(component.name), axisLines = axes.filter(a => Math.abs(dot(direction, a.axis)) > 0.999).map(a => toLocal(b, a.origin));
+    if (!axisLines.length) return component;
+    return { ...component, sketches: component.sketches.map(sketch => ({ ...sketch, rings: sketch.rings.map(ring => {
+      const r = ringBounds(ring), line = axisLines.find(o => Math.hypot(r.cx - o[0], r.cy - o[1]) < 1);
+      if (!line || r.radius > 26 || !(hardware || (r.area > 0 && r.radius >= 6.75 && r.radius <= 9.25))) return ring;
+      return ring.map(([x, y]): Vec2 => [line[0] + (x - line[0]) * scale, line[1] + (y - line[1]) * scale]);
+    }) })) };
+  });
+}
+/** Warp one source solid with the mount map: on-axis pins and hardware keep their shape along their axis, small
+ * pieces move with their centre, everything else follows the banded map. */
+function fitSolid(solid: Manifold, frame: FitFrame, map: FitMap): Manifold {
+  const box = solid.boundingBox(), center = [0, 1, 2].map(i => (box.min[i] + box.max[i]) / 2) as Vec3;
+  const reach = (i: number, o: number) => Math.max(Math.abs(box.min[i] - o), Math.abs(box.max[i] - o));
+  const k = frame.stations.findIndex(s => [0, 1, 2].every(i => Math.abs(s.axis[i]) > .999 || reach(i, frame.center[i] + (i === 2 ? s.z : 0)) <= 26));
+  const small = Math.max(...[0, 1, 2].map(i => box.max[i] - box.min[i])) <= 40;
+  const move = k >= 0 ? (p: Vec3) => map.alongAxis(p, k) : small ? (p: Vec3) => map.rigid(p, center) : map.point;
+  return solid.warp(v => { const p = move([v[0], v[1], v[2]]); v[0] = p[0]; v[1] = p[1]; v[2] = p[2]; });
+}
 function buildPart(api: ManifoldAPI, id: string, data: AttachmentCAD, params: NumericParams): SolidPart[] {
  const {Manifold:M,CrossSection:C}=api, allocated: Owned[]=[], result: SolidPart[]=[];
  const keep=<T extends Owned>(x: T): T=>(allocated.push(x),x);
@@ -39,8 +95,10 @@ function buildPart(api: ManifoldAPI, id: string, data: AttachmentCAD, params: Nu
  });
  const scale: Vec3=[params.width/data.size[0],params.depth/data.size[1],params.height/data.size[2]];
  if(scale.some(v=>!Number.isFinite(v)||v<.15||v>5))throw Error('Dimensions must remain between 15% and 500% of the original part.');
+ const fit=paramsFit(params), frame=fit?mountFrame(id):null, map=fit&&frame?fitMap(frame,fit):null;
+ const components=frame&&map?fitPins(data.components,frame,map.pinScale):data.components;
  try {
-  for(const [index, component] of data.components.entries()){
+  for(const [index, component] of components.entries()){
    let shape: Manifold;
    if(component.kind==='revolve'){
     shape=keep(keep(keep(new C(component.rings,'EvenOdd')).revolve(96)).translate(component.center));
@@ -71,7 +129,8 @@ function buildPart(api: ManifoldAPI, id: string, data: AttachmentCAD, params: Nu
     const bore=keep(keep(keep(M.cylinder(80,params.holeDiameter/2,params.holeDiameter/2,64,true)).rotate([90,0,0])).translate([-28.21,0,70]));
     shape=keep(shape.subtract(bore));
    }
-   const solid=keep(shape.scale(scale));
+   let solid=keep(shape.scale(scale));
+   if(frame&&map)solid=keep(fitSolid(solid,frame,map));
    if(solid.status()!=='NoError'||solid.isEmpty())throw Error(`Invalid feature: ${component.name}`);
    const rgb=Array.isArray(component.color)?component.color.slice(0,3):[.12,.13,.15];
    const color=typeof component.color === 'string' ? component.color : '#'+rgb.map(v=>Math.round(Math.min(1,v<=.0031308?12.92*v:1.055*v**(1/2.4)-.055)*255).toString(16).padStart(2,'0')).join('');
@@ -81,7 +140,7 @@ function buildPart(api: ManifoldAPI, id: string, data: AttachmentCAD, params: Nu
   }
   // Stored plates are visual dressing on the peg (plate1..N params from the accessory's stack).
   const plates=platesFromParams(params), peg=platePeg(id);
-  if(plates.length&&peg)result.push(...buildPlateStack(api,plates,{origin:peg.origin,axis:peg.axis}));
+  if(plates.length&&peg)result.push(...buildPlateStack(api,plates,{origin:map?map.point(peg.origin):peg.origin,axis:peg.axis}));
   return result;
  }catch(error){result.length=0;throw error;}finally{
   const saved=new Set<Owned>(result.map(p=>p.solid));allocated.reverse().forEach(p=>{if(!saved.has(p))p.delete();});

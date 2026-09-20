@@ -5,6 +5,8 @@ import { BAR, DEFAULT_BAR_SPEC } from './floor-parts/barbell.ts';
 import { floorPart, resolveBy, type BarSpec } from './floor-registry.ts';
 import { rackPart } from './rack-registry.ts';
 import { rotateMountedPoint } from './mounted-rotation.ts';
+import { mountFrame } from './attachment-mounts.ts';
+import { fitMap, paramsFit } from './mount-fit.ts';
 import type { FloorItem, NumericParams, RackDoc, ResolvedInstance, Vec3 } from './types.ts';
 export type CradleKind = 'working' | 'storage';
 interface Slot { point: Vec3; axis: Vec3 }
@@ -13,11 +15,16 @@ export interface BarCradle { key: string; supports: [BarSupport, BarSupport]; ce
 const r = BAR.shaft / 2, X: Vec3 = [1, 0, 0], Y: Vec3 = [0, 1, 0];
 /** Shaft-axis rest points in each builder's local frame, measured from its generated solids (see
  * barbell-cradles.test.ts): the 28.5 mm shaft settles on the cradle floor/roller or in the laser-cut notch. */
+/** Built-in source slots follow the part's rack fit on non-75 mm uprights (mount-fit.ts). */
+const fitted = (part: string, point: Vec3) => (p: NumericParams): Slot[] => {
+  const fit = paramsFit(p);
+  return [{ point: fit ? fitMap(mountFrame(part), fit).point(point) : point, axis: X }];
+};
 const SLOTS: Record<string, (p: ResolvedInstance['params']) => Slot[]> = {
-  'j-hook-standard': () => [{ point: [0, 56, 70 + r], axis: X }],
-  'j-hook-roller': () => [{ point: [3, 60, 82.75 + r], axis: X }],
-  'j-hook-sandwich': () => [{ point: [0, 35, 50 + r], axis: X }],
-  monolift: () => [{ point: [8.75, -124, 42 + r], axis: X }],
+  'j-hook-standard': fitted('j-hook-standard', [0, 56, 70 + r]),
+  'j-hook-roller': fitted('j-hook-roller', [3, 60, 82.75 + r]),
+  'j-hook-sandwich': fitted('j-hook-sandwich', [0, 35, 50 + r]),
+  monolift: fitted('monolift', [8.75, -124, 42 + r]),
   // Darko plates hang in the local XZ plane; bars cross them along local Y (docs/vendor/darko.md).
   'darko-anchor': p => [-1, 1].map(s => ({ point: [s * 47, (p.upright ?? 75) / 2 + 5, -96.75], axis: Y })),
   'darko-double-decker': p => [-96.75, -229.75].flatMap(z => [-1, 1].map(s => ({ point: [s * 47.25, (p.upright ?? 75) / 2 + 5, z] as Vec3, axis: Y }))),

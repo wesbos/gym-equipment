@@ -114,19 +114,25 @@ function pullup(kind: string, api: ManifoldAPI, p: NumericParams) {
 }
 // Open rack saddles have an unequal pair of upright cheeks and a lower bridge.
 // End orientation is mirrored along the length, retaining the one-sided back.
-function saddle(h: Geometry, x: number, sign: number, upright: number, top: number, base=0, webbing=false){
+// Rack fit (#162): `upright` is the tube across the safety and `uprightSpan` along it (2x3 posts), `rackPin` and
+// `rackHole` the rack's pin class and bore; all default to the source 75 mm tube, 16 mm pin and 25 mm hole.
+interface SaddleFit { along: number; pin: number; hole: number }
+const saddleFit = (p: NumericParams): SaddleFit => ({ along: p.uprightSpan ?? p.upright, pin: p.rackPin ?? 16, hole: p.rackHole ?? 25 });
+/** Saddle centre on the post centre: the source 40.5 mm past the beam end, or half the fitted tube past a 3 mm gap. */
+const saddleX = (p: NumericParams, fit: SaddleFit) => p.length/2+(p.uprightSpan===undefined?40.5:3+fit.along/2);
+function saddle(h: Geometry, x: number, sign: number, upright: number, top: number, base=0, webbing=false, fit: SaddleFit = { along: upright, pin: 16, hole: 25 }){
   const {plateX,rounded,rotate,move,cut,cyl,union,capScrew,box} = h;
-  const span=upright+11, inner=x-sign*span/2, outer=x+sign*span/2;
-  const width=webbing?70:75;
+  const span=fit.along+11, inner=x-sign*span/2, outer=x+sign*span/2;
+  const width=webbing?upright-5:upright;
   const innerH=webbing?110:115, outerH=top-base;
   const side1=plateX(inner,0,base+innerH/2,width,innerH,5,10,[[5,base+30,6],[5,base+innerH-25,6]]);
-  const side2=plateX(outer,0,base+outerH/2,width,outerH,5,10,[[0,top-25,25],[5,base+30,6],[5,base+70,6]]);
+  const side2=plateX(outer,0,base+outerH/2,width,outerH,5,10,[[0,top-25,fit.hole],[5,base+30,6],[5,base+70,6]]);
   const back = move(rotate(rounded([span+5,80,5],10),[90,0,0]),[x,sign*(upright/2+(webbing?7.5:2.5)),base+40]);
   const steelParts=[side1,side2,back];
-  const pin=cyl([outer-sign*2,0,top-25],[outer-sign*(upright+8),0,top-25],16);
+  const pin=cyl([outer-sign*2,0,top-25],[outer-sign*(fit.along+8),0,top-25],fit.pin);
   steelParts.push(pin);
-  const liners=[plateX(inner+sign*5,0,base+innerH/2,60,innerH,5,10),plateX(outer-sign*5,0,base+40,65,80,5,10)];
-  const backLiner=move(rotate(rounded([upright-12.5,80,5],8),[90,0,0]),[x,sign*(upright/2-2.5),base+40]);
+  const liners=[plateX(inner+sign*5,0,base+innerH/2,upright-15,innerH,5,10),plateX(outer-sign*5,0,base+40,upright-10,80,5,10)];
+  const backLiner=move(rotate(rounded([fit.along-12.5,80,5],8),[90,0,0]),[x,sign*(upright/2-2.5),base+40]);
   liners.push(backLiner);
   const screws=[capScrew(inner-sign*3,5,base+30,'x'),capScrew(outer-sign*5,5,base+30,'x')];
   return {steel:steelParts,liners,screws,inner,outer};
@@ -143,7 +149,8 @@ function boxSafety(api: ManifoldAPI,p: NumericParams){
     for(let x=-p.length/2+40;x<p.length/2-15;x+=50)holes.push(cyl([x,-p.width,x*0+p.height/2],[x,p.width,p.height/2],25));
     beam=cut(beam,holes);
     const bodies=[beam],liners=[],screws=[];
-    for(const sign of [-1,1]){const s=saddle(h,sign*(p.length/2+40.5),sign,p.upright,162.5);bodies.push(...s.steel);liners.push(...s.liners);screws.push(...s.screws);}
+    const fit=saddleFit(p);
+    for(const sign of [-1,1]){const s=saddle(h,sign*saddleX(p,fit),sign,p.upright,162.5,0,false,fit);bodies.push(...s.steel);liners.push(...s.liners);screws.push(...s.screws);}
     liners.push(rounded([p.length-10,p.width,5],4,[0,0,p.height+2.5]));
     for(let i=0;i<4;i++)screws.push(capScrew(-p.length/2+35+i*(p.length-70)/3,0,p.height+5));
     return [{name:'Perforated box beam and asymmetric end cradles',solid:union(bodies),color:steel,role:'frame'},{name:'Top strip and three-sided UHMW saddle liners',solid:union(liners),color:plastic,role:'liner'},{name:'Recessed liner screws',solid:union(screws),color:zinc,role:'fastener'}];
@@ -153,11 +160,12 @@ function pinPipe(api: ManifoldAPI,p: NumericParams){
   if(p.pipeDiameter-p.wall*2<=p.pinDiameter)throw Error('Pipe bore must fit the pin.');
   return construct(api,p,h=>{
     const {cyl,cut,path}=h;
-    const half=p.length/2, radius=16, end=half+99, z=100;
+    // The pin crosses both uprights (`uprightSpan` along the safety on a fitted rack, else the 75 mm source tube).
+    const along=p.uprightSpan ?? 75, half=p.length/2, radius=16, end=p.uprightSpan===undefined?half+99:half+along+24, z=100;
     const pipe=cut(cyl([-half+5,0,z],[half,0,z],p.pipeDiameter),cyl([-half+4,0,z],[half+1,0,z],p.pipeDiameter-p.wall*2));
-    const pts=[[end,0,z],[-half-75,0,z]];
-    for(let i=1;i<=16;i++){const a=Math.PI/2+i*Math.PI/32;pts.push([-half-75+radius*Math.cos(a),0,84+radius*Math.sin(a)]);}
-    pts.push([-half-91,0,0]);
+    const pts=[[end,0,z],[-half-along,0,z]];
+    for(let i=1;i<=16;i++){const a=Math.PI/2+i*Math.PI/32;pts.push([-half-along+radius*Math.cos(a),0,84+radius*Math.sin(a)]);}
+    pts.push([p.uprightSpan===undefined?-half-91:-half-along-16,0,0]);
     return [{name:'Hollow 45 mm protective pipe',solid:pipe,color:steel,role:'sleeve'},{name:`${p.pinDiameter} mm pin with swept 90 degree handle`,solid:path(pts,p.pinDiameter),color:zinc,role:'rod'}];
   });
 }
@@ -166,8 +174,9 @@ function webbing(api: ManifoldAPI,p: NumericParams){
     const {union,cyl,cut,rounded,profileXZ,box,rotate,move,ring,capScrew,path}=h;
     const bodies=[],liners=[],hardware=[],straps=[];
     const anchor=p.length/2-50;
+    const fit=saddleFit(p);
     for(const sign of [-1,1]){
-      const s=saddle(h,sign*(p.length/2+40.5),sign,p.upright,183,23,true);
+      const s=saddle(h,sign*saddleX(p,fit),sign,p.upright,183,23,true,fit);
       bodies.push(...s.steel);liners.push(...s.liners);hardware.push(...s.screws);
       // Two shaped 5 mm pivot lugs project inwards from each mounting cheek.
       const xx=sign*anchor;

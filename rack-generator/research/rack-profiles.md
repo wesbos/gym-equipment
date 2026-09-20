@@ -18,7 +18,7 @@ The builder had one kind of frame: square 75 mm (or 76.2 mm) posts on the BOS th
 
 Also: `profile.firstHole`, `wall`, `numbered`, `decal` (a plain five-block vertical word-mark strip on each post's outer side face near the top, e.g. Rogue), `color` (starter powder coat), `storageDepth`, `lowerCrossmembers: false` (flat-foot racks have no low side beams), and flange/pull-up bolt spacing that follows 76.2 mm pitch (PR-1100). Worker params must be positive and ≤ 4000, so colours travel as `prefixR/G/B` = channel + 1 and flags are only present when set.
 
-Accessory limits are unchanged: the BOS J-hooks, safeties and attachments still require 75 mm posts, so on true 2x2/2x3/3x3 profiles only pull-up bars place today. Brand J-cups and safeties for these posts belong to #133 / #131.
+Since #162 the BOS J-hooks, safeties and attachments fit these posts too: each keeps its working body and adapts its sleeve, collar or studs, bolt pattern and pin to the tube and bore (`mount-fit.ts`, [builtin-rack-fit.md](builtin-rack-fit.md)). Brand J-cups and safeties for these posts belong to #133 / #131.
 
 ## Products
 
