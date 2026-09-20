@@ -52,7 +52,7 @@ export const ROGUE_AM_2_MONOLIFT = defineRackPart({
 export const SNAP_BACK = {
   plate: inch(3 / 8), gap: 62, reach: 300, top: 40, bottom: -250,
   /** Side plates: top edge out from the face, concave arc down to the upright. */
-  body: [[0, 40], [300, 40], [300, 10], [270, 5], [225, -20], [185, -60], [150, -120], [128, -190], [120, -250], [0, -250]] as Pt[],
+  body: [[0, 40], [300, 40], [300, 10], [250, -5], [200, -35], [160, -80], [128, -140], [106, -200], [96, -250], [0, -250]] as Pt[],
   pivot: [270, 10] as Pt, armR: 20, catchY: 140, catchZ: -255, rollerR: 18, rollerL: inch(2.25),
 } as const;
 export const SNAP_COLORS = [['Gloss Black', '#141517'], ['Flat White', '#e4e4e2'], ['Blue', '#2273d0'], ['Red', '#b3161c'], ['Neon Green', '#54d62c'], ['Clear Grind', '#9ea3a8']] as const;

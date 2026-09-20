@@ -64,7 +64,7 @@ export const buildRepStraps = (api: ManifoldAPI, params: NumericParams) => {
 };
 export const buildRogueStraps = (lite: boolean) => (api: ManifoldAPI, params: NumericParams) => {
   const p = { ...(lite ? ROGUE_MONSTER_LITE_STRAP_SAFETY_2 : ROGUE_MONSTER_STRAP_SAFETY_2).defaults, ...params };
-  return buildStrapSafety(api, p, ROGUE_STRAP, { steel: FINISH.black, strap: { color: '#1f2021', metalness: 0, roughness: .9 }, sleeve: lite ? undefined : { color: '#a9abad', metalness: 0, roughness: .85 }, pinR: lite ? 7.9 : 12.4 });
+  return buildStrapSafety(api, p, ROGUE_STRAP, { steel: FINISH.black, strap: { color: '#1f2021', metalness: 0, roughness: .9 }, sleeve: { color: '#a9abad', metalness: 0, roughness: .85 }, pinR: lite ? 7.9 : 12.4 });
 };
 export const buildBosStraps = (api: ManifoldAPI, params: NumericParams) => {
   const p = { ...BOS_SAFETY_STRAPS.defaults, ...params }, c = BOS_STRAP_COLORS[p.color]; if (!c || ![0, 1].includes(p.rack)) throw Error('Unsupported Bells of Steel safety strap option.');

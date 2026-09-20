@@ -10,7 +10,7 @@ export const FINISH = {
   black: { color: '#1d1e20', metalness: .35, roughness: .62 },
   texBlack: { color: '#222325', metalness: .2, roughness: .85 },
   gloss: { color: '#141517', metalness: .55, roughness: .3 },
-  uhmw: { color: '#17181a', metalness: 0, roughness: .72 },
+  uhmw: { color: '#2c2d30', metalness: 0, roughness: .7 },
   zinc: { color: '#c4c8cb', metalness: .85, roughness: .28 },
   stainless: { color: '#cfd2d4', metalness: .9, roughness: .22 },
   blackZinc: { color: '#2a2b2e', metalness: .7, roughness: .35 },

@@ -20,11 +20,11 @@ export interface StrapSpec {
   /** Second, lower bracket pin (stations below the target), REP 1.0 style. */ lowerPin?: number;
 }
 export const REP_STRAP: StrapSpec[] = [
-  { plate: 8.25, plateW: 86, top: 32, bottom: -86, claspBack: 60, earOut: 42, earZ: -58, earH: 56, bolt: 16, strapW: inch(3), strapT: 4, sag: 18 },
+  { plate: 8.25, plateW: 86, top: 32, bottom: -86, claspBack: 60, earOut: 42, earZ: -58, earH: 56, bolt: 16, strapW: inch(3), strapT: 4, sag: 35 },
   { plate: 6.35, plateW: 76, top: 32, bottom: -130, claspBack: 0, earOut: 36, earZ: -96, earH: 50, bolt: 16, strapW: inch(3), strapT: 4, sag: 45, lowerPin: 2 },
 ];
-export const ROGUE_STRAP: StrapSpec = { plate: inch(.3125), plateW: 64, top: 30, bottom: -122, claspBack: 50, earOut: 40, earZ: -95, earH: 58, bolt: 16, strapW: inch(3), strapT: 4, sag: 25 };
-export const BOS_STRAP: StrapSpec = { plate: 6.35, plateW: 70, top: 30, bottom: -100, claspBack: 55, earOut: 36, earZ: -72, earH: 52, bolt: 14, strapW: 50, strapT: 5, sag: 30 };
+export const ROGUE_STRAP: StrapSpec = { plate: inch(.3125), plateW: 64, top: 30, bottom: -122, claspBack: 50, earOut: 40, earZ: -95, earH: 58, bolt: 16, strapW: inch(3), strapT: 4, sag: 70 };
+export const BOS_STRAP: StrapSpec = { plate: 6.35, plateW: 70, top: 30, bottom: -100, claspBack: 55, earOut: 36, earZ: -72, earH: 52, bolt: 14, strapW: 50, strapT: 5, sag: 55 };
 export const BOS_STRAP_COLORS = [['Black', '#232426'], ['Blue', '#1f54b8'], ['Purple', '#5b2d8e'], ['Bright Orange', '#e8541c']] as const;
 /** Post-to-post span; without a rear post (the viewer) a nominal 30 in inside depth toward local -X. */
 export const strapSpan = (p: NumericParams) => p.uprightSpan ?? -(inch(30) + (p.upright ?? 75));
