@@ -9,7 +9,8 @@ const ft = (f: number) => Math.round(f * 304.8);
 let doc = rack('rogue-rml-3-four-2295.525-762', '#5b5f63'); // "RML-390 C in Gun Metal Gray"
 doc = removeInstance(doc, doc.accessories[0].id); // the 43" fat/skinny bar replaces the stock pull-up bar
 // 10' × 20' shed: the rack backs onto a long wall; its far end (cable tower) is 1.9 m to the left.
-doc = room(doc, { back: 750, front: ft(10) - 750, left: 1900, right: ft(20) - 1900, height: 2600 });
+// Finishes (#200): plywood sheathing over the studs (closest: birch plywood) and black rubber; open rafters.
+doc = room(doc, { back: 750, front: ft(10) - 750, left: 1900, right: ft(20) - 1900, height: 2600, walls: { finish: 'birch' } });
 
 // Rack: Monster Lite J-cups, pin-and-pipe safeties, fat/skinny bar, Matador dip, Mammoth belt squat, single bar holder.
 doc = attach(doc, 'rogue-fat-skinny-pull-up-bar');

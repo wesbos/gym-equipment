@@ -5,12 +5,13 @@
  *
  * The video is a build tour (the full equipment reveal is promised for a later video), so the equipment and layout
  * come from the finished-room shots (timestamps below). The room is a long ~1,300 sq ft basement with a birch-clad
- * beam and steel posts down its length, white walls over a birch plywood wainscot and grey-fleck PLAE rubber.
+ * beam and steel posts down its length, white walls over a birch plywood wainscot and grey-fleck PLAE rubber (all
+ * shown with the room finishes below; the beam and posts are not).
  *
  * Floor plan (builder floor mm; +x right, +z toward the default camera). The rig wall is the back wall, so the
  * default view looks down the room from the storage-cove end, as the video does at 5:27 and 6:12.
  *   back wall   the three-bay rig with silver uprights (3:28, 5:27, 6:12), plate pegs on the wall beside it (3:28).
- *   left side   the PLAE turf sprint lane under the kids' monkey-bar course (0:45, 4:47, 5:17): left as open floor.
+ *   left side   the PLAE turf sprint lane under the kids' monkey-bar course (0:45, 4:47, 5:17), as a turf finish.
  *   left wall   the Prime dumbbell rack, door and wall-hung attachment storage (3:10); the storage cove's kettlebell
  *               shelving and OmniWall pegboard at the front-left corner (1:27, 2:25, 3:00).
  *   right wall  the window wall: trap bar, vertical bar holder, leg extension/curl and the plate-loaded Prime
@@ -27,7 +28,7 @@ import { setBarLoad } from '../../rack-generator/bar-loads.ts';
 import { barSpecOf, freeCradles, parkedPose } from '../../rack-generator/barbell-cradles.ts';
 import { plateId, type PlateId } from '../../rack-generator/plates.ts';
 import type { RackDoc, Target, NumericParams, BarLoad } from '../../rack-generator/types.ts';
-import type { WallId } from '../../rack-generator/walls.ts';
+import type { Room, WallId } from '../../rack-generator/walls.ts';
 
 const Q = Math.PI / 2;
 const BLACK = '#17191a';
@@ -36,6 +37,16 @@ const last = <T>(items: T[] | undefined) => items![items!.length - 1];
 
 // ── Room ──────────────────────────────────────────────────────────────────────────────────────────────────────
 const ROOM = { back: 600, left: 4200, right: 4300, front: 12400, height: 2750 };
+/** Finishes (#200): white drywall over a 4 ft birch plywood wainscot on the rig, window and dumbbell walls (5:27, 9:42),
+ * plain white drywall in the storage cove at the front (1:27, 3:00), PLAE grey-fleck rubber (4:40), the PLAE turf
+ * sprint lane with its hash marks and PLAE lettering down the left side under the monkey bars (4:42, 4:47, 5:02, 5:17),
+ * and a white ceiling with long linear lights running the length of the room (0:02, 5:27, 5:30). */
+const FINISHES: Pick<Room, 'walls' | 'floor' | 'turf' | 'ceiling'> = {
+  walls: { finish: 'wainscot', color: '#f2f1ec', wainscot: 1220, overrides: { front: { finish: 'drywall', color: '#f2f1ec' } } },
+  floor: 'grey-fleck',
+  turf: [{ position: [-2300, 6400], size: [1850, 10000], lines: true, text: 'PLAE' }],
+  ceiling: { color: '#f4f4f1', lights: { count: 4, along: 'z' } },
+};
 const midX = (ROOM.right - ROOM.left) / 2, midZ = (ROOM.front - ROOM.back) / 2;
 
 // ── Rig: one long rig across the end wall (5:27, 6:12): a rack bay each side of a middle landmine bay, silver
@@ -52,7 +63,7 @@ for (let bay = 1; bay < 3; bay++) {
 }
 const [, , midRight, frontRight] = fronts, rearRight = rears.at(-1)!;
 doc = validateAssembly(doc);
-doc.room = ROOM;
+doc.room = { ...ROOM, ...FINISHES };
 doc.appearance = {
   ...doc.appearance, frameColor: BLACK,
   finishOverrides: Object.fromEntries(fronts.map(id => [id, 'clear-grind' as const])),
@@ -181,7 +192,7 @@ writeGym({
   owner: 'Coop · Garage Gym Reviews',
   sourceUrl: 'https://www.youtube.com/watch?v=QCfulhfSSNo',
   summary:
-    'Coop’s brand-new ~1,300 sq ft basement gym from his Garage Gym Reviews build tour: a long, bright room with white walls over birch plywood, grey-fleck PLAE rubber and a turf sprint lane, a long silver-upright rig on the end wall, plate-loaded and cable machines down the window wall, and a storage cove of kettlebells and cable attachments. The rig is shown as an extended Rogue Monster 2.0; the turf lane, monkey bars and Lever Rack cabinets are not in the catalog.',
+    'Coop’s brand-new ~1,300 sq ft basement gym from his Garage Gym Reviews build tour: a long, bright room with white walls over birch plywood, grey-fleck PLAE rubber and a turf sprint lane, a long silver-upright rig on the end wall, plate-loaded and cable machines down the window wall, and a storage cove of kettlebells and cable attachments. The rig is shown as an extended Rogue Monster 2.0; the monkey bars and Lever Rack cabinets are not in the catalog.',
   highlights: [
     'About 1,300 sq ft of finished basement',
     'Three-bay rig across the end wall',
@@ -202,8 +213,8 @@ writeGym({
     'PLAE 3×3 11-gauge storage rack full of colour-banded kettlebells (closest match: REP Kettlebell Rack 2.0 with REP kettlebells)',
     'OmniWall pegboard with cable attachments, bands, rings and straps (closest match: black Wall Control pegboard)',
     'Wall-hung rack attachment storage by the door (closest match: Rogue Multi-Use Hangers)',
-    'PLAE Achieve 18 mm grey-fleck rolled rubber and a PLAE turf sprint lane, white walls over a birch plywood wainscot (the builder shows its own black rubber floor and black slat walls; the turf and wall finish are not shown)',
-    'Not placed: Lever Rack (Levrack) storage cabinets and workbench, kids’ monkey-bar course and rings under the beam, Sorinex machine beside the kettlebells, hip thrust / plate-loaded machine and vertical knee raise on the window wall, H.E. Williams linear lights, Big Ass Fans, Sonos Five speakers, birch-clad beam and posts, and the desk in the bay-window cove',
+    'PLAE Achieve 18 mm grey-fleck rolled rubber and a PLAE turf sprint lane with hash marks and lettering, white walls over a birch plywood wainscot and a white ceiling with long linear lights (shown as the builder’s room finishes)',
+    'Not placed: Lever Rack (Levrack) storage cabinets and workbench, kids’ monkey-bar course and rings under the beam, Sorinex machine beside the kettlebells, hip thrust / plate-loaded machine and vertical knee raise on the window wall, Big Ass Fans, Sonos Five speakers, birch-clad beam and posts, and the desk in the bay-window cove',
   ],
   doc,
 });

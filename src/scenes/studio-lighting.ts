@@ -26,7 +26,7 @@ export function createStudioLighting(scene: THREE.Scene, renderer: THREE.WebGLRe
   scene.environment = environment.texture;
   room.dispose(); pmrem.dispose();
   let disposed = false;
-  return { key, dispose() {
+  return { key, fill, hemisphere, dispose() {
     if (disposed) return;
     disposed = true;
     key.shadow.dispose(); environment.dispose(); scene.environment = null;

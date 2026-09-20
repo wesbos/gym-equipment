@@ -1,5 +1,7 @@
 import { validateAssembly, resolveAssembly } from '../../rack-generator/assembly.ts';
 import type { RackDoc } from '../../rack-generator/types.ts';
+import { WALL_IDS, type Room } from '../../rack-generator/walls.ts';
+import { FLOOR_FINISH_LABELS, WALL_FINISH_LABELS } from '../../rack-generator/room-finishes.ts';
 
 export type HistoryCategory = 'add' | 'remove' | 'move' | 'dimension' | 'appearance' | 'logo' | 'structure' | 'preset' | 'restore' | 'edit';
 export interface HistoryMetadata { label?: string; category?: HistoryCategory; replacement?: boolean }
@@ -103,10 +105,25 @@ export function applyOps(input: RackDoc, ops: readonly HistoryOp[], reverse = fa
   }
   return cleanDocument(doc);
 }
+/** Timeline label for a room finish edit (#200), or null when no finish changed. */
+function roomFinishChange(before: RackDoc['room'], after: RackDoc['room']): string | null {
+  const [a, b] = [before ?? {}, after ?? {}] as Partial<Room>[];
+  if (!equal(a.walls?.overrides, b.walls?.overrides)) {
+    const id = WALL_IDS.find(w => !equal(a.walls?.overrides?.[w], b.walls?.overrides?.[w]))!, label = `${id[0].toUpperCase()}${id.slice(1)} wall`, own = b.walls?.overrides?.[id];
+    return own ? `${label} · ${WALL_FINISH_LABELS[own.finish]}` : `${label} · room walls`;
+  }
+  if (!equal(a.walls, b.walls)) return !b.walls ? 'Walls · default' : a.walls?.finish === b.walls.finish ? `Walls · ${b.walls.finish === 'wainscot' && a.walls?.wainscot !== b.walls.wainscot ? 'wainscot height' : 'colour'}` : `Walls · ${WALL_FINISH_LABELS[b.walls.finish]}`;
+  if (a.floor !== b.floor) return `Floor · ${FLOOR_FINISH_LABELS[b.floor ?? 'black-rubber']}`;
+  if (!equal(a.turf, b.turf)) return (b.turf?.length ?? 0) > (a.turf?.length ?? 0) ? '+ Turf lane' : (b.turf?.length ?? 0) < (a.turf?.length ?? 0) ? '− Turf lane' : 'Edit turf lane';
+  if (!equal(a.ceiling, b.ceiling)) return !b.ceiling ? 'Remove ceiling' : !a.ceiling ? 'Add ceiling' : !equal(a.ceiling.lights, b.ceiling.lights) ? 'Ceiling lights' : 'Ceiling colour';
+  return null;
+}
 export function describeChange(before: RackDoc, after: RackDoc): Required<Pick<HistoryMetadata, 'label' | 'category'>> {
   for (const key of Object.keys(after.rack) as (keyof RackDoc['rack'])[]) if (before.rack[key] !== after.rack[key]) return { category: 'dimension', label: `${key} ${before.rack[key]}→${after.rack[key]}` };
   if (!equal(before.logo, after.logo)) return { category: 'logo', label: after.logo ? 'Update logo' : 'Remove logo' };
   if (!equal(before.appearance, after.appearance)) return { category: 'appearance', label: 'Color / finish' };
+  const finish = roomFinishChange(before.room, after.room);
+  if (finish) return { category: 'appearance', label: finish };
   for (const key of ['accessories','floorItems','wallItems','hangItems','systems'] as const) {
     const a = before[key] ?? [], b = after[key] ?? [];
     const added = b.filter(x => !a.some(y => y.id === x.id)), removed = a.filter(x => !b.some(y => y.id === x.id));

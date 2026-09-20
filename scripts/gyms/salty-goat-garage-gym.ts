@@ -8,7 +8,8 @@ const ft = (f: number) => Math.round(f * 304.8);
 // Eleiko Prestera half rack → Rogue HR-2 half rack (90″ front posts, 70″ storage posts).
 let doc = rack('rogue-hr2-four-2343.15-431.8-1835.15');
 // Roughly 20' × 20': the rack is centred on the back wall.
-doc = room(doc, { back: 900, front: ft(20) - 900, left: ft(10), right: ft(10), height: 2750 });
+// Finishes (#200): light grey painted walls, charcoal rubber mats, a white ceiling with linear LEDs running left to right.
+doc = room(doc, { back: 900, front: ft(20) - 900, left: ft(10), right: ft(10), height: 2750, walls: { finish: 'drywall', color: '#c5c8ca' }, ceiling: { color: '#e8e8e4', lights: { count: 4, along: 'x' } } });
 
 // Rack: J-cups, strap safeties, bumper horns on the storage posts, Darko QuickMount with the Voltra, Pegasus seat.
 doc = attach(doc, 'rogue-monster-lite-j-cups', { uprightId: 'front-left', face: 'front', hole: 20 });

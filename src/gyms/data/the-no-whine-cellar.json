@@ -626,7 +626,11 @@
       "left": 2896,
       "right": 2896,
       "front": 11492,
-      "height": 2300
+      "height": 2300,
+      "walls": {
+        "finish": "drywall",
+        "color": "#f1efe9"
+      }
     }
   }
 }

@@ -14,6 +14,9 @@ export interface WallPartSpec<Id extends string = string> {
   /** Hook slots for hangable parts (hang-registry.ts): [x along, z up] on the face, from its centre. Index = slot number. */
   slots?: (params: NumericParams) => [number, number][];
   /** Suggested centre height above the floor (default 1500 mm). */ height?: number;
+  /** Windows and doors (#200): the rectangle (width along the wall, height up it, centred on the item) cut out of the
+   * room's wall finish behind the item, so the part can frame a hole. `true` cuts the whole face. See wallOpenings(). */
+  opening?: ByParams<WallFace> | true;
   vendor?: VendorAttribution;
 }
 export interface WallPart<Id extends string = string> extends WallPartSpec<Id> { defaults: NumericParams }

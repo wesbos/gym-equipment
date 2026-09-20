@@ -8,7 +8,8 @@ import { attach, floor, rack, rackBar, room, wall, writeGym } from './build.ts';
 const ft = (f: number) => Math.round(f * 304.8);
 // Rogue RM Monster Rack 2.0 in orange, at the end of a long 40' × 19' room (the strongman bay is at the camera end).
 let doc = rack('rogue-rm-monster-2-four-2295.525-762', '#e0661d');
-doc = room(doc, { back: 700, front: ft(40) - 700, left: ft(9.5), right: ft(9.5), height: 2300 });
+// Finishes (#200): white painted cinder block over black rubber tiles; open joists, so no ceiling.
+doc = room(doc, { back: 700, front: ft(40) - 700, left: ft(9.5), right: ft(9.5), height: 2300, walls: { finish: 'drywall', color: '#f1efe9' } });
 
 // Rack: Monster sandwich J-cups, Monster spotter arms 2.0 plus the strap safety system, Monster band pegs.
 doc = attach(doc, 'rogue-monster-sandwich-j-cup', { uprightId: 'front-left', face: 'front', hole: 22 });

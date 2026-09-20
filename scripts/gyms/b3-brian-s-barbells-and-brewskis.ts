@@ -38,7 +38,8 @@ let doc = applyPreset('bos-manticore-four-2286-1092.2');
 doc.appearance = { ...doc.appearance, frameColor: '#1c1d1f' };
 
 // Two-car garage (about 20' × 20', 8' ceiling); the gym is its back-left third.
-doc.room = { back: 650, left: 1500, right: 4600, front: 5450, height: 2440 };
+// Finishes (#200): OSB sheathing on the back and left walls (closest: birch plywood sheets) over bare garage concrete.
+doc.room = { back: 650, left: 1500, right: 4600, front: 5450, height: 2440, walls: { finish: 'birch' }, floor: 'concrete' };
 
 // Bells of Steel standard J-cups and light-blue safety straps, pull-up bar across the front top.
 let r = accessory(doc, 'j-hook-standard', { uprightId: 'front-left', face: 'front', hole: 25 });

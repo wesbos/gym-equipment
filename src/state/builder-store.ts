@@ -8,7 +8,8 @@ import { addWallItem, resolveWallItems, wallWarnings, clampWallPosition, roomOf 
 import { isWallPart } from '../../rack-generator/wall-registry.ts';
 import { isHangPart } from '../../rack-generator/hang-registry.ts';
 import { freeSlots, placeHang, reslotHangs, resolveHangItems, type HangTarget } from '../../rack-generator/hang-items.ts';
-import type { Room, WallId } from '../../rack-generator/walls.ts';
+import { ROOM_DEFAULTS, type Room, type WallId } from '../../rack-generator/walls.ts';
+import { FINISH_KEYS, type RoomFinishes } from '../../rack-generator/room-finishes.ts';
 import { resetAppearanceField } from '../../rack-generator/appearance-reset.ts';
 import type { FrameFinish } from '../../rack-generator/appearance.ts';
 import { addsStructure } from '../../rack-generator/structure-candidates.ts';
@@ -82,6 +83,8 @@ export interface BuilderSnapshot {
   proposal: PlacementProposal | null;
   canUndo: boolean;
   canRedo: boolean;
+  /** The room inspector (#200) is open: walls, floor, turf and ceiling finishes. Any selection or placement closes it. */
+  roomInspector: boolean;
 }
 /** Trailing delay before the recovery draft is written (then at the next idle moment). Lifecycle events flush it. */
 export const AUTOSAVE_DELAY_MS = 400;
@@ -151,6 +154,7 @@ export class BuilderStore {
       proposal: null,
       canUndo: false,
       canRedo: false,
+      roomInspector: false,
     };
     this.ready = this.repository
       .read()
@@ -194,6 +198,7 @@ export class BuilderStore {
   };
   getSnapshot = () => this.state;
   patch = (patch: Partial<BuilderSnapshot>) => {
+    if (this.state.roomInspector && patch.roomInspector === undefined && ('selection' in patch || 'selected' in patch || patch.placing || patch.structureChoice || patch.systemChoice)) patch = { ...patch, roomInspector: false };
     // Other edits, selection and placement modes invalidate a staged system.
     if (!("systemChoice" in patch) && (patch.doc || patch.selected !== undefined || patch.placing !== undefined || patch.structureChoice !== undefined)) patch.systemChoice = null;
     if (patch.systemChoice === null && this.state.systemChoice && !("proposal" in patch)) patch.proposal = null;
@@ -809,6 +814,20 @@ export class BuilderStore {
   setRoom = (patch: Partial<Room>) => {
     const doc=structuredClone(this.state.doc); doc.room={...roomOf(doc),...patch};
     for(const item of doc.wallItems ?? []) item.position=clampWallPosition(doc.room, item, item.wall, item.position, false);
+    this.commit(doc);
+  };
+  /** Open the room inspector (a bare wall or ceiling click, or the Room button). */
+  openRoom = () => {
+    if (this.state.placing || this.state.structureChoice || this.state.systemChoice) return;
+    this.patch({ selection: [], selectionAnchor: null, roomInspector: true });
+  };
+  /** Set (or with `null`, reset to the default look) room finishes; one undo step, labelled by what changed. */
+  setRoomFinish = (patch: { [K in keyof RoomFinishes]?: RoomFinishes[K] | null }) => {
+    const doc = structuredClone(this.state.doc), room = { ...roomOf(doc) } as Room & Record<string, unknown>;
+    for (const [key, value] of Object.entries(patch)) { if (value == null) delete room[key]; else room[key] = value; }
+    // A room back at the default size with no finishes is the same as no room: old documents stay byte-identical.
+    const plain = !FINISH_KEYS.some(key => room[key] !== undefined) && (Object.keys(ROOM_DEFAULTS) as (keyof typeof ROOM_DEFAULTS)[]).every(key => room[key] === ROOM_DEFAULTS[key]);
+    if (plain) delete doc.room; else doc.room = room;
     this.commit(doc);
   };
   previewStructure = (slot: string) => this.act(() => {

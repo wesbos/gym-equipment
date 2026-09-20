@@ -128,7 +128,8 @@ floor('dynamax-medicine-ball', -900, -150);
 floor('rogue-games-box', -600, -1300);
 
 // ── Room: one bay of a three-car garage, ~3.4 m wide × 6.3 m deep, ~3 m ceiling.
-doc.room = { back: 1650, left: 1100, right: 2300, front: 4650, height: 3000 };
+// Finishes (#200): cream painted drywall and block, black rubber mats, an off-white garage ceiling.
+doc.room = { back: 1650, left: 1100, right: 2300, front: 4650, height: 3000, walls: { finish: 'drywall', color: '#ebe3cc' }, ceiling: { color: '#ecebe6' } };
 
 // ── Walls: black pegboards loaded with the handle collection.
 doc = addWallItem(doc, 'pegboard-panel', { wall: 'back', position: [-600, 1400] });

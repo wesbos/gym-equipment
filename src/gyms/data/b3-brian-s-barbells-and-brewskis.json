@@ -334,7 +334,11 @@
       "left": 1500,
       "right": 4600,
       "front": 5450,
-      "height": 2440
+      "height": 2440,
+      "walls": {
+        "finish": "birch"
+      },
+      "floor": "concrete"
     },
     "hangItems": [
       {

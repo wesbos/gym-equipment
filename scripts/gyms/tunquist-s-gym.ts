@@ -9,7 +9,8 @@ const ft = (f: number) => Math.round(f * 304.8);
 // EliteFTS 3X3 Power Rack → Rogue RM-3 Monster Rack 2.0 (3×3 uprights, 30″ deep, 90″ tall).
 let doc = rack('rogue-rm-monster-2-four-2295.525-762');
 // About 30' × 24' of finished basement; the rack sits in the back-right corner.
-doc = room(doc, { back: 700, front: ft(24) - 700, left: ft(30) - 1800, right: 1800, height: 2450 });
+// Finishes (#200): charcoal painted drywall, black rubber, a near-black ceiling (its pot lights and LED cove aren't shown).
+doc = room(doc, { back: 700, front: ft(24) - 700, left: ft(30) - 1800, right: 1800, height: 2450, walls: { finish: 'drywall', color: '#3b3c3e' }, ceiling: { color: '#252628' } });
 
 // Rack: Ghost roller J-cups, strap safeties, Monster Landmine 2.0, Velocidor, Pritchett pad, SP3358 plate storage, band pegs, and monolift arms standing in for the EliteFTS monolift.
 doc = attach(doc, 'ghost-strong-ghost-roller-j-cup', { uprightId: 'front-left', face: 'front', hole: 23 });
