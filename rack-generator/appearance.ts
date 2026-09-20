@@ -27,6 +27,8 @@ export interface MaterialSource {
   color?: string;
   metalness?: number;
   roughness?: number;
+  /** Self-lit surfaces (light fixtures, window glass): emissive intensity 0–1 in the part's own colour. Source role only. */
+  emissive?: number;
 }
 export const DEFAULT_FRAME_COLOR = '#283e32';
 export const HARDWARE_FINISHES = {
@@ -35,7 +37,7 @@ export const HARDWARE_FINISHES = {
   oxide: { color: '#242424', metalness: 0.72, roughness: 0.5 },
 } as const satisfies Record<HardwareFinish, { color: string; metalness: number; roughness: number }>;
 /** Shared by rendering and exports (including future 3MF). Returns detached PBR data. */
-export function resolveMaterial(source: MaterialSource, appearance?: Appearance, instanceId?: string): { color: string; metalness: number; roughness: number; finish?: Exclude<FrameFinish, 'paint'> } {
+export function resolveMaterial(source: MaterialSource, appearance?: Appearance, instanceId?: string): { color: string; metalness: number; roughness: number; finish?: Exclude<FrameFinish, 'paint'>; emissive?: string; emissiveIntensity?: number } {
   if (source.role === 'fastener') return !appearance?.hardwareFinish && source.authoredFastenerFinish ? { color: source.color ?? '#343638', metalness: source.metalness ?? .85, roughness: source.roughness ?? .25 } : { ...HARDWARE_FINISHES[appearance?.hardwareFinish ?? 'chrome'] };
   if (source.role === 'frame') {
     const overrideColor = instanceId ? appearance?.overrides?.[instanceId] : undefined;
@@ -49,6 +51,8 @@ export function resolveMaterial(source: MaterialSource, appearance?: Appearance,
       : source.color ?? DEFAULT_FRAME_COLOR,
     metalness: source.role === 'frame' ? 0 : source.metalness ?? 0.55,
     roughness: source.role === 'frame' ? 0.55 : source.roughness ?? 0.4,
+    // Self-lit decor (#201): THREE-ready emissive fields, only when the part asks for them.
+    ...(source.role === 'source' && source.emissive ? { emissive: source.color ?? '#ffffff', emissiveIntensity: source.emissive } : {}),
   };
 }
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);

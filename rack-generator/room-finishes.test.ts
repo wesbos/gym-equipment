@@ -58,9 +58,12 @@ test('finishes validate strictly and come back in a fixed order', () => {
     [{ walls: { finish: 'drywall', overrides: { back: { finish: 'birch', color: '#ffffff' } } } }, /colour applies/],
     [{ turf: [{ position: [0, 0], size: [1000, 1000], text: 'plae' }] }, /Turf text/],
     [{ turf: [{ position: [0, 0], size: [1000, 1000], text: 'A VERY LONG STENCIL' }] }, /Turf text/],
+    [{ turf: [{ position: [0, 0], size: [1000, 1000], text: 'PLAE', textRotation: 45 }] }, /Turf text rotation/],
   ] as [Record<string, unknown>, RegExp][]) assert.throws(() => validateRoom(input), message, JSON.stringify(input));
   assert.deepEqual(validateFinishes({ floor: 'wood' }, 3000), { floor: 'wood' }, 'only present fields');
   assert.deepEqual(validateRoom({ turf: [{ text: 'PLAE', lines: true, size: [1800, 9000], position: [0, 0] }] })!.turf, [{ position: [0, 0], size: [1800, 9000], lines: true, text: 'PLAE' }]);
+  assert.deepEqual(validateRoom({ turf: [{ text: 'PLAE', textRotation: 90, size: [1800, 9000], position: [0, 0] }] })!.turf, [{ position: [0, 0], size: [1800, 9000], text: 'PLAE', textRotation: 90 }], 'stencil rotation round-trips');
+  assert.deepEqual(validateRoom({ turf: [{ text: 'PLAE', textRotation: 0, size: [1800, 9000], position: [0, 0] }] })!.turf, [{ position: [0, 0], size: [1800, 9000], text: 'PLAE' }], 'zero rotation is the default');
 });
 
 test('per-wall overrides: each wall resolves its own surface, the rest follow the room', () => {

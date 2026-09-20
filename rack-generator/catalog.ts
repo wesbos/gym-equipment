@@ -30,6 +30,7 @@ import { definitions as cableTowers } from './parts/cable-towers.ts';
 import { definitions as floorStorage } from './parts/floor-storage.ts';
 import { definitions as floorAccessories } from './parts/floor-accessories.ts';
 import { definitions as leftovers } from './parts/leftovers.ts';
+import { definitions as decor } from './parts/decor.ts';
 // Floor parts: one import + one `floor` line each; entries register in floor-registry.ts.
 import { definitions as nighthawk } from './parts/nighthawk.ts';
 import { definitions as powerblock } from './parts/powerblock.ts';
@@ -59,6 +60,7 @@ const floor: PartDefinition[] = [
   ...floorStorage,
   ...floorAccessories,
   ...leftovers,
+  ...decor,
 ];
 // Hang family slots.
 import { definitions as cableHandles } from './parts/cable-handles.ts';
@@ -84,6 +86,7 @@ const rack: PartDefinition[] = [
 // Wall family slots.
 import { definitions as wallStorage } from './parts/wall-storage.ts';
 import { definitions as wallLeftovers } from './parts/leftovers-wall.ts';
+import { definitions as wallDecor } from './parts/decor-wall.ts';
 // Wall parts: same pattern; entries register in wall-registry.ts.
 import { definitions as pegboard } from './parts/pegboard.ts';
 import { definitions as cableAttachments } from './parts/cable-attachments.ts';
@@ -91,6 +94,7 @@ const wall: PartDefinition[] = [
   ...pegboard,
   ...wallStorage,
   ...wallLeftovers,
+  ...wallDecor,
   // Hang parts (hang-registry.ts)
   ...cableAttachments,
   ...cableHandles,

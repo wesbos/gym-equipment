@@ -8,7 +8,7 @@ import { isFloorPart } from '../../rack-generator/floor-registry.ts';
 import { barSpec, freeCradles, parkedPose, parksInCradles, type BarCradle } from '../../rack-generator/barbell-cradles.ts';
 import { isWallPart, wallPart } from '../../rack-generator/wall-registry.ts';
 import { roomOf, wallOpenings, wallWarnings } from '../../rack-generator/wall-items.ts';
-import { wallFrames, wallHit, wallPlaneHit, type WallId } from '../../rack-generator/walls.ts';
+import { facesInside, wallFrames, wallHit, wallPlaneHit, type WallId } from '../../rack-generator/walls.ts';
 import { createGymWalls } from './gym-walls.ts';
 import { RoomMaterials, createRoomScenery } from './room-scenery.ts';
 import { resolveFinishes, roomLighting } from '../../rack-generator/room-finishes.ts';
@@ -245,10 +245,11 @@ export function createBuilderScene(
           color: m.color || "#283e32",
           metalness: m.metalness ?? 0.55,
           roughness: m.roughness ?? 0.4,
+          ...(m.emissive ? { emissive: m.color || "#ffffff", emissiveIntensity: m.emissive } : {}),
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.name = m.name;
-        mesh.userData.materialSource = { authoredFastenerFinish: m.authoredFastenerFinish, role: m.role, color: m.color, metalness: m.metalness, roughness: m.roughness };
+        mesh.userData.materialSource = { authoredFastenerFinish: m.authoredFastenerFinish, role: m.role, color: m.color, metalness: m.metalness, roughness: m.roughness, ...(m.emissive ? { emissive: m.emissive } : {}) };
         model.add(mesh);
       }
       request.resolve(model);
@@ -632,8 +633,9 @@ export function createBuilderScene(
     const rect = renderer.domElement.getBoundingClientRect();
     pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1);
     scene.updateMatrixWorld(true); raycaster.setFromCamera(pointer, camera);
+    const shown = (o: THREE.Object3D | null): boolean => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
     const hits = raycaster.intersectObjects([assemblyRoot, ...(swapRegions ? [swapRegions.root] : [])], true)
-      .filter(hit => hit.object instanceof THREE.Mesh);
+      .filter(hit => hit.object instanceof THREE.Mesh && shown(hit.object));
     let object: THREE.Object3D | null = hits[0]?.object ?? null;
     while (object && !object.userData.ownerId) object = object.parent;
     return object ? { id: object.userData.id ?? object.userData.ownerId, ownerId: object.userData.ownerId } : null;
@@ -1024,6 +1026,19 @@ export function createBuilderScene(
   observer.observe(viewport);
   resize();
   renderer.domElement.addEventListener("webglcontextrestored", invalidate);
+  /** Dollhouse cut-away (#201): wall items (and anything hung on them) hide with the wall they are on whenever the camera
+   * is outside it, so windows, doors and bays never show their backs from the default views. */
+  function cutAwayWallItems() {
+    const items = snapshot.doc.wallItems;
+    if (!items?.length) return;
+    const frames = wallFrames(roomOf(snapshot.doc)), eye = camera.position.toArray(), hidden = new Set<string>();
+    for (const item of items) {
+      const shown = facesInside(frames[item.wall], eye), group = instances.get(item.id);
+      if (group) group.visible = shown;
+      if (!shown) hidden.add(item.id);
+    }
+    for (const hung of snapshot.doc.hangItems ?? []) { const group = instances.get(hung.id); if (group) group.visible = !hidden.has(hung.panel); }
+  }
   /** One frame; true while damping or the build animation needs another. */
   function renderFrame() {
     if (disposed) return false;
@@ -1040,6 +1055,7 @@ export function createBuilderScene(
     const focus = build ? build.animation.focus : controls.target;
     backdrop.follow(camera, focus);
     walls.follow(camera);
+    cutAwayWallItems();
     roomScenery.follow(camera);
     camera.far = Math.max(40000, camera.position.distanceTo(focus) * 4);
     camera.near = Math.max(

@@ -172,12 +172,16 @@ export function createRoomScenery(materials: RoomMaterials) {
       turf.add(mesh);
       if (lane.text) {
         // Across the lane, near both ends of a long lane (the centre of a short one), reading from the +x / +z end.
-        const alongX = w >= d, length = alongX ? w : d, width = alongX ? d : w, across = Math.min(width * 0.8, 4000), deep = across / 4;
-        const spots = length >= 5000 ? [-1, 1].map(side => side * (length / 2 - 1500 - deep / 2)) : [0];
+        // A quarter-turn `textRotation` runs the word along the lane instead, sized to the lane's width.
+        const turn = lane.textRotation ?? 0, sideways = turn === 90 || turn === 270;
+        const alongX = w >= d, length = alongX ? w : d, width = alongX ? d : w;
+        const across = sideways ? Math.min(width * 1.25, 4000) : Math.min(width * 0.8, 4000), deep = across / 4, reach = sideways ? across : deep;
+        const spots = length >= 5000 ? [-1, 1].map(side => side * (length / 2 - 1500 - reach / 2)) : [0];
         for (const s of spots) {
           const g = new THREE.PlaneGeometry(across, deep);
           g.rotateX(-Math.PI / 2);
           if (alongX) g.rotateY(Math.PI / 2);
+          if (turn) g.rotateY(turn * Math.PI / 180);
           const stencil = new THREE.Mesh(g, materials.stencil(lane.text));
           stencil.name = `Turf lane ${i + 1} ${lane.text}`; stencil.receiveShadow = true;
           stencil.position.set(x + (alongX ? s : 0), 1.1, z + (alongX ? 0 : s));

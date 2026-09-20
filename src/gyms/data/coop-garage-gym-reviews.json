@@ -3,12 +3,12 @@
   "title": "Coop’s Basement Gym",
   "owner": "Coop · Garage Gym Reviews",
   "sourceUrl": "https://www.youtube.com/watch?v=QCfulhfSSNo",
-  "summary": "Coop’s brand-new ~1,300 sq ft basement gym from his Garage Gym Reviews build tour: a long, bright room with white walls over birch plywood, grey-fleck PLAE rubber and a turf sprint lane, a long silver-upright rig on the end wall, plate-loaded and cable machines down the window wall, and a storage cove of kettlebells and cable attachments. The rig is shown as an extended Rogue Monster 2.0; the monkey bars and Lever Rack cabinets are not in the catalog.",
+  "summary": "Coop’s brand-new ~1,300 sq ft basement gym from his Garage Gym Reviews build tour, rebuilt wall by wall: a long, bright room with white walls over birch plywood, grey-fleck PLAE rubber and a turf sprint lane under a kids’ monkey-bar course, a birch-clad beam on steel posts, linear lights and Big Ass Fans, a long silver-upright rig on the end wall, clerestory windows over the machines, a bay-window desk nook, and a storage cove of kettlebells, cable attachments and Levrack cabinets.",
   "highlights": [
     "About 1,300 sq ft of finished basement",
     "Three-bay rig across the end wall",
-    "PLAE Achieve 18 mm rubber, turf sprint lane",
-    "Storage cove: kettlebells and a pegboard of handles",
+    "PLAE turf lane under a ring and monkey-bar rig",
+    "Storage cove: PLAE rack, pegboard, Levrack",
     "Six new windows and high-CRI linear lights"
   ],
   "equipment": [
@@ -17,15 +17,17 @@
     "Colour bumper plates (closest match: Rogue Color Echo)",
     "Power bar and safety squat bar (closest match: Rogue Ohio Power Bar and REP Safety Squat Bar), open trap bar, EZ and straight bars in a vertical bar holder (closest match: REP open trap bar, Titan vertical holder)",
     "Flat utility bench (closest match: Rogue Monster Utility Bench 2.0)",
-    "Leg extension / curl on the window wall (closest match: Temple of Gainz selectorized leg extension + seated curl)",
-    "PRIME plate-loaded and cam cable machines (closest match: Titan plate-loaded lat pulldown, REP Arcadia functional trainer, Force USA compact leg press / hack squat)",
-    "Curved treadmill under the “Stay Weird” flag (closest match: AssaultRunner Pro)",
-    "PRIME round urethane dumbbells on a three-tier rack (closest match: Rogue 3-Tier Dumbbell Rack with Rogue urethane 5–75 lb)",
-    "PLAE 3×3 11-gauge storage rack full of colour-banded kettlebells (closest match: REP Kettlebell Rack 2.0 with REP kettlebells)",
-    "OmniWall pegboard with cable attachments, bands, rings and straps (closest match: black Wall Control pegboard)",
-    "Wall-hung rack attachment storage by the door (closest match: Rogue Multi-Use Hangers)",
-    "PLAE Achieve 18 mm grey-fleck rolled rubber and a PLAE turf sprint lane with hash marks and lettering, white walls over a birch plywood wainscot and a white ceiling with long linear lights (shown as the builder’s room finishes)",
-    "Not placed: Lever Rack (Levrack) storage cabinets and workbench, kids’ monkey-bar course and rings under the beam, Sorinex machine beside the kettlebells, hip thrust / plate-loaded machine and vertical knee raise on the window wall, Big Ass Fans, Sonos Five speakers, birch-clad beam and posts, and the desk in the bay-window cove"
+    "Leg extension / curl, vertical knee raise and a leg press on the window wall (closest match: Temple of Gainz leg extension + seated curl, REP dip station, Force USA compact leg press / hack squat)",
+    "PRIME plate-loaded and cable machines (closest match: Titan plate-loaded lat pulldown and REP Arcadia functional trainer)",
+    "Curved treadmill under the “Stay Weird” banner (closest match: AssaultRunner Pro)",
+    "PRIME round urethane dumbbells on a rack by the door, with a wall TV (closest match: Rogue 3-Tier Dumbbell Rack with Rogue urethane 5–75 lb)",
+    "PLAE 3×3 11-gauge storage rack of colour-banded kettlebells under an “American Made” banner",
+    "OmniWall pegboard with cable attachments, bands, rings and straps (closest match: black Wall Control pegboard), and wall-hung rack attachment storage (closest match: Rogue Multi-Use Hangers)",
+    "Levrack mobile cabinets, a Levrack Workstation with drawers and slatwall, and an overhead frame",
+    "Kids’ monkey-bar course: wooden rings and green bars on straps from a birch board, and a climbing rope",
+    "Birch-clad beam on steel lally posts, H.E. Williams linear LED lights, two Big Ass Fans i6, Sonos Five speakers",
+    "Three clerestory windows and a bay-window desk nook with a picture window",
+    "PLAE Achieve 18 mm grey-fleck rolled rubber, a PLAE turf sprint lane with hash marks and lettering, white walls over a birch plywood wainscot and a white ceiling (room finishes)"
   ],
   "doc": {
     "version": 2,
@@ -333,7 +335,7 @@
         ]
       }
     ],
-    "nextId": 62,
+    "nextId": 92,
     "appearance": {
       "finishOverrides": {
         "front-left": "clear-grind",
@@ -346,6 +348,188 @@
     "floorItems": [
       {
         "id": "floor-28",
+        "part": "decor-birch-beam",
+        "position": [
+          -22.300000000000068,
+          5892.8
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "length": 13000,
+          "width": 400,
+          "drop": 350,
+          "ceiling": 2750
+        }
+      },
+      {
+        "id": "floor-29",
+        "part": "decor-lally-post",
+        "position": [
+          -22.300000000000068,
+          2092.8
+        ],
+        "rotation": 0,
+        "params": {
+          "height": 2400,
+          "diameter": 0
+        }
+      },
+      {
+        "id": "floor-30",
+        "part": "decor-lally-post",
+        "position": [
+          -22.300000000000068,
+          5992.8
+        ],
+        "rotation": 0,
+        "params": {
+          "height": 2400,
+          "diameter": 0
+        }
+      },
+      {
+        "id": "floor-31",
+        "part": "decor-lally-post",
+        "position": [
+          -22.300000000000068,
+          9892.8
+        ],
+        "rotation": 0,
+        "params": {
+          "height": 2400,
+          "diameter": 0
+        }
+      },
+      {
+        "id": "floor-32",
+        "part": "he-williams-linear-led",
+        "position": [
+          -2072.3,
+          5992.8
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "sections": 9,
+          "ceiling": 2750
+        }
+      },
+      {
+        "id": "floor-33",
+        "part": "he-williams-linear-led",
+        "position": [
+          -572.3000000000001,
+          5992.8
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "sections": 9,
+          "ceiling": 2750
+        }
+      },
+      {
+        "id": "floor-34",
+        "part": "he-williams-linear-led",
+        "position": [
+          927.6999999999999,
+          5992.8
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "sections": 9,
+          "ceiling": 2750
+        }
+      },
+      {
+        "id": "floor-35",
+        "part": "he-williams-linear-led",
+        "position": [
+          3227.7,
+          5992.8
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "sections": 9,
+          "ceiling": 2750
+        }
+      },
+      {
+        "id": "floor-36",
+        "part": "he-williams-linear-led",
+        "position": [
+          -6022.3,
+          9992.8
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "sections": 2,
+          "ceiling": 2750
+        }
+      },
+      {
+        "id": "floor-37",
+        "part": "big-ass-fans-i6",
+        "position": [
+          -1322.3000000000002,
+          3192.8
+        ],
+        "rotation": 0,
+        "params": {
+          "diameter": 1,
+          "blades": 1,
+          "downrod": 0,
+          "ceiling": 2750
+        }
+      },
+      {
+        "id": "floor-38",
+        "part": "big-ass-fans-i6",
+        "position": [
+          -1322.3000000000002,
+          7992.8
+        ],
+        "rotation": 0,
+        "params": {
+          "diameter": 1,
+          "blades": 1,
+          "downrod": 0,
+          "ceiling": 2750
+        }
+      },
+      {
+        "id": "floor-39",
+        "part": "decor-ceiling-rig",
+        "position": [
+          -2697.3,
+          4692.8
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "stations": 10,
+          "spacing": 700,
+          "layout": 2,
+          "hang": 1950,
+          "rope": 1,
+          "ceiling": 2750
+        }
+      },
+      {
+        "id": "floor-40",
+        "part": "decor-wall-section",
+        "position": [
+          -5722.3,
+          3492.7999999999997
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "length": 8200,
+          "thickness": 3600,
+          "height": 2750,
+          "finish": 0,
+          "wainscot": 1220
+        }
+      },
+      {
+        "id": "floor-41",
         "part": "rogue-ohio-power-bar",
         "position": [
           0,
@@ -358,7 +542,7 @@
         "cradle": "accessory-18:left#0+accessory-18:right#0"
       },
       {
-        "id": "floor-29",
+        "id": "floor-42",
         "part": "rep-safety-squat-bar",
         "position": [
           2336.8,
@@ -369,11 +553,11 @@
         "cradle": "accessory-20#0+accessory-21#0"
       },
       {
-        "id": "floor-30",
+        "id": "floor-43",
         "part": "rogue-monster-utility-bench-2",
         "position": [
-          0,
-          1350
+          -62.30000000000007,
+          1157.2
         ],
         "rotation": 0,
         "params": {
@@ -383,11 +567,24 @@
         }
       },
       {
-        "id": "floor-31",
+        "id": "floor-53",
+        "part": "decor-birch-desk",
+        "position": [
+          4827.7,
+          9792.8
+        ],
+        "rotation": -1.5707963267948966,
+        "params": {
+          "width": 2,
+          "monitor": 1
+        }
+      },
+      {
+        "id": "floor-54",
         "part": "rep-open-trap-bar",
         "position": [
-          3890,
-          700
+          4117.7,
+          642.8
         ],
         "rotation": 1.5707963267948966,
         "params": {
@@ -396,11 +593,11 @@
         }
       },
       {
-        "id": "floor-32",
+        "id": "floor-55",
         "part": "titan-barbell-storage-holder",
         "position": [
-          4087.5,
-          2400
+          4315.2,
+          2042.8
         ],
         "rotation": -1.5707963267948966,
         "params": {
@@ -409,11 +606,23 @@
         }
       },
       {
-        "id": "floor-33",
+        "id": "floor-56",
+        "part": "decor-step-ladder",
+        "position": [
+          4117.7,
+          3292.8
+        ],
+        "rotation": -1.5707963267948966,
+        "params": {
+          "height": 1
+        }
+      },
+      {
+        "id": "floor-57",
         "part": "tog-selectorized-leg-extension-seated-curl-v3",
         "position": [
-          3500,
-          4300
+          3677.7,
+          4392.8
         ],
         "rotation": -1.5707963267948966,
         "params": {
@@ -426,34 +635,11 @@
         }
       },
       {
-        "id": "floor-34",
-        "part": "assaultrunner-pro",
-        "position": [
-          3355,
-          6300
-        ],
-        "rotation": 1.5707963267948966,
-        "params": {}
-      },
-      {
-        "id": "floor-35",
-        "part": "titan-plate-loaded-lat-pulldown",
-        "position": [
-          3400,
-          8500
-        ],
-        "rotation": -1.5707963267948966,
-        "params": {
-          "loaded": 2,
-          "thigh": 2
-        }
-      },
-      {
-        "id": "floor-36",
+        "id": "floor-58",
         "part": "force-usa-compact-leg-press-hack-squat",
         "position": [
-          3300,
-          10100
+          3227.7,
+          6092.799999999999
         ],
         "rotation": -1.5707963267948966,
         "params": {
@@ -464,13 +650,25 @@
         }
       },
       {
-        "id": "floor-37",
+        "id": "floor-60",
+        "part": "rogue-3-tier-dumbbell-rack",
+        "position": [
+          -1322.3000000000002,
+          11942.8
+        ],
+        "rotation": 3.141592653589793,
+        "params": {
+          "loaded": 2
+        }
+      },
+      {
+        "id": "floor-62",
         "part": "rep-arcadia-functional-trainer",
         "position": [
-          3785,
-          11600
+          1277.6999999999998,
+          11592.8
         ],
-        "rotation": -1.5707963267948966,
+        "rotation": 3.141592653589793,
         "params": {
           "stack": 0,
           "pin": 60,
@@ -480,38 +678,118 @@
         }
       },
       {
-        "id": "floor-38",
-        "part": "rogue-3-tier-dumbbell-rack",
+        "id": "floor-63",
+        "part": "titan-plate-loaded-lat-pulldown",
         "position": [
-          -3759,
-          7800
+          2277.7,
+          7392.8
         ],
-        "rotation": 1.5707963267948966,
+        "rotation": -1.5707963267948966,
         "params": {
-          "loaded": 2
+          "loaded": 2,
+          "thigh": 2
         }
       },
       {
-        "id": "floor-39",
-        "part": "rep-kettlebell-rack-2",
+        "id": "floor-66",
+        "part": "assaultrunner-pro",
         "position": [
-          -3845,
-          11200
+          3277.7,
+          11292.8
+        ],
+        "rotation": 0,
+        "params": {}
+      },
+      {
+        "id": "floor-67",
+        "part": "plae-3x3-storage-rack",
+        "position": [
+          -7192.3,
+          10942.8
         ],
         "rotation": 1.5707963267948966,
         "params": {
-          "tiers": 1,
-          "loaded": 2
+          "loaded": 1,
+          "pegs": 1
+        }
+      },
+      {
+        "id": "floor-72",
+        "part": "decor-step-stool",
+        "position": [
+          -6372.3,
+          12142.8
+        ],
+        "rotation": 3.141592653589793,
+        "params": {
+          "steps": 2
+        }
+      },
+      {
+        "id": "floor-73",
+        "part": "levrack-mobile-storage",
+        "position": [
+          -6379.3,
+          7992.799999999999
+        ],
+        "rotation": 0,
+        "params": {
+          "length": 0,
+          "depth": 0,
+          "height": 0
+        }
+      },
+      {
+        "id": "floor-74",
+        "part": "levrack-workstation",
+        "position": [
+          -4582.3,
+          7992.799999999999
+        ],
+        "rotation": 0,
+        "params": {
+          "length": 0,
+          "drawers": 2,
+          "slatwall": 2
+        }
+      },
+      {
+        "id": "floor-75",
+        "part": "levrack-overhead-frame",
+        "position": [
+          -4582.3,
+          7992.799999999999
+        ],
+        "rotation": 0,
+        "params": {
+          "length": 0,
+          "depth": 0,
+          "height": 0,
+          "light": 1
         }
       }
     ],
     "wallItems": [
       {
-        "id": "wall-40",
+        "id": "wall-44",
+        "part": "decor-interior-door",
+        "wall": "back",
+        "position": [
+          -1475,
+          1050
+        ],
+        "params": {
+          "width": 32,
+          "open": 0,
+          "standoff": 0
+        }
+      },
+      {
+        "id": "wall-45",
         "part": "rep-wall-mounted-plate-storage",
         "wall": "back",
         "position": [
-          -1550,
+          225,
           1100
         ],
         "params": {
@@ -520,12 +798,12 @@
         }
       },
       {
-        "id": "wall-41",
+        "id": "wall-46",
         "part": "bells-of-steel-change-plate-pegs",
         "wall": "back",
         "position": [
-          -2350,
-          1300
+          225,
+          1750
         ],
         "params": {
           "version": 1,
@@ -533,69 +811,205 @@
         }
       },
       {
-        "id": "wall-42",
-        "part": "rogue-3-bar-gun-rack",
-        "wall": "left",
+        "id": "wall-47",
+        "part": "decor-window",
+        "wall": "right",
         "position": [
-          -5400,
-          1750
+          -3750,
+          2050
         ],
         "params": {
-          "spacing": 1168.3999999999999,
-          "liners": 1,
-          "loaded": 3
+          "style": 0,
+          "width": 48,
+          "height": 22,
+          "standoff": 0
         }
       },
       {
-        "id": "wall-43",
-        "part": "rogue-multi-use-hanger",
-        "wall": "left",
+        "id": "wall-48",
+        "part": "decor-window",
+        "wall": "right",
         "position": [
-          -3400,
-          1900
+          -1750,
+          2050
         ],
         "params": {
-          "depth": 127
+          "style": 0,
+          "width": 48,
+          "height": 22,
+          "standoff": 0
         }
       },
       {
-        "id": "wall-44",
-        "part": "rogue-multi-use-hanger",
-        "wall": "left",
+        "id": "wall-49",
+        "part": "decor-window",
+        "wall": "right",
         "position": [
-          -3400,
-          1300
+          150,
+          2050
         ],
         "params": {
-          "depth": 127
+          "style": 0,
+          "width": 48,
+          "height": 22,
+          "standoff": 0
         }
       },
       {
-        "id": "wall-45",
-        "part": "wall-control-pegboard",
+        "id": "wall-50",
+        "part": "sonos-five-wall-mount",
+        "wall": "right",
+        "position": [
+          -5600,
+          2150
+        ],
+        "params": {
+          "orientation": 0,
+          "color": 0
+        }
+      },
+      {
+        "id": "wall-51",
+        "part": "sonos-five-wall-mount",
+        "wall": "right",
+        "position": [
+          1625,
+          2150
+        ],
+        "params": {
+          "orientation": 0,
+          "color": 0
+        }
+      },
+      {
+        "id": "wall-52",
+        "part": "decor-bay-window",
+        "wall": "right",
+        "position": [
+          3900,
+          1325
+        ],
+        "params": {
+          "width": 4200,
+          "depth": 1100,
+          "mouth": 2450,
+          "sill": 900,
+          "head": 2200
+        }
+      },
+      {
+        "id": "wall-59",
+        "part": "decor-interior-door",
         "wall": "front",
         "position": [
-          3450,
-          1400
+          1525,
+          1050
+        ],
+        "params": {
+          "width": 32,
+          "open": 0,
+          "standoff": 0
+        }
+      },
+      {
+        "id": "wall-61",
+        "part": "decor-wall-tv",
+        "wall": "front",
+        "position": [
+          -175,
+          2000
+        ],
+        "params": {
+          "size": 2
+        }
+      },
+      {
+        "id": "wall-64",
+        "part": "decor-banner-stay-weird",
+        "wall": "front",
+        "position": [
+          -4775,
+          1750
+        ],
+        "params": {}
+      },
+      {
+        "id": "wall-65",
+        "part": "sonos-five-wall-mount",
+        "wall": "front",
+        "position": [
+          -5775,
+          2150
+        ],
+        "params": {
+          "orientation": 0,
+          "color": 0
+        }
+      },
+      {
+        "id": "wall-68",
+        "part": "decor-banner-american-made",
+        "wall": "left",
+        "position": [
+          -5050,
+          2400
+        ],
+        "params": {}
+      },
+      {
+        "id": "wall-69",
+        "part": "wall-control-pegboard",
+        "wall": "left",
+        "position": [
+          -3000,
+          1450
         ],
         "params": {
           "size": 2,
           "panels": 3,
           "color": 0
         }
+      },
+      {
+        "id": "wall-70",
+        "part": "rogue-multi-use-hanger",
+        "wall": "front",
+        "position": [
+          4875,
+          1800
+        ],
+        "params": {
+          "depth": 127
+        }
+      },
+      {
+        "id": "wall-71",
+        "part": "rogue-multi-use-hanger",
+        "wall": "front",
+        "position": [
+          4875,
+          1150
+        ],
+        "params": {
+          "depth": 127
+        }
       }
     ],
     "room": {
-      "back": 600,
-      "left": 4200,
-      "right": 4300,
-      "front": 12400,
+      "back": 607.2,
+      "left": 7522.3,
+      "right": 4527.7,
+      "front": 12392.8,
       "height": 2750,
       "walls": {
         "finish": "wainscot",
         "color": "#f2f1ec",
-        "wainscot": 1220,
+        "wainscot": 1500,
         "overrides": {
+          "left": {
+            "finish": "drywall",
+            "color": "#f2f1ec"
+          },
           "front": {
             "finish": "drywall",
             "color": "#f2f1ec"
@@ -606,120 +1020,117 @@
       "turf": [
         {
           "position": [
-            -2300,
-            6400
+            -2697.3,
+            6392.799999999999
           ],
           "size": [
             1850,
-            10000
+            11000
           ],
           "lines": true,
-          "text": "PLAE"
+          "text": "PLAE",
+          "textRotation": 90
         }
       ],
       "ceiling": {
-        "color": "#f4f4f1",
-        "lights": {
-          "count": 4,
-          "along": "z"
-        }
+        "color": "#f4f4f1"
       }
     },
     "hangItems": [
       {
-        "id": "hang-46",
+        "id": "hang-76",
         "part": "rep-lat-bar-48",
-        "panel": "wall-45",
+        "panel": "wall-69",
         "slot": 20
       },
       {
-        "id": "hang-47",
+        "id": "hang-77",
         "part": "rogue-stainless-straight-lat-bar-20",
-        "panel": "wall-45",
+        "panel": "wall-69",
         "slot": 104
       },
       {
-        "id": "hang-48",
+        "id": "hang-78",
         "part": "mag-wide-grip",
-        "panel": "wall-45",
+        "panel": "wall-69",
         "slot": 188
       },
       {
-        "id": "hang-49",
+        "id": "hang-79",
         "part": "mag-medium-grip-neutral",
-        "panel": "wall-45",
+        "panel": "wall-69",
         "slot": 272
       },
       {
-        "id": "hang-50",
+        "id": "hang-80",
         "part": "mag-close-grip-neutral",
-        "panel": "wall-45",
+        "panel": "wall-69",
         "slot": 117
       },
       {
-        "id": "hang-51",
+        "id": "hang-81",
         "part": "rep-tricep-rope",
-        "panel": "wall-45",
+        "panel": "wall-69",
         "slot": 287
       },
       {
-        "id": "hang-52",
+        "id": "hang-82",
         "part": "rogue-rotating-v-grip",
-        "panel": "wall-45",
+        "panel": "wall-69",
         "slot": 88
       },
       {
-        "id": "hang-53",
+        "id": "hang-83",
         "part": "rep-d-handles",
-        "panel": "wall-45",
+        "panel": "wall-69",
         "slot": 256
       },
       {
-        "id": "hang-54",
+        "id": "hang-84",
         "part": "rogue-ankle-cuff",
-        "panel": "wall-45",
+        "panel": "wall-69",
         "slot": 293
       },
       {
-        "id": "hang-55",
+        "id": "hang-85",
         "part": "spud-long-ab-strap",
-        "panel": "wall-45",
+        "panel": "wall-69",
         "slot": 356
       },
       {
-        "id": "hang-56",
+        "id": "hang-86",
         "part": "generic-daisy-chains",
-        "panel": "wall-45",
+        "panel": "wall-69",
         "slot": 349
       },
       {
-        "id": "hang-57",
+        "id": "hang-87",
         "part": "rogue-monster-band-1",
-        "panel": "wall-45",
+        "panel": "wall-69",
         "slot": 362
       },
       {
-        "id": "hang-58",
+        "id": "hang-88",
         "part": "rogue-monster-band-2",
-        "panel": "wall-45",
+        "panel": "wall-69",
         "slot": 364
       },
       {
-        "id": "hang-59",
+        "id": "hang-89",
         "part": "rogue-monster-band-3",
-        "panel": "wall-45",
+        "panel": "wall-69",
         "slot": 366
       },
       {
-        "id": "hang-60",
+        "id": "hang-90",
         "part": "rep-wood-gymnastic-rings",
-        "panel": "wall-45",
+        "panel": "wall-69",
         "slot": 425
       },
       {
-        "id": "hang-61",
+        "id": "hang-91",
         "part": "rogue-ohio-lifting-straps",
-        "panel": "wall-45",
+        "panel": "wall-69",
         "slot": 419
       }
     ]
