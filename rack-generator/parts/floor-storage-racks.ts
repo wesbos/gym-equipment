@@ -4,13 +4,14 @@ import type { Mat4 } from 'manifold-3d';
 import type { ManifoldAPI, NumericParams, SolidPart, Vec2, Vec3 } from '../types.ts';
 import {
   IN, PAINT, type Paint, REP_DB_RACK, REP_DB_COLORS, repRackLayout, ROGUE_DB_RACK, rogueRackWeights,
-  REP_CART, REP_CART_COLORS, REP_CART_LOADS, REP_CART_HOOK, TITAN_STAND, STANDARD_PLATES, titanStandPegLoad,
+  REP_CART, REP_CART_COLORS, REP_CART_SETS, REP_CART_HOOK, TITAN_STAND, STANDARD_PLATES, titanStandPegLoad,
   REP_KB, REP_KB_RACKS, repKbLoad, packBells,
 } from '../floor-parts/floor-storage.ts';
 import { dumbbellShape, type HexShape } from '../floor-parts/fixed-dumbbells.ts';
 import { buildFixedDumbbell } from './fixed-dumbbells.ts';
 import { buildPepinDumbbell } from './pepin.ts';
 import { buildPowerBlock } from './powerblock.ts';
+import { buildQuickDraw } from './adjustable-dumbbells-rep.ts';
 import { repBell, BAND_COLORS } from '../floor-parts/kettlebells.ts';
 import { kit, finish, beam, pipe, prism, bolt, caster, fitText, onFace, adopt, tiltX, urethaneDumbbell, lowBell, standardPlate, type Kit, type Finish } from './floor-storage-kit.ts';
 const coat = (p: Paint, what: string): Finish => finish(`${p.name} ${what}`, 'source', p.color, p.metalness, p.roughness);
@@ -128,7 +129,7 @@ export function buildRogueDumbbellRack(api: ManifoldAPI, p: NumericParams): Soli
 
 // ── REP Dumbbell Storage Cart ────────────────────────────────────────────────────────────────────────
 export function buildRepCart(api: ManifoldAPI, p: NumericParams): SolidPart[] {
-  const c = REP_CART_COLORS[p.color]; want(!!c && [0, 1].includes(p.hooks) && (REP_CART_LOADS as readonly number[]).includes(p.load), 'dumbbell cart setting');
+  const c = REP_CART_COLORS[p.color]; want(!!c && [0, 1].includes(p.hooks) && !!REP_CART_SETS[p.dumbbells]?.includes(p.set), 'dumbbell cart setting');
   const frame = coat(c.frame, 'side frames'), panel = coat(c.panel, '16 ga pegboard panels'), shelf = coat(c.panel, '11/12 ga shelves');
   const rubber = finish('Crumb rubber shelf liners', 'liner', '#1d1e20', 0, .95), ink = finish('White REP badge lettering', 'source', '#e9e9e6', 0, .5);
   const hook = finish('Black pegboard hooks', 'source', '#1c1d1f', .4, .5), tyre = finish('Black caster wheels', 'liner', '#151617', 0, .6), steel = finish('Black caster forks', 'source', '#222326', .5, .45);
@@ -164,7 +165,12 @@ export function buildRepCart(api: ManifoldAPI, p: NumericParams): SolidPart[] {
     k.add(shelf, bd(3, b - 3), k.cut(bd(1.25 * IN, b - 1.25 * IN), [bd(1.25 * IN + 2, b - 1.25 * IN - 1, 3)]));
     k.add(rubber, bd(C.liner, b, 5));
     // REP x PÉPIN pair in their cradles, bolted either side of the cut-out.
-    if (p.load) for (const sx of [-1, 1]) adopt(k, buildPepinDumbbell(api, { variant: p.load, weight: p.load, rest: 0 }), move([sx * (cw / 2 + (W / 2 - cw / 2) / 2), .5 * IN, H]), q => `Stored REP x PÉPIN · ${q.name}`);
+    // REP x PÉPIN or QuickDraw pair racked in their cradles, bolted either side of the cut-out.
+    for (const sx of p.dumbbells ? [-1, 1] : []) {
+      const at = move([sx * (cw / 2 + (W / 2 - cw / 2) / 2), .5 * IN, H]);
+      if (p.dumbbells === 1) adopt(k, buildPepinDumbbell(api, { variant: p.set, weight: p.set, rest: 0 }), at, q => `Stored REP x PÉPIN · ${q.name}`);
+      else adopt(k, buildQuickDraw(api, { set: p.set, weight: p.set, pose: 1 }), at, q => `Stored REP QuickDraw · ${q.name}`);
+    }
   });
 }
 

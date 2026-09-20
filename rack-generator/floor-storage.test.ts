@@ -13,6 +13,7 @@ import {vendorAttribution} from './vendor-metadata.ts';
 import {partAttribution} from './attribution.ts';
 import {PLATE_SPECS, PLATE_GAP} from './plates.ts';
 import {repBell} from './floor-parts/kettlebells.ts';
+import {BUILD_BUDGET_MS} from './test-budget.ts';
 import type {NumericParams, SolidPart} from './types.ts';
 const api=await Module();api.setup();
 type Box={min:number[];max:number[]};
@@ -56,8 +57,8 @@ test('every param extreme builds valid closed solids on the floor, inside the fo
   free(parts);
  }
 });
-test('defaults build quickly',()=>{
- for(const part of PARTS){const t=performance.now(),parts=build(part.id,part.defaults),ms=performance.now()-t;free(parts);assert.ok(ms<6000,`${part.id} ${ms.toFixed(0)} ms`);}
+test('defaults build within the shared runaway ceiling',()=>{
+ for(const part of PARTS){const t=performance.now(),parts=build(part.id,part.defaults),ms=performance.now()-t;free(parts);assert.ok(ms<BUILD_BUDGET_MS,`${part.id} ${ms.toFixed(0)} ms`);}
 });
 test('plate trees: published envelopes, horn tiers and loaded plates on the horns',()=>{
  const rogue=rogueTreeSpec({wheels:0});
@@ -99,9 +100,11 @@ test('dumbbell racks: REP 48×24×36 with the 5–50 set, Rogue 93×30×33 with 
  assert.equal(rogueRackWeights(2).length*2,30);assert.equal(rogueRackWeights(2).at(-1),75);
 });
 test('REP cart: 32″ × 23.3″, 20.75″ to the top lip, hooks widen it, PÉPIN pair on the deck',()=>{
- const parts=build(REP_DUMBBELL_CART.id,{color:0,hooks:0,load:0}),b=bounds(parts);near(b.max[2],REP_CART.height,.5,'top lip');free(parts);
+ const parts=build(REP_DUMBBELL_CART.id,{color:0,hooks:0,dumbbells:0,set:0}),b=bounds(parts);near(b.max[2],REP_CART.height,.5,'top lip');free(parts);
  assert.ok(repCartBox({hooks:1}).width>REP_CART.width);
- const full=build(REP_DUMBBELL_CART.id,{color:1,hooks:1,load:125}),db=bounds(full,p=>/PÉPIN/.test(p.name));near(db.min[2],REP_CART.height,.5,'cradles sit on the liner');assert.ok(full.some(p=>/White/.test(p.name)));free(full);
+ assert.deepEqual(coerceFloorParams(REP_DUMBBELL_CART,{color:0,hooks:0,dumbbells:2,set:85}),{color:0,hooks:0,dumbbells:2,set:60},'switching to QuickDraw snaps the set size');
+ const full=build(REP_DUMBBELL_CART.id,{color:1,hooks:1,dumbbells:1,set:125}),db=bounds(full,p=>/PÉPIN/.test(p.name));near(db.min[2],REP_CART.height,.5,'cradles sit on the liner');assert.ok(full.some(p=>/White/.test(p.name)));free(full);
+ const qd=build(REP_DUMBBELL_CART.id,{color:2,hooks:0,dumbbells:2,set:60}),qb=bounds(qd,p=>/QuickDraw/.test(p.name));near(qb.min[2],REP_CART.height,.5,'QuickDraw cradles on the liner');free(qd);
 });
 test('Titan stand: 28.125″ × 26″ × 23.5″, pegs 6.5″ long carrying standard plates',()=>{
  const parts=build(TITAN_DUMBBELL_STAND.id,{dumbbells:0,loaded:0}),b=bounds(parts);near(b.max[2],TITAN_STAND.height,3,'height');free(parts);

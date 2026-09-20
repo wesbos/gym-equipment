@@ -109,7 +109,8 @@ White, Matte Black; holds a REP x PÉPIN FAST (or QuickDraw) pair in their bolte
 
 Estimates: 1.5″ corner posts, 2″ top-shelf skirt, 11″ × 7.5″ step-in cut-out, bottom shelf at 6″ with a 5″ cut-out, 1/4″ holes
 on a 1″ grid, 3″ casters 4.25″ tall, four add-on plate slots in the top liner, REP badge on the flared front bracket, hooks 3.5″.
-White colourway: white frame posts, black pegboard and shelves (photo). Param `load` = the PÉPIN set size (or empty).
+White colourway: white frame posts, black pegboard and shelves (photo). Params `dumbbells` (empty / PÉPIN FAST / QuickDraw,
+both reusing their family builders, racked) and `set` (65–125 or 30–60 lb per hand).
 
 ## 7. Titan Dumbbell Stand & Plate Tree (30) — `titan-dumbbell-stand-plate-tree`
 

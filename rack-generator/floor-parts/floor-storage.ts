@@ -196,22 +196,25 @@ export const REP_CART_COLORS = [
   { name: 'White', frame: PAINT.repWhite, panel: PAINT.repMatte },
   { name: 'Matte Black', frame: PAINT.repMatte, panel: PAINT.repMatte },
 ] as const;
-export const REP_CART_LOADS = [0, 65, 85, 105, 125] as const;
+/** The cart is built for either REP adjustable pair, cradles bolted to the top shelf. */
+export const REP_CART_DUMBBELLS = ['Empty', 'REP x PÉPIN FAST pair', 'REP QuickDraw pair'] as const;
+export const REP_CART_SETS: Record<number, readonly number[]> = { 0: [0], 1: [65, 85, 105, 125], 2: [30, 40, 50, 60] };
 /** Optional pegboard hooks stick out of both side panels, widening the footprint. */
 export const REP_CART_HOOK = inch(3.5);
 export const repCartBox = (p: NumericParams) => ({ width: REP_CART.width + (p.hooks ? 2 * REP_CART_HOOK : 0), depth: REP_CART.depth });
 export const REP_DUMBBELL_CART = defineFloorPart({
   id: 'rep-dumbbell-storage-cart', name: 'REP Dumbbell Storage Cart', title: 'REP Dumbbell Storage Cart', noun: 'dumbbell cart', section: 'Floor storage',
-  description: `REP Fitness Dumbbell Storage Cart: 32″ × 23.3″, 20.75″ to the top lip, 11 ga top shelf with a step-in cut-out and crumb-rubber liner, 12 ga bottom utility shelf, perforated pegboard side frames (optional six hooks) on four locking casters. Holds a pair of REP x PÉPIN FAST dumbbells in their cradles. ${tail('REP Fitness')}`,
+  description: `REP Fitness Dumbbell Storage Cart: 32″ × 23.3″, 20.75″ to the top lip, 11 ga top shelf with a step-in cut-out and crumb-rubber liner, 12 ga bottom utility shelf, perforated pegboard side frames (optional six hooks) on four locking casters. Holds a pair of REP x PÉPIN FAST or QuickDraw adjustable dumbbells in their cradles. ${tail('REP Fitness')}`,
   params: [
     enumParam('color', 'Colour', REP_CART_COLORS.map(c => c.name)),
     enumParam('hooks', 'Pegboard hooks', ['Without hooks', 'With six hooks']),
-    { key: 'load', label: 'Dumbbells', default: 85, options: REP_CART_LOADS, format: v => v ? `REP x PÉPIN ${v} lb pair` : 'Empty' },
+    enumParam('dumbbells', 'Dumbbells', REP_CART_DUMBBELLS, 1),
+    { key: 'set', label: 'Set size', default: 85, options: p => REP_CART_SETS[p.dumbbells] ?? [0], format: v => v ? `${v} lb per hand` : '—' },
   ],
   footprint: repCartBox,
   placement: { side: 'left', gap: 400 },
-  vendor: credit('REP Fitness', 'https://repfitness.com/products/rep-dumbbell-storage-cart', 'Dumbbell Storage Cart', `${REP_TM} PÉPIN is a trademark of Pépin.`,
-    'Published 32″ × 23.3″ footprint, 20.75″ height to the top lip, 11/12/16 ga steel, crumb rubber liners, locking casters, colour and hook options; cut-out size, shelf heights, pegboard hole grid and caster size estimated from product photos. The cradled pair reuses the REP x PÉPIN dumbbell geometry. Scenery only, excluded from print export.'),
+  vendor: credit('REP Fitness', 'https://repfitness.com/products/rep-dumbbell-storage-cart', 'Dumbbell Storage Cart', `${REP_TM} QuickDraw is a trademark of REP Fitness; PÉPIN is a trademark of Pépin.`,
+    'Published 32″ × 23.3″ footprint, 20.75″ height to the top lip, 11/12/16 ga steel, crumb rubber liners, locking casters, colour and hook options; cut-out size, shelf heights, pegboard hole grid and caster size estimated from product photos. The cradled pair reuses the REP x PÉPIN and QuickDraw dumbbell geometry. Scenery only, excluded from print export.'),
 });
 
 // ── Titan Dumbbell Stand & Plate Tree ──────────────────────────────────────────────────────────────

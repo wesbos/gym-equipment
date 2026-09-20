@@ -81,7 +81,7 @@ export const standingBar = (k: Kit, x: number, y: number, z: number, length: num
 export function hornPlates(k: Kit, plates: readonly PlateId[], root: Vec3, axis: Vec3, hornD: number, name: string) {
   if (!plates.length) return;
   const sag = Math.max(0, (PLATE_BORE - hornD) / 2), origin: Vec3 = [root[0], root[1], root[2] + sag];
-  const parts = buildPlateStack(k.api, plates, { origin, axis, name, segments: 48 });
+  const parts = buildPlateStack(k.api, plates, { origin, axis, name, segments: 48, detail: 'simple' });
   adopt(k, parts);
 }
 export const stackLength = (plates: readonly PlateId[]) => plates.reduce((s, p, i) => s + PLATE_SPECS[p].width + (i ? PLATE_GAP : 0), 0);
