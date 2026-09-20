@@ -18,8 +18,9 @@ import { PEGBOARD } from './wall-parts/pegboard.ts';
 // Family slots: each file owns its PARTS list, so parallel families never edit this file.
 import { PARTS as WALL_STORAGE } from './wall-parts/wall-storage.ts';
 import { PARTS as WALL_LEFTOVERS } from './wall-parts/leftovers.ts';
+import { PARTS as WALL_DECOR } from './wall-parts/decor.ts';
 export * from './wall-part.ts';
-export const WALL_PARTS = [PEGBOARD, ...WALL_STORAGE, ...WALL_LEFTOVERS] as const;
+export const WALL_PARTS = [PEGBOARD, ...WALL_STORAGE, ...WALL_LEFTOVERS, ...WALL_DECOR] as const;
 export type WallPartId = (typeof WALL_PARTS)[number]['id'];
 export const WALL_PART_IDS: WallPartId[] = WALL_PARTS.map(p => p.id);
 const registry = new Map<string, WallPart>(WALL_PARTS.map(p => [p.id, p]));

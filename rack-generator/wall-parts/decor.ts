@@ -33,6 +33,8 @@ export const DECOR_WINDOW = defineWallPart({
     standoffParam,
   ],
   face: p => { const { w, h } = windowSize(p); return { width: w + 2 * WINDOW.casing, height: h + 2 * WINDOW.casing }; },
+  // The rough opening is cut from the wall finish; on a standoff (in front of a wall section) nothing is cut.
+  opening: p => p.standoff ? { width: 0, height: 0 } : { width: windowSize(p).w, height: windowSize(p).h },
   depth: 60, height: 2050,
   vendor: generic('vinyl window and casing', 'Sizes are nominal glass openings in whole inches; the casing (70 mm), sash frames (55 mm) and the bevelled return are estimated from Coop’s basement tour (8:30–8:45). Built proud of the wall because wall planes cannot be cut. Scenery only, excluded from print export.'),
 });
@@ -48,8 +50,32 @@ export const DECOR_DOOR = defineWallPart({
     standoffParam,
   ],
   face: p => ({ width: inch(p.width) + 2 * DOOR.casing, height: DOOR.height + DOOR.casing }),
+  opening: p => p.standoff ? { width: 0, height: 0 } : { width: inch(p.width), height: DOOR.height },
   depth: 45, height: (DOOR.height + DOOR.casing) / 2,
   vendor: generic('six-panel interior door', 'Published standard: 80″ slab heights and 28–36″ widths, 1-3/8″ thick. Panel layout, casing width and lever estimated from photos. An open leaf swings 90° into the room. Scenery only, excluded from print export.'),
+});
+
+// ── Bay window alcove ─────────────────────────────────────────────────────────────────────────────────
+/** A bay behind the wall: 45° side walls, each with a window, and a big picture window in the back wall. */
+export const bayLayout = (p: NumericParams) => {
+  const side = p.depth * Math.SQRT2, back = p.width - 2 * p.depth;
+  if (back < 900) throw Error('The bay is too deep for its width.');
+  const sideWindow = Math.min(side - 300, inch(34)), backWindow = Math.min(back - 300, inch(72));
+  return { side, back, sideWindow, backWindow };
+};
+export const BAY_WINDOW = defineWallPart({
+  id: 'decor-bay-window', name: 'Bay window', title: 'Bay window alcove', noun: 'bay window', section: 'Wall decor', opening: true,
+  description: 'A walk-in bay built out past the wall: 45° side walls with a window in each and a big picture window at the back, a birch plywood wainscot below the sills and a flat ceiling, like the desk nook in Coop’s basement. The wall is cut away for its mouth. Independent reconstruction; no brand shown.',
+  params: [
+    { key: 'width', label: 'Mouth width', default: 4200, options: range(2400, 6000, 100), format: (v: number) => `${v} mm` },
+    { key: 'depth', label: 'Depth', default: 1100, options: range(500, 2000, 50), format: (v: number) => `${v} mm` },
+    { key: 'mouth', label: 'Mouth height', default: 2650, options: range(2000, 3500, 25), format: (v: number) => `${v} mm` },
+    { key: 'sill', label: 'Sill height', default: 800, options: range(450, 1300, 25), format: (v: number) => `${v} mm` },
+    { key: 'head', label: 'Window head height', default: 2250, options: range(1500, 3300, 25), format: (v: number) => `${v} mm` },
+  ],
+  validate: p => { bayLayout(p); if (p.head < p.sill + 450 || p.head > p.mouth - 50) throw Error('Bay windows need 450 mm of glass below the mouth.'); },
+  face: p => ({ width: p.width, height: p.mouth }), depth: 20, height: 1325,
+  vendor: generic('bay window alcove', 'Coop’s bay: a picture window flanked by two windows on angled walls behind his desk (8:35–8:45, 9:45). The 45° sides, depth, sill and head heights and the birch wainscot are estimated. Built behind the wall plane and seen through the cut-away mouth.' + ' Scenery only, excluded from print export.'),
 });
 
 // ── Banners ───────────────────────────────────────────────────────────────────────────────────────────
@@ -108,11 +134,11 @@ export const TV_SIZES = [43, 50, 55, 65, 75] as const;
 /** 16:9 panel with a thin bezel: diagonal inches → [width, height] mm. */
 export const tvPanel = (p: NumericParams) => { const d = inch(pick(TV_SIZES, p.size, 'TV size')); return { w: d * 16 / Math.hypot(16, 9) + 12, h: d * 9 / Math.hypot(16, 9) + 12 }; };
 export const WALL_TV = defineWallPart({
-  id: 'decor-wall-tv', name: 'Wall TV', title: 'Flat-screen TV on a wall mount', noun: 'TV', section: 'Wall decor',
+  id: 'decor-wall-tv', name: 'Wall TV', title: 'Flat-screen TV on a wall mount', noun: 'television', section: 'Wall decor',
   description: 'A 43–75″ flat-screen TV on a low-profile wall mount, for timers, programming or the game. Independent reconstruction of a generic TV; no brand shown.',
   params: [{ key: 'size', label: 'Size', default: 2, options: [0, 1, 2, 3, 4], format: (v: number) => TV_SIZES[v] ? `${TV_SIZES[v]}″` : String(v) }],
   face: p => { const { w, h } = tvPanel(p); return { width: w, height: h }; }, depth: 75, height: 1900,
   vendor: generic('wall-mounted TV', 'A 16:9 panel from the nominal diagonal with a 6 mm bezel, a 30 mm body and a 45 mm mount. Scenery only, excluded from print export.'),
 });
 
-export const PARTS = [DECOR_WINDOW, DECOR_DOOR, BANNER_AMERICAN_MADE, BANNER_STAY_WEIRD, FABRIC_BANNER, SONOS_FIVE_WALL, WALL_TV] as const;
+export const PARTS = [DECOR_WINDOW, DECOR_DOOR, BAY_WINDOW, BANNER_AMERICAN_MADE, BANNER_STAY_WEIRD, FABRIC_BANNER, SONOS_FIVE_WALL, WALL_TV] as const;

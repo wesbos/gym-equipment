@@ -49,6 +49,7 @@ export const GALLERY_CATEGORIES: readonly { label: string; sections: readonly st
   { label: 'Storage', sections: ['Floor storage', 'Wall storage'] },
   { label: 'Cable attachments', sections: ['Cable attachments'] },
   { label: 'Accessories', sections: ['Accessories', 'Hanging accessories'] },
+  { label: 'Room decor', sections: ['Room decor', 'Wall decor'] },
 ];
 
 export type GalleryKind = 'system' | 'structure' | 'rack' | 'floor' | 'wall' | 'hang';
