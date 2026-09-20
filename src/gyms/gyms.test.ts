@@ -8,7 +8,7 @@ import { definitions } from '../../rack-generator/catalog.ts';
 import { isSystemPart } from '../../rack-generator/system-types.ts';
 import { PLATE_SPECS } from '../../rack-generator/plates.ts';
 import { cleanDocument } from '../state/history.ts';
-import { GYM_FIELDS, type GymEntry } from './types.ts';
+import { GYM_FIELDS, sourceName, type GymEntry } from './types.ts';
 
 /** Every gallery gym (#184) is checked straight off disk, the same files the gallery's `import.meta.glob` loads. */
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -33,6 +33,27 @@ function platesOf(doc: GymEntry['doc']): string[] {
   return [...doc.accessories.flatMap(a => a.plates ?? []), ...loads];
 }
 
+/** A Gym Radar source must be the gym's own page (its slug is the file name); any other source is an https page. */
+function isSourceUrl(sourceUrl: string, slug: string) {
+  let url: URL;
+  try { url = new URL(sourceUrl); } catch { return false; }
+  if (url.protocol !== 'https:') return false;
+  if (url.hostname.replace(/^www\./, '') === 'gymradar.com') return url.href === `https://gymradar.com/gym/${slug}`;
+  return true;
+}
+
+test('a gym source is its Gym Radar page or another https page, credited by site', () => {
+  assert.ok(isSourceUrl('https://gymradar.com/gym/cable-compound', 'cable-compound'));
+  assert.ok(!isSourceUrl('https://gymradar.com/gym/someone-else', 'cable-compound'), 'a Gym Radar URL names this gym');
+  assert.ok(isSourceUrl('https://www.youtube.com/watch?v=QCfulhfSSNo', 'coop-garage-gym-reviews'));
+  assert.ok(!isSourceUrl('http://www.youtube.com/watch?v=QCfulhfSSNo', 'coop-garage-gym-reviews'), 'https only');
+  assert.ok(!isSourceUrl('not a url', 'cable-compound'));
+  assert.equal(sourceName('https://gymradar.com/gym/cable-compound'), 'Gym Radar');
+  assert.equal(sourceName('https://www.youtube.com/watch?v=QCfulhfSSNo'), 'YouTube');
+  assert.equal(sourceName('https://youtu.be/QCfulhfSSNo'), 'YouTube');
+  assert.equal(sourceName('https://www.garagegymreviews.com/some-tour'), 'garagegymreviews.com');
+});
+
 test('the gym data directory holds only gym JSON files', () => {
   assert.ok(fs.existsSync(dataDir));
   for (const file of fs.readdirSync(dataDir).filter(f => !f.startsWith('.'))) assert.match(file, /^[a-z0-9]+(?:-[a-z0-9]+)*\.json$/, `${file}: name gyms <slug>.json`);
@@ -45,7 +66,7 @@ for (const file of files) {
     assert.deepEqual(Object.keys(gym).sort(), [...GYM_FIELDS].sort(), 'exactly the contract fields');
     assert.equal(gym.slug, slug, 'slug matches the file name');
     for (const key of ['title', 'owner', 'summary'] as const) assert.ok(typeof gym[key] === 'string' && gym[key].trim(), `${key} is required`);
-    assert.match(gym.sourceUrl, /^https:\/\/gymradar\.com\/gym\/[a-z0-9-]+$/, 'sourceUrl links the Gym Radar gym page');
+    assert.ok(isSourceUrl(gym.sourceUrl, slug), `sourceUrl ${gym.sourceUrl} is this gym's Gym Radar page or another https page`);
     for (const key of ['highlights', 'equipment'] as const) {
       assert.ok(Array.isArray(gym[key]) && gym[key].length > 0, `${key} is a non-empty list`);
       for (const item of gym[key]) assert.ok(typeof item === 'string' && item.trim(), `${key} entries are text`);
