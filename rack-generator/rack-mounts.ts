@@ -13,8 +13,29 @@ const NORMALS: Record<Face, Vec3> = { front: [0, -1, 0], back: [0, 1, 0], left: 
 const entry = (part: string): RackPart => { const found = rackPart(part); if (!found) throw Error(`Unknown rack attachment ${part}.`); return found; };
 const Title = (part: RackPart) => part.noun[0].toUpperCase() + part.noun.slice(1);
 /** Entry params plus the resolved rack context the builder, bodies and cradle slots see. */
-export const rackContextParams = (part: RackPart, params: NumericParams, rack: RackDimensions, mirror = false): NumericParams =>
-  ({ ...part.defaults, ...params, upright: rack.tube, mountSpacing: rack.pitch, holeDiameter: rack.holeDiameter, ...(mirror ? { mirror: 1 } : {}) });
+export function rackContextParams(part: RackPart, params: NumericParams, rack: RackDimensions, mirror = false, face?: Face, span?: number): NumericParams {
+  // Rectangular posts: the tube size through the mounting face sets the mating face (y = upright / 2).
+  const depth = rack.tubeDepth ?? rack.tube, frontBack = face === 'front' || face === 'back';
+  const upright = frontBack ? depth : rack.tube, width = frontBack ? rack.tube : face ? depth : rack.tube;
+  return { ...part.defaults, ...params, upright, mountSpacing: rack.pitch, holeDiameter: rack.holeDiameter, ...(mirror ? { mirror: 1 } : {}),
+    ...(width !== upright ? { uprightWidth: width } : {}), ...(span !== undefined ? { uprightSpan: span } : {}) };
+}
+/** `uprightSpan` for a spanning entry (RackMount.span): centre-to-centre distance to the nearest live post in line
+ * with the mounting face, along local X ('across', signed) or local +Y ('normal'). */
+export function rackSpan(doc: Pick<RackDoc, 'uprights' | 'removed'>, part: RackPart, t: Target): number | undefined {
+  const mode = part.mount.span, post = doc.uprights[t.uprightId];
+  if (!mode || t.kind === 'crossmember-top' || !post) return undefined;
+  const angle = ROTATIONS[t.face], across = [Math.cos(angle), Math.sin(angle)], normal = NORMALS[t.face];
+  const [dir, side] = mode === 'across' ? [across, normal] : [normal, across];
+  let best: number | undefined;
+  for (const [id, q] of Object.entries(doc.uprights)) {
+    if (id === t.uprightId || doc.removed.includes(id)) continue;
+    const dx = q.x - post.x, dy = q.y - post.y, along = dx * dir[0] + dy * dir[1], lateral = dx * side[0] + dy * side[1];
+    if (Math.abs(lateral) > 1 || Math.abs(along) < 1 || (mode === 'normal' && along < 0)) continue;
+    if (best === undefined || Math.abs(along) < Math.abs(best)) best = along;
+  }
+  return best;
+}
 export const rackDefaults = (part: string): NumericParams => ({ ...entry(part).defaults });
 export const acceptsCrossmemberTop = (part: string) => !!rackPart(part) && rackTargets(entry(part)).includes('crossmember-top');
 export function rackPlacement(part: string): PlacementInfo {
@@ -27,7 +48,7 @@ export function validateRackPartParams(part: string, params: NumericParams) { va
 /** Target hole range from the entry's vertical extent: the part stays above the floor and below the upright top. */
 export function rackLimits(accessory: Accessory, rack: RackDimensions): [number, number] {
   if (accessory.target.kind === 'crossmember-top') return [0, 0];
-  const p = entry(accessory.part), { below, above } = resolveBy(p.mount.extent, rackContextParams(p, accessory.params, rack));
+  const p = entry(accessory.part), { below, above } = resolveBy(p.mount.extent, rackContextParams(p, accessory.params, rack, false, accessory.target.face));
   return [Math.max(0, Math.ceil((below - rack.firstHole) / rack.pitch - 1e-9)), Math.floor((rack.height - above - rack.firstHole) / rack.pitch + 1e-9)];
 }
 function realHole(rack: RackDimensions, hole: number, face: Face) {
@@ -39,7 +60,7 @@ const pairFace = (face: Face): Face => face === 'left' ? 'right' : face === 'rig
 /** Target kind, bore, faces, hole pattern and the entry's own fit rules. Throws user-facing messages. */
 export function validateRackMount(doc: MountDoc, accessory: Accessory) {
   const p = entry(accessory.part), t = accessory.target, kind = t.kind ?? 'upright', name = Title(p), rack = doc.rack;
-  const params = rackContextParams(p, accessory.params, rack);
+  const params = rackContextParams(p, accessory.params, rack, false, kind === 'upright' ? t.face : undefined);
   if (!rackTargets(p).includes(kind)) throw Error(kind === 'crossmember-top' ? 'This part requires an upright target.' : `${name} requires a crossmember-top target.`);
   const pin = resolveBy(p.mount.pin, params);
   if (pin > rack.holeDiameter) throw Error(`${name} mounting pin ${pin} mm exceeds the rack bore ${rack.holeDiameter} mm.`);
@@ -58,7 +79,7 @@ export const rackTopMounts = (doc: MountDoc, part: string): Mount[] => acceptsCr
 export function resolveRack(doc: RackDoc, accessory: Accessory, targets: Target[]): ResolvedInstance[] {
   const p = entry(accessory.part), r = doc.rack;
   return targets.map((t, i) => {
-    const params = rackContextParams(p, accessory.params, r, !!p.handed && i > 0);
+    const params = rackContextParams(p, accessory.params, r, !!p.handed && i > 0, t.kind === 'crossmember-top' ? undefined : t.face, rackSpan(doc, p, t));
     const base = { id: accessory.paired ? `${accessory.id}:${pairSuffix(targets, i)}` : accessory.id, part: accessory.part, params, ownerId: accessory.id, kind: 'accessory' as const,
       paired: accessory.paired, localOutward: [0, 1, 0] as Vec3, collisionBoxes: resolveBy(p.bodies, params).map(b => ({ min: [...b.min] as Vec3, max: [...b.max] as Vec3 })), name: p.name };
     if (t.kind === 'crossmember-top') {
