@@ -28,6 +28,7 @@ import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import { toCreasedNormals } from "three/addons/utils/BufferGeometryUtils.js";
 import { createStudioLighting } from './studio-lighting.ts';
 import { createRenderLoop, pinPrograms } from './render-loop.ts';
+import { prewarmPrograms } from './program-prewarm.ts';
 import { detectCollisions } from "../../rack-generator/assembly-collisions.ts";
 import type {
   Mount,
@@ -92,6 +93,8 @@ export function createBuilderScene(
   const lighting = createStudioLighting(scene, renderer, true);
   // The shadow map is redrawn only when fitRackShadow (a rebuild) flags the key light, never on camera moves.
   renderer.shadowMap.autoUpdate = false;
+  // Allocate the (empty) map up front so frames before the first build don't sample a missing shadow texture.
+  lighting.key.shadow.needsUpdate = true;
   const finishes = new FrameFinishResources(renderer.capabilities.getMaxAnisotropy());
   viewport.append(renderer.domElement);
   renderer.domElement.setAttribute(
@@ -110,6 +113,7 @@ export function createBuilderScene(
     mountsRoot = new THREE.Group(),
     cradleRoot = new THREE.Group();
   const pinned = new WeakSet<object>();
+  let prewarmed = false;
   const loop = createRenderLoop(renderFrame);
   const invalidate = () => loop.invalidate();
   for (const root of [assemblyRoot, ghostRoot, mountsRoot, cradleRoot]) {
@@ -1015,6 +1019,14 @@ export function createBuilderScene(
     if (lighting.key.shadow.needsUpdate) renderer.shadowMap.needsUpdate = true;
     renderer.render(scene, camera);
     pinPrograms(renderer, pinned);
+    if (!prewarmed && instances.size) {
+      // Once lights, fog and environment are final, link the variants the next interactions will need.
+      prewarmed = true;
+      prewarmPrograms(renderer, camera, scene, finishes, { meshes: [overlay.ghost, overlay.cradle], instanced: [overlay.mount, overlay.hook], lines: [overlay.selection] }).then(release => {
+        if (!disposed) pinPrograms(renderer, pinned);
+        release();
+      }, () => {});
+    }
     return again;
   }
   const drawnKeys = ["doc", "resolved", "selection", "placing", "proposal", "structureChoice", "systemChoice", "structureMode", "paired"] as const;
