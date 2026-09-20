@@ -127,6 +127,22 @@ export function createBuilderScene(
     >(),
     cache = new GeometryCache<THREE.Group>(model => disposeMeshes(model));
   let releaseAssembly = () => {}, releaseGhost = () => {};
+  // Placement overlays share long-lived materials and dot geometry: three.js destroys a shader program when its last
+  // material is disposed, so per-placement materials recompiled the ghost/dot/selection shaders on every placement.
+  const overlay = {
+    ghost: new THREE.MeshStandardMaterial({ color: '#e2a248', transparent: true, opacity: 0.55, depthWrite: false, depthTest: false }),
+    cradle: new THREE.MeshBasicMaterial({ color: '#e2a248', transparent: true, opacity: 0.24, depthWrite: false }),
+    mountDot: new THREE.SphereGeometry(6, 8, 6),
+    mount: new THREE.MeshBasicMaterial({ color: "#d28a40", depthTest: true, transparent: true, opacity: 0.65 }),
+    hookDot: new THREE.SphereGeometry(9, 12, 8),
+    hook: new THREE.MeshBasicMaterial({ color: '#d28a40', transparent: true, opacity: .75 }),
+    selection: new THREE.LineBasicMaterial({ color: '#c77c36', toneMapped: false }),
+  };
+  /** Drop overlay objects without disposing the shared materials/geometry (instanced dots free their matrices). */
+  const clearOverlay = (root: THREE.Object3D) => {
+    root.traverse(o => { if (o instanceof THREE.InstancedMesh) o.dispose(); });
+    root.clear();
+  };
   const nameOf = (part: string) =>
     snapshot.definitions
       .find((d) => d.id === part)
@@ -207,18 +223,24 @@ export function createBuilderScene(
       store.status("Geometry worker failed. Reload to retry.", true);
   };
   function clearSelection() {
-    for (const box of selectionBoxes) { scene.remove(box); box.geometry.dispose(); disposeMaterial(box.material); }
+    for (const box of selectionBoxes) { scene.remove(box); box.geometry.dispose(); }
     selectionBoxes = [];
   }
   function refreshSelection() {
-    clearSelection();
+    // Reuse the helpers (a drag refreshes the selected box every move); only the count changes allocate.
+    const boxes: THREE.Box3[] = [];
     for (const g of instances.values()) {
       if (!snapshot.selection.includes(g.userData.id as string)) continue;
       const box = new THREE.Box3().setFromObject(g);
-      if (box.isEmpty()) continue;
-      const helper = new THREE.Box3Helper(box.expandByScalar(5), new THREE.Color('#c77c36'));
-      selectionBoxes.push(helper); scene.add(helper);
+      if (!box.isEmpty()) boxes.push(box.expandByScalar(5));
     }
+    if (boxes.length !== selectionBoxes.length) clearSelection();
+    boxes.forEach((box, i) => {
+      if (selectionBoxes[i]) { selectionBoxes[i].box.copy(box); selectionBoxes[i].visible = true; return; }
+      const helper = new THREE.Box3Helper(box, new THREE.Color('#c77c36'));
+      disposeMaterial(helper.material); helper.material = overlay.selection;
+      selectionBoxes.push(helper); scene.add(helper);
+    });
   }
   function dimensions(measured = false) {
     const rack = snapshot.doc.rack,
@@ -295,23 +317,25 @@ export function createBuilderScene(
       if (!disposed && serial !== generation) void rebuild();
     }
   }
+  /** Ids and models of the displayed ghost, in order; a proposal that only moves them re-places the same meshes. */
+  let ghostKey = '';
+  const ghostKeyOf = (entries: readonly ResolvedInstance[]) => entries.map(e => `${e.id}\u0000${geometryKey(e)}`).join('\n');
   function clearGhost() {
-    disposeMeshes(ghostRoot, false);
-    ghostRoot.clear();
+    ghostKey = '';
+    clearOverlay(ghostRoot);
     releaseGhost();
     releaseGhost = () => {};
     if (!disposed) trimCache();
   }
   function clearMounts() {
-    disposeMeshes(mountsRoot);
-    mountsRoot.clear();
+    clearOverlay(mountsRoot);
     mountPoints = []; hangTargets = [];
   }
   // Barbell parking (#83): every free cradle shows a faint bar ghost; hover picks the nearest, else the floor.
   let cradles: BarCradle[] = [], cradleSerial = 0, releaseCradles = () => {};
   function clearCradles() {
     cradleSerial++; cradles = [];
-    disposeMeshes(cradleRoot, false); cradleRoot.clear();
+    clearOverlay(cradleRoot);
     releaseCradles(); releaseCradles = () => {};
   }
   async function showCradles() {
@@ -325,7 +349,7 @@ export function createBuilderScene(
       releaseCradles = release;
       for (const cradle of cradles) {
         const g = transformed(model, { ...base, ...parkedPose(cradle, bar) });
-        g.traverse(o => { if (o instanceof THREE.Mesh) { o.castShadow = o.receiveShadow = false; disposeMaterial(o.material); o.material = new THREE.MeshBasicMaterial({ color: '#e2a248', transparent: true, opacity: 0.24, depthWrite: false }); o.renderOrder = 9; } });
+        g.traverse(o => { if (o instanceof THREE.Mesh) { o.castShadow = o.receiveShadow = false; disposeMaterial(o.material); o.material = overlay.cradle; o.renderOrder = 9; } });
         g.userData = {}; cradleRoot.add(g);
       }
     } catch { /* The proposal ghost reports geometry errors. */ }
@@ -443,16 +467,9 @@ export function createBuilderScene(
   function showMounts() {
     clearMounts();
     mountPoints = snapshot.placing ? placementMounts(snapshot.doc, snapshot.placing.part, snapshot.placing.movingId) : [];
-    const geometry = new THREE.SphereGeometry(6, 8, 6),
-      material = new THREE.MeshBasicMaterial({
-        color: "#d28a40",
-        depthTest: true,
-        transparent: true,
-        opacity: 0.65,
-      });
     const dots = new THREE.InstancedMesh(
-        geometry,
-        material,
+        overlay.mountDot,
+        overlay.mount,
         mountPoints.length,
       ),
       matrix = new THREE.Matrix4();
@@ -498,7 +515,7 @@ export function createBuilderScene(
       const [px, py] = rotate(x, -(wallPart(panel.part)!.depth + 6)), [nx, ny] = rotate(0, -1);
       return { ...target, position: [at.position[0] + px, at.position[1] + py, at.position[2] + z] as Vec3, normal: [nx, ny, 0] as Vec3 };
     });
-    const dots = new THREE.InstancedMesh(new THREE.SphereGeometry(9, 12, 8), new THREE.MeshBasicMaterial({ color: '#d28a40', transparent: true, opacity: .75 }), hangTargets.length), matrix = new THREE.Matrix4();
+    const dots = new THREE.InstancedMesh(overlay.hookDot, overlay.hook, hangTargets.length), matrix = new THREE.Matrix4();
     hangTargets.forEach((t, i) => dots.setMatrixAt(i, matrix.makeTranslation(...t.position)));
     dots.renderOrder = 5;
     mountsRoot.add(dots);
@@ -521,6 +538,11 @@ export function createBuilderScene(
   function renderProposal(proposal: PlacementProposal) {
     previewTarget = proposal.target ?? null;
     const serial = ++previewSerial;
+    if (!previewBusy && ghostKey && ghostRoot.children.length === proposal.entries.length && ghostKeyOf(proposal.entries) === ghostKey) {
+      // Hover moves of the same ghost (floor/wall drags, R rotation): transforms only, no material churn.
+      proposal.entries.forEach((entry, i) => placeInstance(ghostRoot.children[i], entry, partAttribution(entry.part)));
+      return;
+    }
     clearGhost();
     void renderPreview(proposal.entries, serial);
   }
@@ -589,11 +611,12 @@ export function createBuilderScene(
         g.traverse(o => { if (o instanceof THREE.Mesh) {
           o.castShadow = o.receiveShadow = false;
           disposeMaterial(o.material);
-          o.material = new THREE.MeshStandardMaterial({ color: '#e2a248', transparent: true, opacity: 0.55, depthWrite: false, depthTest: false });
+          o.material = overlay.ghost;
           o.renderOrder = 10;
         } });
         ghostRoot.add(g);
       }
+      ghostKey = ghostKeyOf(entries);
     } catch (error) {
       if (!disposed && serial === previewSerial) store.patch({ proposal: null, placementText: message(error) });
     } finally {
@@ -1055,6 +1078,7 @@ export function createBuilderScene(
       clearMounts();
       clearCradles();
       clearSelection();
+      for (const resource of Object.values(overlay)) resource.dispose();
       assembly.clear();
       releaseAssembly();
       cache.dispose();
