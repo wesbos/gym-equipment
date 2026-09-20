@@ -95,6 +95,10 @@ export const AIR_BIKES = {
   ad7: { length: 1346, width: 673, height: 1346 },
   /** Schwinn: 49.7 × 25.7 × 50.9 in (126.2 × 65.3 × 129.3 cm). */
   ad6: { length: 1262, width: 653, height: 1293 },
+  /** Schwinn Fitness (item 3550012, archived 2007–2012) and Amazon's dimension graphic: 50 × 22.5 × 48 in (127 × 58 × 122 cm). */
+  ad4: { length: inch(50), width: inch(22.5), height: inch(48) },
+  /** The AD3 is the AD4 frame with the analog console (Schwinn parts lists: "the bikes are the same except for the display console"). */
+  ad3: { length: inch(50), width: inch(22.5), height: inch(48) },
 } as const satisfies Record<string, AirBikeInfo>;
 const ISO_FREE = 600;
 const bikeBox = (b: AirBikeInfo): FloorBox => ({ width: b.width, depth: b.length });
@@ -119,6 +123,14 @@ export const SCHWINN_AIRDYNE_AD6 = airBike('schwinn-airdyne-ad6', 'Schwinn Airdy
   'Schwinn Airdyne AD6 air bike: grey round-tube frame, grey crank shroud with the red Schwinn roundel, black wire fan guard. Independent reconstruction from published dimensions; Schwinn and Airdyne trademarks belong to their owners.',
   { vendor: 'Schwinn Fitness', url: 'https://www.schwinnfitness.com/products/schwinn-airdyne-ad6', credit: 'Schwinn Fitness — Airdyne AD6', trademark: 'Schwinn and Airdyne are trademarks of Pacific Cycle / Johnson Health Tech.',
     reconstruction: bikeReconstruction('Schwinn', 'Minimum ceiling height user + 17.9 in is published.') });
+export const SCHWINN_AIRDYNE_AD4 = airBike('schwinn-airdyne-ad4', 'Schwinn Airdyne AD4', 'Schwinn Airdyne AD4', 'ad4',
+  'Schwinn Airdyne AD4 (1990s–2012 classic Airdyne): charcoal steel frame with the big spoked metal-blade fan in black domed wire cages, a U-tube over the fan with the fan-lock knob, chrome connecting arms, knurled foot pegs and the electronic LCD console on twin posts. Independent reconstruction from published dimensions; Schwinn and Airdyne trademarks belong to their owners.',
+  { vendor: 'Schwinn Fitness', url: 'https://www.schwinnfitness.com/airdyne/3550012.html', credit: 'Schwinn Fitness — Airdyne (AD4, item 3550012)', trademark: 'Schwinn and Airdyne are trademarks of Pacific Cycle / Johnson Health Tech.',
+    reconstruction: bikeReconstruction('Schwinn', 'The 50 × 22.5 × 48 in figure is the archived schwinnfitness.com and Amazon spec (the 2010 assembly manual lists 57.5 × 25 × 50 in; retailer 48 × 22.5 × 50 in is the same spec reordered). Positions are scaled off side photos to that envelope; the 2 × 46T/15T chain drive and parts are from the Airdyne-4 (1990–present) parts list.') });
+export const SCHWINN_AIRDYNE_AD3 = airBike('schwinn-airdyne-ad3', 'Schwinn Airdyne AD3', 'Schwinn Air-Dyne AD3', 'ad3',
+  'Schwinn Air-Dyne AD3 (1980s): the classic big-fan Airdyne frame in bronze with chrome wire fan cages and a chrome guard over the fan, the yellow SCHWINN AIR-DYNE rail, red-and-yellow striped arms and the analog Air-Dyne Ergometer console with its load dial. Independent reconstruction from published dimensions; Schwinn and Airdyne trademarks belong to their owners.',
+  { vendor: 'Schwinn', url: 'https://www.fitnessrepairparts.com/equipment/Select/86/Schwinn/Airdyne-AD3-AD4', credit: 'Schwinn — Air-Dyne AD3 (analog console)', trademark: 'Schwinn and Airdyne are trademarks of Pacific Cycle / Johnson Health Tech.',
+    reconstruction: bikeReconstruction('Schwinn', 'No AD3 spec sheet survives: Schwinn parts lists state the AD3 and AD4 frames are identical apart from the console, so the AD4\'s published 50 × 22.5 × 48 in envelope is used, with the bronze finish, chrome cages and analog console from eBay and owner photos.') });
 export const REP_STRIVE_AIR_BIKE = airBike('rep-strive-air-bike', 'REP Strive Air Bike', 'REP Strive Air Bike (VPR)', 'strive',
   'REP Fitness Strive Air Bike featuring VPR: variable-pitch fan behind perforated magnetic covers, multi-grip handles, satin metallic black frame. Independent reconstruction from published dimensions; REP trademarks belong to REP Fitness.',
   { vendor: 'REP Fitness', url: 'https://repfitness.com/products/strive-air-bike-featuring-vpr', credit: 'REP Fitness — Strive Air Bike featuring VPR', trademark: 'REP, Strive and VPR are trademarks of REP Fitness.',
@@ -189,4 +201,4 @@ export const ROGUE_ECHO_SKI = defineFloorPart({
     reconstruction: 'Independent Manifold reconstruction from Rogue\'s published height and footprints with and without the floor stand, and product photos. Column, slot and fan sections estimated from photos; use area is the stand platform plus the ISO 20957-1 0.6 m free zone. Scenery only, excluded from print export.' },
 });
 
-export const PARTS = [ROGUE_ECHO_BIKE, CONCEPT2_ROWERG, CONCEPT2_MODEL_D, CONCEPT2_MODEL_C, ASSAULT_BIKE_CLASSIC, SCHWINN_AIRDYNE_AD7, SCHWINN_AIRDYNE_AD6, REP_STRIVE_AIR_BIKE, BOS_BLITZ_AIR_BIKE, CONCEPT2_SKIERG, ROGUE_ECHO_SKI, CONCEPT2_BIKEERG, ROGUE_ECHO_ROWER] as const satisfies readonly FloorPart[];
+export const PARTS = [ROGUE_ECHO_BIKE, CONCEPT2_ROWERG, CONCEPT2_MODEL_D, CONCEPT2_MODEL_C, ASSAULT_BIKE_CLASSIC, SCHWINN_AIRDYNE_AD7, SCHWINN_AIRDYNE_AD6, SCHWINN_AIRDYNE_AD4, SCHWINN_AIRDYNE_AD3, REP_STRIVE_AIR_BIKE, BOS_BLITZ_AIR_BIKE, CONCEPT2_SKIERG, ROGUE_ECHO_SKI, CONCEPT2_BIKEERG, ROGUE_ECHO_ROWER] as const satisfies readonly FloorPart[];

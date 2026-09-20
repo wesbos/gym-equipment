@@ -28,7 +28,7 @@ const within = (actual: number, expected: number, tol: number, what: string) => 
 
 test('the ergs family registers every product with vendor attribution in the Cardio section', () => {
   assert.deepEqual(PARTS.map(p => p.id).sort(), ['assault-airbike-classic', 'bos-blitz-air-bike', 'concept2-bikeerg', 'concept2-model-c', 'concept2-model-d', 'concept2-rowerg', 'concept2-skierg',
-    'rep-strive-air-bike', 'rogue-echo-bike', 'rogue-echo-rower', 'rogue-echo-ski', 'schwinn-airdyne-ad6', 'schwinn-airdyne-ad7']);
+    'rep-strive-air-bike', 'rogue-echo-bike', 'rogue-echo-rower', 'rogue-echo-ski', 'schwinn-airdyne-ad3', 'schwinn-airdyne-ad4', 'schwinn-airdyne-ad6', 'schwinn-airdyne-ad7']);
   for (const p of PARTS) {
     assert.equal(p.section, 'Cardio', p.id);
     assert.ok(p.vendor?.vendor && p.vendor.url.startsWith('https://') && p.vendor.trademark && p.vendor.reconstruction, p.id);
@@ -126,16 +126,24 @@ test('ski ergs match the published height and every mount envelope', () => {
   });
   assert.equal(inchRound(SKI_ERGS.c2.height), 85);
 });
-const inchRound = (mm: number) => Math.round(mm / 25.4);
+const inchRound = (mm: number) => Math.round(mm / 25.4), inch = (v: number) => v * 25.4;
 
 test('air bikes hit their published length, width and height', () => {
-  const ids = { echo: 'rogue-echo-bike', assault: 'assault-airbike-classic', blitz: 'bos-blitz-air-bike', strive: 'rep-strive-air-bike', ad7: 'schwinn-airdyne-ad7', ad6: 'schwinn-airdyne-ad6' } as const;
+  const ids = { echo: 'rogue-echo-bike', assault: 'assault-airbike-classic', blitz: 'bos-blitz-air-bike', strive: 'rep-strive-air-bike', ad7: 'schwinn-airdyne-ad7', ad6: 'schwinn-airdyne-ad6', ad4: 'schwinn-airdyne-ad4', ad3: 'schwinn-airdyne-ad3' } as const;
   for (const [key, id] of Object.entries(ids)) {
     const spec = AIR_BIKES[key as keyof typeof AIR_BIKES], parts = build(id), b = size(bounds(parts)!);
     within(b[0], spec.width, 1, `${id} width`); within(b[1], spec.length, 1, `${id} length`); within(b[2], spec.height, 1, `${id} height`);
     assert.ok(parts.some(s => s.name === 'Fan blades') && parts.some(s => s.role === 'handle'), `${id} fan and grips`);
     free(parts);
   }
+  // Airdyne AD3 / AD4: one frame (published 50 × 22.5 × 48 in); the AD3 has the chrome cages, top guard and analog box, the AD4 the black cages and LCD.
+  const [ad3, ad4] = [build('schwinn-airdyne-ad3'), build('schwinn-airdyne-ad4')];
+  within(AIR_BIKES.ad4.length, inch(50), .6, 'AD4 50 in'); within(AIR_BIKES.ad4.width, inch(22.5), .6, 'AD4 22.5 in'); within(AIR_BIKES.ad4.height, inch(48), .6, 'AD4 48 in');
+  assert.deepEqual(AIR_BIKES.ad3, AIR_BIKES.ad4, 'AD3 shares the AD4 frame');
+  assert.ok(ad3.some(s => s.name === 'Wind guard') && !ad4.some(s => s.name === 'Wind guard'), 'AD3 chrome top guard');
+  assert.notEqual(ad3.find(s => s.name === 'Frame')!.color, ad4.find(s => s.name === 'Frame')!.color, 'bronze vs charcoal');
+  const cage = size(bounds(ad4, s => s.name === 'Fan guard rims')!); within(cage[1], 620, 10, 'AD4 ~24.5 in fan cage');
+  free(ad3); free(ad4);
   // Echo: 27 in fan (blades) inside the steel-wire guard.
   const echo = build('rogue-echo-bike'); within(size(bounds(echo, s => s.name === 'Fan blades')!)[1], 686, 30, '27 in fan'); free(echo);
 });

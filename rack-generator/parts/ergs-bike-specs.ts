@@ -190,3 +190,49 @@ export function airdyneAd6(): AirBikeSpec {
     ],
   };
 }
+
+/** Classic big-fan Airdyne frame shared by the AD3 and AD4 (Schwinn: "the bikes are the same except for the display console").
+ * Published 50 × 22.5 × 48 in envelope; positions scaled off the eBay side photos (research/ergs.md): fan front at +L/2, saddle back
+ * at −L/2, grips at ±W/2 and H. Fork legs rise either side of the fan into a U over it (fan-lock knob on top), a low box rail runs
+ * from the front to the rear stabiliser, a top tube drops from the fork to the bottom bracket, and the seat tube carries a curved
+ * rear stay down to the rear stabiliser. */
+function airdyneClassic(key: 'ad3' | 'ad4', finish: { label: string; frame: string; accent: string; guard: string; rim: string; hub: string; blade: string; windGuard?: string; roughness: number }, console: AirBikeSpec['console'], plates: AirBikeSpec['plates']): AirBikeSpec {
+  const { length: L, width: W, height: H } = AIR_BIKES[key], front = L / 2, fan = { d: 620, y: front - 310, z: 460 }, fw = 240, leg = fw / 2 + 18;
+  return {
+    label: finish.label, L, W, H, frame: finish.frame, accent: finish.accent, black: '#161718', roughness: finish.roughness,
+    fan: { ...fan, width: fw, blades: 12, bladeD: 570, bladeW: 110, guard: 'wire', spokes: 72, rings: 6, bands: 12, guardColor: finish.guard, bladeColor: finish.blade, rim: finish.rim, hub: finish.hub, windGuard: finish.windGuard },
+    feet: { front: { y: 267, w: W, wheel: 75, wheelY: 560 }, rear: { y: -517, w: W } },
+    tubes: [
+      // Fork legs outside the cages rising into the U over the fan.
+      { pts: [[leg, 267, 45], [leg, 262, 690], [leg - 30, 262, 770], [0, 262, 792], [-leg + 30, 262, 770], [-leg, 262, 690], [-leg, 267, 45]], d: 32 },
+      // Fan-lock knob on top of the U.
+      { pts: [[0, 262, 800], [0, 262, 836]], d: 30, paint: 'black' },
+      // Low box rail from the front stabiliser to the rear stabiliser, top tube from the fork to the bottom bracket.
+      { pts: [[0, 267, 176], [0, -517, 176]], rect: [40, 50] },
+      { pts: [[leg, 280, 434], [60, -40, 352], [0, -190, 316]], d: 32, mirror: true },
+      { pts: [[0, 267, 60], [0, 267, 176]], rect: [40, 50] },
+      // Seat tube from the bottom bracket, curved rear stay and the seat-frame brace.
+      { pts: [[0, -201, 250], [0, -391, 690]], d: 36 },
+      { pts: [[0, -391, 633], [0, -470, 480], [0, -500, 340], [0, -517, 60]], d: 32 },
+      { pts: [[0, -253, 305], [0, -503, 305]], rect: [40, 44] },
+      { pts: [[0, -201, 176], [0, -201, 250]], rect: [40, 44] },
+    ],
+    drive: { y: -201, z: 305, d: 210, t: 70, color: finish.frame, shroud: [[-110, 330], [-60, 400], [40, 330], [60, 250], [0, 200], [-120, 210]] },
+    crank: 165, crankAngle: 20,
+    seat: { post: [[0, -391, 690], [0, -405, 800]], saddle: [-513.5, 858], saddleColor: '#141516', postSize: 34 },
+    // Arms pivot on the fork at the foot pegs and rise to horizontal rear-facing grips.
+    arms: { path: [[150, 292, 330], [150, 285, 470], [168, 205, 1010], [196, 176, 1150], [230, 150, H - 40]], grip: [[230, 150, H - 40], [W / 2 - 18, 110, H - 18], [W / 2 - 18, -70, H - 18]], d: 30, gripD: 36,
+      link: [[140, 300, 300], [95, -150, 305]] },
+    console,
+    pegs: { y: 292, z: 330, x0: 150, x1: 250 },
+    plates,
+  };
+}
+/** Schwinn Airdyne AD4: charcoal frame, black wire cages and brass hub disc, electronic LCD console on twin posts, SCHWINN rail decal. */
+export const airdyneAd4 = () => airdyneClassic('ad4', { label: 'Schwinn Airdyne AD4', frame: '#4b5157', accent: '#c4262e', guard: '#18191a', rim: '#1d1e20', hub: '#b08d57', blade: '#3a3d40', roughness: .5 },
+  { mast: [[0, 262, 792], [0, 240, 900], [0, 232, 950]], at: [0, 226, 990], size: [190, 130, 55], tilt: 35, screen: '#a9b3a0' },
+  [{ a: [20.6, -140, 176], b: [20.6, -430, 176], h: 30, color: '#d9dcde', mirror: true }]);
+/** Schwinn Air-Dyne AD3: bronze frame, chrome cages and top guard, yellow SCHWINN AIR-DYNE rail, analog ergometer box on a single post. */
+export const airdyneAd3 = () => airdyneClassic('ad3', { label: 'Schwinn Air-Dyne AD3', frame: '#9c7443', accent: '#f0c419', guard: '#d4d8db', rim: '#c9cdd0', hub: '#c9cdd0', blade: '#9a9ea2', windGuard: '#d4d8db', roughness: .38 },
+  { mast: [[0, 262, 792], [0, 215, 880], [0, 190, 925]], at: [0, 178, 960], size: [140, 290, 75], tilt: 58, screen: '#9fb09a' },
+  [{ a: [20.6, 190, 176], b: [20.6, -440, 176], h: 42, color: '#f0c419', mirror: true }, { a: [21.3, 40, 176], b: [21.3, -300, 176], h: 18, color: '#c4262e', mirror: true }]);

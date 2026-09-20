@@ -104,7 +104,7 @@ holders at ≈ 900 mm, U-shaped stand tube to 805 mm; Echo SKI column 105 × 180
 top width (520.7 mm) × 16 in. Use area (no maker figure): the floor-stand platform as the standing zone plus the ISO 20957-1 0.6 m
 free zone at the sides and behind the skier.
 
-## Air bikes (`rogue-echo-bike`, `assault-airbike-classic`, `schwinn-airdyne-ad7`, `schwinn-airdyne-ad6`, `rep-strive-air-bike`, `bos-blitz-air-bike`)
+## Air bikes (`rogue-echo-bike`, `assault-airbike-classic`, `schwinn-airdyne-ad7`, `schwinn-airdyne-ad6`, `schwinn-airdyne-ad4`, `schwinn-airdyne-ad3`, `rep-strive-air-bike`, `bos-blitz-air-bike`)
 
 One engine (`parts/ergs-bikes.ts`) builds the fan (pitched blades, wire or perforated guard, drum band, rolled rims), fork legs,
 backbone, feet with transport wheels and levelling feet, drive shroud, 170 mm cranks and pedals, seat post / slider / saddle, handle
@@ -118,6 +118,8 @@ these makers publishes one, so the ISO 20957-1 0.6 m free zone round the machine
 | AssaultBike Classic | [assaultfitness.com](https://www.assaultfitness.com/bikes/assault-bike-classic/), retailer galleries | 50.95 × 23.34 × 50 in (FAQ: 48.4 in H) | 98 lb | 15 |
 | Schwinn Airdyne AD7 | [schwinnfitness.com](https://www.schwinnfitness.com/products/schwinn-airdyne-ad7), akfit.com | 53 × 26.5 × 53 in | min ceiling user + 17.6 in | 11 |
 | Schwinn Airdyne AD6 | [schwinnfitness.com](https://www.schwinnfitness.com/products/schwinn-airdyne-ad6), outdoorgearlab review | 49.7 × 25.7 × 50.9 in | min ceiling user + 17.9 in | 12 |
+| Schwinn Airdyne AD4 | schwinnfitness.com item 3550012 (archived 2007-09, 2008-04, 2012-06), Amazon B000E158CK dimension graphic, 2010 assembly manual ([ManualsLib 571858](https://www.manualslib.com/manual/571858/Schwinn-Airdyne-Ad4.html)), Sportsmith "Airdyne-4 (1990–present)" exploded view and parts list, gympart pedal-drive sheet, 2006 owner's manual, eBay 267758307978 (10 photos), Amazon (4), fitnessrepairparts part photos (5), YouTube frames (3), [Gym Radar](https://gymradar.com/equipment/schwinn-airdyne-ad4) | 50 × 22.5 × 48 in | 96 lb, 300 lb user; 46T→15T idler, 46T→15T fan, 92-link fan chain; seat height only; 2 AA console | 24 |
+| Schwinn Air-Dyne AD3 | no spec sheet survives; [fitnessrepairparts](https://www.fitnessrepairparts.com/equipment/Select/86/Schwinn/Airdyne-AD3-AD4) ("the bikes are the same except for the display console"), shared AD3-4 parts in the gympart list, eBay 318351593067 (11 photos), eBay/fitnessrepairparts part photos (4), YouTube frames (2), [Gym Radar](https://gymradar.com/equipment/schwinn-airdyne-ad3) | AD4 frame: 50 × 22.5 × 48 in | analog Air-Dyne Ergometer (LCD timer + load/RPM dial), bronze / white frames | 18 |
 | REP Strive (VPR) | [repfitness.com](https://repfitness.com/products/strive-air-bike-featuring-vpr) + landing page | 57.41 × 27.23 × 53.24 in | 35 mm grips, 100 mm casters, 8 VPR levels | 19 |
 | Bells of Steel Blitz | [bellsofsteel.us](https://www.bellsofsteel.us/products/blitz-air-bike) | 53 × 23 × 51 in | 25 in fan, 10 seat positions | 10 |
 
@@ -126,11 +128,32 @@ diameters Echo 766 / Assault 650 / AD7 710 / AD6 620 / Strive 720 / Blitz 664 mm
 (10–12, AD6 8); fork and backbone layout (fork legs either side of the cage joined behind it); crank centres 256–320 mm up; saddle
 heights at a mid setting. The Echo's grips angle back and out from arms 10.75 in apart; the AD7 console is its highest point.
 
+### Airdyne AD3 / AD4 (classic big-fan frame)
+
+- **Lineage.** The AD3 is the 1980s Schwinn Air-Dyne with the analog console, the AD4 the 1990–2012 "Schwinn Airdyne" with the
+  electronic LCD (it shows "AD4" at start-up); both use the same steel frame, two-chain drive, wedge-pin cranks and big spoked
+  metal-blade fan. The small-fan Evolution Comp is a different bike. One spec function (`airdyneClassic` in `parts/ergs-bike-specs.ts`)
+  builds both, with the console, fan-cage and colour set per model.
+- **Conflicting dimensions, resolved.** The official schwinnfitness.com / Amazon figure is 50 L × 22.5 W × 48 H in; the retailer
+  "48 × 22.5 × 50 in" is the same spec reordered (Garage Gym Reviews labels it L × H × W); the 2010 assembly manual's 57.5 × 25 × 50 in
+  (with a 64.4 × 96.9 in workout area) looks generous and is not used; "50 × 26 × 52 in" appears in no Schwinn source. The envelope
+  is the official one: fan cage front to saddle back 50 in, 22.5 in stabilisers and grip tips, 48 in to the grips.
+- **Estimates.** Positions scaled off the AD3 eBay left-side photo to that envelope (1.32 mm/px along, 1.17 mm/px up; perspective
+  ±10 %): fan cage Ø 620 mm and 240 mm deep with its hub 460 mm up, fork legs 138 mm either side joined in a U over the fan with the
+  fan-lock knob on top, front stabiliser 368 mm behind the fan front with 75 mm transport wheels ahead of it, rear stabiliser 1150 mm
+  back, low 40 × 50 mm box rail at 176 mm, crank 165 mm at 305 mm up, arm pivots and knurled foot pegs 330 mm up, horizontal
+  rear-facing grips. The agent's photo scale from the fan-chain length disagreed with the official length by 10–15 %; the official
+  envelope wins and the photo proportions are fitted inside it.
+- **Finishes.** AD4: charcoal frame, black domed wire cages, brass hub disc, silver LCD console on twin posts, SCHWINN rail decal.
+  AD3: bronze frame, chrome cages and the chrome guard over the top of the fan (`windGuard` now takes a colour), yellow
+  SCHWINN AIR-DYNE rail decal with a red band, black analog ergometer box on a single bent post.
+- **Review rounds.** (1) AD3 left / iso / front renders against the eBay left side and front three-quarter photos: frame layout,
+  wheels, rail decal and console matched; the saddle was moved 3.5 mm back to reach the 50 in. (2) AD4 against the eBay straight
+  side and Amazon hero: blades darkened to the photos' gunmetal behind the black cages.
+
 ## Not shipped
 
-- Schwinn Airdyne AD4 and AD3: only three usable product photos of the shared "big fan" frame were found (Garage Gym Reviews),
-  and the published dimensions disagree between retailers (48 × 22.5 × 50 in vs. 50 × 26 × 52 in). Left for a follow-up once a
-  manual with a dimension drawing or a proper gallery turns up.
+Nothing from #115 is left unshipped.
 
 ## Materials
 
