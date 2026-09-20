@@ -48,11 +48,65 @@
       "benchEnd": 1219.1999999999998,
       "benchSpacing": 25.4
     },
+    "uprights": {
+      "front-left": {
+        "x": -584.2,
+        "y": -254
+      },
+      "front-right": {
+        "x": 584.2,
+        "y": -254
+      },
+      "rear-left": {
+        "x": -584.2,
+        "y": 254,
+        "height": 1835.15
+      },
+      "rear-right": {
+        "x": 584.2,
+        "y": 254,
+        "height": 1835.15
+      }
+    },
+    "connections": [
+      {
+        "id": "left-upper-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "upper"
+      },
+      {
+        "id": "left-lower-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "lower"
+      },
+      {
+        "id": "right-upper-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "upper"
+      },
+      {
+        "id": "right-lower-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "lower"
+      },
+      {
+        "id": "rear-crossmember",
+        "from": "rear-left",
+        "to": "rear-right",
+        "level": "upper"
+      }
+    ],
+    "profileId": "rogue-hr2",
     "removed": [
       "left-lower-crossmember",
       "right-lower-crossmember",
       "rear-crossmember"
     ],
+    "structure": {},
     "accessories": [
       {
         "id": "accessory-1",
@@ -156,69 +210,8 @@
       }
     ],
     "nextId": 35,
-    "uprights": {
-      "front-left": {
-        "x": -584.2,
-        "y": -254
-      },
-      "front-right": {
-        "x": 584.2,
-        "y": -254
-      },
-      "rear-left": {
-        "x": -584.2,
-        "y": 254,
-        "height": 1835.15
-      },
-      "rear-right": {
-        "x": 584.2,
-        "y": 254,
-        "height": 1835.15
-      }
-    },
-    "connections": [
-      {
-        "id": "left-upper-crossmember",
-        "from": "front-left",
-        "to": "rear-left",
-        "level": "upper"
-      },
-      {
-        "id": "left-lower-crossmember",
-        "from": "front-left",
-        "to": "rear-left",
-        "level": "lower"
-      },
-      {
-        "id": "right-upper-crossmember",
-        "from": "front-right",
-        "to": "rear-right",
-        "level": "upper"
-      },
-      {
-        "id": "right-lower-crossmember",
-        "from": "front-right",
-        "to": "rear-right",
-        "level": "lower"
-      },
-      {
-        "id": "rear-crossmember",
-        "from": "rear-left",
-        "to": "rear-right",
-        "level": "upper"
-      }
-    ],
-    "structure": {},
-    "profileId": "rogue-hr2",
     "appearance": {
       "frameColor": "#1c1d1f"
-    },
-    "room": {
-      "back": 900,
-      "left": 3048,
-      "right": 3048,
-      "front": 5196,
-      "height": 2750
     },
     "floorItems": [
       {
@@ -465,6 +458,13 @@
         }
       }
     ],
+    "room": {
+      "back": 900,
+      "left": 3048,
+      "right": 3048,
+      "front": 5196,
+      "height": 2750
+    },
     "hangItems": [
       {
         "id": "hang-26",

@@ -59,118 +59,6 @@
       "benchEnd": 1182.6,
       "benchSpacing": 25.4
     },
-    "removed": [],
-    "accessories": [
-      {
-        "id": "accessory-23",
-        "part": "rep-flat-sandwich-j-cups",
-        "target": {
-          "uprightId": "front-left",
-          "face": "front",
-          "hole": 23
-        },
-        "paired": true,
-        "params": {
-          "series": 0
-        },
-        "pairTo": "front-right"
-      },
-      {
-        "id": "accessory-24",
-        "part": "rep-spotter-arms",
-        "target": {
-          "uprightId": "front-left",
-          "face": "front",
-          "hole": 15
-        },
-        "paired": true,
-        "params": {
-          "series": 0
-        },
-        "pairTo": "front-right"
-      },
-      {
-        "id": "accessory-25",
-        "part": "kleva-adroit-landmine-2",
-        "target": {
-          "uprightId": "front-left",
-          "face": "left",
-          "hole": 3
-        },
-        "paired": true,
-        "params": {
-          "hardware": 0
-        },
-        "pairTo": "front-right"
-      },
-      {
-        "id": "accessory-26",
-        "part": "rep-leg-roller",
-        "target": {
-          "uprightId": "upright-15",
-          "face": "back",
-          "hole": 4
-        },
-        "paired": true,
-        "params": {
-          "series": 1
-        },
-        "pairTo": "upright-7"
-      },
-      {
-        "id": "accessory-27",
-        "part": "rogue-monster-lite-band-peg",
-        "target": {
-          "uprightId": "front-left",
-          "face": "left",
-          "hole": 0
-        },
-        "paired": true,
-        "params": {},
-        "pairTo": "front-right"
-      },
-      {
-        "id": "accessory-28",
-        "part": "rogue-sp3358-plate-storage",
-        "target": {
-          "uprightId": "upright-1",
-          "face": "left",
-          "hole": 8
-        },
-        "paired": false,
-        "params": {
-          "version": 0,
-          "load": 2
-        }
-      },
-      {
-        "id": "accessory-29",
-        "part": "rogue-am-2-monolift",
-        "target": {
-          "uprightId": "upright-15",
-          "face": "front",
-          "hole": 27
-        },
-        "paired": true,
-        "params": {
-          "line": 1
-        },
-        "pairTo": "upright-7"
-      },
-      {
-        "id": "accessory-30",
-        "part": "rogue-monster-lite-strap-safety-2",
-        "target": {
-          "uprightId": "upright-15",
-          "face": "left",
-          "hole": 12
-        },
-        "paired": true,
-        "params": {},
-        "pairTo": "upright-7"
-      }
-    ],
-    "nextId": 64,
     "uprights": {
       "front-left": {
         "x": -607.66,
@@ -341,22 +229,127 @@
         "level": "lower"
       }
     ],
+    "profileId": "rep-pr-4000",
+    "removed": [],
     "structure": {
       "rear-crossmember": {
         "part": "profile-nameplate",
         "params": {}
       }
     },
-    "profileId": "rep-pr-4000",
+    "accessories": [
+      {
+        "id": "accessory-23",
+        "part": "rep-flat-sandwich-j-cups",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 23
+        },
+        "paired": true,
+        "params": {
+          "series": 0
+        },
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-24",
+        "part": "rep-spotter-arms",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 15
+        },
+        "paired": true,
+        "params": {
+          "series": 0
+        },
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-25",
+        "part": "kleva-adroit-landmine-2",
+        "target": {
+          "uprightId": "front-left",
+          "face": "left",
+          "hole": 3
+        },
+        "paired": true,
+        "params": {
+          "hardware": 0
+        },
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-26",
+        "part": "rep-leg-roller",
+        "target": {
+          "uprightId": "upright-15",
+          "face": "back",
+          "hole": 4
+        },
+        "paired": true,
+        "params": {
+          "series": 1
+        },
+        "pairTo": "upright-7"
+      },
+      {
+        "id": "accessory-27",
+        "part": "rogue-monster-lite-band-peg",
+        "target": {
+          "uprightId": "front-left",
+          "face": "left",
+          "hole": 0
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-28",
+        "part": "rogue-sp3358-plate-storage",
+        "target": {
+          "uprightId": "upright-1",
+          "face": "left",
+          "hole": 8
+        },
+        "paired": false,
+        "params": {
+          "version": 0,
+          "load": 2
+        }
+      },
+      {
+        "id": "accessory-29",
+        "part": "rogue-am-2-monolift",
+        "target": {
+          "uprightId": "upright-15",
+          "face": "front",
+          "hole": 27
+        },
+        "paired": true,
+        "params": {
+          "line": 1
+        },
+        "pairTo": "upright-7"
+      },
+      {
+        "id": "accessory-30",
+        "part": "rogue-monster-lite-strap-safety-2",
+        "target": {
+          "uprightId": "upright-15",
+          "face": "left",
+          "hole": 12
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "upright-7"
+      }
+    ],
+    "nextId": 64,
     "appearance": {
       "frameColor": "#b3202a"
-    },
-    "room": {
-      "back": 1000,
-      "left": 2500,
-      "right": 6644,
-      "front": 5706,
-      "height": 2900
     },
     "floorItems": [
       {
@@ -688,6 +681,13 @@
         }
       }
     ],
+    "room": {
+      "back": 1000,
+      "left": 2500,
+      "right": 6644,
+      "front": 5706,
+      "height": 2900
+    },
     "hangItems": [
       {
         "id": "hang-51",

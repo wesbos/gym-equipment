@@ -1,13 +1,11 @@
 /** Layout helpers for the gym-gallery generator scripts (`scripts/gyms/<slug>.ts`, #184). Each script builds its RackDoc
  * through the real builder APIs (presets, addAccessory/suggestPlacement, addFloorItem, addWallItem, placeHang) so the
- * document is valid by construction, then writes `src/gyms/data/<slug>.json`.
+ * document is valid by construction, then writes `src/gyms/data/<slug>.json` through lib.ts `writeGym`.
  *
  * Floor coordinates are the builder's world floor millimetres: X right, Z toward the default camera (the front
  * wall), rack at the origin. Rotations are degrees about the vertical: 0 faces the camera, 90 faces +X (right),
  * -90 faces -X (left), 180 faces the back wall. */
-import { writeFileSync, mkdirSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { writeGym as writeGallery } from './lib.ts';
 import { addAccessory, resolveAssembly, setPlateStack, validateAssembly } from '../../rack-generator/assembly.ts';
 import { freeCradles, suggestCradle } from '../../rack-generator/barbell-cradles.ts';
 import { applyPreset } from '../../rack-generator/presets.ts';
@@ -22,10 +20,11 @@ import { plateId } from '../../rack-generator/plates.ts';
 import type { Room, WallId } from '../../rack-generator/walls.ts';
 import type { BarLoad, NumericParams, PartId, RackDoc, Target, Vec2 } from '../../rack-generator/types.ts';
 import type { PlateId } from '../../rack-generator/plates.ts';
+import type { GymEntry } from '../../src/gyms/types.ts';
 
 /** The gallery entry minus its doc (src/gyms/types.ts GymEntry). `equipment` names the owner's gear and, where the
  * catalog has no exact product, the closest part standing in for it. */
-export interface GymMeta { slug: string; title: string; owner: string; sourceUrl: string; summary: string; highlights: string[]; equipment: string[] }
+export type GymMeta = Omit<GymEntry, 'doc'>;
 
 const deg = (d: number) => d * Math.PI / 180;
 
@@ -134,17 +133,12 @@ export function warnings(doc: RackDoc): string[] {
 
 export { rackBounds };
 
-/** Validates, prints warnings and writes src/gyms/data/<slug>.json. Exits non-zero when anything warns. */
-export function writeGym({ doc: input, ...meta }: GymMeta & { doc: RackDoc }) {
-  const doc = validateAssembly(input);
-  const found = warnings(doc);
-  for (const w of found) console.warn(`  ${meta.slug}: ${w}`);
-  const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-  const file = resolve(root, 'src/gyms/data', `${meta.slug}.json`);
-  mkdirSync(dirname(file), { recursive: true });
-  const out = { slug: meta.slug, title: meta.title, owner: meta.owner, sourceUrl: meta.sourceUrl, summary: meta.summary, highlights: meta.highlights, equipment: meta.equipment, doc };
-  writeFileSync(file, JSON.stringify(out, null, 2) + '\n');
-  const b = rackBounds(doc);
-  console.log(`${meta.slug}: ${doc.floorItems?.length ?? 0} floor, ${doc.wallItems?.length ?? 0} wall, ${doc.hangItems?.length ?? 0} hang, ${doc.accessories.length} rack parts; rack ${b ? `${b.min.map(Math.round)}..${b.max.map(Math.round)}` : '-'}; ${found.length} warnings -> ${file}`);
+/** Writes the gym through the gallery's writer (scripts/gyms/lib.ts: cleanDocument, catalog check, JSON), then prints
+ * this file's stricter checks (named overlaps, items past a wall, system warnings) and exits non-zero on any. */
+export function writeGym(entry: GymMeta & { doc: RackDoc }) {
+  const out = writeGallery({ ...entry, doc: validateAssembly(entry.doc) });
+  const found = warnings(out.doc);
+  for (const w of found) console.warn(`  ${entry.slug}: ${w}`);
   if (found.length) process.exitCode = 1;
+  return out;
 }

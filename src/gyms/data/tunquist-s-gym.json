@@ -50,7 +50,64 @@
       "pitch": 50.8,
       "firstHole": 63.5
     },
+    "uprights": {
+      "front-left": {
+        "x": -584.2,
+        "y": -419.1
+      },
+      "front-right": {
+        "x": 584.2,
+        "y": -419.1
+      },
+      "rear-left": {
+        "x": -584.2,
+        "y": 419.1
+      },
+      "rear-right": {
+        "x": 584.2,
+        "y": 419.1
+      }
+    },
+    "connections": [
+      {
+        "id": "left-upper-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "upper"
+      },
+      {
+        "id": "left-lower-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "lower"
+      },
+      {
+        "id": "right-upper-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "upper"
+      },
+      {
+        "id": "right-lower-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "lower"
+      },
+      {
+        "id": "rear-crossmember",
+        "from": "rear-left",
+        "to": "rear-right",
+        "level": "upper"
+      }
+    ],
+    "profileId": "rogue-rm-monster-2",
     "removed": [],
+    "structure": {
+      "rear-crossmember": {
+        "part": "profile-nameplate",
+        "params": {}
+      }
+    },
     "accessories": [
       {
         "id": "accessory-1",
@@ -174,72 +231,8 @@
       }
     ],
     "nextId": 40,
-    "uprights": {
-      "front-left": {
-        "x": -584.2,
-        "y": -419.1
-      },
-      "front-right": {
-        "x": 584.2,
-        "y": -419.1
-      },
-      "rear-left": {
-        "x": -584.2,
-        "y": 419.1
-      },
-      "rear-right": {
-        "x": 584.2,
-        "y": 419.1
-      }
-    },
-    "connections": [
-      {
-        "id": "left-upper-crossmember",
-        "from": "front-left",
-        "to": "rear-left",
-        "level": "upper"
-      },
-      {
-        "id": "left-lower-crossmember",
-        "from": "front-left",
-        "to": "rear-left",
-        "level": "lower"
-      },
-      {
-        "id": "right-upper-crossmember",
-        "from": "front-right",
-        "to": "rear-right",
-        "level": "upper"
-      },
-      {
-        "id": "right-lower-crossmember",
-        "from": "front-right",
-        "to": "rear-right",
-        "level": "lower"
-      },
-      {
-        "id": "rear-crossmember",
-        "from": "rear-left",
-        "to": "rear-right",
-        "level": "upper"
-      }
-    ],
-    "structure": {
-      "rear-crossmember": {
-        "part": "profile-nameplate",
-        "params": {}
-      }
-    },
-    "profileId": "rogue-rm-monster-2",
     "appearance": {
       "frameColor": "#1c1d1f"
-    },
-    "room": {
-      "back": 700,
-      "left": 7344,
-      "right": 1800,
-      "front": 6615,
-      "height": 2450
     },
     "floorItems": [
       {
@@ -543,6 +536,13 @@
         }
       }
     ],
+    "room": {
+      "back": 700,
+      "left": 7344,
+      "right": 1800,
+      "front": 6615,
+      "height": 2450
+    },
     "hangItems": [
       {
         "id": "hang-32",

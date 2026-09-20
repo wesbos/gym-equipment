@@ -53,7 +53,59 @@
       "benchEnd": 1181.1,
       "benchSpacing": 25.4
     },
+    "uprights": {
+      "front-left": {
+        "x": -584.2,
+        "y": -419.1
+      },
+      "front-right": {
+        "x": 584.2,
+        "y": -419.1
+      },
+      "rear-left": {
+        "x": -584.2,
+        "y": 419.1
+      },
+      "rear-right": {
+        "x": 584.2,
+        "y": 419.1
+      }
+    },
+    "connections": [
+      {
+        "id": "left-upper-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "upper"
+      },
+      {
+        "id": "left-lower-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "lower"
+      },
+      {
+        "id": "right-upper-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "upper"
+      },
+      {
+        "id": "right-lower-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "lower"
+      },
+      {
+        "id": "rear-crossmember",
+        "from": "rear-left",
+        "to": "rear-right",
+        "level": "upper"
+      }
+    ],
+    "profileId": "rogue-rml-3",
     "removed": [],
+    "structure": {},
     "accessories": [
       {
         "id": "accessory-2",
@@ -134,67 +186,8 @@
       }
     ],
     "nextId": 33,
-    "uprights": {
-      "front-left": {
-        "x": -584.2,
-        "y": -419.1
-      },
-      "front-right": {
-        "x": 584.2,
-        "y": -419.1
-      },
-      "rear-left": {
-        "x": -584.2,
-        "y": 419.1
-      },
-      "rear-right": {
-        "x": 584.2,
-        "y": 419.1
-      }
-    },
-    "connections": [
-      {
-        "id": "left-upper-crossmember",
-        "from": "front-left",
-        "to": "rear-left",
-        "level": "upper"
-      },
-      {
-        "id": "left-lower-crossmember",
-        "from": "front-left",
-        "to": "rear-left",
-        "level": "lower"
-      },
-      {
-        "id": "right-upper-crossmember",
-        "from": "front-right",
-        "to": "rear-right",
-        "level": "upper"
-      },
-      {
-        "id": "right-lower-crossmember",
-        "from": "front-right",
-        "to": "rear-right",
-        "level": "lower"
-      },
-      {
-        "id": "rear-crossmember",
-        "from": "rear-left",
-        "to": "rear-right",
-        "level": "upper"
-      }
-    ],
-    "structure": {},
-    "profileId": "rogue-rml-3",
     "appearance": {
       "frameColor": "#5b5f63"
-    },
-    "room": {
-      "back": 750,
-      "left": 1900,
-      "right": 4196,
-      "front": 2298,
-      "height": 2600
     },
     "floorItems": [
       {
@@ -485,6 +478,13 @@
         }
       }
     ],
+    "room": {
+      "back": 750,
+      "left": 1900,
+      "right": 4196,
+      "front": 2298,
+      "height": 2600
+    },
     "hangItems": [
       {
         "id": "hang-29",
