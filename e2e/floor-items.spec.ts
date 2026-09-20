@@ -18,6 +18,8 @@ test('gym-wave2-floor_items: ghost, plane drag, snap, rotate, Escape, undo, insp
     await page.getByRole('menuitemradio',{name:new RegExp(format)}).click();
     await expect(page.getByRole('button',{name:`Download ${format}`,exact:true})).toBeEnabled({timeout:30000});
   };
+  // Short option lists are segmented buttons (#205): pick a segment by its value.
+  const seat=(value:string)=>page.getByRole('radiogroup',{name:'Seat angle',exact:true}).locator(`[data-value="${value}"]`).click();
   const ready=async()=>{await chooseExport('GLB');await page.keyboard.press('Escape');};
   // The recovery draft is debounced (AUTOSAVE_DELAY_MS, then idle time): let a pending write land before reading it.
   const floor=()=>page.evaluate(async()=>{await new Promise(r=>setTimeout(r,450));await new Promise(r=>requestIdleCallback(()=>r(null),{timeout:1000}));await new Promise(r=>setTimeout(r,0));const data=JSON.parse(localStorage.getItem('bos-strength-configurations-v1') ?? '{}');return (data.draft ?? data.configs?.find((c:{id:string})=>c.id===data.activeId)?.doc)?.floorItems ?? [];});
@@ -44,9 +46,9 @@ test('gym-wave2-floor_items: ghost, plane drag, snap, rotate, Escape, undo, insp
   await page.getByRole('button',{name:'Undo',exact:true}).click();await ready();
   console.log('Drag/rotate/Escape/undo/snap passed');
   await page.getByLabel('Backrest angle',{exact:true}).selectOption('85');
-  await page.getByLabel('Seat angle',{exact:true}).selectOption('-15');
+  await seat('-15');
   await page.getByLabel('This piece steel finish',{exact:true}).selectOption('stainless');
-  await page.getByLabel('Bench frame color',{exact:true}).selectOption('#24528a');
+  await page.getByRole('radiogroup',{name:'Bench frame color',exact:true}).locator('[data-value="#24528a"]').click();
   expect((await floor())[0].params).toEqual({backrestAngle:85,seatAngle:-15});
   await page.getByRole('button',{name:'Reset Backrest angle',exact:true}).click();expect((await floor())[0].params).toEqual({backrestAngle:0,seatAngle:-15});
   await page.getByLabel('Backrest angle',{exact:true}).selectOption('60');
@@ -56,7 +58,7 @@ test('gym-wave2-floor_items: ghost, plane drag, snap, rotate, Escape, undo, insp
   await page.getByRole('button',{name:'Reset bench frame color',exact:true}).click();
   await expect(page.getByLabel('This piece steel finish',{exact:true})).toHaveValue('stainless');
   await page.getByRole('button',{name:'Reset this bench',exact:true}).click();expect((await floor())[0].params).toEqual({backrestAngle:0,seatAngle:0});
-  await page.getByLabel('Backrest angle',{exact:true}).selectOption('60');await page.getByLabel('Seat angle',{exact:true}).selectOption('-15');
+  await page.getByLabel('Backrest angle',{exact:true}).selectOption('60');await seat('-15');
   console.log('Independent resets passed');
   await page.locator('.config-manager summary').click();await page.getByLabel('Configuration name').fill('Nighthawk browser acceptance');await page.getByRole('button',{name:'Save configuration',exact:true}).click();
   await expect(page.locator('.config-manager summary')).not.toContainText('Unsaved');

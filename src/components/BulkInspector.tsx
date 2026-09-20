@@ -3,14 +3,17 @@ import { ResetButton } from './ResetButton.tsx';
 import { partDefaults } from '../../rack-generator/reset.ts';
 import { useSyncExternalStore } from 'react';
 import type { BuilderStore } from '../state/builder-store.ts';
+import { useStoreSelector } from '../state/use-store.ts';
 import { selectionOwners, sharedFields } from '../state/selection.ts';
+import { canDuplicate } from '../state/selection-actions.ts';
+import { removeSelectionWithUndo } from './Toast/undo-actions.ts';
+/** Shared parameters of a multi-selection (the inspector's "Shared parameters" section). */
 export function BulkInspector({ store }: { store: BuilderStore }) {
   const { doc, resolved, selection, definitions, inputRevision } = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const instances = resolved.filter(r => selection.includes(r.id));
-  const owners = selectionOwners(resolved, selection);
-  const canDuplicate = instances.every(r => r.kind === 'accessory' && doc.accessories.some(a => a.id === r.ownerId)) && !resolved.some(r => owners.includes(r.ownerId) && !selection.includes(r.id));
-  return <div id="inspector" className="inspector-fields">
-    {sharedFields(doc, instances).map(field => {
+  const fields = sharedFields(doc, instances);
+  return <div className="inspector-fields bulk-fields">
+    {fields.map(field => {
       const values = instances.map(r => doc.accessories.find(a => a.id === r.ownerId)?.params[field.key] ?? r.params[field.key]);
       const defaults = instances.map(r => partDefaults(doc, r.part)[field.key]);
       const mixed = values.some(value => value !== values[0]);
@@ -27,8 +30,15 @@ export function BulkInspector({ store }: { store: BuilderStore }) {
           onReset={() => { store.endGesture(); store.act(() => store.resetSelectionParam(field.key)); }} />
       </label>;
     })}
-    {canDuplicate && <button onClick={() => store.act(store.duplicateSelected)}>Duplicate parts</button>}
-    <button className="danger" onClick={() => store.act(store.removeSelected)}>Remove parts</button>
+    {!fields.length && <p className="note">These parts share no editable dimensions. Paint and finish below apply to every selected piece.</p>}
     {instances.some(r => r.paired) && <p className="note">Paired · edits affect both sides</p>}
   </div>;
+}
+/** Multi-select footer actions. */
+export function BulkActions({ store }: { store: BuilderStore }) {
+  const duplicable = useStoreSelector(store, s => canDuplicate(s.doc, s.resolved, s.selection) && !selectionOwners(s.resolved, s.selection).some(owner => s.doc.systems?.some(x => x.id === owner)));
+  return <>
+    {duplicable && <button type="button" onClick={() => store.act(() => { store.duplicateSelected(); })}>Duplicate parts</button>}
+    <button type="button" className="danger" onClick={() => removeSelectionWithUndo(store)}>Remove parts</button>
+  </>;
 }

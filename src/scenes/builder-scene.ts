@@ -67,8 +67,14 @@ export interface BuilderScene {
   screenPoint(id: string): { x: number; y: number; visible: boolean } | null;
   /** Frame these physical instances (the outliner, warnings, F), keeping the current view direction. */
   focus(ids: readonly string[]): void;
+  /** Selection action bar anchor (#205): client-pixel box around the selection outlines plus the canvas rect, or
+   * null when nothing selected is drawn. Cheap (projects the outline boxes); call it from `onFrame`. */
+  selectionScreenBounds(): SelectionScreenBounds | null;
+  /** Runs after every rendered frame (orbit, damping, drags, rebuilds). Never requests frames: idle stays idle. */
+  onFrame(listener: () => void): () => void;
   dispose(): void;
 }
+export interface SelectionScreenBounds { left: number; top: number; right: number; bottom: number; viewport: { left: number; top: number; right: number; bottom: number } }
 const message = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
 function disposeMaterial(material: THREE.Material | THREE.Material[]) {
@@ -147,6 +153,7 @@ export function createBuilderScene(
   let prewarmed = false;
   const loop = createRenderLoop(renderFrame), cameraMoving = createMotionCheck();
   const invalidate = () => loop.invalidate();
+  const frameListeners = new Set<() => void>();
   for (const root of [assemblyRoot, ghostRoot, mountsRoot, cradleRoot]) {
     root.rotation.x = -Math.PI / 2;
     scene.add(root);
@@ -1341,6 +1348,22 @@ export function createBuilderScene(
     if (t >= 1) flight = null;
     return !!flight;
   }
+  const boundsCorner = new THREE.Vector3();
+  function selectionScreenBounds(): SelectionScreenBounds | null {
+    const rect = renderer.domElement.getBoundingClientRect();
+    let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
+    for (const helper of selectionBoxes) {
+      if (!helper.visible) continue;
+      const { min, max } = helper.box;
+      for (let i = 0; i < 8; i++) {
+        boundsCorner.set(i & 1 ? max.x : min.x, i & 2 ? max.y : min.y, i & 4 ? max.z : min.z).project(camera);
+        if (boundsCorner.z < -1 || boundsCorner.z > 1) continue;
+        const x = rect.left + (boundsCorner.x + 1) * rect.width / 2, y = rect.top + (1 - boundsCorner.y) * rect.height / 2;
+        left = Math.min(left, x); right = Math.max(right, x); top = Math.min(top, y); bottom = Math.max(bottom, y);
+      }
+    }
+    return left > right ? null : { left, top, right, bottom, viewport: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom } };
+  }
   const resize = () => {
     const rect = viewport.getBoundingClientRect(),
       width = Math.max(1, rect.width),
@@ -1404,6 +1427,7 @@ export function createBuilderScene(
     positionHandles();
     if (lighting.key.shadow.needsUpdate) renderer.shadowMap.needsUpdate = true;
     renderer.render(scene, camera);
+    for (const listener of frameListeners) listener();
     pinPrograms(renderer, pinned);
     if (!prewarmed && instances.size) {
       // Once lights, fog and environment are final, link the variants the next interactions will need.
@@ -1483,6 +1507,8 @@ export function createBuilderScene(
       invalidate();
     },
     focus,
+    selectionScreenBounds,
+    onFrame(listener) { frameListeners.add(listener); return () => { frameListeners.delete(listener); }; },
     async exportGLB() {
       if (disposed) throw Error("Scene has been disposed.");
       stopBuild();
@@ -1509,6 +1535,7 @@ export function createBuilderScene(
       if (disposed) return;
       stopBuild();
       disposed = true;
+      frameListeners.clear();
       generation++;
       previewSerial++;
       unsubscribe();
