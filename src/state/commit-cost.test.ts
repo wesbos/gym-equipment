@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { BuilderStore, AUTOSAVE_DELAY_MS, type StorageLike } from './builder-store.ts';
 import { DocumentHistory, parseSession } from './history.ts';
-import { addFloorItem } from '../../rack-generator/floor-items.ts';
+import { addFloorItem, floorWarnings } from '../../rack-generator/floor-items.ts';
 import { resizeAssembly } from '../../rack-generator/assembly.ts';
 
 class MemoryStorage implements StorageLike {
@@ -130,4 +130,16 @@ test('seeking or exporting mid-gesture sees the live entry, and cancelling after
   assert.throws(() => store.seekHistory(9), /Invalid history step/);
   store.seekHistory(2); assert.equal(store.getSnapshot().doc.rack.width, 425);
   store.history('undo'); assert.equal(store.getSnapshot().doc.rack.width, 1075);
+});
+
+test('floor warnings filtered to the moving ids match filtering the full list', () => {
+  let doc = new BuilderStore().getSnapshot().doc;
+  for (const part of ['rep-nighthawk', 'rogue-kettlebell', 'tractor-supply-horse-stall-mat', 'rogue-echo-bike', 'rogue-kettlebell', 'concept2-rowerg']) doc = addFloorItem(doc, part);
+  // Pile everything near the rack so overlap, clearance and underlay rules all fire.
+  doc = { ...doc, floorItems: doc.floorItems!.map((item, i) => ({ ...item, position: [i * 150 - 300, 200] as [number, number] })) };
+  const all = floorWarnings(doc);
+  assert.ok(all.length > 3);
+  for (const item of doc.floorItems!) for (const ids of [[item.id], [item.id, doc.floorItems![0].id]])
+    assert.deepEqual(floorWarnings(doc, ids), all.filter(w => w.ids.some(id => ids.includes(id))));
+  assert.deepEqual(floorWarnings(doc, []), []);
 });

@@ -754,7 +754,7 @@ export class BuilderStore {
     if (!position && items.some(i=>i.cradle)) return;
     for (const item of items) delete item.cradle;
     moveFloorGroup(items, position, rotationDelta);
-    this.patch({proposal:{...proposal,doc,entries:resolveFloorItems(items)},placementText:floorWarnings(doc).some(w=>w.ids.some(id=>ids.includes(id))) ? 'Overlap warning · Click to place anyway' : 'Click floor to place · R rotates · Alt disables snap'});
+    this.patch({proposal:{...proposal,doc,entries:resolveFloorItems(items)},placementText:floorWarnings(doc, ids).length ? 'Overlap warning · Click to place anyway' : 'Click floor to place · R rotates · Alt disables snap'});
   };
   updateFloor = (id:string, patch:Partial<import('../../rack-generator/types.ts').FloorItem>) => {
     const doc=structuredClone(this.state.doc),item=doc.floorItems?.find(i=>i.id===id);
