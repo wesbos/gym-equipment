@@ -1,0 +1,519 @@
+{
+  "slug": "salty-goat-garage-gym",
+  "title": "Salty Goat Garage Gym",
+  "owner": "Dr_TattyWaffles (Dan)",
+  "sourceUrl": "https://gymradar.com/gym/salty-goat-garage-gym",
+  "summary": "Dan's 400 sq ft garage in Strongsville, Ohio: \"When the neon is lit be prepared to be wowed by a 40-something dad squatting to pop punk.\" A half rack on a platform with a Voltra, bumpers on the rear horns, a BikeErg, PCD and ski erg for conditioning, and an accessory wall full of handles. Recreated from its Gym Radar page with our catalog parts.",
+  "highlights": [
+    "Half rack on a platform with a Beyond Power Voltra on a Darko QuickMount",
+    "Rogue Echo V2 bumpers stored on the rack's rear horns",
+    "Conditioning corner: Concept2 BikeErg, ski erg, plyo box, kettlebells, sandbag",
+    "Accessory wall of Darko, JD Gym Equipped, Savage and BLUSLM handles",
+    "EliteFTS PCD reverse hyper / GHD / dip station on the left wall"
+  ],
+  "equipment": [
+    "Eleiko Prestera Half Rack (shown as a Rogue HR-2 half rack)",
+    "Beyond Power Voltra with Darko QuickMount bracket",
+    "REP Pegasus Seat",
+    "Rogue Echo Bumper Plates V2",
+    "American Barbell Stainless Steel IPF Chewy Bar",
+    "Fringe Sport Midas Open Trap Bar (shown as the REP Open Trap Bar)",
+    "REP Nighthawk Adjustable Bench",
+    "Ironmaster Super Bench PRO V2",
+    "EliteFTS Signature Posterior Chain Developer (shown as a Rogue RH-2 reverse hyper)",
+    "Concept2 BikeErg",
+    "Torque Relentless Ripper (shown as a Concept2 SkiErg)",
+    "Rogue CTM-1 Functional Cable Tower (shown as the Titan wall pulley tower)",
+    "Eleiko Evo Dumbbells (shown as a loaded REP dumbbell rack)",
+    "PowerBlock Pro 100 EXP (shown on a PowerBlock column stand)",
+    "Rogue Kettlebells (E-coat)",
+    "Rogue Resin Plyo Box (shown as the Rogue Games Box)",
+    "Cerberus Dual-Ply Sandbag",
+    "AbMat medicine balls (shown as a Rogue medicine ball)",
+    "Darko Danglers, BLUSLM lat bars and handles, TRX suspension trainer",
+    "PRx specialty bar storage (shown as Rogue wall mount Swiss brackets)",
+    "Wall Control pegboard accessory wall"
+  ],
+  "doc": {
+    "version": 2,
+    "rack": {
+      "height": 2343.15,
+      "width": 1092.2,
+      "depth": 431.8,
+      "tube": 76.2,
+      "holeDiameter": 17.4625,
+      "pitch": 50.8,
+      "firstHole": 101.6,
+      "benchStart": 457.19999999999993,
+      "benchEnd": 1219.1999999999998,
+      "benchSpacing": 25.4
+    },
+    "removed": [
+      "left-lower-crossmember",
+      "right-lower-crossmember",
+      "rear-crossmember"
+    ],
+    "accessories": [
+      {
+        "id": "accessory-1",
+        "part": "pullup-straight",
+        "target": {
+          "uprightId": "front-left",
+          "hole": 39,
+          "face": "right"
+        },
+        "paired": false,
+        "params": {
+          "diameter": 31.75
+        },
+        "spanTo": "front-right"
+      },
+      {
+        "id": "accessory-2",
+        "part": "rogue-monster-lite-j-cups",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 20
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-3",
+        "part": "rogue-monster-lite-strap-safety-2",
+        "target": {
+          "uprightId": "front-left",
+          "face": "right",
+          "hole": 11
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-4",
+        "part": "storage-pin-long",
+        "target": {
+          "uprightId": "rear-left",
+          "face": "left",
+          "hole": 12
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "rear-right",
+        "plates": [
+          "rogue-echo-v2:45",
+          "rogue-echo-v2:45",
+          "rogue-echo-v2:25"
+        ]
+      },
+      {
+        "id": "accessory-5",
+        "part": "storage-pin-long",
+        "target": {
+          "uprightId": "rear-left",
+          "face": "left",
+          "hole": 4
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "rear-right",
+        "plates": [
+          "rogue-echo-v2:35",
+          "rogue-echo-v2:35",
+          "rogue-echo-v2:10",
+          "rogue-echo-v2:10"
+        ]
+      },
+      {
+        "id": "accessory-6",
+        "part": "darko-quickmount-voltra",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 22
+        },
+        "paired": true,
+        "params": {
+          "pin": 1
+        },
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-7",
+        "part": "rep-pegasus",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 8
+        },
+        "paired": false,
+        "params": {
+          "series": 1
+        }
+      }
+    ],
+    "nextId": 35,
+    "uprights": {
+      "front-left": {
+        "x": -584.2,
+        "y": -254
+      },
+      "front-right": {
+        "x": 584.2,
+        "y": -254
+      },
+      "rear-left": {
+        "x": -584.2,
+        "y": 254,
+        "height": 1835.15
+      },
+      "rear-right": {
+        "x": 584.2,
+        "y": 254,
+        "height": 1835.15
+      }
+    },
+    "connections": [
+      {
+        "id": "left-upper-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "upper"
+      },
+      {
+        "id": "left-lower-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "lower"
+      },
+      {
+        "id": "right-upper-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "upper"
+      },
+      {
+        "id": "right-lower-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "lower"
+      },
+      {
+        "id": "rear-crossmember",
+        "from": "rear-left",
+        "to": "rear-right",
+        "level": "upper"
+      }
+    ],
+    "structure": {},
+    "profileId": "rogue-hr2",
+    "appearance": {
+      "frameColor": "#1c1d1f"
+    },
+    "room": {
+      "back": 900,
+      "left": 3048,
+      "right": 3048,
+      "front": 5196,
+      "height": 2750
+    },
+    "floorItems": [
+      {
+        "id": "floor-8",
+        "part": "american-barbell-chewy-bar",
+        "position": [
+          0,
+          0
+        ],
+        "rotation": 0,
+        "params": {},
+        "cradle": "accessory-2:left#0+accessory-2:right#0"
+      },
+      {
+        "id": "floor-9",
+        "part": "diy-lifting-platform",
+        "position": [
+          0,
+          700
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 1,
+          "logo": 0
+        }
+      },
+      {
+        "id": "floor-10",
+        "part": "rep-nighthawk",
+        "position": [
+          0,
+          1500
+        ],
+        "rotation": 3.141592653589793,
+        "params": {
+          "backrestAngle": 0,
+          "seatAngle": 0
+        }
+      },
+      {
+        "id": "floor-11",
+        "part": "concept2-bikeerg",
+        "position": [
+          -2410,
+          -250
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "seat": 35,
+          "bars": 5
+        }
+      },
+      {
+        "id": "floor-12",
+        "part": "rogue-rh-2-reverse-hyper",
+        "position": [
+          -2300,
+          1700
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "swing": 0,
+          "load": 0
+        }
+      },
+      {
+        "id": "floor-13",
+        "part": "rep-open-trap-bar",
+        "position": [
+          -1500,
+          3200
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "pose": 0,
+          "handles": 1
+        }
+      },
+      {
+        "id": "floor-14",
+        "part": "titan-wall-pulley-tower",
+        "position": [
+          1450,
+          -550
+        ],
+        "rotation": 0,
+        "params": {
+          "height": 0,
+          "carriage": 14,
+          "loaded": 2
+        }
+      },
+      {
+        "id": "floor-15",
+        "part": "rep-dumbbell-rack",
+        "position": [
+          2380,
+          -540
+        ],
+        "rotation": 0,
+        "params": {
+          "color": 0,
+          "loaded": 1
+        }
+      },
+      {
+        "id": "floor-16",
+        "part": "powerblock-column-stand",
+        "position": [
+          2700,
+          450
+        ],
+        "rotation": -1.5707963267948966,
+        "params": {
+          "finish": 0,
+          "load": 1
+        }
+      },
+      {
+        "id": "floor-17",
+        "part": "ironmaster-super-bench-pro-v2",
+        "position": [
+          1600,
+          1100
+        ],
+        "rotation": -1.5707963267948966,
+        "params": {
+          "attachment": 0,
+          "backrestAngle": 0,
+          "inclineSeat": 0
+        }
+      },
+      {
+        "id": "floor-18",
+        "part": "concept2-skierg",
+        "position": [
+          2380,
+          2450
+        ],
+        "rotation": -1.5707963267948966,
+        "params": {
+          "mount": 0
+        }
+      },
+      {
+        "id": "floor-19",
+        "part": "rogue-games-box",
+        "position": [
+          2500,
+          4850
+        ],
+        "rotation": 0,
+        "params": {
+          "height": 24
+        }
+      },
+      {
+        "id": "floor-20",
+        "part": "cerberus-dual-ply-sandbag",
+        "position": [
+          1600,
+          4750
+        ],
+        "rotation": 0,
+        "params": {
+          "size": 3
+        }
+      },
+      {
+        "id": "floor-21",
+        "part": "rogue-kettlebell",
+        "position": [
+          2200,
+          4150
+        ],
+        "rotation": 0,
+        "params": {
+          "weight": 16
+        }
+      },
+      {
+        "id": "floor-22",
+        "part": "rogue-kettlebell",
+        "position": [
+          2450,
+          4150
+        ],
+        "rotation": 0,
+        "params": {
+          "weight": 24
+        }
+      },
+      {
+        "id": "floor-23",
+        "part": "rogue-kettlebell",
+        "position": [
+          2700,
+          4150
+        ],
+        "rotation": 0,
+        "params": {
+          "weight": 32
+        }
+      },
+      {
+        "id": "floor-24",
+        "part": "rogue-medicine-ball",
+        "position": [
+          1000,
+          4750
+        ],
+        "rotation": 0,
+        "params": {
+          "weight": 20
+        }
+      }
+    ],
+    "wallItems": [
+      {
+        "id": "wall-25",
+        "part": "wall-control-pegboard",
+        "wall": "right",
+        "position": [
+          -850,
+          1500
+        ],
+        "params": {
+          "size": 2,
+          "panels": 3,
+          "color": 0
+        }
+      },
+      {
+        "id": "wall-34",
+        "part": "rogue-wall-mount-swiss-brackets",
+        "wall": "back",
+        "position": [
+          -1500,
+          1300
+        ],
+        "params": {
+          "spacing": 812.8,
+          "loaded": 0
+        }
+      }
+    ],
+    "hangItems": [
+      {
+        "id": "hang-26",
+        "part": "darko-lifting-danglers",
+        "panel": "wall-25",
+        "slot": 20
+      },
+      {
+        "id": "hang-27",
+        "part": "bluslm-wave-lat-bar-84",
+        "panel": "wall-25",
+        "slot": 37
+      },
+      {
+        "id": "hang-28",
+        "part": "bluslm-v-lat-bar-60",
+        "panel": "wall-25",
+        "slot": 8
+      },
+      {
+        "id": "hang-29",
+        "part": "bluslm-close-grip-24",
+        "panel": "wall-25",
+        "slot": 104
+      },
+      {
+        "id": "hang-30",
+        "part": "rep-tricep-rope",
+        "panel": "wall-25",
+        "slot": 97
+      },
+      {
+        "id": "hang-31",
+        "part": "rep-d-handles",
+        "panel": "wall-25",
+        "slot": 112
+      },
+      {
+        "id": "hang-32",
+        "part": "rogue-lat-bar",
+        "panel": "wall-25",
+        "slot": 289
+      },
+      {
+        "id": "hang-33",
+        "part": "trx-home2-suspension-trainer",
+        "panel": "wall-25",
+        "slot": 87
+      }
+    ]
+  }
+}

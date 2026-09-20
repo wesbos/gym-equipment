@@ -1,0 +1,632 @@
+{
+  "slug": "the-no-whine-cellar",
+  "title": "The No Whine Cellar",
+  "owner": "Keith Honeycutt",
+  "sourceUrl": "https://gymradar.com/gym/the-no-whine-cellar",
+  "summary": "Keith Honeycutt's 750 sq ft basement-and-garage gym in Rochester, New York: \"a basement gym established in 2015 that has a rich history of powerlifting and has recently expanded to strongman. Visitors welcome and encouraged.\" An orange Monster rack, orange dumbbell racks and plate trees, a wall of specialty bars and a strongman bay. Recreated from its Gym Radar page with our catalog parts; the garage strongman corner is folded into one long room.",
+  "highlights": [
+    "Orange-and-black Rogue Monster Rack 2.0 with spotter arms and strap safeties",
+    "Strongman bay: Rogue Y-2 yoke, log on crash cushions, atlas stones, keg, circus dumbbell",
+    "Upright farmers handles, Húsafell carry, Dinnie handles and a pile of sandbags",
+    "Orange dumbbell racks and plate trees full of York and CAP iron",
+    "Open gym every Sunday at 9:30 — no whining allowed"
+  ],
+  "equipment": [
+    "Rogue RM Monster Rack 2.0 (orange)",
+    "Rogue Monster J-Cups (1″ sandwich)",
+    "Rogue Monster Safety Spotter Arms 2.0 and Safety Strap System 2.0",
+    "Rogue Monster Band Peg 2.0",
+    "State of the Arc SOTA Competition Bench (shown as an orange TSS Combo Rack)",
+    "REP FB-5000 Competition Flat Bench and AB-3000 FID Bench",
+    "Rogue flat bench",
+    "Body-Solid GDR363 dumbbell racks with CAP hex and York roundhead dumbbells (shown as loaded REP dumbbell racks)",
+    "Rogue Vertical Plate Tree 2.0",
+    "CAP A-frame and Cybex plate trees (shown as a Titan portable plate & barbell tree)",
+    "Parabody 827 dual cable lat pulldown / row (shown as the Titan lat tower)",
+    "Body-Solid GLCE365 leg curl / extension (shown as the Titan leg extension & curl)",
+    "Rogue RH-2 Reverse Hyper",
+    "Horizon T82 treadmill (shown as the Horizon 7.0 AT)",
+    "Concept2 RowErg",
+    "Rogue Y-2 Yoke",
+    "Titan 12″ Rackable Strongman Log",
+    "AbMat Log Crash Cushions",
+    "DIY atlas stones and keg",
+    "Mike Bartos PowerCenter Training Circus Dumbbell",
+    "Titan Upright Farmers Walk Handles",
+    "Titan Húsafell Stone Carry",
+    "Cerberus Replica Dinnie Stone Handles",
+    "Rogue, Freedom Strength, Cerberus and Bells of Steel sandbags",
+    "Texas Squat Bar and Kabuki Duffalo Bar",
+    "Rogue V2 Gun Racks and 3 Bar Gun Rack",
+    "Rogue Belt & Band Hanger"
+  ],
+  "doc": {
+    "version": 2,
+    "rack": {
+      "height": 2295.525,
+      "width": 1092.2,
+      "depth": 762,
+      "tube": 76.2,
+      "holeDiameter": 26.9875,
+      "pitch": 50.8,
+      "firstHole": 63.5
+    },
+    "removed": [],
+    "accessories": [
+      {
+        "id": "accessory-1",
+        "part": "pullup-straight",
+        "target": {
+          "uprightId": "front-left",
+          "hole": 39,
+          "face": "right"
+        },
+        "paired": false,
+        "params": {
+          "diameter": 31.75
+        },
+        "spanTo": "front-right"
+      },
+      {
+        "id": "accessory-2",
+        "part": "rogue-monster-sandwich-j-cup",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 22
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-3",
+        "part": "rogue-monster-spotter-arms-2",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 13
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-4",
+        "part": "rogue-monster-strap-safety-2",
+        "target": {
+          "uprightId": "rear-left",
+          "face": "right",
+          "hole": 10
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "rear-right"
+      },
+      {
+        "id": "accessory-5",
+        "part": "rogue-monster-band-peg-2",
+        "target": {
+          "uprightId": "front-left",
+          "face": "left",
+          "hole": 1
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      }
+    ],
+    "nextId": 40,
+    "uprights": {
+      "front-left": {
+        "x": -584.2,
+        "y": -419.1
+      },
+      "front-right": {
+        "x": 584.2,
+        "y": -419.1
+      },
+      "rear-left": {
+        "x": -584.2,
+        "y": 419.1
+      },
+      "rear-right": {
+        "x": 584.2,
+        "y": 419.1
+      }
+    },
+    "connections": [
+      {
+        "id": "left-upper-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "upper"
+      },
+      {
+        "id": "left-lower-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "lower"
+      },
+      {
+        "id": "right-upper-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "upper"
+      },
+      {
+        "id": "right-lower-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "lower"
+      },
+      {
+        "id": "rear-crossmember",
+        "from": "rear-left",
+        "to": "rear-right",
+        "level": "upper"
+      }
+    ],
+    "structure": {
+      "rear-crossmember": {
+        "part": "profile-nameplate",
+        "params": {}
+      }
+    },
+    "profileId": "rogue-rm-monster-2",
+    "appearance": {
+      "frameColor": "#e0661d"
+    },
+    "room": {
+      "back": 700,
+      "left": 2896,
+      "right": 2896,
+      "front": 11492,
+      "height": 2300
+    },
+    "floorItems": [
+      {
+        "id": "floor-6",
+        "part": "texas-squat-bar",
+        "position": [
+          0,
+          0
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 0
+        },
+        "cradle": "accessory-2:left#0+accessory-2:right#0"
+      },
+      {
+        "id": "floor-7",
+        "part": "rep-fb-5000",
+        "position": [
+          0,
+          1250
+        ],
+        "rotation": 0,
+        "params": {
+          "pad": 0
+        }
+      },
+      {
+        "id": "floor-8",
+        "part": "rep-dumbbell-rack",
+        "position": [
+          -2530,
+          1400
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "color": 3,
+          "loaded": 2
+        }
+      },
+      {
+        "id": "floor-9",
+        "part": "rep-dumbbell-rack",
+        "position": [
+          -2530,
+          2800
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "color": 3,
+          "loaded": 1
+        }
+      },
+      {
+        "id": "floor-10",
+        "part": "rogue-vertical-plate-tree-2",
+        "position": [
+          2480,
+          -250
+        ],
+        "rotation": 0,
+        "params": {
+          "loaded": 2,
+          "plates": 0,
+          "wheels": 0
+        }
+      },
+      {
+        "id": "floor-11",
+        "part": "rogue-vertical-plate-tree-2",
+        "position": [
+          2480,
+          800
+        ],
+        "rotation": 0,
+        "params": {
+          "loaded": 1,
+          "plates": 0,
+          "wheels": 0
+        }
+      },
+      {
+        "id": "floor-12",
+        "part": "titan-portable-plate-barbell-tree",
+        "position": [
+          2480,
+          1900
+        ],
+        "rotation": 0,
+        "params": {
+          "loaded": 2,
+          "plates": 0,
+          "bars": 1
+        }
+      },
+      {
+        "id": "floor-13",
+        "part": "rogue-flat-utility-bench-2",
+        "position": [
+          -900,
+          3000
+        ],
+        "rotation": 0,
+        "params": {}
+      },
+      {
+        "id": "floor-14",
+        "part": "rep-ab-3000",
+        "position": [
+          600,
+          3100
+        ],
+        "rotation": 0,
+        "params": {
+          "backrestAngle": 20,
+          "seatAngle": 0,
+          "roller": 1
+        }
+      },
+      {
+        "id": "floor-15",
+        "part": "tss-combo-rack",
+        "position": [
+          -1850,
+          5300
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "hooks": 40,
+          "bench": 1,
+          "color": 8,
+          "accent": 0
+        }
+      },
+      {
+        "id": "floor-16",
+        "part": "kabuki-duffalo-bar",
+        "position": [
+          -200,
+          3930
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 0
+        }
+      },
+      {
+        "id": "floor-17",
+        "part": "titan-lat-tower-300",
+        "position": [
+          2150,
+          4400
+        ],
+        "rotation": -1.5707963267948966,
+        "params": {
+          "pin": 100,
+          "thigh": 3
+        }
+      },
+      {
+        "id": "floor-18",
+        "part": "titan-leg-extension-curl",
+        "position": [
+          2350,
+          6000
+        ],
+        "rotation": -1.5707963267948966,
+        "params": {
+          "mode": 0,
+          "rep": 0,
+          "thighPad": 4,
+          "backPad": 4,
+          "seatAngle": 10.5,
+          "plates": 0
+        }
+      },
+      {
+        "id": "floor-19",
+        "part": "rogue-rh-2-reverse-hyper",
+        "position": [
+          550,
+          6700
+        ],
+        "rotation": 0,
+        "params": {
+          "swing": 0,
+          "load": 0
+        }
+      },
+      {
+        "id": "floor-20",
+        "part": "horizon-7-0-at",
+        "position": [
+          -1915,
+          7600
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "pose": 0
+        }
+      },
+      {
+        "id": "floor-21",
+        "part": "concept2-rowerg",
+        "position": [
+          2500,
+          8300
+        ],
+        "rotation": 0,
+        "params": {
+          "legs": 0,
+          "pose": 0
+        }
+      },
+      {
+        "id": "floor-22",
+        "part": "rogue-y2-yoke",
+        "position": [
+          0,
+          9300
+        ],
+        "rotation": 0,
+        "params": {
+          "bar": 60,
+          "load": 2
+        }
+      },
+      {
+        "id": "floor-23",
+        "part": "abmat-log-crash-cushions",
+        "position": [
+          -1850,
+          10600
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "gap": 24
+        }
+      },
+      {
+        "id": "floor-24",
+        "part": "titan-rackable-strongman-log",
+        "position": [
+          -100,
+          10950
+        ],
+        "rotation": 0,
+        "params": {
+          "size": 2,
+          "load": 1
+        }
+      },
+      {
+        "id": "floor-25",
+        "part": "diy-atlas-stone",
+        "position": [
+          -600,
+          8200
+        ],
+        "rotation": 0,
+        "params": {
+          "diameter": 16
+        }
+      },
+      {
+        "id": "floor-26",
+        "part": "diy-atlas-stone",
+        "position": [
+          -100,
+          8200
+        ],
+        "rotation": 0,
+        "params": {
+          "diameter": 14
+        }
+      },
+      {
+        "id": "floor-27",
+        "part": "diy-strongman-keg",
+        "position": [
+          1600,
+          10200
+        ],
+        "rotation": 0,
+        "params": {
+          "size": 1,
+          "fill": 2
+        }
+      },
+      {
+        "id": "floor-28",
+        "part": "mike-bartos-training-circus-dumbbell",
+        "position": [
+          2550,
+          10950
+        ],
+        "rotation": 0,
+        "params": {
+          "pose": 1
+        }
+      },
+      {
+        "id": "floor-29",
+        "part": "titan-upright-farmers-walk-handles",
+        "position": [
+          1600,
+          11250
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "mode": 0,
+          "handle": 16,
+          "load": 0
+        }
+      },
+      {
+        "id": "floor-30",
+        "part": "titan-husafell-stone-carry",
+        "position": [
+          -300,
+          7600
+        ],
+        "rotation": 0,
+        "params": {
+          "load": 0
+        }
+      },
+      {
+        "id": "floor-31",
+        "part": "cerberus-replica-dinnie-stone-handles",
+        "position": [
+          1300,
+          7700
+        ],
+        "rotation": 0,
+        "params": {
+          "load": 0
+        }
+      },
+      {
+        "id": "floor-32",
+        "part": "rogue-strongman-sandbag",
+        "position": [
+          2550,
+          9950
+        ],
+        "rotation": 0,
+        "params": {
+          "size": 5
+        }
+      },
+      {
+        "id": "floor-33",
+        "part": "freedom-strength-strongman-sandbag",
+        "position": [
+          2550,
+          10450
+        ],
+        "rotation": 0,
+        "params": {
+          "color": 0,
+          "size": 4
+        }
+      },
+      {
+        "id": "floor-34",
+        "part": "cerberus-dual-ply-sandbag",
+        "position": [
+          -2550,
+          9300
+        ],
+        "rotation": 0,
+        "params": {
+          "size": 3
+        }
+      },
+      {
+        "id": "floor-35",
+        "part": "bells-of-steel-fitness-sandbag",
+        "position": [
+          -2000,
+          9300
+        ],
+        "rotation": 0,
+        "params": {
+          "size": 3
+        }
+      }
+    ],
+    "wallItems": [
+      {
+        "id": "wall-36",
+        "part": "rogue-v2-gun-rack",
+        "wall": "right",
+        "position": [
+          -4000,
+          1300
+        ],
+        "params": {
+          "spacing": 1168.3999999999999,
+          "liners": 1,
+          "loaded": 3
+        }
+      },
+      {
+        "id": "wall-37",
+        "part": "rogue-v2-gun-rack",
+        "wall": "right",
+        "position": [
+          -1700,
+          1300
+        ],
+        "params": {
+          "spacing": 1168.3999999999999,
+          "liners": 1,
+          "loaded": 3
+        }
+      },
+      {
+        "id": "wall-38",
+        "part": "rogue-3-bar-gun-rack",
+        "wall": "left",
+        "position": [
+          1100,
+          1350
+        ],
+        "params": {
+          "spacing": 1168.3999999999999,
+          "liners": 1,
+          "loaded": 3
+        }
+      },
+      {
+        "id": "wall-39",
+        "part": "rogue-belt-band-hanger",
+        "wall": "back",
+        "position": [
+          -1400,
+          1500
+        ],
+        "params": {
+          "depth": 127
+        }
+      }
+    ]
+  }
+}
