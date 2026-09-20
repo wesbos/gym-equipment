@@ -92,13 +92,20 @@ test('gym-wave2-export_menu: keyboard, memory, failures, cancellation and real d
   }
   await page.reload(); await trigger.click(); await expect(print).toHaveAttribute('aria-checked', 'true'); await expect(print).toBeFocused();
   await page.setViewportSize({ width: 390, height: 844 });
-  // Phones (#203): Export lives in the top bar's overflow menu; it and its options stay on screen.
+  // Phones (#203): Export lives in the top bar's overflow menu; it and its options stay on screen. Wait for the phone
+  // layout first: measuring during the switch from the desktop toolbar reads the old, wider position.
+  await expect(page.locator('.builder-page')).toHaveAttribute('data-layout', 'phone');
   await page.getByRole('button', { name: 'More actions' }).click();
-  expect((await trigger.boundingBox())!.x + (await trigger.boundingBox())!.width).toBeLessThanOrEqual(390);
+  await expect(page.locator('.toolbar-menu')).toBeVisible();
+  const within = async (locator: ReturnType<typeof page.locator>) => {
+    const box = (await locator.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(390);
+  };
+  await within(trigger);
   if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.click();
-  const options = (await page.locator('.export-menu-options').boundingBox())!;
-  expect(options.x).toBeGreaterThanOrEqual(0);
-  expect(options.x + options.width).toBeLessThanOrEqual(390);
+  await expect(page.locator('.export-menu-options')).toBeVisible();
+  await within(page.locator('.export-menu-options'));
   await page.screenshot({ path: 'docs/evidence/issue-44/export-menu-mobile.png' });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.screenshot({ path: 'docs/evidence/issue-44/export-menu.png' });

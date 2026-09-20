@@ -17,10 +17,14 @@
 .builder-page .stage-overlay > * { pointer-events: auto; }
 
 /* Touch placement bar (#204): the scene mounts big Place / Cancel / rotate buttons in the stage overlay while a finger
- * places a part. It replaces the placement hint's small buttons (the hint keeps its text) and sits just above the hint. */
-.builder-page:has(.touch-placement[data-shown]) .placement-hint :is(#accept-placement, #cancel-placement) { display: none; }
-.builder-page .touch-placement { --touch-bar-offset: 146px; }
-.builder-page[data-layout^=phone] .touch-placement { --touch-bar-offset: 102px; }
+ * places a part, at `bottom: calc(--touch-bar-offset + view inset + safe-area-inset-bottom)`. While it shows, it takes
+ * the placement hint's slot at the bottom of the stage and replaces the hint's small buttons; the hint keeps its text
+ * and moves to the top of the stage, so the two never overlap whatever the hint's length. */
+.builder-page .touch-placement { --touch-bar-offset: 94px; }
+.builder-page .stage:has(.touch-placement[data-shown]) .placement-hint :is(#accept-placement, #cancel-placement) { display: none; }
+.builder-page .stage:has(.touch-placement[data-shown]) .placement-hint { top: 68px; bottom: auto; }
+/* Narrow stages (tablets): the rack caption steps aside while placing, so the hint and bar have the bottom centre. */
+@media (max-width: 1150px) { .builder-page .stage:has(#placement-hint) .stage-caption { visibility: hidden; } }
 
 /* ---------- Tablet and desktop: toolbar order, collapsible panels ---------- */
 .builder-page:not([data-layout^=phone]) .toolbar-actions .toolbar-add { order: 0; }
@@ -69,9 +73,10 @@
 .builder-page[data-layout^=phone] .toolbar-actions .overflow-trigger { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border-radius: 20px; }
 .builder-page[data-layout^=phone] .overflow-trigger svg { fill: currentColor; }
 .builder-page[data-layout^=phone] .toolbar-menu { display: none; }
+/* Pinned to both viewport edges (inside the safe area) and capped at 320 px, so it can never extend past either side. */
 .builder-page[data-layout^=phone] .toolbar-overflow[data-open] .toolbar-menu { display: flex; flex-direction: column; align-items: stretch; gap: 6px;
-  position: fixed; z-index: 40; top: calc(var(--bar-h) + env(safe-area-inset-top) + 4px); right: max(8px, env(safe-area-inset-right));
-  width: min(320px, calc(100vw - 16px)); max-height: calc(100dvh - var(--bar-h) - env(safe-area-inset-top) - 16px); overflow: auto; overscroll-behavior: contain;
+  position: fixed; z-index: 40; top: calc(var(--bar-h) + env(safe-area-inset-top) + 4px);
+  left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); width: auto; max-width: 320px; margin-left: auto; box-sizing: border-box; max-height: calc(100dvh - var(--bar-h) - env(safe-area-inset-top) - 16px); overflow: auto; overscroll-behavior: contain;
   padding: 8px; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 40px #1c2f2440; }
 .builder-page[data-layout^=phone] .toolbar-menu > button, .builder-page[data-layout^=phone] .toolbar-menu > a,
 .builder-page[data-layout^=phone] .toolbar-menu .config-manager > summary, .builder-page[data-layout^=phone] .toolbar-menu .export-menu > button {
@@ -81,8 +86,10 @@
 .builder-page[data-layout^=phone] .toolbar-menu .config-manager fieldset { position: static; width: auto; box-shadow: none; border: 0; border-top: 1px solid var(--line); margin: 0; padding: 12px; }
 .builder-page[data-layout^=phone] .toolbar-menu .config-manager fieldset button { min-height: 40px; font-size: 13px; }
 .builder-page[data-layout^=phone] .toolbar-menu .export-menu { display: block; }
-.builder-page[data-layout^=phone] .export-menu-options { position: fixed; z-index: 45; top: calc(var(--bar-h) + env(safe-area-inset-top) + 4px);
-  left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); width: auto; max-height: calc(100dvh - var(--bar-h) - env(safe-area-inset-top) - 16px); }
+/* Export options open inline under the Export button, inside the menu (which scrolls); Download stays pinned. */
+.builder-page[data-layout^=phone] .toolbar-menu .export-menu-options { position: static; width: auto; max-height: none; overflow: visible;
+  margin: 6px 0 0; padding: 12px 10px; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: none; }
+.builder-page[data-layout^=phone] .toolbar-menu .export-menu-actions { bottom: -8px; margin-bottom: -12px; padding-bottom: 12px; }
 .builder-page[data-layout^=phone] .export-menu-options button { min-height: 40px; font-size: 13px; }
 
 /* Stage: fills the viewport between the top bar and the settled sheet (the sheet sets --sheet-rest). */
@@ -97,14 +104,21 @@
 .builder-page[data-layout^=phone] .stage-caption { top: 8px; bottom: auto; left: auto; right: max(8px, env(safe-area-inset-right)); height: 36px; display: flex; align-items: center; padding: 0 12px; border-radius: 18px; }
 .builder-page[data-layout^=phone] .stage-caption .eyebrow { display: none; }
 .builder-page[data-layout^=phone] #dimensions { margin: 0; font-size: 11px; white-space: nowrap; }
-.builder-page[data-layout^=phone] .stage-actions { left: auto; right: max(8px, env(safe-area-inset-right)); bottom: 8px; gap: 6px; }
+/* --stage-gap: the stage's bottom margin. Portrait stages end above the sheet; landscape ones reach the home indicator. */
+.builder-page[data-layout^=phone] .stage { --stage-gap: 8px; }
+.builder-page[data-layout=phone-land] .stage { --stage-gap: max(8px, env(safe-area-inset-bottom)); }
+.builder-page[data-layout^=phone] .stage-actions { left: auto; right: max(8px, env(safe-area-inset-right)); bottom: var(--stage-gap); gap: 6px; }
+/* The touch bar sits just above Fit view / Parts list (the scene adds the safe-area inset itself, so take it back out). */
+.builder-page[data-layout^=phone] .touch-placement { --touch-bar-offset: calc(var(--stage-gap) + 46px - env(safe-area-inset-bottom, 0px)); }
+.builder-page[data-layout^=phone] .stage:has(.touch-placement[data-shown]) .placement-hint { top: 52px; }
+.builder-page[data-layout^=phone] .view-menu[data-open] { z-index: 6; }
 .builder-page[data-layout^=phone] .stage-actions button { height: 36px; padding: 0 12px; font-size: 12px; border-radius: 18px; }
 .builder-page[data-layout^=phone] .panel-toggles { display: none; }
-.builder-page[data-layout^=phone] .placement-hint { left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); bottom: 52px; transform: none; width: auto; max-width: none;
+.builder-page[data-layout^=phone] .placement-hint { left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); bottom: calc(var(--stage-gap) + 44px); transform: none; width: auto; max-width: none;
   flex-wrap: wrap; gap: 8px; padding: 10px 12px; font-size: 12px; white-space: normal; }
 .builder-page[data-layout^=phone] .placement-hint #placement-text { flex: 1 1 100%; }
 .builder-page[data-layout^=phone] .placement-hint button { min-height: 38px; padding: 8px 14px; font-size: 13px; }
-.builder-page[data-layout^=phone] .parts-drawer { left: 8px; right: 8px; top: 52px; bottom: 52px; max-height: none; min-height: 0; padding: 14px; }
+.builder-page[data-layout^=phone] .parts-drawer { left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); top: 52px; bottom: calc(var(--stage-gap) + 44px); max-height: none; min-height: 0; padding: 14px; }
 .builder-page[data-layout^=phone] .parts-drawer .bom-row { min-height: 40px; font-size: 12px; }
 
 /* The sheet. Its box is the full snap size; it slides by --sheet-full - --sheet-size (or an inline transform while
@@ -128,6 +142,9 @@
 .builder-page[data-layout^=phone] .sheet-body { display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; }
 .builder-page[data-layout^=phone] .status-bar { order: -1; flex: none; height: 24px; background: transparent; border: 0; padding: 0 16px; font-size: 11px; }
 .builder-page[data-layout^=phone] [data-sheet-panel] { display: none; }
+/* Collapsed, only the tabs and status line show: the panel under them (and under the home indicator) stays hidden
+ * until the sheet opens or a drag starts. */
+.builder-page[data-layout^=phone] .builder-dock[data-snap=peek]:not(.dragging) .sheet-body > [data-sheet-panel] { visibility: hidden; }
 .builder-page[data-layout^=phone] .sheet-body > [data-sheet-panel] { flex-direction: column; flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto;
   overscroll-behavior: contain; -webkit-overflow-scrolling: touch; border: 0; background: transparent;
   padding-bottom: calc(var(--sheet-full, 0px) - var(--sheet-size, 0px) + env(safe-area-inset-bottom) + 16px); }
@@ -138,14 +155,14 @@
 .builder-page[data-layout^=phone] .sheet-body button { font-size: 12px; }
 
 /* Panels inside the sheet. */
-.builder-page[data-layout^=phone] .sheet-body > .catalog-panel { padding: 4px max(14px, env(safe-area-inset-left)) 0; padding-right: max(14px, env(safe-area-inset-right)); }
+.builder-page[data-layout^=phone] .sheet-body > .catalog-panel { padding-top: 4px; padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
 .builder-page[data-layout^=phone] .catalog-panel .panel-heading { display: none; }
 .builder-page[data-layout^=phone] .catalog-panel #catalog { flex: none; overflow: visible; min-height: auto; }
 .builder-page[data-layout^=phone] .catalog-panel .pair-control { font-size: 12px; padding: 10px; }
 .builder-page[data-layout^=phone] .catalog-panel .pair-control input { width: 18px; height: 18px; }
 .builder-page[data-layout^=phone] .catalog-footer { display: grid; gap: 10px; }
 .builder-page[data-layout^=phone] .catalog-footer a { font-size: 13px; }
-.builder-page[data-layout^=phone] .sheet-body > .inspector-panel { padding: 4px max(16px, env(safe-area-inset-left)) 0; padding-right: max(16px, env(safe-area-inset-right)); }
+.builder-page[data-layout^=phone] .sheet-body > .inspector-panel { padding-top: 4px; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
 .builder-page[data-layout^=phone] .inspector-topline { display: none; }
 .builder-page[data-layout^=phone] .back-button { margin-top: 2px; min-height: 32px; font-size: 13px; }
 .builder-page[data-layout^=phone] #selection-title { font-size: 22px; margin-top: 6px; }
@@ -180,8 +197,7 @@
 .builder-page[data-layout=phone-land] .status-bar { padding: 0 14px; }
 .builder-page[data-layout=phone-land] .view-controls { grid-template-columns: repeat(3, minmax(0, 1fr)); width: 252px; }
 .builder-page[data-layout=phone-land] .view-controls button { min-height: 36px; }
-.builder-page[data-layout=phone-land] .placement-hint { bottom: 50px; }
-.builder-page[data-layout=phone-land] .parts-drawer { top: 50px; bottom: 50px; }
+.builder-page[data-layout=phone-land] .parts-drawer { top: 50px; bottom: calc(var(--stage-gap) + 42px); }
 /* The parts gallery on a short landscape phone: full screen, one-row header, no filter row or detail strip (a tap on a
  * card adds the part), so the grid keeps most of the height. */
 @media (max-height: 500px) and (max-width: 1000px) {
