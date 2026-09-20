@@ -23,8 +23,12 @@ export interface WallSurface { finish: WallFinish; color?: string; wainscot?: nu
 /** Every wall's surface, with optional per-wall `overrides` (Coop's end wall differs from his side walls, say). */
 export interface RoomWalls extends WallSurface { overrides?: Partial<Record<WallId, WallSurface>> }
 /** A turf lane: an axis-aligned rectangle on the floor, centred at `position` (floor [x, z] mm), `size` [x, z] mm.
- * `lines` paints hash marks every metre; `text` stencils a word across the lane near both ends (a brand or "PUSH"). */
-export interface TurfLane { position: Vec2; size: Vec2; lines?: boolean; text?: string }
+ * `lines` paints hash marks every metre; `text` stencils a word across the lane near both ends (a brand or "PUSH").
+ * `textRotation` (degrees, counter-clockwise seen from above) turns the stencil: 0 reads across the lane from its +x/+z
+ * end; 90 or 270 run the word along the lane, as PLAE letters their sprint turf. */
+export interface TurfLane { position: Vec2; size: Vec2; lines?: boolean; text?: string; textRotation?: TurfTextRotation }
+export const TURF_TEXT_ROTATIONS = [0, 90, 180, 270] as const;
+export type TurfTextRotation = (typeof TURF_TEXT_ROTATIONS)[number];
 /** Linear LED fixtures, `count` evenly spaced rows running along the room's x or z axis. */
 export interface CeilingLights { count: number; along: 'x' | 'z' }
 /** A ceiling at the room height. Present means on. */
@@ -83,13 +87,17 @@ function validateTurf(input: unknown): TurfLane[] {
   if (!Array.isArray(input) || input.length > TURF_LIMITS.lanes) throw Error(`Turf must be a list of up to ${TURF_LIMITS.lanes} lanes.`);
   return input.map(lane => {
     if (!plain(lane)) throw Error('Each turf lane must be an object.');
-    only(lane, ['position', 'size', 'lines', 'text'], 'turf lane');
+    only(lane, ['position', 'size', 'lines', 'text', 'textRotation'], 'turf lane');
     const pair = (v: unknown, ok: (n: unknown) => boolean) => Array.isArray(v) && v.length === 2 && v.every(ok);
     if (!pair(lane.position, n => inRange(n, [-TURF_LIMITS.position, TURF_LIMITS.position]))) throw Error(`Turf position must be [x, z] within ±${TURF_LIMITS.position} mm.`);
     if (!pair(lane.size, n => inRange(n, TURF_LIMITS.size))) throw Error(`Turf size must be [x, z], each ${TURF_LIMITS.size[0]}–${TURF_LIMITS.size[1]} mm.`);
     if (lane.lines !== undefined && typeof lane.lines !== 'boolean') throw Error('Turf lines must be true or false.');
     if (lane.text !== undefined && (typeof lane.text !== 'string' || !TURF_TEXT.test(lane.text))) throw Error('Turf text must be 1–16 capital letters, digits, spaces or & . ! -.');
-    return { position: [...lane.position as Vec2] as Vec2, size: [...lane.size as Vec2] as Vec2, ...(lane.lines !== undefined ? { lines: lane.lines } : {}), ...(lane.text !== undefined ? { text: lane.text } : {}) };
+    if (lane.textRotation !== undefined && !(TURF_TEXT_ROTATIONS as readonly unknown[]).includes(lane.textRotation)) throw Error('Turf text rotation must be 0, 90, 180 or 270 degrees.');
+    return {
+      position: [...lane.position as Vec2] as Vec2, size: [...lane.size as Vec2] as Vec2, ...(lane.lines !== undefined ? { lines: lane.lines } : {}), ...(lane.text !== undefined ? { text: lane.text } : {}),
+      ...(lane.textRotation ? { textRotation: lane.textRotation as TurfTextRotation } : {}),
+    };
   });
 }
 function validateCeiling(input: unknown): RoomCeiling {

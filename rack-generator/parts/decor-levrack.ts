@@ -6,7 +6,7 @@ import type { ManifoldAPI, NumericParams, PartDefinition, SolidPart } from '../t
 import { floorDefinition } from '../floor-part.ts';
 import {
   LEVRACK_MOBILE_STORAGE, LEVRACK_WORKSTATION, LEVRACK_OVERHEAD, PLAE_STORAGE_RACK,
-  LEVRACK, PLAE_RACK, WORKSTATION_LENGTHS, levrackLength, levrackDepth, levrackHeight, inch, ft,
+  LEVRACK, PLAE_RACK, WORKSTATION_LENGTHS, overheadLength, levrackLength, levrackDepth, levrackHeight, inch, ft,
 } from '../floor-parts/decor.ts';
 import { decorKit, finish, glow, lettering, torus, BLACK_STEEL, RUBBER, type Kit } from './decor-kit.ts';
 
@@ -80,7 +80,7 @@ export const buildLevrackWorkstation = (api: ManifoldAPI, p: NumericParams): Sol
 };
 
 export const buildLevrackOverhead = (api: ManifoldAPI, p: NumericParams): SolidPart[] => {
-  const L = levrackLength(p), D = levrackDepth(p), H = levrackHeight(p);
+  const L = overheadLength(p), D = levrackDepth(p), H = levrackHeight(p);
   return decorKit(api, k => {
     for (const x of [-L / 2 + U / 2, L / 2 - U / 2]) for (const y of [-D / 2 + U / 2 + 12, D / 2 - U / 2]) k.add(FRAME, post(k, x, y, 0, H - 160));
     k.add(FRAME, k.span([-L / 2, D / 2 - U, H - 160], [L / 2, D / 2, H - 84]));
@@ -102,13 +102,15 @@ export const buildLevrackOverhead = (api: ManifoldAPI, p: NumericParams): SolidP
 // ── PLAE storage rack ─────────────────────────────────────────────────────────────────────────────────
 /** A low-poly kettlebell of `kg` standing on z0 at (x, y), handle across X. */
 function kettlebell(k: Kit, kg: number, x: number, y: number, z0: number) {
-  const d = 150 + kg * 3.6, r = d / 2, cz = z0 + r * .92, R = r * .62, t = 15 + kg * .15;
+  const d = 150 + kg * 3.6, r = d / 2, cz = z0 + r * .92, R = r * .55, t = 15 + kg * .15, hz = cz + r * .85;
   const body = k.k(k.k(k.api.Manifold.sphere(r, 20)).translate([x, y, cz]));
-  const handleRing = k.k(k.k(torus(k, R, t, 24, 8).rotate([90, 0, 0])).translate([x, y, cz + r * .55]));
-  const handle = k.k(handleRing.intersect(k.span([x - R - t - 1, y - t - 1, cz + r * .55], [x + R + t + 1, y + t + 1, cz + r * .55 + R + t + 1])));
-  k.add(BELL, body, handle);
+  // Handle: an arch above the bell's shoulders on two short horns.
+  const handleRing = k.k(k.k(torus(k, R, t, 24, 8).rotate([90, 0, 0])).translate([x, y, hz]));
+  const handle = k.k(handleRing.intersect(k.span([x - R - t - 1, y - t - 1, hz], [x + R + t + 1, y + t + 1, hz + R + t + 1])));
+  const horns = [-1, 1].map(s => k.cyl(r * .3, t, 'z', [x + s * R, y, hz - r * .15], 12));
+  k.add(BELL, body, handle, ...horns);
   const band = bands.get(kg);
-  if (band) for (const s of [-1, 1]) k.add(band, k.cyl(18, t + 2, 'z', [x + s * R, y, cz + r * .55 + 9], 12));
+  if (band) for (const s of [-1, 1]) k.add(band, k.cyl(16, t + 2, 'z', [x + s * R, y, hz - r * .12], 12));
 }
 export const buildPlaeRack = (api: ManifoldAPI, p: NumericParams): SolidPart[] => {
   const { width: W, depth: D, height: H, shelves, upright: S } = PLAE_RACK;

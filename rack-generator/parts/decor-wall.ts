@@ -132,11 +132,11 @@ function banner(k: Kit, s: BannerSpec) {
   k.add(field, slab(k, -s.w / 2, -s.h / 2, s.w / 2, s.h / 2, -5, -1));
   if (s.border) k.add(finish(`Banner border ${s.border}`, 'source', s.border, 0, .92), ring(k, 0, 0, s.w, s.h, s.bw, -6, -4.5));
   if (s.lines.length) {
-    const inner = s.w - 2 * s.bw - 140, gap = .32, n = s.lines.length;
+    const inner = s.w - 2 * s.bw - 140, gap = s.weight ? .18 : .32, n = s.lines.length;
     const cap = Math.min(s.cap, (s.h - 2 * s.bw - 80) / (n + (n - 1) * gap));
     s.lines.forEach((line, i) => {
       const z = ((n - 1) / 2 - i) * cap * (1 + gap);
-      let text = lettering(k, line, cap, [0, z]);
+      let text = lettering(k, line, cap, [0, z], s.track, s.weight);
       const bounds = text.bounds(), width = bounds.max[0] - bounds.min[0];
       if (width > inner) text = k.k(text.scale([inner / width, 1]));
       k.add(ink, k.front(text, 1.2, -5.2));

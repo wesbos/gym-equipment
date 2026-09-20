@@ -8,7 +8,7 @@ import { roomOf } from '../../rack-generator/wall-items.ts';
 import { ROOM_DEFAULTS, ROOM_LIMITS, wallFrames, WALL_IDS, type WallId } from '../../rack-generator/walls.ts';
 import {
   DEFAULT_CEILING_COLOR, DEFAULT_WALL_COLOR, FLOOR_FINISHES, FLOOR_FINISH_LABELS, LIGHT_LIMITS, TURF_LIMITS, WAINSCOT_DEFAULT, WAINSCOT_LIMITS,
-  TURF_TEXT, WALL_FINISHES, WALL_FINISH_LABELS, WALL_PAINTS, type FloorFinish, type RoomCeiling, type TurfLane, type WallFinish, type WallSurface,
+  TURF_TEXT, TURF_TEXT_ROTATIONS, type TurfTextRotation, WALL_FINISHES, WALL_FINISH_LABELS, WALL_PAINTS, type FloorFinish, type RoomCeiling, type TurfLane, type WallFinish, type WallSurface,
 } from '../../rack-generator/room-finishes.ts';
 import './appearance-controls.css';
 
@@ -105,6 +105,11 @@ export function RoomInspector({ store }: { store: BuilderStore }) {
               onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
               onBlur={e => { const text = e.currentTarget.value.toUpperCase().trim(); if (text === (l.text ?? '')) return; if (text && !TURF_TEXT.test(text)) { store.status('Turf text: capitals, digits, spaces and & . ! - only.', true); return; }
                 const { text: _old, ...rest } = l; setTurf(turf.map((x, j) => j === i ? (text ? { ...rest, text } : rest) : x)); }} />
+          </label>
+          <label className="field"><span>Stencil direction</span>
+            <select aria-label={`Turf lane ${i + 1} stencil direction`} value={l.textRotation ?? 0} onChange={e => { const turn = Number(e.target.value) as TurfTextRotation, { textRotation: _old, ...rest } = l; setTurf(turf.map((x, j) => j === i ? (turn ? { ...rest, textRotation: turn } : rest) : x)); }}>
+              {TURF_TEXT_ROTATIONS.map(r => <option key={r} value={r}>{['Across the lane', 'Along, turned left', 'Across, upside down', 'Along, turned right'][r / 90]}</option>)}
+            </select>
           </label>
           <label className="field"><span>Hash marks</span><input type="checkbox" aria-label={`Turf lane ${i + 1} hash marks`} checked={!!l.lines} onChange={e => lane(i, { lines: e.target.checked })} /></label>
           <button type="button" className="danger" onClick={() => setTurf(turf.filter((_, j) => j !== i))}>Remove turf lane {i + 1}</button>

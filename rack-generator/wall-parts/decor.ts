@@ -79,9 +79,9 @@ export const BAY_WINDOW = defineWallPart({
 });
 
 // ── Banners ───────────────────────────────────────────────────────────────────────────────────────────
-export interface BannerSpec { w: number; h: number; field: string; border: string; ink: string; lines: readonly string[]; cap: number; bw: number }
+export interface BannerSpec { w: number; h: number; field: string; border: string; ink: string; lines: readonly string[]; cap: number; bw: number; weight?: number; track?: number }
 export const AMERICAN_MADE: BannerSpec = { w: inch(72), h: inch(22), field: '#1f2b45', border: '#b12a31', ink: '#efe9dc', lines: ['AMERICAN MADE'], cap: 250, bw: 42 };
-export const STAY_WEIRD: BannerSpec = { w: inch(60), h: inch(36), field: '#efe2c3', border: '#141414', ink: '#141414', lines: ['STAY', 'WEIRD'], cap: 300, bw: 48 };
+export const STAY_WEIRD: BannerSpec = { w: inch(60), h: inch(36), field: '#efe2c3', border: '#141414', ink: '#141414', lines: ['STAY', 'WEIRD'], cap: 330, bw: 48, weight: .3, track: .05 };
 export const BANNER_SIZES = [[60, 36], [72, 24], [72, 48], [48, 24]] as const;
 export const BANNER_FIELDS = [['Navy', '#1f2b45'], ['Black', '#161718'], ['Red', '#a8262c'], ['Cream', '#efe2c3'], ['Forest green', '#23402d']] as const;
 export const BANNER_BORDERS = [['No border', ''], ['Red', '#b12a31'], ['Black', '#141414'], ['White', '#efe9dc'], ['Gold', '#c59a3c']] as const;

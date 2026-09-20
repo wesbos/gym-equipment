@@ -144,13 +144,20 @@ export const LEVRACK_WORKSTATION = defineFloorPart({
   vendor: { vendor: 'Levrack', url: 'https://levrack.com/product/levrack-workstation/', credit: 'Levrack — Workstation', trademark: LEVRACK_TM,
     reconstruction: 'Published: 4 ft and 8 ft lengths, 11-gauge solid steel tops on a pallet-rack upright and two beams. Top height (36″), depth (30″), drawer bank and slatwall panels estimated from Coop’s tour (1:45–2:57).' + SCENERY },
 });
+/** Overhead frames also come in the Workstation's 4 ft length (over a 4 ft bench, as in Coop's cove). */
+export const OVERHEAD_LENGTHS = [4, 7, 8, 10, 12] as const;
+export const overheadLength = (p: NumericParams) => ft(pick(OVERHEAD_LENGTHS, p.length, 'overhead frame length')) + (p.length ? inch(6) : inch(3));
 export const LEVRACK_OVERHEAD = defineFloorPart({
   id: 'levrack-overhead-frame', name: 'Levrack overhead frame', title: 'Levrack overhead frame', noun: 'frame', section: 'Room decor', underlay: true,
   description: 'A Levrack overhead frame: four pallet-rack uprights, a wire-deck top shelf, a lettered black header and an under-shelf light, standing over a workstation or cabinets. Independent reconstruction; Levrack trademarks belong to Levrack, LLC.',
-  params: [...levrackParams, { key: 'light', label: 'Light', default: 1, options: [0, 1], format: (v: number) => v ? 'Under-shelf LED' : 'None' }],
-  footprint: p => ({ width: levrackLength(p), depth: levrackDepth(p) }),
+  params: [
+    { key: 'length', label: 'Length', default: 0, options: [0, 1, 2, 3, 4], format: (v: number) => OVERHEAD_LENGTHS[v] ? `${OVERHEAD_LENGTHS[v]} ft` : String(v) },
+    ...levrackParams.slice(1),
+    { key: 'light', label: 'Light', default: 1, options: [0, 1], format: (v: number) => v ? 'Under-shelf LED' : 'None' },
+  ],
+  footprint: p => ({ width: overheadLength(p), depth: levrackDepth(p) }),
   vendor: { vendor: 'Levrack', url: 'https://levrack.com/', credit: 'Levrack — overhead frame', trademark: LEVRACK_TM,
-    reconstruction: 'Published: 7/8/10/12 ft frames, 7 or 8 ft tall, 30/36/48″ deep. Header size, wire deck, diagonal brace and light estimated from Coop’s tour (1:32, 2:52). The header lettering is plain block capitals, not the Levrack logo.' + SCENERY },
+    reconstruction: 'Published: 7/8/10/12 ft frames (and the 4 ft Workstation length), 7 or 8 ft tall, 30/36/48″ deep. Header size, wire deck, diagonal brace and light estimated from Coop’s tour (1:32, 2:52). The header lettering is plain block capitals, not the Levrack logo.' + SCENERY },
 });
 
 // ── Storage and furniture ─────────────────────────────────────────────────────────────────────────────
