@@ -1,6 +1,7 @@
 import { createAssembly, validateAssembly, addAccessory, defaultAccessoryTarget } from './assembly.ts';
 import { extendUpright } from './graph-edits.ts';
-import { GRID_PROFILES, gridProfile, type StarterKind } from './profiles.ts';
+import { GRID_PROFILES, gridProfile, type StarterAttachment, type StarterKind } from './profiles.ts';
+import { rackAutoFit } from './rack-mounts.ts';
 import type { RackDoc } from './types.ts';
 export interface RackPreset {
   id: string; label: string; kind: 'half' | StarterKind; depth: number; profileId: string; height: number; featured?: boolean;
@@ -11,6 +12,10 @@ export interface RackPreset {
   /** Front pull-up bar diameters, highest first. */
   pullups?: readonly number[];
   rearCrossmember?: boolean;
+  /** Only a rear lower crossmember (low rear brace) instead of the side lower crossmembers. */
+  rearLower?: boolean;
+  /** Rack attachments that ship with the rack (placed at their registry-preferred face and hole). */
+  attachments?: readonly StarterAttachment[];
 }
 // Featured starters are existing supported combinations; preserve the full catalog.
 const featuredIds = new Set([
@@ -38,6 +43,7 @@ export const RACK_PRESETS: readonly RackPreset[] = [
     featured: !!starter.featured, vendor: vendorOf(profile.id),
     ...(starter.rearHeight ? { rearHeight: starter.rearHeight } : {}), ...(starter.pullups?.length ? { pullups: starter.pullups } : {}),
     ...(starter.rearCrossmember === false ? { rearCrossmember: false } : {}),
+    ...(starter.rearLower ? { rearLower: true } : {}), ...(starter.attachments?.length ? { attachments: starter.attachments } : {}),
   }))),
 ];
 export function applyPreset(id: string): RackDoc {
@@ -67,6 +73,10 @@ export function applyPreset(id: string): RackDoc {
   if (preset.rearHeight) for (const post of ['rear-left', 'rear-right']) doc.uprights[post] = { ...doc.uprights[post], height: preset.rearHeight };
   const ids = new Set(doc.connections.map(e => e.id));
   if (profile.lowerCrossmembers === false) doc.removed = [...doc.removed, ...['left-lower-crossmember', 'right-lower-crossmember'].filter(e => ids.has(e) && !doc.removed.includes(e))];
+  if (preset.rearLower) {
+    doc.removed = [...doc.removed, ...['left-lower-crossmember', 'right-lower-crossmember'].filter(e => ids.has(e) && !doc.removed.includes(e))];
+    doc.connections = [...doc.connections, { id: 'rear-lower-crossmember', from: 'rear-left', to: 'rear-right', level: 'lower' }];
+  }
   if (preset.rearCrossmember === false && ids.has('rear-crossmember')) doc.removed = [...doc.removed, 'rear-crossmember'];
   else if (profile.nameplate && ids.has('rear-crossmember')) doc.structure = { ...doc.structure, 'rear-crossmember': { part: 'profile-nameplate', params: {} } };
   if (profile.color) doc.appearance = { ...doc.appearance, frameColor: profile.color };
@@ -78,5 +88,6 @@ export function applyPreset(id: string): RackDoc {
     const hole = top - index * Math.max(stride, Math.round(152.4 / doc.rack.pitch));
     doc = addAccessory(doc, 'pullup-straight', { uprightId: 'front-left', hole }, false, { diameter });
   }
+  for (const a of preset.attachments ?? []) doc = addAccessory(doc, a.part, { uprightId: a.upright ?? 'front-left' }, a.paired ?? false, rackAutoFit(a.part, doc.rack));
   return validateAssembly(doc);
 }

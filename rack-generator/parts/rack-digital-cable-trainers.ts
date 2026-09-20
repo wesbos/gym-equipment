@@ -72,7 +72,8 @@ function build(api: ManifoldAPI, params: NumericParams, selectorized: boolean): 
     t.add(REP_BLACK, t.box([L.memberFront, -hw, l.beam0], [L.memberBack, hw, l.top]),
       t.box([L.head.u0, -L.head.half, l.beam0], [L.head.u1, L.head.half, l.top]),
       t.box([-f.W - inch(0.5), -inch(3), l.beam0 - 9.5], [inch(0.5), inch(3), l.beam0]));
-    for (const s of [-1, 1]) t.add(BOLT, t.cyl('z', l.beam0 - inch(6), l.top + 12, bolt - .8, [-f.W / 2, s * inch(2.25), 0], 16), t.cyl('z', l.top, l.top + 14, bolt * 1.7, [-f.W / 2, s * inch(2.25), 0], 6));
+    // Two vertical bolts through the saddle plate (outboard of the 3 in member) and down through the crossmember's top holes.
+    for (const s of [-1, 1]) t.add(BOLT, t.cyl('z', l.beam0 - inch(6), l.beam0 + 3, bolt - .8, [-f.W / 2, s * inch(2.25), 0], 16), t.cyl('z', l.beam0 - 1, l.beam0 + 12, bolt * 1.7, [-f.W / 2, s * inch(2.25), 0], 6));
     for (const s of [-1, 1]) t.add(REP_BLACK, t.prismXZ([[L.memberFront, l.beam0], [L.memberFront + inch(1.2), l.beam0], [L.memberFront + inch(1.2), l.beam0 - inch(3)], [L.memberFront - inch(0.8), l.beam0 - inch(3)], [L.memberFront - inch(0.8), l.beam0 - inch(1.8)], [L.memberFront - inch(0.2), l.beam0 - inch(1.8)], [L.memberFront, l.beam0 - inch(2.3)]], s * inch(6) - 3, s * inch(6) + 3));
     t.add(BRUSHED, t.box([-inch(5.5), -hw - .8, l.top - inch(2.2)], [-inch(1.5), -hw + .2, l.top - inch(0.8)]));
     // ── Pulleys and cables (simplified 1:1 routes: stack or carriage → T-head → lat pulley; low row → floor → floating block).

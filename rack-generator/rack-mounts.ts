@@ -33,10 +33,12 @@ export function uprightContext(doc: Pick<RackDoc, 'rack' | 'uprights' | 'removed
   const live = Object.entries(doc.uprights).filter(([id]) => !doc.removed.includes(id)).map(([, n]) => n);
   const cx = live.reduce((s, n) => s + n.x, 0) / (live.length || 1), cy = live.reduce((s, n) => s + n.y, 0) / (live.length || 1), angle = ROTATIONS[t.face];
   const out = node ? (node.x - cx) * Math.cos(angle) + (node.y - cy) * Math.sin(angle) : 0;
-  // Rack-system parts (#178): which row the post stands in, and how far its column reaches (front to rear posts).
-  const column = node ? live.filter(n => Math.abs(n.x - node.x) < 1).map(n => Math.abs(n.y - node.y)) : [];
+  // Rack-system parts (#178): which row the post stands in (+1 rearmost, 0 middle, -1 front or alone) and how far its
+  // column reaches (centre distance to the farthest post in line front to back).
+  const column = node ? live.filter(n => Math.abs(n.x - node.x) < 1 && Math.abs(n.y - node.y) > 1).map(n => n.y - node.y) : [];
+  const behind = column.some(d => d > 0), ahead = column.some(d => d < 0);
   return { holeHeight: rack.firstHole + t.hole * rack.pitch, rackWidth: rack.width, rackDepth: rack.depth, rackHeight: Math.min(rack.height, node?.height ?? rack.height), acrossOut: out < -1 ? -1 : 1,
-    rowSide: node && node.y > cy + 1 ? 1 : -1, columnReach: Math.max(0, ...column) };
+    rowSide: ahead ? (behind ? 0 : 1) : -1, columnReach: Math.max(0, ...column.map(Math.abs)) };
 }
 /** `uprightSpan` for a spanning entry (RackMount.span): centre-to-centre distance to the nearest live post in line
  * with the mounting face, along local X ('across', signed) or local +Y ('normal'). */

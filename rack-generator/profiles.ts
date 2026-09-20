@@ -23,7 +23,12 @@ export interface ProfileNameplate { style: 'badge' | 'arch' | 'panel'; color: st
 export type StarterKind = 'four' | 'six' | 'stand' | 'wall';
 /** A curated starting point. `rearHeight` shortens the rear (storage) posts of a half rack;
  * `pullups` lists front pull-up bar diameters, highest bar first. */
-export interface ProfileStarter { kind: StarterKind; height: number; depth: number; rearHeight?: number; label: string; featured?: boolean; pullups?: readonly number[]; rearCrossmember?: boolean }
+/** A rack attachment that ships with the rack (#130: The Dane 2.0's cable stacks), placed on the starter's `upright`
+ * (default front-left) at its registry-preferred face and hole. */
+export interface StarterAttachment { part: string; upright?: string; paired?: boolean }
+export interface ProfileStarter { kind: StarterKind; height: number; depth: number; rearHeight?: number; label: string; featured?: boolean; pullups?: readonly number[]; rearCrossmember?: boolean;
+  /** Keep only a rear lower crossmember (a low rear brace) instead of the side lower crossmembers. */
+  rearLower?: boolean; attachments?: readonly StarterAttachment[] }
 export interface GridProfile {
   tube?: number;
   /** Upright size front-to-back (Y) when it differs from `tube` (2x3 uprights). */
@@ -51,6 +56,8 @@ export interface GridProfile {
   decal?: { color: string; length: number; width: number; top: number };
   /** Default frame powder coat for starters. */
   color?: string;
+  /** Factory colour of the floor base (feet or plates) when it differs from the posts (two-tone frames). */
+  baseColor?: string;
   /** Clear depth of the rear storage bay for six-post starters. */
   storageDepth?: number;
   lowerCrossmembers?: boolean;
@@ -65,6 +72,33 @@ const ROGUE_BOLT_DOWN: FrameBase = { style: 'bolt-down', out: inch(2), fore: inc
  * rear floor crossbar a few inches in from the rear ends. */
 const ROGUE_STAND_BASE: FrameBase = { style: 'foot', width: inch(3), height: inch(2), front: inch(29), back: inch(16), rearBar: 'end', rearBarOffset: inch(3), gusset: { height: inch(9), length: inch(4) } };
 const TITAN_BADGE: ProfileNameplate = { style: 'badge', color: '#eceded', accent: '#d21f26' };
+/** Catalog leftovers (#130, #136, #178). Research: research/rack-profiles.md and research/rack-digital-cable-trainers.md. */
+const LEFTOVER_PROFILES: readonly GridProfile[] = [
+  { id: 'fitness-reality-810xlt', label: 'Fitness Reality 810XLT Super Max Power Cage', vendor: 'Fitness Reality', tube: inch(2), wall: 1.9, pitch: inch(3), holeDiameter: inch(1), firstHole: inch(12), numbered: false,
+    widths: [inch(40)], depths: [inch(19)], heights: [inch(74.5)],
+    base: { style: 'foot', width: inch(3), height: inch(3), front: inch(13.5), back: inch(13.5), wall: 1.9, gusset: { height: inch(6), length: inch(4) }, caps: true },
+    color: '#a9adb1', baseColor: '#3c3e42',
+    source: 'https://fitnessreality.com/fitness-reality-810xlt-super-max-power-rack-cage-with-800lbs-weight-capacity/',
+    starters: [{ kind: 'four', height: inch(74.5), depth: inch(19), label: 'Fitness Reality 810XLT Super Max cage · 83 in · 46 x 50 in', featured: true, pullups: [31.75], rearLower: true }],
+    reconstructionNote: 'Reconstruction: published 2 x 2 in steel frame, 1 in holes, 19 bar heights, 46 in wide x 50 in deep x 83 in tall (74.5 in with the reversible pull-up bar flipped; 50.5 x 46.5 x 83.5 in on Amazon), two rear stability bars and 800 lb capacity (owner\'s manual 2810). The 3 in hole pitch, 12 in first hole, 40 in inside width (3 in feet and gusset plates inside the published 46 in), 3 x 3 in feet and gussets are estimated from the manual drawings and product photos; the multi-grip pull-up bar is shown as a straight 1.25 in bar and the two curved rear braces as straight top and low rear crossmembers. Physical fit unverified.' },
+  { id: 'fray-savage-f1', label: 'Fray Fitness Savage Series F-1 Power Rack', vendor: 'Fray Fitness', tube: inch(3), wall: 3.04, pitch: inch(2), holeDiameter: inch(1 + 1 / 16), firstHole: inch(2.5), numbered: true,
+    widths: [inch(42)], depths: [inch(31), inch(43)], heights: [inch(79.5), inch(94)],
+    base: { style: 'bolt-down', out: 3, in: inch(2), fore: 3, thickness: inch(3 / 8) }, nameplate: { style: 'arch', color: '#8a8d91', height: inch(10) }, color: '#1b1c1e',
+    source: 'https://web.archive.org/web/20231205061451/https://frayfitness.com/products/savage-series-f-1-power-rack',
+    starters: [
+      { kind: 'four', height: inch(94), depth: inch(31), label: 'Fray Savage Series F-1 · 94 in tall · 37 in deep', featured: true, pullups: [31.75] },
+      { kind: 'four', height: inch(94), depth: inch(43), label: 'Fray Savage Series F-1 · 94 in tall · 49 in deep', pullups: [31.75] },
+      { kind: 'four', height: inch(79.5), depth: inch(31), label: 'Fray Savage Series F-1 · 79.5 in short · 37 in deep', pullups: [31.75] },
+    ],
+    reconstructionNote: 'Reconstruction: published 3 x 3 in 11-gauge posts, 1 in four-way holes on 2 in centres with laser-cut numbers, 1 in hardware, 94 / 79.5 in heights, 48 in wide x 37 / 49 in deep (archived Fray product pages; the store is closed). Inside width and depth (42 in, 31 / 43 in) follow from the 3 in posts and Fray\'s 42 / 31 in crossmember SKUs; hole size, first hole, bolt-down plates and the grey arched logo plate are estimated from Fray\'s renders. Physical fit unverified.' },
+  { id: 'fringe-dane-2', label: 'Fringe Sport The Dane 2.0', vendor: 'Fringe Sport', tube: 75, wall: 3.04, pitch: inch(2), holeDiameter: inch(1 + 1 / 16), firstHole: inch(6), numbered: true,
+    widths: [inch(39)], depths: [inch(30)], heights: [inch(89)],
+    base: { style: 'bolt-down', out: inch(1.5), fore: inch(1.5), thickness: inch(3 / 8) }, nameplate: { style: 'panel', color: '#26282b', height: inch(9) }, color: '#161719',
+    source: 'https://www.fringesport.com/products/the-dane-2-0',
+    starters: [{ kind: 'four', height: inch(89), depth: inch(30), label: 'Fringe Sport The Dane 2.0 · dual 160 lb stacks · 92 in', featured: true, pullups: [31.75],
+      attachments: [{ part: 'fringe-sport-dane-2-cable-stacks', upright: 'rear-left', paired: true }] }],
+    reconstructionNote: 'Reconstruction: published 3x3 (metric) 11-gauge uprights 89 in long, 1 in holes on 2 in centres, 60 x 47 x 92 in overall with the extension feet (about 33 in deep without), 1,200 lb rack capacity and two 160 lb 1:1 stacks inside the side frames. The 30 in inside depth, 39 in inside width, 6 in base-tube station, base plates and the black sign plate are estimated from Fringe renders scaled to the published height; the second rear crossmember at about 63 in is not modelled. Physical fit unverified.' },
+];
 export const GRID_PROFILES: readonly GridProfile[] = [
   { id: 'generic-75', label: 'BOS generic 75 mm', widths: [425,725,1075], depths: [425,725,1075], pitch:50, holeDiameter:25 },
   ...(['hydra','manticore'] as const).map(series => ({id:`bos-${series}`,label:`Bells of Steel ${series === 'hydra' ? 'Hydra' : 'Manticore'}`,tube:76.2,widths:[1092.2],depths:[609.6,762,1092.2],heights:[2133.6,2286,2743.2],pitch:50.8,holeDiameter:series === 'hydra'?15.875:25.4,source:'https://bellsofsteel.com/collections/all/products/kraken-4-post-hydra-manticore',reconstructionNote:'Reconstructed true 3-inch frame for Kraken. Published nominal dimensions; first-hole datum, bracket and base contours are estimated. 108-inch Kraken uses the 90-inch kit with lower crossmembers raised18 inches; physical fit is unverified.'})),
@@ -207,6 +241,7 @@ export const GRID_PROFILES: readonly GridProfile[] = [
       { kind: 'four', height: inch(80), depth: inch(16), label: 'REP Apollo half rack · 80″ · 16″ storage', pullups: [31.75] },
     ],
     reconstructionNote: 'Reconstruction: published 3x3 11-gauge steel, 1-inch holes on 2-inch centres, flat-foot base, 48 × 52.4-inch footprint, 80/93-inch uprights and 16-inch crossmembers (5000-series width). Foot overhangs, logo-plate outline and first hole are estimated; physical REP fit is unverified.' },
+  ...LEFTOVER_PROFILES,
 ];
 export function gridProfile(id?: string): GridProfile {
   return GRID_PROFILES.find(p => p.id === id) ?? GRID_PROFILES.find(p => p.id === 'generic-75')!;

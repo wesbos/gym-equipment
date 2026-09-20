@@ -138,6 +138,7 @@ function uprightFrameParams(doc: RackDoc, id: string, profile: GridProfile, angl
   if (profile.sideStride && profile.sideStride > 1) out.sideStride = profile.sideStride;
   if (profile.numbered === false) out.unnumbered = 1;
   if (profile.decal) Object.assign(out, colorParams('decal', profile.decal.color), { decalLength: profile.decal.length, decalWidth: profile.decal.width, decalTop: profile.decal.top });
+  if (profile.baseColor) Object.assign(out, colorParams('base', profile.baseColor));
   if (!base || base.style === 'plate') return out;
   const live = Object.entries(doc.uprights).filter(([other]) => !doc.removed.includes(other));
   if (base.style === 'bolt-down') return Object.assign(out, { baseStyle: 1, plateOut: base.out, plateFore: base.fore, plateThickness: base.thickness }, base.in ? { plateIn: base.in } : {});
@@ -267,7 +268,8 @@ export function validateAssembly(input: unknown): RackDoc {
   if (manufacturer && r.pitch !== profile.pitch) fail('Manufacturer pitch must match its rack profile.');
   finiteRange(r.pitch, 50, 100, 'Hole pitch');
   if (!manufacturer && Math.abs(100 / r.pitch - Math.round(100 / r.pitch)) > 1e-8) fail('Hole pitch must divide the 100 mm flange bolt spacing.');
-  finiteRange(r.firstHole, 30, 150, 'First hole height');
+  // Budget cages drill their first hole about a foot up (#130: Fitness Reality 810XLT, 12 in).
+  finiteRange(r.firstHole, 30, 320, 'First hole height');
   if ((r.tubeDepth ?? r.tube) !== (profile.tubeDepth ?? r.tube)) fail('Upright depth must match the named rack profile.');
   const rack: RackDimensions = { ...copy(r), height: r.height, width: r.width, depth: r.depth, tube: r.tube, holeDiameter: r.holeDiameter, pitch: r.pitch, firstHole: r.firstHole };
   if (profile.tubeDepth !== undefined && profile.tubeDepth !== r.tube) rack.tubeDepth = profile.tubeDepth; else delete rack.tubeDepth;

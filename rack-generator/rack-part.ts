@@ -29,8 +29,8 @@ export const PIN_1IN = 24.8, PIN_5_8IN = 15.5;
  * `holeHeight` target hole centre above the floor, `rackWidth` / `rackDepth` the rack's clear inside width and depth,
  * `rackHeight` the mounting upright's height (all mm), and `acrossOut` = +1 or -1, the sign of local +X that points out of
  * the rack (away from its centre: forward on a front post's side face). Rack-system parts (#178: lat/row towers, rack
- * functional trainers) can also ask for `rowSide` = +1 when the mounting post stands behind the rack's centre (a rear
- * row, where towers go) and -1 in front, and `columnReach`, the centre distance from the mounting post to the farthest
+ * functional trainers) can also ask for `rowSide` = +1 when the mounting post is the rearmost of its column (where towers
+ * go), 0 for a middle post of a six-post rack and -1 for a front or lone post, and `columnReach`, the centre distance from the mounting post to the farthest
  * live post in its column (front to rear), 0 when it stands alone. Hosted targets (a spotter arm, box safety or pull-up bar) always
  * receive the host section: `hostWidth` across the host tube or bar (local X), `hostHeight` its vertical size, `hostTop`
  * the top surface above the target axis, `hostHole` the host's hole diameter (0 on a bar) and `hostPitch` its station
