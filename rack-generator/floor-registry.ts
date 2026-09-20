@@ -32,12 +32,13 @@ import { PARTS as BELT_SQUAT_MACHINES } from './floor-parts/belt-squat-machines.
 import { PARTS as CABLE_TOWERS } from './floor-parts/cable-towers.ts';
 import { PARTS as FLOOR_STORAGE } from './floor-parts/floor-storage.ts';
 import { PARTS as FLOOR_ACCESSORIES } from './floor-parts/floor-accessories.ts';
+import { PARTS as LEFTOVERS } from './floor-parts/leftovers.ts';
 export * from './floor-part.ts';
 export const FLOOR_PARTS = [
   NIGHTHAWK, POWERBLOCK, PEPIN_DUMBBELL, PEPIN_STAND, BARBELL,
   ...POWER_BARS, ...SPECIALTY_BARS, ...TRAP_CURL_AXLE_BARS, ...FIXED_DUMBBELLS, ...ADJUSTABLE_DUMBBELLS, ...KETTLEBELLS,
   ...REP_BENCHES, ...BENCHES, ...ERGS, ...CARDIO, ...CONDITIONING, ...STRONGMAN, ...HYPERS, ...LEG_MACHINES,
-  ...BELT_SQUAT_MACHINES, ...CABLE_TOWERS, ...FLOOR_STORAGE, ...FLOOR_ACCESSORIES,
+  ...BELT_SQUAT_MACHINES, ...CABLE_TOWERS, ...FLOOR_STORAGE, ...FLOOR_ACCESSORIES, ...LEFTOVERS,
 ] as const;
 export type FloorPartId = (typeof FLOOR_PARTS)[number]['id'];
 export const FLOOR_PART_IDS: FloorPartId[] = FLOOR_PARTS.map(p => p.id);
