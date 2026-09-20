@@ -165,6 +165,7 @@ export function buildTitanLegRoller(api: ManifoldAPI, params: NumericParams): So
     s.add('Rubber bumper', s.alongY(0, 0, g.face, g.face + T.bumper[1], T.bumper[0] / 2, 0, 1.2, 48), F('#121213', 0, .9, 'liner'));
     s.add('Black zinc hub', s.alongY(0, 0, g.face + T.bumper[1] - .5, g.pad0 + 2, T.hub[0] / 2, 0, 1.5, 40), F('#202124', .75, .4));
     gatheredRollerY(s, 'HeftyGrip vinyl foam pad', g.pad0, g.pad1, r, F('#1f2022', 0, .7));
+    if (g.spacer) s.add('1 in T-3 spacer', s.alongY(0, 0, -g.face - g.spacer, -g.face, T.spacer[0] / 2, .8, .8, 40), F('#141516', .1, .7, 'liner'));
     s.add('Pad end disc and bolt', s.k(s.k(s.alongY(0, 0, g.pad1 - 1, g.pad1 + 3, 26, 0, .8, 40)).add(s.alongY(0, 0, g.pad1 + 2.5, g.tip, 7, 0, 1.5, 6))), F('#232427', .7, .4));
     s.add('Knurled knob', s.k(s.k(s.prismY(s.knurled(T.knob[0] / 2, 48, .8), g.knob0 + 2, T.knob[1] - 2)).add(s.alongY(0, 0, g.knob0 - 3, g.knob0 + 2.5, 13, 2, 0, 32))), F('#161719', .4, .45));
   });

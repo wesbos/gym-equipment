@@ -4,6 +4,10 @@ import type { PartDefinition } from '../types.ts';
 import { rackDefinition } from '../rack-part.ts';
 import { BEYOND_POWER_ADAPTIVE_BAR_MOUNT, BEYOND_POWER_FIXED_BAR_MOUNT, BEYOND_POWER_ROTATOR, BEYOND_POWER_STRAP_MOUNT, BULLETPROOF_ISOLATOR, BULLETPROOF_VTS, DARKO_QUICKMOUNT } from '../rack-parts/rack-digital-cable.ts';
 import { buildIsolator, buildVts } from './rack-digital-cable-bpf.ts';
+import { FRINGE_DANE_STACKS, REP_PLATE_LAT, REP_SELECTORIZED_LAT, ROGUE_RHINO_INDY } from '../rack-parts/rack-digital-cable-trainers.ts';
+import { buildDaneStacks } from './rack-digital-cable-dane.ts';
+import { buildRhinoIndy } from './rack-digital-cable-rhino.ts';
+import { buildRepPlateLat, buildRepSelectorizedLat } from './rack-digital-cable-trainers.ts';
 import { buildAdaptiveBarMount, buildFixedBarMount, buildQuickMount, buildRotator, buildStrapMount } from './rack-digital-cable-voltra.ts';
 export const definitions: PartDefinition[] = [
   rackDefinition(DARKO_QUICKMOUNT, buildQuickMount),
@@ -13,4 +17,9 @@ export const definitions: PartDefinition[] = [
   rackDefinition(BULLETPROOF_ISOLATOR, buildIsolator),
   rackDefinition(BEYOND_POWER_ROTATOR, buildRotator),
   rackDefinition(BEYOND_POWER_FIXED_BAR_MOUNT, buildFixedBarMount),
+  // Rack-system cable machines (#178): rack-parts/rack-digital-cable-trainers.ts.
+  rackDefinition(REP_SELECTORIZED_LAT, buildRepSelectorizedLat),
+  rackDefinition(REP_PLATE_LAT, buildRepPlateLat),
+  rackDefinition(ROGUE_RHINO_INDY, buildRhinoIndy),
+  rackDefinition(FRINGE_DANE_STACKS, buildDaneStacks),
 ];

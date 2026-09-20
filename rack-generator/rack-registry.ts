@@ -17,12 +17,15 @@ import { PARTS as JCUPS_SAFETIES, REGISTRY_V2_PARTS as JCUPS_SAFETIES_V2 } from 
 import { PARTS as DIPS_LANDMINES } from './rack-parts/rack-dips-landmines.ts';
 import { PARTS as LEVERS_BELT_SQUAT } from './rack-parts/rack-levers-belt-squat.ts';
 import { PARTS as DIGITAL_CABLE } from './rack-parts/rack-digital-cable.ts';
+import { PARTS as DIGITAL_CABLE_TRAINERS } from './rack-parts/rack-digital-cable-trainers.ts';
 export * from './rack-part.ts';
 export const RACK_PARTS = [
   ROGUE_MONSTER_BAND_PEG, REP_LEG_ROLLER,
   ...ROLLERS_PADS, ...JCUPS_SAFETIES, ...DIPS_LANDMINES, ...LEVERS_BELT_SQUAT, ...DIGITAL_CABLE,
   // Registry v2 (#178): parts that need rack context, hosted targets or the floor rule.
   ...ROLLERS_PADS_V2, ...JCUPS_SAFETIES_V2,
+  // Rack-system cable machines on the v2 context (#178, #136, #122, #130): lat/row towers, rack functional trainers.
+  ...DIGITAL_CABLE_TRAINERS,
 ] as const;
 export type RackPartId = (typeof RACK_PARTS)[number]['id'];
 export const RACK_PART_IDS: RackPartId[] = RACK_PARTS.map(p => p.id);

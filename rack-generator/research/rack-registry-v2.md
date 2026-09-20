@@ -135,6 +135,8 @@ gave the Magpins round polished heads as in Darko's photos.
 
 ## Skipped
 
+Update (2026-09-20): both items below have since shipped. See [rack-digital-cable-trainers.md](rack-digital-cable-trainers.md).
+
 - **Titan Rack Mounted Leg Roller on the T-3's 2x3 posts:** researched from Titan's manual and the 10-image gallery.
   Titan includes a 1 in nylon spacer for the T-3's short side (the pin crosses 2 in through a side face). Through the
   2 in front face it crosses 3 in like an X-3. The existing #132 test asserts that every rollers-pads part is refused

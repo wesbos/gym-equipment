@@ -61,11 +61,21 @@ export function bosRoller(p: NumericParams) {
 /** Titan Rack Mounted Leg Roller (402100, fits T-3 and X-3). Published: 17.75 in x 4.75 in pad, 22.5 in overall, 16 mm
  * threaded pin, powder coat and black zinc, HeftyGrip vinyl, rubber bumper and nylon washers. Bumper, hub and knob sizes
  * estimated; the knob thickness follows from the overall length on a 3 in tube. */
-export const TITAN_ROLLER = { overall: inch(22.5), pad: inch(17.75), padDiameter: inch(4.75), pin: 16, bumper: [62, 6] as const, hub: [44, 20] as const, end: 6, knob: [50, 12] as const } as const;
+export const TITAN_ROLLER = { overall: inch(22.5), pad: inch(17.75), padDiameter: inch(4.75), pin: 16, bumper: [62, 6] as const, hub: [44, 20] as const, end: 6, knob: [50, 12] as const,
+  /** Included 1 in spacer for the T-3's short side (#178): through a 2 in face it fills the missing inch of pin
+   * between the back face and the knob (Titan close-up 402100_09), so the threaded pin keeps its 3 in tube length. */
+  spacer: [34, inch(1)] as const } as const;
+/** Through-face tube below 2.5 in (the T-3's 2 in side faces) takes the 1 in spacer. */
+export const titanSpacer = (p: NumericParams) => faceOf(p) * 2 < inch(2.5) ? TITAN_ROLLER.spacer[1] : 0;
 export function titanRoller(p: NumericParams) {
-  const face = faceOf(p), pad0 = face + TITAN_ROLLER.bumper[1] + TITAN_ROLLER.hub[1], pad1 = pad0 + TITAN_ROLLER.pad;
-  return { face, pad0, pad1, tip: pad1 + TITAN_ROLLER.end, knob0: -face - TITAN_ROLLER.knob[1] };
+  const face = faceOf(p), pad0 = face + TITAN_ROLLER.bumper[1] + TITAN_ROLLER.hub[1], pad1 = pad0 + TITAN_ROLLER.pad, spacer = titanSpacer(p);
+  return { face, pad0, pad1, tip: pad1 + TITAN_ROLLER.end, spacer, knob0: -face - spacer - TITAN_ROLLER.knob[1] };
 }
+/** Titan sells the roller for the X-3 (3x3) and the T-3 (2x3, 2 in face forward): 2x2 posts are refused. */
+const titanPost = (rack: RackDimensions) => {
+  const a = Math.min(rack.tube, rack.tubeDepth ?? rack.tube), b = Math.max(rack.tube, rack.tubeDepth ?? rack.tube);
+  if (b < 74 || b > 77.5 || !(a >= 74 || Math.abs(a - inch(2)) < 1.5)) throw Error('The Titan leg roller only fits 3 x 3 in (X-3) or 2 x 3 in (T-3) uprights.');
+};
 const rollerBody = (r: number, y0: number, y1: number): LocalBox => box([-r, y0, -r], [r, y1, r]);
 
 export const REP_LEG_ROLLER_2 = defineRackPart({
@@ -131,13 +141,13 @@ export const BELLS_OF_STEEL_SPLIT_SQUAT_LEG_ROLLER = defineRackPart({
 
 export const TITAN_RACK_MOUNTED_LEG_ROLLER = defineRackPart({
   id: 'titan-rack-mounted-leg-roller', name: 'Titan Rack Mounted Leg Roller', title: 'Titan Rack Mounted Leg Roller', noun: 'leg roller', section: 'Rollers & pads',
-  description: 'X-3 leg roller on a 16 mm threaded pin with a knurled knob behind the upright · 17.75 x 4.75 in HeftyGrip pad · 22.5 in overall. ' + DESCRIPTION_END('Titan Fitness'),
+  description: 'X-3 / T-3 leg roller on a 16 mm threaded pin with a knurled knob behind the upright (1 in spacer on the T-3 short side) · 17.75 x 4.75 in HeftyGrip pad · 22.5 in overall. ' + DESCRIPTION_END('Titan Fitness'),
   params: [],
   vendor: {
     vendor: 'Titan Fitness', url: 'https://titan.fitness/products/rack-mounted-leg-roller-fits-t-3-and-x-3-series', credit: 'Titan Fitness — Rack Mounted Leg Roller, fits T-3 & X-3 Series (402100)', trademark: 'Titan Fitness and HeftyGrip are trademarks of Titan Fitness.',
-    reconstruction: 'Published 22.5 in overall, 17.75 in x 4.75 in pad and 16 mm threaded pin. The rubber bumper, hub, end disc and knob are estimated from the 10 Titan photos and dimension drawing; modelled for 3x3 X-3 uprights (the T-3 short-side spacer is not modelled); physical fit unverified.',
+    reconstruction: 'Published 22.5 in overall, 17.75 in x 4.75 in pad and 16 mm threaded pin. The rubber bumper, hub, end disc and knob are estimated from the 10 Titan photos and dimension drawing. On the T-3 the pin crosses 3 in through the 2 in front face like an X-3, and the included 1 in spacer sits behind the 2 in side face under the knob; physical fit unverified.',
   },
-  mount: { pin: PIN_5_8IN, extent: { below: TITAN_ROLLER.padDiameter / 2, above: TITAN_ROLLER.padDiameter / 2 }, validate: threeByThree('Titan leg roller') },
+  mount: { pin: PIN_5_8IN, extent: { below: TITAN_ROLLER.padDiameter / 2, above: TITAN_ROLLER.padDiameter / 2 }, validate: titanPost },
   bodies: p => { const g = titanRoller(p); return [rollerBody(TITAN_ROLLER.padDiameter / 2 - 2, g.pad0, g.pad1)]; },
   pair: { default: false },
   placement: { height: 515, face: 'front' },

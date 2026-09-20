@@ -158,6 +158,8 @@ Params: frame colour, pad colour, pad side (mirrors the lever) and pin size (aut
 
 ## Not shipped
 
+Update (2026-09-20): the REP lat pulldowns have since shipped as registry v2 rack parts. See [rack-digital-cable-trainers.md](rack-digital-cable-trainers.md).
+
 - **Beyond Power Travel VOLTRA Platform (58):** a 700 × 390 × 22 mm maple floor board (13.6 lb) the VOLTRA docks onto for
   deadlifts and curls; it is a floor item, not a rack attachment, so it belongs with the floor families.
 - **REP Selectorized Lat Pulldown & Low Row (4000/5000) (33)** and the **plate-loaded rack lat / low row (REP

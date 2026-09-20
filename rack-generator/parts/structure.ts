@@ -192,7 +192,9 @@ function upright(api: ManifoldAPI,p: NumericParams) {return construct(api,p,(g,p
   // builds omit them: ~5 mm digits are sub-nozzle slivers at 1:10 (#89).
   if(!p.unnumbered&&fitting.length&&!g.minFeature)cuts.push(g.profile(fitting,d+2,'y',[0,d/2+1,0]));
   s=g.difference(s,cuts);
-  const out=[part(w===75&&d===75?'Numbered 75 mm upright':'Numbered rectangular upright',s),...uprightBase(g,p,cx,w,d)];
+  // Two-tone factory frames (#130: Fitness Reality's charcoal feet under silver posts) colour the base parts separately.
+  const base=uprightBase(g,p,cx,w,d).map(b=>hasColor(p,'base')&&b.role==='frame'?{...b,name:`${b.name} (factory colour)`,color:rgb(p,'base',0x3a3c40),role:'source' as const}:b);
+  const out=[part(w===75&&d===75?'Numbered 75 mm upright':'Numbered rectangular upright',s),...base];
   if(hasColor(p,'decal') && p.decalLength>0 && p.decalLength<p.height-bottom-20) {
     // Five plain blocks read as a vertical word mark without reproducing any lettering.
     const n=5, cell=p.decalLength/n, blocks=[];
