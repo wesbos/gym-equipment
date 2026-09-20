@@ -5,6 +5,10 @@ import {unzipSync,strFromU8} from 'fflate';
 import {XMLParser,XMLValidator} from 'fast-xml-parser';
 import {createAssembly,resolveAssembly} from '../../rack-generator/assembly.ts';
 import {definitions} from '../../rack-generator/catalog.ts';
+import {isFloorPart} from '../../rack-generator/floor-registry.ts';
+import {isWallPart} from '../../rack-generator/wall-registry.ts';
+import {isHangPart} from '../../rack-generator/hang-registry.ts';
+import {printMinFeature} from '../../rack-generator/print-detail.ts';
 import {HARDWARE_FINISHES, FRAME_FINISHES, type Appearance} from '../../rack-generator/appearance.ts';
 import type {PartDefinition} from '../../rack-generator/types.ts';
 import {exportPrint3MF,isPrintInstance} from './print-3mf.ts';
@@ -115,10 +119,13 @@ for(const def of definitions) test(`print partition and XML round-trip: ${def.id
   // Use a single physical slot to exercise every registered CAD builder,
   // including vendor solids that need specialized assembly mount constraints.
   // Every builder receives, and must tolerate, the injected print detail flag.
+  // Floor, wall and hang parts are scenery that never reach a real 3MF; run their mesh checks at the
+  // 1:20 preset so room-sized machines (leg presses, platforms) aren't clipped to a 2.5 m plate at 1:10.
+  const scenery=isFloorPart(def.id)||isWallPart(def.id)||isHangPart(def.id);
   const adapter={...def,id:'upright',build:(_:unknown,p:{printMinFeature?:number})=>{
-    assert.equal(p.printMinFeature,8); return def.build(api,{...def.defaults,printMinFeature:p.printMinFeature});
+    assert.equal(p.printMinFeature,printMinFeature(scenery?20:10)); return def.build(api,{...def.defaults,printMinFeature:p.printMinFeature});
   }};
-  const result=exportPrint3MF(api,single(),[adapter],{layout:'laid-out'});
+  const result=exportPrint3MF(api,single(),[adapter],{layout:'laid-out',...(scenery?{scale:20 as const}:{})});
   inspect(result.bytes);assert.ok(result.report.volumes>0);
 });
 test('vendor export credits retain every attribution field without replacing generator branding', () => {
