@@ -28,16 +28,19 @@ export const PIN_1IN = 24.8, PIN_5_8IN = 15.5;
  * Registry v2 (#178) adds, only for entries that list them in `context` (so moving other parts never rebuilds them):
  * `holeHeight` target hole centre above the floor, `rackWidth` / `rackDepth` the rack's clear inside width and depth,
  * `rackHeight` the mounting upright's height (all mm), and `acrossOut` = +1 or -1, the sign of local +X that points out of
- * the rack (away from its centre: forward on a front post's side face). Hosted targets (a spotter arm, box safety or pull-up bar) always
+ * the rack (away from its centre: forward on a front post's side face). Rack-system parts (#178: lat/row towers, rack
+ * functional trainers) can also ask for `rowSide` = +1 when the mounting post stands behind the rack's centre (a rear
+ * row, where towers go) and -1 in front, and `columnReach`, the centre distance from the mounting post to the farthest
+ * live post in its column (front to rear), 0 when it stands alone. Hosted targets (a spotter arm, box safety or pull-up bar) always
  * receive the host section: `hostWidth` across the host tube or bar (local X), `hostHeight` its vertical size, `hostTop`
  * the top surface above the target axis, `hostHole` the host's hole diameter (0 on a bar) and `hostPitch` its station
  * pitch, plus `hostSpan` when the host has a matching unit across the rack (a paired spotter arm or safety): the signed
  * distance along local X to the same station on it. Rail targets get `upright` / `uprightWidth` = the rail section. Builders fall back to nominal values when a key
  * is absent (thumbnails, the part viewer, contract tests). */
 export const RACK_CONTEXT_KEYS = ['upright', 'mountSpacing', 'holeDiameter', 'mirror', 'uprightWidth', 'uprightSpan',
-  'holeHeight', 'rackWidth', 'rackDepth', 'rackHeight', 'acrossOut', 'hostWidth', 'hostHeight', 'hostTop', 'hostHole', 'hostPitch', 'hostSpan'] as const;
+  'holeHeight', 'rackWidth', 'rackDepth', 'rackHeight', 'acrossOut', 'rowSide', 'columnReach', 'hostWidth', 'hostHeight', 'hostTop', 'hostHole', 'hostPitch', 'hostSpan'] as const;
 /** Opt-in rack context (RackPartSpec.context). */
-export type RackContextKey = 'holeHeight' | 'rackWidth' | 'rackDepth' | 'rackHeight' | 'acrossOut';
+export type RackContextKey = 'holeHeight' | 'rackWidth' | 'rackDepth' | 'rackHeight' | 'acrossOut' | 'rowSide' | 'columnReach';
 /** Mount target kinds. 'crossmember-under' hangs under an upper rail at a Darko rail station: the part's frame is the
  * upright frame laid along the rail (local Z along the rail, local +Y straight down out of the rail's underside, local X
  * along the side-hole bolt axis), so a bracket built for an upright wraps the rail unchanged. 'spotter-arm' and
@@ -81,6 +84,10 @@ export interface RackMount {
   /** Parts that stand on the floor from their mount (#178): the target hole centre must sit `holeHeight` mm above the
    * floor, within [min, max]. The builder receives `holeHeight` and puts its floor contact at z = -holeHeight. */
   floor?: ByParams<{ min: number; max: number }>;
+  /** Floor parts whose frame rides over the rack's top (#178: a lat/row tower's top member sitting on the rear top
+   * crossmember, a functional trainer's top pulley plates): the upright top does not limit their holes, since the
+   * machine's height is set by the floor, not the target hole. Their `validate` checks the rack height instead. */
+  overTop?: boolean;
   /** Hosted targets: reach along the host axis behind (toward the host's origin side) and in front of the station;
    * the part must stay inside the host's usable span. */
   hostReach?: ByParams<{ back: number; front: number }>;

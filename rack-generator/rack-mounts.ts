@@ -33,7 +33,10 @@ export function uprightContext(doc: Pick<RackDoc, 'rack' | 'uprights' | 'removed
   const live = Object.entries(doc.uprights).filter(([id]) => !doc.removed.includes(id)).map(([, n]) => n);
   const cx = live.reduce((s, n) => s + n.x, 0) / (live.length || 1), cy = live.reduce((s, n) => s + n.y, 0) / (live.length || 1), angle = ROTATIONS[t.face];
   const out = node ? (node.x - cx) * Math.cos(angle) + (node.y - cy) * Math.sin(angle) : 0;
-  return { holeHeight: rack.firstHole + t.hole * rack.pitch, rackWidth: rack.width, rackDepth: rack.depth, rackHeight: Math.min(rack.height, node?.height ?? rack.height), acrossOut: out < -1 ? -1 : 1 };
+  // Rack-system parts (#178): which row the post stands in, and how far its column reaches (front to rear posts).
+  const column = node ? live.filter(n => Math.abs(n.x - node.x) < 1).map(n => Math.abs(n.y - node.y)) : [];
+  return { holeHeight: rack.firstHole + t.hole * rack.pitch, rackWidth: rack.width, rackDepth: rack.depth, rackHeight: Math.min(rack.height, node?.height ?? rack.height), acrossOut: out < -1 ? -1 : 1,
+    rowSide: node && node.y > cy + 1 ? 1 : -1, columnReach: Math.max(0, ...column) };
 }
 /** `uprightSpan` for a spanning entry (RackMount.span): centre-to-centre distance to the nearest live post in line
  * with the mounting face, along local X ('across', signed) or local +Y ('normal'). */
@@ -76,7 +79,7 @@ export function rackLimits(accessory: Accessory, rack: RackDimensions): [number,
   const p = entry(accessory.part), params = rackContextParams(p, accessory.params, rack, false, accessory.target.face);
   const top = (above: number) => Math.floor((rack.height - above - rack.firstHole) / rack.pitch + 1e-9);
   const floor = floorHoles(p, accessory.params, rack);
-  if (floor) return [floor[0], Math.min(floor[1], top(resolveBy(p.mount.extent, params).above))];
+  if (floor) return [floor[0], p.mount.overTop ? floor[1] : Math.min(floor[1], top(resolveBy(p.mount.extent, params).above))];
   const { below, above } = resolveBy(p.mount.extent, params);
   return [Math.max(0, Math.ceil((below - rack.firstHole) / rack.pitch - 1e-9)), top(above)];
 }

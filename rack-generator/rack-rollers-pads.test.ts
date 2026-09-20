@@ -9,7 +9,7 @@ import { rackBuildParams, validateRackParams, coerceRackParams } from './rack-re
 import { floorOptions } from './floor-part.ts';
 import { applyPreset } from './presets.ts';
 import { suggestPlacement } from './placement-proposals.ts';
-import { createAssembly, resolveAssembly } from './assembly.ts';
+import { createAssembly, resolveAssembly, addAccessory } from './assembly.ts';
 import {
   PARTS, inch, REP_PEGASUS, PEGASUS, REP_LEG_ROLLER_2, REP_LR2, ROGUE_MONSTER_SINGLE_LEG_ROLLER_2, ROGUE_SLR2, ROGUE_MONSTER_LITE_LEG_ROLLER, ROGUE_ML_ROLLER,
   BELLS_OF_STEEL_SPLIT_SQUAT_LEG_ROLLER, BOS_ROLLER, TITAN_RACK_MOUNTED_LEG_ROLLER, TITAN_ROLLER, ROGUE_MONSTER_PRITCHETT_PAD, PRITCHETT, BELLS_OF_STEEL_SEAL_ROW_PAD, SEAL_ROW, PRIME_PRODIGY_STABILITY_PAD, PRODIGY,
@@ -84,6 +84,14 @@ test('Titan rack mounted leg roller: 22.5 in overall, 17.75 x 4.75 in pad, 16 mm
   near(size(pin, 0), 16, .3, 'threaded pin'); assert.ok(m.get('Knurled knob').max[1] <= -FACE + .01);
 });
 
+test('Titan roller on the T-3 short side (#178): the 1 in spacer fills the 2 in face, the pin and pad stay put', () => {
+  const x3 = measure(TITAN_RACK_MOUNTED_LEG_ROLLER), t3 = measure(TITAN_RACK_MOUNTED_LEG_ROLLER, {}, inch(2)), spacer = t3.get('1 in T-3 spacer');
+  assert.ok(!x3.boxes.has('1 in T-3 spacer'), 'no spacer through a 3 in face');
+  near(size(spacer, 1), inch(1), .1, 'spacer length'); near(spacer.max[1], -inch(1), .1, 'spacer against the 2 in back face');
+  near(size(t3.all, 1), size(x3.all, 1), .5, 'same overall length'); near(t3.get('Knurled knob').max[1] - inch(1), x3.get('Knurled knob').max[1] - inch(1.5), .5, 'knob 3 in behind the front face, as on a 3 in tube');
+  near(t3.get('HeftyGrip vinyl foam pad').min[1] - inch(1), x3.get('HeftyGrip vinyl foam pad').min[1] - inch(1.5), .1, 'pad starts the same distance from the face');
+});
+
 test('Rogue Monster Pritchett Pad: 33 in from the upright, 12 in pad tapering 11 in to 8 in, 3x3 in arm, 1 in or 5/8 in pin', () => {
   for (const series of [0, 1]) {
     const m = measure(ROGUE_MONSTER_PRITCHETT_PAD, { series }), pad = m.get('Self-skinned polyurethane pad'), arm = m.get('3x3 in 11-gauge arm');
@@ -154,8 +162,17 @@ test('each part mounts on the racks its maker sells it for and explains the rest
   assert.match(place(RML390, ROGUE_MONSTER_SINGLE_LEG_ROLLER_2).reason ?? '', /bore/);
   // Titan: the X-3 (3x3, 11/16 in holes) takes the Titan roller.
   assert.ok(place(X3, TITAN_RACK_MOUNTED_LEG_ROLLER).units?.length, 'Titan roller on the X-3');
-  // 2x3 and 2x2 posts are refused with a fit message.
-  for (const preset of [R3, T3RACK, T2]) for (const part of PARTS) assert.match(place(preset, part).reason ?? '', /fit|bore|station|hole|face|mount/i, `${part.id} on ${preset}`);
+  // 2x3 and 2x2 posts are refused with a fit message, except the Titan roller on 2x3 posts (#178): Titan sells it for
+  // the T-3 with a 1 in spacer for the short side.
+  for (const preset of [R3, T3RACK, T2]) for (const part of PARTS) {
+    if (part === TITAN_RACK_MOUNTED_LEG_ROLLER && preset !== T2) continue;
+    assert.match(place(preset, part).reason ?? '', /fit|bore|station|hole|face|mount/i, `${part.id} on ${preset}`);
+  }
+  assert.ok(place(T3RACK, TITAN_RACK_MOUNTED_LEG_ROLLER).units?.length, 'Titan roller on the T-3');
+  // On the T-3's 3 in side face (6 in side holes) the pin crosses the 2 in tube and the spacer is drawn.
+  const side = addAccessory(applyPreset(T3RACK), TITAN_RACK_MOUNTED_LEG_ROLLER.id, { uprightId: 'front-left', face: 'right', hole: 6 }, false);
+  const unit = resolveAssembly(side).find(e => e.ownerId === side.accessories.at(-1)!.id)!;
+  near(unit.params.upright, inch(2), .01, 'T-3 side face tube through the pin');
   // REP: Leg Roller 2.0 is PR-5000 only; Pegasus picks its series from the bore.
   assert.ok(place(PR5000, REP_LEG_ROLLER_2).units?.length); assert.match(place(PR4000, REP_LEG_ROLLER_2).reason ?? '', /bore/);
   assert.equal(place(PR5000, REP_PEGASUS).params?.series, 0); assert.equal(place(PR4000, REP_PEGASUS).params?.series, 1);
