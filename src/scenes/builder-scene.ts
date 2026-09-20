@@ -30,8 +30,10 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import { toCreasedNormals } from "three/addons/utils/BufferGeometryUtils.js";
 import { createStudioLighting } from './studio-lighting.ts';
-import { createRenderLoop, pinPrograms } from './render-loop.ts';
+import { createMotionCheck, createRenderLoop, pinPrograms } from './render-loop.ts';
 import { prewarmPrograms } from './program-prewarm.ts';
+import { currentRenderEnvironment, fogRange, renderBudget } from './render-budget.ts';
+import { LONG_PRESS_MS, TOUCH_PICK_RADIUS, TOUCH_TARGET_RADIUS, TouchTracker, choosePick, pickOffsets, pickScore, SMALL_PART_PX } from './touch-input.ts';
 import { detectCollisions } from "../../rack-generator/assembly-collisions.ts";
 import type {
   Mount,
@@ -45,6 +47,8 @@ import type {
 } from "../../rack-generator/worker-types.ts";
 import type { BuilderStore } from "../state/builder-store.ts";
 export type BuilderView = "iso" | "front" | "side" | "top";
+/** Canvas edges covered by UI (CSS px): a phone's bottom sheet, a top bar. The view centres in what is left. */
+export interface ViewInsets { top: number; right: number; bottom: number; left: number }
 export interface BuilderScene {
   fit(mode?: BuilderView): void;
   refitOnNextBuild(): void;
@@ -54,6 +58,12 @@ export interface BuilderScene {
   stopBuild(): void;
   /** Request a frame. The builder renders on demand only; call after changing anything it draws. */
   invalidate(): void;
+  /** Keep the model centred in the canvas area not covered by overlaid UI (a bottom sheet, a top bar); `fit` frames
+   * that area too. Cheap: a projection offset, no canvas resize. Pass zeros (or omit sides) to clear. */
+  setViewInsets(insets: Partial<ViewInsets>): void;
+  /** Client (CSS px) position of a part's bounds centre, e.g. to anchor an action bar to the selection. The
+   * placement ghost wins while one shows that id. Null for unknown ids; `visible` is false behind the camera. */
+  screenPoint(id: string): { x: number; y: number; visible: boolean } | null;
   dispose(): void;
 }
 const message = (error: unknown) =>
@@ -84,16 +94,23 @@ export function createBuilderScene(
     view: BuilderView = "iso";
   let previewTarget: Mount | null = null,
     selectionBoxes: THREE.Box3Helper[] = [];
+  /** The last pointer down was a finger: picking and target radii widen, the touch placement bar shows. */
+  let touchInput = false;
+  let insets: ViewInsets = { top: 0, right: 0, bottom: 0, left: 0 }, canvasSize: [number, number] = [0, 0];
   let mountPoints: Mount[] = [];
   /** Free hooks for the attachment being placed: source-space marker and outward normal. */
   let hangTargets: (HangTarget & { position: Vec3; normal: Vec3 })[] = [];
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#343b38");
-  scene.fog = new THREE.Fog("#343b38", 18000, 42000);
+  const fog = new THREE.Fog("#343b38", ...fogRange(0));
+  scene.fog = fog;
+  // Phones and tablets draw fewer pixels and a smaller shadow map (desktop: DPR 2, 2048², MSAA as before).
+  const budget = renderBudget(currentRenderEnvironment());
   // Nothing reads the canvas back (thumbnails/export use their own paths), so let the browser swap buffers.
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const renderer = new THREE.WebGLRenderer({ antialias: budget.antialias });
+  renderer.setPixelRatio(budget.pixelRatio);
   const lighting = createStudioLighting(scene, renderer, true);
+  lighting.key.shadow.mapSize.set(budget.shadowMapSize, budget.shadowMapSize);
   // The shadow map is redrawn only when fitRackShadow (a rebuild) flags the key light, never on camera moves.
   renderer.shadowMap.autoUpdate = false;
   // Allocate the (empty) map up front so frames before the first build don't sample a missing shadow texture.
@@ -104,9 +121,17 @@ export function createBuilderScene(
     "aria-label",
     "Rack assembly: drag to orbit, click a part to edit",
   );
+  // Fingers drive the scene only: no page scroll or pinch/double-tap zoom, no iOS callout or text selection on a long-press.
+  for (const [property, value] of [["touch-action", "none"], ["user-select", "none"], ["-webkit-user-select", "none"], ["-webkit-touch-callout", "none"], ["-webkit-tap-highlight-color", "transparent"]])
+    renderer.domElement.style.setProperty(property, value);
+  // Older iOS Safari starts its page pinch-zoom from these even on a touch-action:none element.
+  const preventGesture = (event: Event) => event.preventDefault();
+  renderer.domElement.addEventListener("gesturestart", preventGesture);
   const camera = new THREE.PerspectiveCamera(35, 1, 1, 40000),
     controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
+  // Fingers: one orbits, two pan and pinch-zoom together (explicit so a three.js default change cannot move them).
+  controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
   let updatingControls = false;
   // Pointer/wheel input moves the camera outside the frame; damping continues inside it.
   controls.addEventListener("change", () => { if (!updatingControls) invalidate(); });
@@ -117,7 +142,7 @@ export function createBuilderScene(
     cradleRoot = new THREE.Group();
   const pinned = new WeakSet<object>();
   let prewarmed = false;
-  const loop = createRenderLoop(renderFrame);
+  const loop = createRenderLoop(renderFrame), cameraMoving = createMotionCheck();
   const invalidate = () => loop.invalidate();
   for (const root of [assemblyRoot, ghostRoot, mountsRoot, cradleRoot]) {
     root.rotation.x = -Math.PI / 2;
@@ -405,7 +430,7 @@ export function createBuilderScene(
   /** Nearest free cradle to the pointer, measured to the projected bar segment. */
   function cradleAt(event: { clientX: number; clientY: number }): BarCradle | null {
     const rect = renderer.domElement.getBoundingClientRect();
-    let best: BarCradle | null = null, distance = 36;
+    let best: BarCradle | null = null, distance = targetRadius(36);
     for (const cradle of cradles) {
       const axis = [Math.cos(cradle.yaw), Math.sin(cradle.yaw), 0], [a, b] = [-1, 1].map(side => screenPoint(cradle.center.map((v, i) => v + side * 1100 * axis[i]) as Vec3));
       if (!a.visible || !b.visible) continue;
@@ -570,7 +595,7 @@ export function createBuilderScene(
   let hoveredHang = '';
   function nearestHang(event: { clientX: number; clientY: number }) {
     const rect = renderer.domElement.getBoundingClientRect();
-    let best: HangTarget | null = null, distance = 28;
+    let best: HangTarget | null = null, distance = targetRadius(28);
     scene.updateMatrixWorld(true);
     for (const target of hangTargets) {
       const world = mountsRoot.localToWorld(new THREE.Vector3(...target.position)), normal = new THREE.Vector3(...target.normal).transformDirection(mountsRoot.matrixWorld);
@@ -606,7 +631,7 @@ export function createBuilderScene(
   }): Mount | null {
     const rect = renderer.domElement.getBoundingClientRect();
     let best: Mount | null = null,
-      distance = 28;
+      distance = targetRadius(28);
     scene.updateMatrixWorld(true);
     for (const mount of mountPoints) {
       const world = mountsRoot.localToWorld(
@@ -629,17 +654,70 @@ export function createBuilderScene(
     }
     return best;
   }
-  function pickOwner(event: { clientX: number; clientY: number }): { id: string; ownerId: string } | null {
-    const rect = renderer.domElement.getBoundingClientRect();
-    pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1);
-    scene.updateMatrixWorld(true); raycaster.setFromCamera(pointer, camera);
-    const shown = (o: THREE.Object3D | null): boolean => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
-    const hits = raycaster.intersectObjects([assemblyRoot, ...(swapRegions ? [swapRegions.root] : [])], true)
-      .filter(hit => hit.object instanceof THREE.Mesh && shown(hit.object));
-    let object: THREE.Object3D | null = hits[0]?.object ?? null;
+  const shown = (o: THREE.Object3D | null): boolean => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
+  /** The first visible `roots` object under a canvas point (cut-away wall items are hidden), walked up to its part. */
+  function rayObject(roots: THREE.Object3D[], x: number, y: number, rect: DOMRect) {
+    pointer.set((x - rect.left) / rect.width * 2 - 1, -(y - rect.top) / rect.height * 2 + 1);
+    raycaster.setFromCamera(pointer, camera);
+    let object: THREE.Object3D | null = raycaster.intersectObjects(roots, true).find(hit => hit.object instanceof THREE.Mesh && shown(hit.object))?.object ?? null;
     while (object && !object.userData.ownerId) object = object.parent;
+    return object;
+  }
+  const corner = new THREE.Vector3(), bounds = new THREE.Box3();
+  /** Client-space rectangle of an object's bounds and its larger side; null when any corner is behind the camera. */
+  function screenRect(object: THREE.Object3D, rect: DOMRect) {
+    bounds.setFromObject(object);
+    if (bounds.isEmpty()) return null;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (let i = 0; i < 8; i++) {
+      corner.set(i & 1 ? bounds.max.x : bounds.min.x, i & 2 ? bounds.max.y : bounds.min.y, i & 4 ? bounds.max.z : bounds.min.z).project(camera);
+      if (corner.z < -1 || corner.z > 1) return null;
+      minX = Math.min(minX, corner.x); maxX = Math.max(maxX, corner.x); minY = Math.min(minY, corner.y); maxY = Math.max(maxY, corner.y);
+    }
+    const left = rect.left + (minX + 1) * rect.width / 2, right = rect.left + (maxX + 1) * rect.width / 2;
+    const top = rect.top + (1 - maxY) * rect.height / 2, bottom = rect.top + (1 - minY) * rect.height / 2;
+    return { left, right, top, bottom, size: Math.max(right - left, bottom - top) };
+  }
+  const outside = (r: { left: number; right: number; top: number; bottom: number }, x: number, y: number) =>
+    Math.hypot(Math.max(r.left - x, 0, x - r.right), Math.max(r.top - y, 0, y - r.bottom));
+  /**
+   * The part under the pointer. Fingers also consider parts whose on-screen bounds come within TOUCH_PICK_RADIUS,
+   * favouring small ones (see choosePick). Rays are cast only at those parts, and only where they could still win:
+   * a phone cannot afford dozens of full-assembly raycasts per tap.
+   */
+  function pickOwner(event: { clientX: number; clientY: number }, radius = touchInput ? TOUCH_PICK_RADIUS : 0): { id: string; ownerId: string } | null {
+    const rect = renderer.domElement.getBoundingClientRect(), roots = [assemblyRoot, ...(swapRegions ? [swapRegions.root] : [])];
+    const x = event.clientX, y = event.clientY;
+    scene.updateMatrixWorld(true);
+    let object = rayObject(roots, x, y, rect);
+    // A finger on the selected part means that part (to drag or long-press it), whatever is beside it.
+    if (radius && !(object && snapshot.selection.includes(object.userData.id))) {
+      const centre = object && screenRect(object, rect), found = object ? [{ item: object, distance: 0, screenSize: centre?.size ?? Infinity }] : [];
+      const toBeat = object ? pickScore(0, centre?.size ?? Infinity) : Infinity;
+      const near = [...instances.values()].flatMap(group => {
+        const r = group === object || !shown(group) ? null : screenRect(group, rect), d = r ? outside(r, x, y) : Infinity;
+        return r && d <= radius && (!object || r.size < SMALL_PART_PX) && pickScore(d, r.size) < toBeat ? [{ group, r, d }] : [];
+      }).sort((a, b) => pickScore(a.d, a.r.size) - pickScore(b.d, b.r.size));
+      for (const { group, r } of near.slice(0, 8)) {
+        // Offsets come nearest first: the first ray that hits gives the part's distance from the finger.
+        for (const [dx, dy, distance] of pickOffsets(radius)) {
+          if (outside(r, x + dx, y + dy) > 0) continue;
+          if (rayObject([group], x + dx, y + dy, rect)) { found.push({ item: group, distance, screenSize: r.size }); break; }
+        }
+      }
+      object = choosePick(found);
+    }
     return object ? { id: object.userData.id ?? object.userData.ownerId, ownerId: object.userData.ownerId } : null;
   }
+  /** Is the finger on (or right beside) the placement ghost's on-screen bounds? */
+  function onGhost(event: { clientX: number; clientY: number }) {
+    if (!ghostRoot.children.length) return false;
+    scene.updateMatrixWorld(true);
+    const r = screenRect(ghostRoot, renderer.domElement.getBoundingClientRect());
+    return !!r && outside(r, event.clientX, event.clientY) <= TOUCH_PICK_RADIUS;
+  }
+  /** Screen radius for choosing mount dots, hooks and cradles: a fingertip is much larger than a cursor. */
+  const targetRadius = (mouse: number) => touchInput ? Math.max(mouse, TOUCH_TARGET_RADIUS) : mouse;
   /** One ghost batch in flight, one latest pending hover; rapid pointer movement cannot flood the worker. */
   async function renderPreview(entries: ResolvedInstance[], serial: number) {
     if (previewBusy) { queuedPreview = { entries, serial }; return; }
@@ -784,7 +862,8 @@ export function createBuilderScene(
     else if (floorItem) { if (floorDrag) floorDrag.moved = true; store.updateFloor(floorItem.id, { rotation: floorItem.rotation + direction * Math.PI / 12 }); }
   };
   const onDoubleClick = (event: MouseEvent) => {
-    if (snapshot.systemChoice) return;
+    // A double-tap is not a reposition on touch: long-press is (a finger double-tap is too easy to hit mid-orbit).
+    if (snapshot.systemChoice || touchInput) return;
     if (event.button !== 0 || snapshot.placing || snapshot.structureChoice || performance.now() - draggedAt < 600) return;
     const hit = pickOwner(event);
     if (hit) { event.preventDefault(); store.pickup(hit.id); }
@@ -894,6 +973,8 @@ export function createBuilderScene(
   };
   const onLeave = (event: PointerEvent) => {
     hoveredId = null;
+    // Every lifted finger "leaves": touch keeps the rotation and structure handles for its Place/Apply tap.
+    if (event.pointerType === "touch") return;
     if (snapshot.placing?.rotationOnly) store.acceptProposal();
     if (addingStructure() && !(event.relatedTarget instanceof Node && viewport.contains(event.relatedTarget))) {
       showStructureHandles([]); previewStructure(null);
@@ -907,6 +988,189 @@ export function createBuilderScene(
     controls.enabled = !floorDrag && !snapshot.selectionTool;
   };
   const pointerGesture = new PointerGesture(renderer.domElement, onCancel);
+  // ---- Touch (#204). Mouse and pen keep the handlers above untouched; fingers route through these. ----
+  const touches = new TouchTracker();
+  /** The scene owns this touch gesture (OrbitControls never saw it); a second finger then ends it and is ignored. */
+  let sceneTouch = false, swallowTouch = false;
+  /** The ghost follows the primary finger; `ghostOffset` keeps a floor ghost's grab point under the finger. */
+  let placementDrag = false, ghostOffset: [number, number] | null = null;
+  let longPressTimer: ReturnType<typeof setTimeout> | undefined, longPressed = false;
+  /** The part under the finger at touch-down (undefined until picked); a tap or long-press reuses it. */
+  let downHit: { id: string; ownerId: string } | null | undefined;
+  const clearLongPress = () => { clearTimeout(longPressTimer); longPressTimer = undefined; };
+  const placingAny = () => !!(snapshot.placing || snapshot.structureChoice || snapshot.systemChoice);
+  const restoreControls = () => { controls.enabled = !floorDrag && !snapshot.selectionTool; };
+  /** Take the finger from OrbitControls: capture it here and stop the controls seeing the press. */
+  const ownTouch = (event: PointerEvent) => {
+    controls.enabled = false; pointerGesture.capture(); event.stopImmediatePropagation(); sceneTouch = true;
+  };
+  function startGhostDrag(event: { clientX: number; clientY: number }) {
+    placementDrag = true; ghostOffset = null;
+    const proposal = snapshot.proposal, item = proposal?.doc.floorItems?.find(i => i.id === proposal.ownerId);
+    const point = isFloorPart(snapshot.placing?.part) && item && !item.cradle ? floorPoint(event, false) : null;
+    if (point && item) ghostOffset = [item.position[0] - point[0], item.position[1] - point[1]];
+  }
+  function dragGhost(event: PointerEvent) {
+    const point = ghostOffset ? floorPoint(event, false) : null;
+    if (!ghostOffset || !point) { updatePreview(event); return; }
+    // A cradle under the finger still parks a bar; otherwise the ghost keeps its grab offset on the floor.
+    if (parksInCradles(snapshot.placing?.part) && cradleAt(event)) { updatePreview(event); return; }
+    const grid = (v: number) => Math.round(v / 25) * 25;
+    store.previewFloor([grid(point[0] + ghostOffset[0]), grid(point[1] + ghostOffset[1])]);
+  }
+  /** End whatever the scene was doing with a finger, keeping a drag's progress (one history entry). */
+  function finishSceneTouch() {
+    if (floorDrag) { floorDrag = null; store.endGesture(); }
+    if (hangDrag) { const drag = hangDrag; hangDrag = null; if (drag.started && placingHang()) { store.cancelPlacement(); store.select(drag.id); } }
+    placementDrag = false; ghostOffset = null; sceneTouch = false; selecting = false; marquee.style.display = "none";
+    pointerGesture.finish(); restoreControls();
+  }
+  function scheduleLongPress(event: PointerEvent) {
+    clearLongPress();
+    const { pointerId, clientX, clientY } = event;
+    longPressTimer = setTimeout(() => {
+      longPressTimer = undefined;
+      if (disposed || touches.count !== 1 || touches.moved || touches.primary?.id !== pointerId) return;
+      if (placingAny() || snapshot.selectionTool || build) return;
+      const hit = downHit !== undefined ? downHit : pickOwner({ clientX, clientY });
+      if (!hit) return;
+      // The touch equivalent of double-click: pick the part up; the same finger then carries its ghost.
+      if (floorDrag) { floorDrag = null; store.cancelGesture(); }
+      hangDrag = null;
+      controls.enabled = false; longPressed = true;
+      navigator.vibrate?.(12);
+      store.pickup(hit.id);
+      if (!snapshot.placing) return;
+      pointerGesture.begin({ pointerId, clientX, clientY }); pointerGesture.capture(); sceneTouch = true;
+      startGhostDrag({ clientX, clientY });
+      controls.enabled = false;
+    }, LONG_PRESS_MS);
+  }
+  const touchDown = (event: PointerEvent) => {
+    touchInput = true;
+    updateTouchBar();
+    if (touches.down(event, performance.now()) > 1) {
+      // A second finger makes the gesture a camera pinch/pan. If the scene held the first finger, OrbitControls
+      // never saw it: end the scene gesture and sit this one out rather than orbit from half a pinch.
+      clearLongPress();
+      if (sceneTouch || swallowTouch) { finishSceneTouch(); swallowTouch = true; event.stopImmediatePropagation(); }
+      return;
+    }
+    longPressed = false; sceneTouch = false; swallowTouch = false; downHit = undefined;
+    if (snapshot.systemChoice) return;
+    // The marquee tool draws with a finger exactly as with a mouse.
+    if (snapshot.selectionTool) { onDown(event); sceneTouch = true; return; }
+    pointerGesture.begin(event);
+    if (placingAny()) {
+      // Touching the ghost drags it; elsewhere the finger orbits and a tap chooses the spot (see touchTap).
+      if (!addingStructure() && !snapshot.placing?.rotationOnly && snapshot.placing && onGhost(event)) { startGhostDrag(event); ownTouch(event); }
+      return;
+    }
+    scheduleLongPress(event);
+    // Only a part that is already selected moves under a finger; anything else orbits (and a tap selects it).
+    // Nothing selected: pick lazily on tap or long-press, so an orbit never pays for it.
+    if (snapshot.selection.length !== 1) return;
+    const hit = downHit = pickOwner(event);
+    if (!hit || !snapshot.selection.includes(hit.id)) return;
+    const applied = store.getAppliedDoc();
+    if (!applied.floorItems?.some(i => i.id === hit.id && !i.cradle) && !applied.wallItems?.some(i => i.id === hit.id) && !applied.hangItems?.some(i => i.id === hit.id)) return;
+    onDown(event);
+    if (floorDrag || hangDrag) sceneTouch = true;
+  };
+  const touchMove = (event: PointerEvent) => {
+    if (touches.move(event)) clearLongPress();
+    if (swallowTouch || event.pointerId !== touches.primary?.id || touches.count > 1) return;
+    if (placementDrag) { if (touches.moved || longPressed) dragGhost(event); return; }
+    if (sceneTouch) onMove(event);
+  };
+  function touchTap(event: PointerEvent) {
+    if (snapshot.systemChoice || build) return;
+    if (snapshot.placing?.rotationOnly) { store.acceptProposal(); return; }
+    if (placingAny()) {
+      // Choose the spot or target; the Place button commits (no hover on touch, so a tap never places).
+      if (addingStructure()) updateStructure(event); else updatePreview(event);
+      return;
+    }
+    const hit = downHit !== undefined ? downHit : pickOwner(event);
+    if (hit) { store.select(hit.id); return; }
+    // Empty space clears the selection; with nothing selected a wall or the ceiling opens the room, like a click.
+    if (snapshot.selection.length) { store.select(null); return; }
+    const rect = renderer.domElement.getBoundingClientRect();
+    pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1);
+    raycaster.setFromCamera(pointer, camera);
+    if (walls.group.visible && wallHit(roomOf(snapshot.doc), raycaster.ray.origin.toArray(), raycaster.ray.direction.toArray()) || roomScenery.ceilingVisible && raycaster.ray.direction.y > 0) store.openRoom();
+  }
+  const touchUp = (event: PointerEvent) => {
+    const { tap, primary, remaining } = touches.up(event, performance.now());
+    if (swallowTouch) { if (!remaining) { swallowTouch = false; restoreControls(); } return; }
+    if (!primary) return; // A second finger lifting: OrbitControls carries on with the first.
+    clearLongPress();
+    if (longPressed || placementDrag) { longPressed = false; finishSceneTouch(); return; } // The ghost stays for Place.
+    if (sceneTouch) { sceneTouch = false; onUp(event); restoreControls(); return; }
+    pointerGesture.finish();
+    if (tap) touchTap(event);
+  };
+  const touchCancel = () => {
+    clearLongPress(); touches.reset();
+    if (floorDrag && (sceneTouch || placementDrag)) { floorDrag = null; store.cancelGesture(); }
+    placementDrag = false; ghostOffset = null; sceneTouch = false; swallowTouch = false; longPressed = false;
+  };
+  const onPointerDown = (event: PointerEvent) => {
+    if (event.pointerType === "touch") { touchDown(event); return; }
+    if (touchInput) { touchInput = false; updateTouchBar(); }
+    onDown(event);
+  };
+  const onPointerMove = (event: PointerEvent) => { if (event.pointerType === "touch") touchMove(event); else onMove(event); };
+  const onPointerUp = (event: PointerEvent) => { if (event.pointerType === "touch") touchUp(event); else onUp(event); };
+  const onPointerCancel = (event: PointerEvent) => { if (event.pointerType === "touch") touchCancel(); onCancel(); };
+  // Touch placement bar: big thumb-reachable Place / Cancel (and rotate) over the canvas, since a tap never places.
+  const touchBar = document.createElement("div");
+  touchBar.className = "touch-placement";
+  touchBar.setAttribute("role", "toolbar");
+  touchBar.setAttribute("aria-label", "Placement");
+  touchBar.style.cssText = "position:absolute;left:50%;transform:translateX(-50%);z-index:3;display:none;gap:10px;align-items:center;pointer-events:auto;touch-action:manipulation;max-width:calc(100% - 24px)";
+  const barButton = (label: string, text: string, primary = false) => {
+    const button = document.createElement("button");
+    button.type = "button"; button.textContent = text; button.setAttribute("aria-label", label);
+    button.style.cssText = "display:grid;place-items:center;min-height:52px;min-width:52px;padding:0 24px;border-radius:26px;font-family:inherit;font-size:16px;font-weight:600;line-height:1;touch-action:manipulation;box-shadow:0 6px 20px #0003;" +
+      (primary ? "background:#264d3a;color:#fff;border:1px solid #264d3a" : "background:#f8faf2;color:#264d3a;border:1px solid #cbd7c3");
+    touchBar.append(button);
+    return button;
+  };
+  /** Round icon button: a circular arrow, mirrored for the other direction. */
+  const rotateButton = (label: string, mirror: boolean) => {
+    const button = barButton(label, "");
+    button.style.padding = "0";
+    button.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${mirror ? ' style="transform:scaleX(-1)"' : ""}><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg>`;
+    return button;
+  };
+  const touchCancelButton = barButton("Cancel placement", "Cancel"), rotateLeft = rotateButton("Rotate left", false), rotateRight = rotateButton("Rotate right", true), touchPlace = barButton("Place", "Place", true);
+  touchCancelButton.id = "touch-cancel"; touchPlace.id = "touch-place"; rotateLeft.id = "touch-rotate-left"; rotateRight.id = "touch-rotate-right";
+  touchCancelButton.addEventListener("click", () => { store.cancelPlacement(); if (snapshot.systemChoice) store.patch({ systemChoice: null, proposal: null }); });
+  touchPlace.addEventListener("click", () => { if (addingStructure()) commitStructure(); else store.acceptProposal(); });
+  rotateLeft.addEventListener("click", () => store.rotateSelection(-1));
+  rotateRight.addEventListener("click", () => store.rotateSelection(1));
+  // The app shell's stage overlay (#203) floats over the canvas and, on phones, ends above the sheet; a bare
+  // viewport (tests, other hosts) gets the bar itself.
+  (viewport.closest(".stage")?.querySelector<HTMLElement>('.stage-overlay[data-slot="stage-overlay"]') ?? viewport).append(touchBar);
+  const coarse = matchMedia("(pointer: coarse)");
+  function positionTouchBar() {
+    // The host's CSS may lift the bar clear of its own stage chrome with --touch-bar-offset.
+    touchBar.style.bottom = `calc(var(--touch-bar-offset, 18px) + ${insets.bottom}px + env(safe-area-inset-bottom, 0px))`;
+  }
+  function updateTouchBar() {
+    const show = (touchInput || coarse.matches) && placingAny();
+    touchBar.style.display = show ? "flex" : "none";
+    touchBar.toggleAttribute("data-shown", show);
+    viewport.toggleAttribute("data-touch-placement", show);
+    if (!show) return;
+    touchPlace.disabled = !snapshot.proposal || snapshot.loading;
+    touchPlace.style.opacity = touchPlace.disabled ? ".5" : "1";
+    touchPlace.textContent = snapshot.placing?.rotationOnly ? "Apply" : "Place";
+    const rotates = !!store.rotationSubject();
+    rotateLeft.hidden = rotateRight.hidden = !rotates;
+  }
+  positionTouchBar();
   const onDrag = (event: DragEvent) => {
     event.preventDefault();
     if (snapshot.placing || snapshot.structureChoice) void updatePreview(event);
@@ -917,10 +1181,10 @@ export function createBuilderScene(
   };
   renderer.domElement.addEventListener("wheel", onWheel, { capture: true, passive: false });
   renderer.domElement.addEventListener("dblclick", onDoubleClick);
-  renderer.domElement.addEventListener("pointerdown", onDown, true);
-  renderer.domElement.addEventListener("pointermove", onMove);
-  renderer.domElement.addEventListener("pointerup", onUp);
-  renderer.domElement.addEventListener("pointercancel", onCancel);
+  renderer.domElement.addEventListener("pointerdown", onPointerDown, true);
+  renderer.domElement.addEventListener("pointermove", onPointerMove);
+  renderer.domElement.addEventListener("pointerup", onPointerUp);
+  renderer.domElement.addEventListener("pointercancel", onPointerCancel);
   viewport.addEventListener("pointerleave", onLeave);
   viewport.addEventListener("dragover", onDrag);
   viewport.addEventListener("drop", onDrop);
@@ -990,7 +1254,10 @@ export function createBuilderScene(
         .crossVectors(new THREE.Vector3(0, 1, 0), direction)
         .normalize(),
       up = new THREE.Vector3().crossVectors(direction, right).normalize(),
-      tangent = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+      tangent = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)),
+      // Frame the uncovered part of the canvas (the view offset centres it there).
+      [shownX, shownY] = shownFraction(),
+      tangentX = tangent * camera.aspect * shownX, tangentY = tangent * shownY;
     let distance = 1;
     for (const x of [-1, 1])
       for (const y of [-1, 1])
@@ -1003,8 +1270,8 @@ export function createBuilderScene(
           distance = Math.max(
             distance,
             corner.dot(direction) +
-              Math.abs(corner.dot(right)) / (tangent * camera.aspect),
-            corner.dot(direction) + Math.abs(corner.dot(up)) / tangent,
+              Math.abs(corner.dot(right)) / tangentX,
+            corner.dot(direction) + Math.abs(corner.dot(up)) / tangentY,
           );
         }
     camera.position.copy(center).addScaledVector(direction, distance * 1.3);
@@ -1012,13 +1279,30 @@ export function createBuilderScene(
     controls.update();
     invalidate();
   }
+  /** Uncovered share of the canvas width and height. */
+  function shownFraction(): [number, number] {
+    const [width, height] = canvasSize.map(v => Math.max(1, v));
+    return [Math.max(0.2, 1 - (insets.left + insets.right) / width), Math.max(0.2, 1 - (insets.top + insets.bottom) / height)];
+  }
+  /** Shift the projection so the orbit target sits at the centre of the uncovered area (picking stays exact:
+   * rays and projections go through the same offset matrix). */
+  function applyViewOffset() {
+    const [width, height] = canvasSize, x = (insets.right - insets.left) / 2, y = (insets.bottom - insets.top) / 2;
+    if (x || y) camera.setViewOffset(width, height, x, y, width, height);
+    else camera.clearViewOffset();
+  }
   const resize = () => {
     const rect = viewport.getBoundingClientRect(),
       width = Math.max(1, rect.width),
       height = Math.max(1, rect.height);
+    // A resize that keeps the size (a bottom sheet moving over the canvas) costs nothing.
+    if (width === canvasSize[0] && height === canvasSize[1]) return;
+    canvasSize = [width, height];
     renderer.setSize(width, height);
     camera.aspect = width / height;
+    applyViewOffset();
     camera.updateProjectionMatrix();
+    positionTouchBar();
     // Resizing clears the canvas; repaint before the browser presents it.
     loop.renderNow();
   };
@@ -1049,8 +1333,10 @@ export function createBuilderScene(
     }
     if (!build) {
       updatingControls = true;
-      again = controls.update() || again;
+      const damping = controls.update();
       updatingControls = false;
+      // Inertia (a flick, a released drag) ends render-on-demand once the camera stops visibly moving.
+      if (cameraMoving(camera, controls.target) && damping) again = true;
     }
     const focus = build ? build.animation.focus : controls.target;
     backdrop.follow(camera, focus);
@@ -1058,6 +1344,7 @@ export function createBuilderScene(
     cutAwayWallItems();
     roomScenery.follow(camera);
     camera.far = Math.max(40000, camera.position.distanceTo(focus) * 4);
+    [fog.near, fog.far] = fogRange(camera.position.distanceTo(focus));
     camera.near = Math.max(
       0.5,
       camera.position.distanceTo(focus) / 200,
@@ -1095,7 +1382,9 @@ export function createBuilderScene(
     if (snapshot.doc !== previous.doc) requestRebuild();
     if (snapshot.doc !== previous.doc || snapshot.placing !== previous.placing) updateWalls();
     if (snapshot.selection !== previous.selection) refreshSelection();
-    controls.enabled = !floorDrag && !snapshot.selectionTool && !selecting && !(pointerGesture.start && !addingStructure() && (snapshot.placing || snapshot.structureChoice));
+    // A finger orbiting during placement keeps the controls (a tap, not the press, chooses the spot on touch).
+    controls.enabled = !floorDrag && !snapshot.selectionTool && !selecting && !(pointerGesture.start && !addingStructure() && (snapshot.placing || snapshot.structureChoice) && (!touchInput || sceneTouch || longPressed));
+    updateTouchBar();
     if (previous.selectionTool && !snapshot.selectionTool) onCancel();
     if (
       snapshot.placing !== previous.placing ||
@@ -1122,6 +1411,25 @@ export function createBuilderScene(
     playBuild,
     stopBuild,
     invalidate,
+    screenPoint(id) {
+      const object = ghostRoot.children.find(g => g.userData.id === id || g.userData.ownerId === id)
+        ?? instances.get(id) ?? [...instances.values()].find(g => g.userData.ownerId === id);
+      if (!object) return null;
+      scene.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(object);
+      if (box.isEmpty()) return null;
+      const p = box.getCenter(new THREE.Vector3()).project(camera), rect = renderer.domElement.getBoundingClientRect();
+      return { x: rect.left + (p.x + 1) * rect.width / 2, y: rect.top + (1 - p.y) * rect.height / 2, visible: p.z >= -1 && p.z <= 1 };
+    },
+    setViewInsets(next) {
+      const merged = { ...insets, ...next };
+      for (const side of ["top", "right", "bottom", "left"] as const) merged[side] = Math.max(0, Number(merged[side]) || 0);
+      if ((["top", "right", "bottom", "left"] as const).every(side => merged[side] === insets[side])) return;
+      insets = merged;
+      applyViewOffset();
+      positionTouchBar();
+      invalidate();
+    },
     async exportGLB() {
       if (disposed) throw Error("Scene has been disposed.");
       stopBuild();
@@ -1161,10 +1469,13 @@ export function createBuilderScene(
       renderer.domElement.removeEventListener("webglcontextrestored", invalidate);
       renderer.domElement.removeEventListener("wheel", onWheel, true);
       renderer.domElement.removeEventListener("dblclick", onDoubleClick);
-      renderer.domElement.removeEventListener("pointerdown", onDown, true);
-      renderer.domElement.removeEventListener("pointermove", onMove);
-      renderer.domElement.removeEventListener("pointerup", onUp);
-      renderer.domElement.removeEventListener("pointercancel", onCancel);
+      renderer.domElement.removeEventListener("gesturestart", preventGesture);
+      renderer.domElement.removeEventListener("pointerdown", onPointerDown, true);
+      renderer.domElement.removeEventListener("pointermove", onPointerMove);
+      renderer.domElement.removeEventListener("pointerup", onPointerUp);
+      renderer.domElement.removeEventListener("pointercancel", onPointerCancel);
+      clearLongPress();
+      touchBar.remove(); viewport.removeAttribute("data-touch-placement");
       viewport.removeEventListener("pointerleave", onLeave);
       viewport.removeEventListener("dragover", onDrag);
       viewport.removeEventListener("drop", onDrop);

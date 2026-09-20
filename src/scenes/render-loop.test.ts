@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import * as THREE from 'three';
-import { createRenderLoop, pinPrograms } from './render-loop.ts';
+import { createMotionCheck, createRenderLoop, pinPrograms } from './render-loop.ts';
 
 function fakeFrames() {
   const queue = new Map<number, FrameRequestCallback>();
@@ -65,4 +65,19 @@ test('pinned programs survive disposal of every material that used them', () => 
   programs.push({ usedTimes: 1 });
   pinPrograms(renderer, pinned);
   assert.deepEqual(programs.map(p => p.usedTimes), [2, 3, 2]);
+});
+
+test('motion check ends damping frames once the camera stops visibly moving', () => {
+  const moving = createMotionCheck(), camera = new THREE.PerspectiveCamera(), target = new THREE.Vector3();
+  camera.position.set(0, 0, 8000);
+  assert.equal(moving(camera, target), true, 'first frame');
+  camera.position.x += 50;
+  assert.equal(moving(camera, target), true, 'a visible step');
+  camera.position.x += 0.1; // 0.1 mm at an 8 m orbit
+  assert.equal(moving(camera, target), false);
+  camera.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.01);
+  assert.equal(moving(camera, target), true, 'a visible turn');
+  target.x += 5;
+  assert.equal(moving(camera, target), true, 'a pan');
+  assert.equal(moving(camera, target), false);
 });

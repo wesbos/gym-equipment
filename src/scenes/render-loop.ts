@@ -1,4 +1,4 @@
-import type * as THREE from 'three';
+import * as THREE from 'three';
 
 export interface RenderLoop {
   /** Schedule one frame (coalesced). Call after anything visible changes. */
@@ -38,6 +38,22 @@ export function createRenderLoop(
       if (id) caf(id);
       id = 0;
     },
+  };
+}
+
+/**
+ * Damped orbits decay geometrically, and OrbitControls keeps reporting motion until it is below its EPS in scene
+ * units squared (mm² here): seconds of frames after a flick that nobody can see. This says whether the camera moved
+ * more than `tolerance` of its orbit radius (or radians) since the last call: 1e-4 is about 0.1 px on a phone.
+ */
+export function createMotionCheck(tolerance = 1e-4) {
+  const position = new THREE.Vector3(), target = new THREE.Vector3(), quaternion = new THREE.Quaternion();
+  let primed = false;
+  return (camera: THREE.Camera, focus: THREE.Vector3) => {
+    const reach = Math.max(1e-6, camera.position.distanceTo(focus)) * tolerance;
+    const moving = !primed || camera.position.distanceTo(position) > reach || focus.distanceTo(target) > reach || camera.quaternion.angleTo(quaternion) > tolerance;
+    position.copy(camera.position); target.copy(focus); quaternion.copy(camera.quaternion); primed = true;
+    return moving;
   };
 }
 
