@@ -1,4 +1,4 @@
-import { DocumentHistory, cleanDocument, diffDocuments, applyOps, parseSession, type TimelineData, type TimelineSnapshot, type HistoryMetadata, type SessionDocument } from './history.ts';
+import { DocumentHistory, cleanDocument, diffDocuments, applyOps, parseSession, describeChange, sameValue, type TimelineData, type TimelineSnapshot, type HistoryMetadata, type HistoryMark, type HistoryEntry, type SessionDocument } from './history.ts';
 import { systemProposal } from '../../rack-generator/system-proposal.ts';
 import { isSystemPart, SYSTEM_DEFAULTS, type SystemPartId } from '../../rack-generator/system-types.ts';
 import { addFloorItem, resolveFloorItems, floorWarnings, moveFloorGroup } from '../../rack-generator/floor-items.ts';
@@ -80,6 +80,8 @@ export interface BuilderSnapshot {
   canUndo: boolean;
   canRedo: boolean;
 }
+/** Trailing delay before the recovery draft is written (then at the next idle moment). Lifecycle events flush it. */
+export const AUTOSAVE_DELAY_MS = 400;
 export class BuilderStore {
   private listeners = new Set<() => void>();
   private journal = new DocumentHistory(createAssembly());
@@ -93,13 +95,20 @@ export class BuilderStore {
   };
   private writes: Promise<void> = Promise.resolve();
   private storageReadable = true;
-  private pendingDraft: RackDoc | null = null;
-  private pendingTimeline: TimelineData | undefined;
   private draftQueued = false;
+  private draftDue = false;
+  private draftTimer: ReturnType<typeof setTimeout> | undefined;
+  private draftIdle: number | undefined;
+  /** Continuous gestures preview edits without touching the journal or storage; the entry lands once at the end. */
   private gesture = false;
   private gestureOriginal: RackDoc | null = null;
-  private gestureHistory: TimelineData | null = null;
   private gestureChanged = false;
+  private gestureMetadata: HistoryMetadata = {};
+  /** Set when the pending gesture entry was appended early (seek/export/lifecycle flush); later moves rewind to it. */
+  private gestureMark: HistoryMark | null = null;
+  private pendingEntries: { base: readonly HistoryEntry[]; entry: HistoryEntry; entries: readonly HistoryEntry[] } | null = null;
+  /** resolveAssembly results already computed for immutable working documents. */
+  private resolvedFor = new WeakMap<RackDoc, ResolvedInstance[]>();
   readonly ready: Promise<void>;
   constructor(storage?: StorageLike | ConfigStorage) {
     this.repository =
@@ -165,6 +174,13 @@ export class BuilderStore {
           error: true,
         });
       });
+    // The draft is debounced, so write it before the page goes away.
+    if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+      const flush = () => this.flushDraft(true);
+      window.addEventListener("pagehide", flush);
+      window.addEventListener("beforeunload", flush);
+      if (typeof document !== "undefined") document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(); });
+    }
   }
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
@@ -230,6 +246,7 @@ export class BuilderStore {
   }
   /** Await pending storage work, useful for adapters and lifecycle tests. */
   flushStorage = async () => {
+    this.flushDraft(true);
     await this.ready;
     do {
       const pending = this.writes;
@@ -237,22 +254,49 @@ export class BuilderStore {
       if (pending === this.writes) break;
     } while (true);
   };
+  /** The applied document the journal ends at; mid-gesture the journal still ends before the gesture. */
+  private committedDoc() {
+    return this.gesture && this.gestureChanged && !this.gestureMark && this.gestureOriginal ? this.gestureOriginal : this.appliedDoc;
+  }
+  private isDirty() {
+    const saved = this.collection.configs.find((c) => c.id === this.state.activeId);
+    return !saved || !sameValue(saved.doc, this.committedDoc()) || !sameValue(saved.timeline, this.journal.data);
+  }
   private autosave() {
-    const saved = this.collection.configs.find(
-      (c) => c.id === this.state.activeId,
-    );
-    const dirty =
-      !saved || JSON.stringify(saved.doc) !== JSON.stringify(this.appliedDoc) || JSON.stringify(saved.timeline) !== JSON.stringify(this.journal.data);
-    this.patch({ dirty, draftAvailable: false });
-    this.pendingDraft = dirty ? this.appliedDoc : null;
-    this.pendingTimeline = dirty ? structuredClone(this.journal.data) : undefined;
+    this.patch({ dirty: this.isDirty(), draftAvailable: false });
+    this.scheduleDraft();
+  }
+  private cancelDraftTimers() {
+    if (this.draftTimer !== undefined) clearTimeout(this.draftTimer);
+    if (this.draftIdle !== undefined) globalThis.cancelIdleCallback?.(this.draftIdle);
+    this.draftTimer = this.draftIdle = undefined;
+  }
+  /** Trailing debounce, then idle time: a burst of edits writes the recovery draft once. */
+  private scheduleDraft() {
+    this.draftDue = true;
+    this.cancelDraftTimers();
+    this.draftTimer = setTimeout(() => {
+      this.draftTimer = undefined;
+      if (typeof globalThis.requestIdleCallback === "function")
+        this.draftIdle = globalThis.requestIdleCallback(() => { this.draftIdle = undefined; this.flushDraft(); }, { timeout: 1000 });
+      else this.flushDraft();
+    }, AUTOSAVE_DELAY_MS);
+  }
+  /** Queue the pending draft write now. `lifecycle` (unload, hide, flushStorage) also captures an in-progress gesture. */
+  private flushDraft(lifecycle = false) {
+    const live = this.gesture && this.gestureChanged && !this.gestureMark;
+    if (!this.draftDue && !(lifecycle && live)) return;
+    if (live && !lifecycle) return; // endGesture reschedules
+    if (live) this.materializeGesture();
+    this.cancelDraftTimers();
+    this.draftDue = false;
     if (this.draftQueued) return;
     this.draftQueued = true;
     void this.mutateStorage((current) => {
-      const draft = this.pendingDraft, draftTimeline = this.pendingTimeline;
-      this.pendingDraft = null;
+      // Read the working copy at write time so queued edits coalesce into one write.
       this.draftQueued = false;
-      return { ...current, draft, draftTimeline };
+      const dirty = this.isDirty();
+      return { ...current, draft: dirty ? this.committedDoc() : null, draftTimeline: dirty ? structuredClone(this.journal.data) : undefined };
     }).catch(() => {
       this.draftQueued = false;
     });
@@ -275,7 +319,7 @@ export class BuilderStore {
     });
     this.patch({
       activeId: id,
-      dirty: JSON.stringify(this.appliedDoc) !== JSON.stringify(doc) || JSON.stringify(this.journal.data) !== JSON.stringify(timeline),
+      dirty: !sameValue(this.appliedDoc, doc) || !sameValue(this.journal.data, timeline),
       draftAvailable: false,
     });
     // A draft queued before this save may have absorbed edits made after the
@@ -328,7 +372,7 @@ export class BuilderStore {
   };
   private replaceWorking(input: RackDoc, timeline?: TimelineData) {
     const doc = cleanDocument(input);
-    this.gesture = false; this.gestureOriginal = null; this.gestureHistory = null; this.gestureChanged = false;
+    this.resetGesture();
     this.journal = new DocumentHistory(doc, timeline ? structuredClone(timeline) : undefined);
     this.appliedDoc = doc;
     this.patch({
@@ -340,37 +384,72 @@ export class BuilderStore {
     });
   }
   getAppliedDoc = () => structuredClone(this.appliedDoc);
-  exportJSON = () => JSON.stringify({ format: 'bos-strength-session', version: 1,
-    doc: this.appliedDoc, timeline: this.journal.data } satisfies SessionDocument, null, 2);
+  exportJSON = () => (this.materializeGesture(), JSON.stringify({ format: 'bos-strength-session', version: 1,
+    doc: this.appliedDoc, timeline: this.journal.data } satisfies SessionDocument, null, 2));
   /** Callback edits run against the applied document, irrespective of the displayed view. */
   edit = (action: (doc: RackDoc) => RackDoc, metadata?: HistoryMetadata) => {
     this.commit(action(this.getAppliedDoc()), { ...metadata, replacement: true });
   };
   beginGesture = () => {
     if (this.gesture) return;
-    this.gestureOriginal = structuredClone(this.appliedDoc);
-    this.gestureHistory = structuredClone(this.journal.data);
-    this.gesture = true; this.gestureChanged = false;
+    this.gestureOriginal = this.appliedDoc;
+    this.gesture = true; this.gestureChanged = false; this.gestureMetadata = {}; this.gestureMark = null;
   };
+  private resetGesture() {
+    this.gesture = false; this.gestureChanged = false; this.gestureOriginal = null;
+    this.gestureMetadata = {}; this.gestureMark = null; this.pendingEntries = null;
+  }
+  /** Append the in-progress gesture's entry now (it stays open: a later move rewinds and previews again). */
+  private materializeGesture() {
+    if (!this.gesture || !this.gestureChanged || this.gestureMark) return;
+    const mark = this.journal.mark();
+    if (this.journal.append(this.appliedDoc, this.gestureMetadata)) this.gestureMark = mark;
+  }
   cancelGesture = () => {
-    if (this.gestureOriginal && this.gestureHistory && this.gestureChanged) {
-      this.journal = new DocumentHistory(this.gestureOriginal, this.gestureHistory);
+    if (this.gesture && this.gestureChanged && this.gestureOriginal) {
+      if (this.gestureMark) this.journal.rewind(this.gestureMark);
       this.appliedDoc = this.gestureOriginal;
-      this.publishApplied(true); this.autosave();
+      this.resetGesture();
+      this.publishApplied(true, true);
     }
-    this.endGesture();
+    this.resetGesture();
   };
   endGesture = () => {
-    this.gestureOriginal = null; this.gestureHistory = null;
-    this.gesture = false; this.gestureChanged = false;
+    const changed = this.gesture && this.gestureChanged;
+    if (changed && !this.gestureMark) this.journal.append(this.appliedDoc, this.gestureMetadata);
+    this.resetGesture();
+    if (!changed) return;
+    this.patch({ ...this.timelineState(), dirty: this.isDirty(), draftAvailable: false });
+    this.scheduleDraft();
   };
-  private publishApplied(navigation = false) {
+  /** Timeline, showing an in-progress gesture as one live entry (appended to the journal at gesture end). */
+  private timelineState(): Pick<BuilderSnapshot, "timeline" | "canUndo" | "canRedo"> {
+    const journal = this.journal, data = journal.data;
+    if (this.gesture && this.gestureChanged && !this.gestureMark && this.gestureOriginal && !sameValue(this.appliedDoc, this.gestureOriginal)) {
+      const described = { ...describeChange(this.gestureOriginal, this.appliedDoc), ...this.gestureMetadata };
+      const base = journal.entries(), id = data.events.length + 1, previous = this.pendingEntries;
+      const entry = { id, label: described.label, category: described.category };
+      const entries = previous && previous.base === base && previous.entry.label === entry.label && previous.entry.category === entry.category
+        ? previous.entries : [...base, entry];
+      this.pendingEntries = { base, entry, entries };
+      return { timeline: { entries, position: id, latest: id, applied: id, viewing: false }, canUndo: true, canRedo: false };
+    }
+    return { timeline: journal.snapshot(data.applied), canUndo: data.applied > 0, canRedo: !!data.redo.length };
+  }
+  private resolvedOf(doc: RackDoc) {
+    let resolved = this.resolvedFor.get(doc);
+    if (!resolved) { resolved = resolveAssembly(doc); this.resolvedFor.set(doc, resolved); }
+    return resolved;
+  }
+  /** Show the applied document; `save` also refreshes dirty state and schedules the recovery draft. */
+  private publishApplied(navigation = false, save = false) {
     const doc = this.appliedDoc;
-    this.patch({ doc, resolved: resolveAssembly(doc), placing: null, structureChoice: null,
-      structureMoveId: null, timeline: this.journal.snapshot(this.journal.data.applied),
-      canUndo: this.journal.data.applied > 0, canRedo: !!this.journal.data.redo.length,
+    this.patch({ doc, resolved: this.resolvedOf(doc), placing: null, structureChoice: null,
+      structureMoveId: null, ...this.timelineState(),
       ...(navigation ? { inputRevision: this.state.inputRevision + 1 } : {}),
+      ...(save ? { dirty: this.isDirty(), draftAvailable: false } : {}),
     });
+    if (save) this.scheduleDraft();
   }
   commit = (input: RackDoc, metadata: HistoryMetadata = {}) => {
     const candidate = cleanDocument(input);
@@ -379,25 +458,33 @@ export class BuilderStore {
     let doc = this.state.timeline.viewing && !metadata.replacement
       ? applyOps(this.appliedDoc, diffDocuments(this.state.doc, candidate), false, false, true) : candidate;
     // Bars whose cradle went away (removed, moved apart, unpaired) drop to the floor in the same undo step.
-    const settled = settleBarbells(doc, resolveAssembly(doc), this.state.resolved);
+    const resolved = resolveAssembly(doc);
+    const settled = settleBarbells(doc, resolved, this.state.resolved);
+    if (settled.doc === doc) this.resolvedFor.set(doc, resolved);
     doc = settled.doc;
-    if (JSON.stringify(doc) === JSON.stringify(this.appliedDoc)) {
+    if (sameValue(doc, this.appliedDoc)) {
       if (this.state.timeline.viewing) this.publishApplied(true);
       return;
     }
     const wasViewing = this.state.timeline.viewing;
-    // Gesture branch: rewind to the pre-gesture journal so a whole drag lands as one entry.
+    // Gesture: preview only. The whole drag lands as one journal entry (and one draft write) at endGesture.
     // Continuous inputs must bracket their edits (NumericControl, GestureColorInput, GestureRange
     // in components/GestureInputs.tsx) or every intermediate value floods history.
-    if (this.gesture && this.gestureChanged && this.gestureHistory && this.gestureOriginal)
-      this.journal = new DocumentHistory(this.gestureOriginal, structuredClone(this.gestureHistory));
-    this.journal.append(doc, metadata);
-    this.appliedDoc = doc; this.gestureChanged = this.gesture;
-    this.publishApplied(wasViewing); this.autosave();
+    if (this.gesture) {
+      if (this.gestureMark) { this.journal.rewind(this.gestureMark); this.gestureMark = null; }
+      this.gestureChanged = true; this.gestureMetadata = metadata; this.appliedDoc = doc;
+      this.publishApplied(wasViewing);
+      if (!this.state.dirty) this.patch({ dirty: true });
+    } else {
+      this.journal.append(doc, metadata);
+      this.appliedDoc = doc;
+      this.publishApplied(wasViewing, true);
+    }
     if (settled.dropped.length) this.status(`${settled.dropped.length === 1 ? 'A barbell' : `${settled.dropped.length} barbells`} lost ${settled.dropped.length === 1 ? 'its cradle and was' : 'their cradles and were'} set on the floor.`, true);
   };
   seekHistory = (step: number) => {
-    // Validate before touching gesture or visible state.
+    // Validate before touching gesture or visible state (the live gesture entry is a valid step).
+    this.materializeGesture();
     const doc = this.journal.seek(step);
     this.endGesture();
     this.patch({ doc, resolved: resolveAssembly(doc), timeline: this.journal.snapshot(step),
@@ -405,22 +492,23 @@ export class BuilderStore {
       structureMoveId: null, proposal: null,
     });
   };
-  latestHistory = () => this.seekHistory(this.journal.data.applied);
+  latestHistory = () => { this.materializeGesture(); this.seekHistory(this.journal.data.applied); };
   restoreHistory = (step = this.state.timeline.position) => {
+    this.materializeGesture();
     const doc = this.journal.seek(step);
     this.endGesture();
     this.journal.append(doc, { category: 'restore', label: `Restore step ${step}` }, true);
-    this.appliedDoc = doc; this.publishApplied(true); this.autosave();
+    this.appliedDoc = doc; this.publishApplied(true, true);
   };
   clearHistory = () => {
     this.endGesture(); this.journal = new DocumentHistory(this.appliedDoc);
-    this.publishApplied(true); this.autosave();
+    this.publishApplied(true, true);
   };
   history = (direction: "undo" | "redo") => {
     this.endGesture();
     if (!this.journal[direction]()) return;
     this.appliedDoc = this.journal.seek(this.journal.data.applied);
-    this.publishApplied(true); this.autosave();
+    this.publishApplied(true, true);
   };
   /** Editing targets the owning group; selection remains a physical piece for paint. */
   ownerOf = (id: string | null) =>
