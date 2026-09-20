@@ -72,6 +72,8 @@ export function freeCradles(resolved: readonly ResolvedInstance[], items: readon
 export const suggestCradle = (cradles: readonly BarCradle[]) => [...cradles].sort((a, b) => +(a.kind === 'storage') - +(b.kind === 'storage') || b.center[2] - a.center[2])[0] ?? null;
 /** Floor-item pose that seats `bar` in the cradle: rest points carry a 28.5 mm shaft axis, so a thicker shaft sits higher. */
 export const parkedPose = (cradle: BarCradle, bar: BarSpec = DEFAULT_BAR_SPEC) => ({ position: [cradle.center[0], cradle.center[1], cradle.center[2] + (bar.shaft - BAR.shaft) / 2 - bar.axisZ] as Vec3, rotation: [0, 0, cradle.yaw] as Vec3 });
+/** Build params of a parked bar: `rackedRoll` bars (the CB-1) gain `racked: 1` and hang in their worn roll. */
+export const parkedParams = (part: string, params: NumericParams): NumericParams => floorPart(part)?.rackedRoll ? { ...params, racked: 1 } : params;
 /** barCradles keyed by cradle key for each distinct bar spec among `items` (most docs hold one bar type). */
 function cradlesFor(resolved: readonly ResolvedInstance[]) {
   const cache = new Map<string, Map<string, BarCradle>>();
@@ -83,7 +85,7 @@ export function parkBarbells(result: ResolvedInstance[], items: readonly FloorIt
   const cradles = cradlesFor(result);
   for (const item of items) {
     const bar = item.cradle ? barSpecOf(item) : DEFAULT_BAR_SPEC, cradle = item.cradle && cradles(bar).get(item.cradle), entry = cradle && result.find(e => e.id === item.id);
-    if (entry) Object.assign(entry, parkedPose(cradle, bar), { connectedTo: [...new Set(cradle.supports.map(s => s.ownerId))] });
+    if (entry) Object.assign(entry, parkedPose(cradle, bar), { params: parkedParams(item.part, entry.params), connectedTo: [...new Set(cradle.supports.map(s => s.ownerId))] });
   }
 }
 /** After an edit: bars whose cradle is gone (removed, moved apart, unpaired) drop to the floor beneath where they

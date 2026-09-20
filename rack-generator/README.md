@@ -28,7 +28,7 @@ The rebuilt silhouettes and component layouts closely follow the reference. Some
 
 - `parts/structure.ts`, `parts/bars-safeties.ts`, `parts/attachments.ts`: Manifold builders and recovered fabrication profiles.
 - `library-worker.ts`, `../src/scenes/part-scene.ts`: background construction, viewing, comparison, and export.
-- `plates.ts`, `parts/plates.ts`: Olympic plate spec table (Rogue HG 2.0 bumper / machined iron widths), storage-peg capacity checks, and the reusable `buildPlateStack(api, plates, { origin, axis })`. Storage-pin stacks live on the accessory (`plates`), render in the scene and GLB, and are omitted from 3MF prints.
+- `plates.ts`, `parts/plates.ts`: Olympic plate spec table (Rogue HG 2.0 bumper / machined iron widths), storage-peg capacity checks, and the reusable `buildPlateStack(api, plates, { origin, axis })`. Storage-pin stacks live on the accessory (`plates`), render in the scene and GLB, and are omitted from 3MF prints. Bar sleeves load the same plates (`bar-loads.ts`, #160): `FloorItem.plates` holds one stack for both sleeves or one per sleeve, capped at the loadable sleeve, drawn by the catalog build (`parts/bar-loads.ts`) parked or on the floor, where the bar rests on its largest plate.
 - `reference/front.glb`, `reference/storage.glb`: original assemblies from https://strengthshop.eu/products/3d-rack-builder-riot-mrr-75 .
 - `reference/panel.glb`: the original nameplate panel isolated from its assembly for comparison.
 - `reference/decode.ts`, `components.ts`, `extract-panel.ts`, `decoded/`: source measurement and geometry-analysis tools/data.

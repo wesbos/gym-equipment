@@ -184,10 +184,19 @@ export function multiGripEnvelope(s: MultiGripSpec, p: NumericParams = {}) {
 }
 
 /** Cradle geometry (#139) for the rackable bars: the diameter that rests in the cradle (shaft, or the sleeve stub
- * between a multi-grip frame and its collar), collar and sleeve stations, and the floor axis height. */
+ * between a multi-grip frame and its collar), collar and sleeve stations, and the floor axis height. Trap bars and the
+ * non-rackable curl bars declare it too, for plates on their sleeves (bar-loads.ts, #160). */
 export function trapCurlAxleBarSpec(id: string, p: NumericParams): BarSpec {
   if (id in CURL_SPECS) { const s: CurlSpec = CURL_SPECS[id as CurlId]; return { shaft: s.shaftDia, shaftHalf: s.between / 2, sleeveStart: s.between / 2 + s.collarWidth, sleeveLength: curlSleeve(s), sleeveDiameter: s.sleeveDia, axisZ: curlEnvelope(s).axisZ }; }
   if (id in MULTI_GRIP_SPECS) { const s: MultiGripSpec = MULTI_GRIP_SPECS[id as MultiGripId]; return { shaft: s.stubDia, shaftHalf: s.collarX, sleeveStart: s.collarX + s.collarWidth, sleeveLength: multiGripSleeve(s, p), sleeveDiameter: s.sleeveDia, axisZ: multiGripEnvelope(s, p).axisZ }; }
+  if (id in OPEN_TRAP_SPECS) {
+    // Plate sleeves only (trap bars don't park). The builder centres the posed frame on the origin, so the sleeve axis
+    // sits off local Y = 0: jack pose, at the jack height; flat pose (the frame turned −90° about X), at yMax.
+    const s: OpenTrapSpec = OPEN_TRAP_SPECS[id as OpenTrapId], l = openTrapLayout(s, p), flat = p.pose === 1;
+    return { shaft: s.stubDia, shaftHalf: s.collarGap / 2, sleeveStart: s.collarGap / 2 + s.collarWidth, sleeveLength: openTrapSleeve(s, p), sleeveDiameter: s.sleeveDia,
+      axisZ: flat ? l.yMax : l.axis, sleeveOffset: { y: flat ? l.axis - l.top / 2 : -(l.yMin + l.yMax) / 2, z: 0 } };
+  }
+  if (id === 'rogue-tb-2-trap-bar') return { shaft: TB2.sleeveDia, shaftHalf: TB2.collarX, sleeveStart: TB2.collarX + TB2.collarWidth, sleeveLength: TB2.length / 2 - TB2.collarX - TB2.collarWidth, sleeveDiameter: TB2.sleeveDia, axisZ: TB2.axisZ };
   const s = axleSpec(id, p); return { shaft: s.shaftDia, shaftHalf: s.grip / 2, sleeveStart: s.grip / 2 + s.collarWidth, sleeveLength: axleSleeve(s), sleeveDiameter: s.sleeveDia, axisZ: axleEnvelope(s).axisZ };
 }
 const barOf = (id: string) => (p: NumericParams) => trapCurlAxleBarSpec(id, p);
@@ -207,14 +216,14 @@ const axleFootprint = (id: string) => (p: NumericParams) => { const e = axleEnve
 export const REP_OPEN_TRAP_BAR = defineFloorPart({
   id: 'rep-open-trap-bar', name: 'REP Open Trap Bar', title: 'REP Open Trap Bar', noun: bar, section,
   description: 'REP Fitness Open Trap Bar: 84.3" round-tube open frame with integrated deadlift jack feet, 6" of frame knurl, removable knurled stainless handle pairs (23/25/27.3") at 8.3" in-line and 11.3" high loaded heights, 16.5" chrome sleeves. Independent reconstruction; REP Fitness trademarks belong to REP Fitness.',
-  params: [poseParam, widthParam('rep-open-trap-bar')], footprint: openTrapFootprint('rep-open-trap-bar'), placement: posePlacement,
+  params: [poseParam, widthParam('rep-open-trap-bar')], footprint: openTrapFootprint('rep-open-trap-bar'), placement: posePlacement, bar: barOf('rep-open-trap-bar'),
   vendor: { vendor: 'REP Fitness', url: 'https://repfitness.com/products/open-trap-bar', credit: 'REP Fitness — Open Trap Bar', trademark: 'REP Fitness and REP are trademarks of REP Fitness.',
     reconstruction: recon('the published tech specs (84.3" length, 50.5" collar to collar, 33.1" frame interior, 16.5" sleeves, handle widths and 8.3"/11.3" loaded handle heights) and 16 product photos', 'Frame tube diameter, U height, jack foot height, bracket plates and liners are estimated from photos; the rotating handle set is not modelled.') },
 });
 export const ROGUE_CURL_BAR = defineFloorPart({
   id: 'rogue-curl-bar', name: 'Rogue Curl Bar', title: 'Rogue Curl Bar', noun: bar, section,
   description: 'Rogue Curl Bar: 54.5" cambered EZ bar, 28.5 mm shaft with Ohio knurl on the angled grips, smooth logo centre, 31.5" between sleeves, 10.5" bushing sleeves. Not rackable. Independent reconstruction; Rogue trademarks belong to Rogue Fitness.',
-  params: [finishParam(CURL_SPECS['rogue-curl-bar'].finishes)], footprint: curlFootprint('rogue-curl-bar'), placement: posePlacement,
+  params: [finishParam(CURL_SPECS['rogue-curl-bar'].finishes)], footprint: curlFootprint('rogue-curl-bar'), placement: posePlacement, bar: barOf('rogue-curl-bar'),
   vendor: { vendor: 'Rogue Fitness', url: 'https://www.roguefitness.com/rogue-curl-bar', credit: 'Rogue Fitness — Curl Bar', trademark: 'Rogue and Rogue Fitness are trademarks of Rogue Fitness.',
     reconstruction: recon('the published specs (54.5" bar length, 31.5" between sleeves, 10.5" sleeves, 28.5 mm shaft) and 11 product photos', 'Bend offsets, bend radii and collar size are estimated from the spec drawing and photos.') },
 });
@@ -268,7 +277,7 @@ export const BOS_ARCH_NEMESIS = defineFloorPart({
 export const CAP_EZ_CURL_BAR = defineFloorPart({
   id: 'cap-olympic-ez-curl-bar', name: 'CAP Olympic EZ Curl Bar', title: 'CAP Barbell 47" Olympic EZ Curl Bar', noun: bar, section,
   description: 'CAP Barbell 47" Olympic EZ curl bar (the Amazon best seller): 1200 mm solid steel bar, 25.4 mm shaft knurled on the bends, 32" between collars, 7.5" rotating 2" sleeves, chrome or black. Independent reconstruction; CAP Barbell trademarks belong to CAP Barbell.',
-  params: [finishParam(CURL_SPECS['cap-olympic-ez-curl-bar'].finishes)], footprint: curlFootprint('cap-olympic-ez-curl-bar'), placement: posePlacement,
+  params: [finishParam(CURL_SPECS['cap-olympic-ez-curl-bar'].finishes)], footprint: curlFootprint('cap-olympic-ez-curl-bar'), placement: posePlacement, bar: barOf('cap-olympic-ez-curl-bar'),
   vendor: { vendor: 'CAP Barbell', url: 'https://capbarbell.com/products/cap-barbell-47-inch-olympic-solid-curl-bar-black-1', credit: 'CAP Barbell — 47" Olympic EZ Curl Bar', trademark: 'CAP and CAP Barbell are trademarks of CAP Barbell.',
     reconstruction: recon('the published specs (1200 mm length, 32" between collars, 7.5" sleeves, 25.4 mm shaft) and 12 product photos', 'Bend offsets and collar size are estimated from photos.') },
 });
@@ -283,7 +292,7 @@ export const GIANT_NORTHLAND = defineFloorPart({
   id: 'giant-northland-open-trap-hex-bar', name: 'Northland Open Trap Hex Bar', title: 'Giant Lifting Northland Open Trap Hex Bar', noun: bar, section,
   description: 'Giant Lifting Northland Open Trap Hex Bar: round-tube open frame with a built-in jack on T feet, bolted gusset plates carrying dual 28 mm knurled handles 25" apart, metallic black finish, 16" or 10" sleeves. Independent reconstruction; Giant Lifting trademarks belong to Giant Lifting.',
   params: [poseParam, { key: 'sleeves', label: 'Sleeves', default: 0, options: [0, 1], format: v => OPEN_TRAP_SPECS['giant-northland-open-trap-hex-bar'].sleeves[v]?.name ?? String(v) }],
-  footprint: openTrapFootprint('giant-northland-open-trap-hex-bar'), placement: posePlacement,
+  footprint: openTrapFootprint('giant-northland-open-trap-hex-bar'), placement: posePlacement, bar: barOf('giant-northland-open-trap-hex-bar'),
   vendor: { vendor: 'Giant Lifting', url: 'https://giantlifting.com/products/giant-northland-open-trap-hex-bar', credit: 'Giant Lifting — Northland Open Trap Hex Bar', trademark: 'Giant Lifting and Northland are trademarks of Giant Lifting.',
     reconstruction: recon('the published features (dual 28 mm handles 25" apart, 16"/10" sleeves, built-in jack, solid steel feet) and 14 product and review photos', 'Overall length, frame and foot geometry and handle heights are estimated from photos (Giant publishes no dimension table).') },
 });
@@ -297,7 +306,7 @@ export const TITAN_MULTI_GRIP = defineFloorPart({
 export const BOS_EZ_CURL_BAR = defineFloorPart({
   id: 'bos-ez-curl-bar-45', name: 'Bells of Steel EZ Curl Bar', title: 'Bells of Steel EZ Curl Bar 45"', noun: bar, section,
   description: 'Bells of Steel 45" EZ Curl Bar: deep-bend 28 mm black phosphate shaft with moderate knurl on the grips, bronze bushings and 7" machined nickel sleeves. Not rackable. Independent reconstruction; Bells of Steel trademarks belong to Bells of Steel.',
-  params: [], footprint: curlFootprint('bos-ez-curl-bar-45'), placement: posePlacement,
+  params: [], footprint: curlFootprint('bos-ez-curl-bar-45'), placement: posePlacement, bar: barOf('bos-ez-curl-bar-45'),
   vendor: { vendor: 'Bells of Steel', url: 'https://bellsofsteel.com/products/ez-curl-bar-45', credit: 'Bells of Steel — EZ Curl Bar (45")', trademark: 'Bells of Steel is a trademark of Bells of Steel.',
     reconstruction: recon('the published specs (1143 mm length, 28 mm shaft, 7" sleeves) and 8 product photos', 'Distance between collars, bend offsets and collar size are estimated from photos.') },
 });
@@ -311,14 +320,14 @@ export const FRINGE_20KG_AXLE = defineFloorPart({
 export const KABUKI_TRAP_BAR_HD = defineFloorPart({
   id: 'kabuki-trap-bar-hd', name: 'Kabuki Trap Bar HD', title: 'Kabuki Strength Trap Bar HD', noun: bar, section,
   description: 'Kabuki Strength Trap Bar HD: rectangular-tube open frame with built-in jack, swappable handle brackets for 23/25/27" between the 29 mm knurled high and low handles (low handles 1.27 cm above the sleeve line), 17" clear-zinc sleeves. Independent reconstruction; Kabuki Strength trademarks belong to Kabuki Strength.',
-  params: [poseParam, widthParam('kabuki-trap-bar-hd')], footprint: openTrapFootprint('kabuki-trap-bar-hd'), placement: posePlacement,
+  params: [poseParam, widthParam('kabuki-trap-bar-hd')], footprint: openTrapFootprint('kabuki-trap-bar-hd'), placement: posePlacement, bar: barOf('kabuki-trap-bar-hd'),
   vendor: { vendor: 'Kabuki Strength', url: 'https://www.strengthshop.co.uk/products/kabuki-strength-the-trap-bar-hd', credit: 'Kabuki Strength — The Trap Bar HD', trademark: 'Kabuki Strength is a trademark of Kabuki Strength.',
     reconstruction: recon('the published specs (195.58 cm length, 43.18 cm sleeves, 29 mm handles, 58.4/63.5/68.6 cm handle spacing, 24.77/32.39 cm loaded handle heights) and 9 product photos', 'Frame tube section and shape, jack foot height and bracket plates are estimated from photos.') },
 });
 export const BOS_OPEN_TRAP_BAR = defineFloorPart({
   id: 'bos-open-trap-bar', name: 'Bells of Steel Open Trap Bar', title: 'Bells of Steel Open Trap Bar / Hex Bar', noun: bar, section,
   description: 'Bells of Steel Open Trap Bar: 1500 mm welded open frame (381 mm top, 400 mm diagonals) with T-foot deadlift jack, looped dual-height 25 mm knurled handles 600 mm apart and 247 mm white-zinc bushing sleeves. Independent reconstruction; Bells of Steel trademarks belong to Bells of Steel.',
-  params: [poseParam], footprint: openTrapFootprint('bos-open-trap-bar'), placement: posePlacement,
+  params: [poseParam], footprint: openTrapFootprint('bos-open-trap-bar'), placement: posePlacement, bar: barOf('bos-open-trap-bar'),
   vendor: { vendor: 'Bells of Steel', url: 'https://bellsofsteel.com/products/open-trap-bar-hex-bar', credit: 'Bells of Steel — Open Trap Bar / Hex Bar', trademark: 'Bells of Steel is a trademark of Bells of Steel.',
     reconstruction: recon('the published dimension drawing (1500 mm length, 381 mm top, 400 mm diagonals, 600 mm between handles, 420 mm feet, 247 mm sleeves, 25 mm handles) and 9 product photos', 'Frame tube size, loop handle heights and jack height are estimated from photos.') },
 });
@@ -332,7 +341,7 @@ export const FRINGE_STUBBY_AXLE = defineFloorPart({
 export const ROGUE_TB2 = defineFloorPart({
   id: 'rogue-tb-2-trap-bar', name: 'Rogue TB-2 Trap Bar', title: 'Rogue TB-2 Trap Bar', noun: bar, section,
   description: 'Rogue TB-2 Trap Bar: 88.5 × 28.5" closed hexagon of 1.5" square tube, flush and raised knurled 1.34" handles 25" on centre (raised grips 8.25" off the floor), 16" black SCH 80 pipe sleeves. Flip it for the flush handles. Independent reconstruction; Rogue trademarks belong to Rogue Fitness.',
-  params: [], footprint: () => { const e = tb2Envelope(); return { width: e.width, depth: e.depth }; }, placement: posePlacement,
+  params: [], footprint: () => { const e = tb2Envelope(); return { width: e.width, depth: e.depth }; }, placement: posePlacement, bar: barOf('rogue-tb-2-trap-bar'),
   vendor: { vendor: 'Rogue Fitness', url: 'https://www.roguefitness.com/rogue-tb-2-trap-bar', credit: 'Rogue Fitness — TB-2 Trap Bar', trademark: 'Rogue and Rogue Fitness are trademarks of Rogue Fitness.',
     reconstruction: recon('the published specs (88.5" length, 28.5" width, 9" height, 1.5" square tube, 1.34" handles 25" on centre, 8.25" raised handle height, 1.91" × 16" sleeves) and 8 product photos', 'Hexagon corner positions, frame length and gussets are estimated from photos.') },
 });

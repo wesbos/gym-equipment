@@ -11,7 +11,7 @@ export const BARBELL = defineFloorPart({
   description: "Men's 20 kg Olympic bar: 2200 mm, 28.5 mm shaft, 415 mm sleeves, IWF/IPF knurl marks. Parks in J-cups, monolift arms and Darko cradles, or lies on the floor.",
   params: [{ key: 'finish', label: 'Shaft finish', default: 0, options: [0, 1], format: v => BAR_FINISHES[v] }],
   footprint: { width: BAR.length, depth: BAR.collarDiameter },
-  placement: { side: 'front', gap: 300 }, parks: true,
+  placement: { side: 'front', gap: 300 }, parks: true, bar: DEFAULT_BAR_SPEC,
 });
 /** Loadable sleeve segments in world space (inner collar face → outward), for plate stacks (#96). Pass the bar's
  * own spec (barSpec in barbell-cradles.ts resolves it from a part id + params); the default is the Olympic bar. */

@@ -274,8 +274,9 @@ function acgPrims(): Prim[] {
 // ---------------------------------------------------------------- catalog entries
 /** `rest`: preferred floor roll (radians); the stable rest nearest it is used (camber/handles towards the front, logos up).
  * `rack`: the straight section rack cradles hold: its diameter and half its usable length (to the camber bends, hub
- * housings, CB-1 top-bar ends, or inner collars of the bowed bars and the ACG). */
-interface Model { prims: (p: NumericParams) => Prim[]; palette: (p: NumericParams) => Palette; rest: number; rack: { shaft: number; shaftHalf: number } }
+ * housings, CB-1 top-bar ends, or inner collars of the bowed bars and the ACG).
+ * `racked`: the roll it hangs at when parked (0 = the worn frame), for entries with `rackedRoll`; others keep `rest`. */
+interface Model { prims: (p: NumericParams) => Prim[]; palette: (p: NumericParams) => Palette; rest: number; racked?: number; rack: { shaft: number; shaftHalf: number } }
 const bowCollar = (s: BowSpec) => s.length / 2 - s.cap.len - s.sleeve.len - s.collar.len;
 const FRONT = -Math.PI / 2, BOW_FRONT = Math.PI / 2;
 const SSB_PALETTE = (shaft: Finish, extra: Palette = {}): Palette => ({
@@ -343,18 +344,21 @@ const MODELS: Record<string, Model> = {
   },
   'rogue-cb-1-camber-bar': {
     rack: { shaft: CB1.shaft, shaftHalf: CB1.top / 2 },
-    rest: FRONT,
+    // On the floor the legs lie towards the front; racked, the top bar sits in the cradle and the legs hang straight down.
+    rest: FRONT, racked: 0,
     prims: cb1Prims,
     palette: () => ({ shaft: f('#1d1e20', .35, .55, 'rod'), logo: WHITE, collar: f('#232427', .5, .5, 'sleeve'), sleeve: f('#2b2c2f', .55, .45, 'sleeve'), cap: f('#1b1c1e', .4, .5) }),
   },
 };
 export const specialtyBarModel = (id: string) => { const m = MODELS[id]; if (!m) throw Error(`Unknown specialty bar ${id}.`); return m; };
 const poses = new Map<string, RestPose>();
-/** Stable floor pose for an entry + params (cached): roll, shaft-axis height and posed bounds. */
+/** Stable floor pose for an entry + params (cached): roll, shaft-axis height and posed bounds. With `racked: 1` (a parked
+ * `rackedRoll` bar) the roll is the model's racked roll about the same shaft axis, so parkedPose seats it unchanged;
+ * the bounds stay the floor pose's (footprints only use the floor pose). */
 export function specialtyBarPose(id: string, params: NumericParams): RestPose {
-  const key = `${id}:${JSON.stringify(Object.entries(params).sort())}`;
-  let pose = poses.get(key); if (!pose) { const m = specialtyBarModel(id); pose = restPose(m.prims(params), m.rest); poses.set(key, pose); }
-  return pose;
+  const { racked, ...floor } = params, m = specialtyBarModel(id), key = `${id}:${JSON.stringify(Object.entries(floor).sort())}`;
+  let pose = poses.get(key); if (!pose) { pose = restPose(m.prims(floor), m.rest); poses.set(key, pose); }
+  return racked === 1 && m.racked !== undefined ? { ...pose, theta: m.racked } : pose;
 }
 /** Cradle and plate-stack geometry (barbell-cradles.ts `bar` contract): the rackable section, the loadable sleeves read
  * from the same prims the builder meshes, and the floor-pose axis height. Sleeves dropped or swung off the shaft axis
@@ -435,7 +439,7 @@ export const ROGUE_CB4 = defineFloorPart({
 export const ROGUE_CB1 = defineFloorPart({
   ...base, id: 'rogue-cb-1-camber-bar', name: 'Rogue CB-1 Camber Bar', title: 'Rogue CB-1 Camber Bar (cambered squat bar)',
   description: `Fully welded cambered squat bar: 85 lb, 1.5" solid shaft racked on its straight top bar, welded legs dropping the machined Olympic sleeves about 16.5" below it. ${indep('Rogue Fitness')}`,
-  params: [], footprint: p => footprint('rogue-cb-1-camber-bar', p), bar: p => specialtyBarSpec('rogue-cb-1-camber-bar', p),
+  params: [], footprint: p => footprint('rogue-cb-1-camber-bar', p), bar: p => specialtyBarSpec('rogue-cb-1-camber-bar', p), rackedRoll: true,
   vendor: vendor('Rogue Fitness', 'https://www.roguefitness.com/cb-1-rogue-camber-bar', 'Rogue Fitness — CB-1 Camber Bar', 'Rogue and CB-1 are trademarks of Rogue Fitness.', 'Independent Manifold reconstruction from published specs (85 lb, 1.5" formed solid shaft, machined Olympic sleeves, fully welded) and product photos. Overall length, top-bar length, leg spacing and drop are photo-scaled estimates. Scenery only.'),
 });
 /** Highest-owned first (Gym Radar, Sep 2026). */

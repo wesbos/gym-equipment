@@ -102,7 +102,7 @@ Every line was checked against its photos in three render rounds:
 2. The heaviest plate face-on next to a product photo, plus a loaded barbell.
 3. The same pairing again for the lines changed in round 2.
 
-Storage pins loaded with every line were also screenshotted in the builder. The standalone Olympic bar can't take plates in the builder yet, so the loaded-barbell renders come from a scratch preview. That preview calls `buildBarbell` and `buildPlateStack` on both 415 mm sleeves.
+Storage pins loaded with every line were also screenshotted in the builder. The loaded-barbell renders were first made in a scratch preview (`buildBarbell` plus `buildPlateStack` on both 415 mm sleeves); since #160 every bar with a `bar` spec loads plates in the builder itself (`bar-loads.ts`).
 
 Changes made from the comparisons:
 - **Rogue.** ROGUE is typeset extended (`sx` 1.12, 0.16 R cap height). Weight labels are condensed. Fleck is denser and finer.

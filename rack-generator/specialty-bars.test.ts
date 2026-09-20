@@ -91,10 +91,11 @@ test('plates load on the real sleeve axis: dropped CB-1 and Transformer sleeves,
   ];
   for (const [id, params, yaw] of cases) {
     const p = { ...PARTS.find(q => q.id === id)!.defaults, ...params }, label = `${id} ${JSON.stringify(p)}${yaw === undefined ? ' parked' : ` yaw ${yaw}`}`;
-    const bar = place(id, p, yaw), spec = barSpec(id, p), sleeves = barSleeves(bar, spec), a = bar.rotation[2], c = Math.cos(a), s = Math.sin(a);
+    // bar.params: a parked CB-1 builds racked (legs down, #160); the others keep their floor roll.
+    const bar = place(id, p, yaw), spec = barSpec(id, bar.params), sleeves = barSleeves(bar, spec), a = bar.rotation[2], c = Math.cos(a), s = Math.sin(a);
     assert.ok(spec.sleeveOffset && Math.hypot(spec.sleeveOffset.y, spec.sleeveOffset.z) > 90, `${label} declares its dropped sleeves`);
     // Built sleeves (local frame) → world: yaw about Z, then the instance position.
-    const parts = build(id, p), local = box(parts, 'Loadable sleeves'), [ly, lz] = [(local.min[1] + local.max[1]) / 2, (local.min[2] + local.max[2]) / 2];
+    const parts = build(id, bar.params), local = box(parts, 'Loadable sleeves'), [ly, lz] = [(local.min[1] + local.max[1]) / 2, (local.min[2] + local.max[2]) / 2];
     for (const [i, side] of [1, -1].entries()) {
       const lx = side * spec.sleeveStart, want = [bar.position[0] + lx * c - ly * s, bar.position[1] + lx * s + ly * c, bar.position[2] + lz];
       for (const k of [0, 1, 2]) near(sleeves[i].origin[k], want[k], .01, `${label} sleeve ${side} origin[${k}]`);

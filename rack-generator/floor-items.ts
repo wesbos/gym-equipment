@@ -1,5 +1,6 @@
 import { floorPart, resolveBy, validateFloorParams, type FloorBox, type FloorPart } from './floor-registry.ts';
 import type { FloorItem, RackDoc, ResolvedInstance, Vec2 } from './types.ts';
+import { barLift, barLoadBox, barLoadParams, loadablePart, sleeveSpec, validateBarLoad } from './bar-loads.ts';
 type Bounds = { min: number[]; max: number[] };
 const entry = (part: string) => { const found = floorPart(part); if (!found) throw Error('Unknown floor item.'); return found; };
 export function validateFloorItems(input: unknown, reserved: string[] = []): FloorItem[] {
@@ -13,16 +14,21 @@ export function validateFloorItems(input: unknown, reserved: string[] = []): Flo
     if (!Array.isArray(item.position) || item.position.length !== 2 || !item.position.every((v: unknown) => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= 100000)) throw Error('Invalid floor position.');
     if (typeof item.rotation !== 'number' || !Number.isFinite(item.rotation)) throw Error('Invalid floor rotation.');
     if (item.cradle !== undefined && (!part.parks || typeof item.cradle !== 'string' || !/^[a-z0-9:#+-]{3,300}$/.test(item.cradle))) throw Error(`Invalid ${part.noun} cradle.`);
-    return { id:item.id, part:item.part, position:[...item.position] as Vec2, rotation:Math.atan2(Math.sin(item.rotation),Math.cos(item.rotation)), params:validateFloorParams(part,item.params), ...(item.cradle ? {cradle:item.cradle} : {}) };
+    const params=validateFloorParams(part,item.params), plates=validateBarLoad(item.part,params,item.plates);
+    return { id:item.id, part:item.part, position:[...item.position] as Vec2, rotation:Math.atan2(Math.sin(item.rotation),Math.cos(item.rotation)), params, ...(item.cradle ? {cradle:item.cradle} : {}), ...(plates ? {plates} : {}) };
   });
   // One bar per cradle support; the cradle itself is resolved (or falls back to the floor) in resolveAssembly.
   const supports = items.flatMap(i => i.cradle?.split('+') ?? []);
   if (new Set(supports).size !== supports.length) throw Error('One barbell per cradle.');
   return items;
 }
-/** Three floor X/Z -> source Z-up X/-Y. Source Z rotation maps to world Y. */
+/** Three floor X/Z -> source Z-up X/-Y. Source Z rotation maps to world Y. A loaded bar carries its sleeve plates as
+ * build params and rises until its biggest plate, not its collars, sits on the floor (bar-loads.ts). */
 export function resolveFloorItems(items: FloorItem[] = []): ResolvedInstance[] {
-  return items.map(item => ({ id:item.id, ownerId:item.id, part:item.part, params:{...item.params}, position:[item.position[0],-item.position[1],0], rotation:[0,0,item.rotation], kind:'floor-item', mount:null, mounts:[], connectedTo:[], paired:false, name:entry(item.part).name }));
+  return items.map(item => {
+    const bar=item.plates && loadablePart(item.part), lift=bar ? barLift(sleeveSpec(bar,item.params),item.plates) : 0;
+    return { id:item.id, ownerId:item.id, part:item.part, params:{...item.params,...barLoadParams(item.plates)}, position:[item.position[0],-item.position[1],lift], rotation:[0,0,item.rotation], kind:'floor-item', mount:null, mounts:[], connectedTo:[], paired:false, name:entry(item.part).name };
+  });
 }
 /** Local floor offset -> world floor offset for a part rotated by `rotation` (same convention as resolveFloorItems). */
 export const floorOffset = (rotation: number, [x, z]: Vec2): Vec2 => { const c=Math.cos(rotation),s=Math.sin(rotation); return [x*c+z*s,-x*s+z*c]; };
@@ -31,7 +37,13 @@ function boxBounds(item: FloorItem, box: FloorBox): Bounds {
   const x=(box.width*c+box.depth*s)/2,z=(box.depth*c+box.width*s)/2,cx=item.position[0]+ox,cz=item.position[1]+oz;
   return { min:[cx-x,cz-z], max:[cx+x,cz+z] };
 }
-export const floorBounds = (item: FloorItem) => boxBounds(item, resolveBy(entry(item.part).footprint, item.params));
+/** Footprint bounds, grown to cover a loaded bar's plates. */
+export function floorBounds(item: FloorItem): Bounds {
+  const part=entry(item.part), bounds=boxBounds(item, resolveBy(part.footprint, item.params)), plates=item.plates && part.bar && barLoadBox(sleeveSpec(part,item.params),item.plates);
+  if(!plates) return bounds;
+  const loaded=boxBounds(item,plates);
+  return { min:bounds.min.map((v,i)=>Math.min(v,loaded.min[i])), max:bounds.max.map((v,i)=>Math.max(v,loaded.max[i])) };
+}
 export function clearanceBounds(item: FloorItem) { const clearance=entry(item.part).clearance; return clearance && boxBounds(item, resolveBy(clearance, item.params)); }
 const overlaps=(a:Bounds,b:Bounds,margin=0)=>a.min.every((v,i)=>v<b.max[i]+margin && a.max[i]+margin>b.min[i]);
 export function rackBounds(doc: RackDoc): Bounds | null {
