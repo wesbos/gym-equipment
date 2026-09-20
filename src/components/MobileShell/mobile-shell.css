@@ -16,6 +16,12 @@
 .builder-page .stage-overlay { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
 .builder-page .stage-overlay > * { pointer-events: auto; }
 
+/* Touch placement bar (#204): the scene mounts big Place / Cancel / rotate buttons in the stage overlay while a finger
+ * places a part. It replaces the placement hint's small buttons (the hint keeps its text) and sits just above the hint. */
+.builder-page:has(.touch-placement[data-shown]) .placement-hint :is(#accept-placement, #cancel-placement) { display: none; }
+.builder-page .touch-placement { --touch-bar-offset: 146px; }
+.builder-page[data-layout^=phone] .touch-placement { --touch-bar-offset: 102px; }
+
 /* ---------- Tablet and desktop: toolbar order, collapsible panels ---------- */
 .builder-page:not([data-layout^=phone]) .toolbar-actions .toolbar-add { order: 0; }
 .builder-page:not([data-layout^=phone]) .toolbar-actions .gyms-link { order: 1; }

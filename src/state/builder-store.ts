@@ -667,6 +667,42 @@ export class BuilderStore {
     });
     return true;
   };
+  /** What `rotateSelection` would turn: the floor ghost being placed, a rotatable mounted attachment (placed or
+   * being moved), or the one selected floor item. Null when nothing rotates. For action bars and touch UI. */
+  rotationSubject = (): 'placement' | 'mounted' | 'floor' | null => {
+    const s = this.state;
+    if (s.systemChoice || s.structureChoice) return null;
+    if (s.placing) {
+      // A bar parked in a cradle takes the cradle's heading.
+      if (isFloorPart(s.placing.part)) return s.proposal && !s.proposal.doc.floorItems?.some(i => i.id === s.proposal!.ownerId && i.cradle) ? 'placement' : null;
+      return s.placing.movingId && rotationMode(s.doc, s.placing.movingId).supported ? 'mounted' : null;
+    }
+    const id = s.selection.length === 1 ? s.selected : null;
+    if (!id) return null;
+    if (this.appliedDoc.floorItems?.some(i => i.id === id && !i.cradle)) return 'floor';
+    const owner = this.ownerOf(id);
+    return owner && rotationMode(s.doc, owner).supported ? 'mounted' : null;
+  };
+  /** Rotate the rotation subject one step (15° on the floor, the part's own step when mounted); `direction` ±1.
+   * Mounted parts enter the "Apply rotation" placement, exactly like the R key. False when nothing rotated. */
+  rotateSelection = (direction: 1 | -1 = 1) => {
+    const subject = this.rotationSubject(), s = this.state;
+    if (subject === 'placement') { this.previewFloor(undefined, direction * Math.PI / 12); return true; }
+    if (subject === 'mounted') return this.rotateMounted(s.placing?.movingId ?? s.selected!, direction);
+    if (subject === 'floor') {
+      const item = this.appliedDoc.floorItems!.find(i => i.id === s.selected)!;
+      this.updateFloor(item.id, { rotation: item.rotation + direction * Math.PI / 12 });
+      return true;
+    }
+    return false;
+  };
+  /** Pick the single selected part back up to place it again (the double-click / long-press reposition). */
+  repositionSelected = () => {
+    const id = this.state.selection.length === 1 ? this.state.selected : null;
+    if (!id || this.state.placing || this.state.structureChoice || this.state.systemChoice) return false;
+    this.pickup(id);
+    return !!(this.state.placing || this.state.structureMoveId);
+  };
   pickup = (physicalId: string) => {
     const item = this.state.resolved.find(r => r.id === physicalId);
     if (!item) return;
