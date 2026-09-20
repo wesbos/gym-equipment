@@ -156,7 +156,7 @@ export function towerKit(api: ManifoldAPI) {
   /** Olympic plates on a horn/sleeve: stacked from `origin` outward along `axis`, grouped under one material each. */
   const plates = (ids: readonly PlateId[], origin: Vec3, axis: Vec3, segments = 36) => {
     if (!ids.length) return;
-    for (const p of buildPlateStack(api, ids, { origin, axis, name: 'Loaded plate', segments })) {
+    for (const p of buildPlateStack(api, ids, { origin, axis, name: 'Loaded plate', segments, detail: 'simple' })) {
       owned.push(p.solid);
       const kind = p.name.includes('hub') ? 'steel hubs' : p.name.replace(/^Loaded plate-\d+ /, '');
       add([`Loaded plates · ${kind}`, p.role, p.color!, p.metalness ?? .5, p.roughness ?? .6], p.solid);

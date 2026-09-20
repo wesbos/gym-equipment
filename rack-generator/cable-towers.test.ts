@@ -12,6 +12,7 @@ import { addFloorItem, floorWarnings } from './floor-items.ts';
 import { createAssembly } from './assembly.ts';
 import type { FloorPart } from './floor-part.ts';
 import type { NumericParams, SolidPart } from './types.ts';
+import { BUILD_BUDGET_MS } from './test-budget.ts';
 const api = await Module(); api.setup();
 type Box = { min: number[]; max: number[] };
 const bounds = (parts: SolidPart[], match?: (name: string) => boolean): Box | undefined => {
@@ -66,7 +67,7 @@ test('every entry builds valid closed solids across its params, filling its foot
       assert.ok(b.min[2] >= -1e-3, `${label} rests on the floor`);
       assert.ok(parts.reduce((n, p) => n + p.solid.numTri(), 0) < 80000, `${label} triangle budget`);
     });
-    assert.ok(performance.now() - t0 < 10000, `${part.id} build time (generous: the shared CI box is loaded)`);
+    assert.ok(performance.now() - t0 < BUILD_BUDGET_MS, `${part.id} build time`);
   }
 });
 test('published heights and envelopes come out of the builds', () => {
