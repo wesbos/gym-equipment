@@ -12,6 +12,7 @@ const GLYPHS: Record<string, number[][]> = {
   '8': [[0, 0, 4, 0], [4, 0, 4, 6], [4, 6, 0, 6], [0, 6, 0, 0], [0, 3, 4, 3]], '9': [[4, 3, 0, 3], [0, 3, 0, 6], [0, 6, 4, 6], [4, 6, 4, 0], [4, 0, 0, 0]],
   K: [[0, 0, 0, 6], [0, 3, 4, 6], [1.2, 3.9, 4, 0]], G: [[4, 6, 0, 6], [0, 6, 0, 0], [0, 0, 4, 0], [4, 0, 4, 3], [4, 3, 2, 3]],
   L: [[0, 6, 0, 0], [0, 0, 4, 0]], B: [[0, 0, 0, 6], [0, 6, 3, 6], [3, 6, 4, 5], [4, 5, 4, 4], [4, 4, 3, 3], [0, 3, 3, 3], [3, 3, 4, 2], [4, 2, 4, 1], [4, 1, 3, 0], [3, 0, 0, 0]],
+  E: [[4, 6, 0, 6], [0, 6, 0, 0], [0, 0, 4, 0], [0, 3, 3, 3]], S: [[4, 6, 0, 6], [0, 6, 0, 3], [0, 3, 4, 3], [4, 3, 4, 0], [4, 0, 0, 0]],
   H: [[0, 0, 0, 6], [4, 0, 4, 6], [0, 3, 4, 3]], T: [[0, 6, 4, 6], [2, 6, 2, 0]], P: [[0, 0, 0, 6], [0, 6, 3.3, 6], [3.3, 6, 4, 5.2], [4, 5.2, 4, 3.8], [4, 3.8, 3.3, 3], [3.3, 3, 0, 3]],
   '.': [[2, 0, 2, .2]], '-': [[.6, 3, 3.4, 3]], '°': [[1, 6, 3, 6], [3, 6, 3, 4], [3, 4, 1, 4], [1, 4, 1, 6]], ' ': [],
 };
@@ -52,7 +53,7 @@ export function accessoryKit(api: ManifoldAPI) {
       const x0 = -width / 2 + i * adv;
       for (const [x1, y1, x2, y2] of GLYPHS[ch] ?? []) parts.push(k(C.hull([k(k(C.circle(stroke / 2, 10)).translate([x0 + x1 * g, y1 * g - h / 2])), k(k(C.circle(stroke / 2, 10)).translate([x0 + x2 * g, y2 * g - h / 2]))])));
     });
-    if (!parts.length) throw Error('Empty accessory text.');
+    if (!parts.length || [...s.toUpperCase()].some(ch => !GLYPHS[ch])) throw Error(`Unsupported accessory text ${s}.`);
     return k(C.union(parts));
   };
   /** Thin decal hugging a sphere of radius R centred at c: a (u, v) section projected along -Y onto the front (u = x, v = z),

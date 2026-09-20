@@ -109,7 +109,7 @@ export function buildEchoSlamBall(api: ManifoldAPI, p: NumericParams): SolidPart
     const plate = K.k(K.roundRect(78, 15, 2).translate([R * .23, v]));
     // Top: the white weight ring with the numerals inside.
     const ring = K.k(C.difference([K.k(C.circle(33, 48)), K.k(C.circle(29, 48))])), num = K.k(K.text(String(p.weight), 22, 3.4));
-    K.add('White markings', K.union([K.sphereDecal(box, c, R, .6, [0, 0, 0], 64), K.sphereDecal(plate, c, R, .6, [0, 0, 0], 64), K.sphereDecal(K.k(C.union([ring, num])), c, R, .6, [-90, 0, 0], 64)]), 'source', '#f2f2ee', 0, .55);
+    K.add('White markings', K.union([K.sphereDecal(box, c, R, .4, [0, 0, 0], 64), K.sphereDecal(plate, c, R, .4, [0, 0, 0], 64), K.sphereDecal(K.k(C.union([ring, num])), c, R, .6, [-90, 0, 0], 64)]), 'source', '#f2f2ee', 0, .55);
   });
 }
 
