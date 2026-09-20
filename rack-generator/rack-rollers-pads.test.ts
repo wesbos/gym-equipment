@@ -12,7 +12,7 @@ import { suggestPlacement } from './placement-proposals.ts';
 import { createAssembly, resolveAssembly } from './assembly.ts';
 import {
   PARTS, inch, REP_PEGASUS, PEGASUS, REP_LEG_ROLLER_2, REP_LR2, ROGUE_MONSTER_SINGLE_LEG_ROLLER_2, ROGUE_SLR2, ROGUE_MONSTER_LITE_LEG_ROLLER, ROGUE_ML_ROLLER,
-  BELLS_OF_STEEL_SPLIT_SQUAT_LEG_ROLLER, BOS_ROLLER, ROGUE_MONSTER_PRITCHETT_PAD, PRITCHETT, BELLS_OF_STEEL_SEAL_ROW_PAD, SEAL_ROW, PRIME_PRODIGY_STABILITY_PAD, PRODIGY,
+  BELLS_OF_STEEL_SPLIT_SQUAT_LEG_ROLLER, BOS_ROLLER, TITAN_RACK_MOUNTED_LEG_ROLLER, TITAN_ROLLER, ROGUE_MONSTER_PRITCHETT_PAD, PRITCHETT, BELLS_OF_STEEL_SEAL_ROW_PAD, SEAL_ROW, PRIME_PRODIGY_STABILITY_PAD, PRODIGY,
 } from './rack-parts/rack-rollers-pads.ts';
 import type { NumericParams, RackDoc, SolidPart } from './types.ts';
 import type { RackPart } from './rack-part.ts';
@@ -78,6 +78,12 @@ test('Bells of Steel split squat roller: 22-3/4 in total, 16 x 4 in pad, star kn
   }
 });
 
+test('Titan rack mounted leg roller: 22.5 in overall, 17.75 x 4.75 in pad, 16 mm threaded pin, knurled knob on the far face', () => {
+  const m = measure(TITAN_RACK_MOUNTED_LEG_ROLLER), pad = m.get('HeftyGrip vinyl foam pad'), pin = m.get('16 mm threaded pin');
+  near(size(m.all, 1), TITAN_ROLLER.overall, 4, 'overall length'); near(size(pad, 1), inch(17.75), 1, 'pad length'); near(size(pad, 0), inch(4.75), 1, 'pad diameter');
+  near(size(pin, 0), 16, .3, 'threaded pin'); assert.ok(m.get('Knurled knob').max[1] <= -FACE + .01);
+});
+
 test('Rogue Monster Pritchett Pad: 33 in from the upright, 12 in pad tapering 11 in to 8 in, 3x3 in arm, 1 in or 5/8 in pin', () => {
   for (const series of [0, 1]) {
     const m = measure(ROGUE_MONSTER_PRITCHETT_PAD, { series }), pad = m.get('Self-skinned polyurethane pad'), arm = m.get('3x3 in 11-gauge arm');
@@ -137,7 +143,7 @@ function place(preset: string, part: RackPart) {
   return { params: { ...part.defaults, ...a.params }, units: resolveAssembly(r.proposal.doc).filter(e => e.ownerId === a.id) };
 }
 const RM4 = 'rogue-rm-monster-2-four-2295.525-1092.2', RML390 = 'rogue-rml-3-four-2295.525-762', R3 = 'rogue-r3-four-2295.525-762', T2 = 'titan-t2-four-1803.4-660.4';
-const PR5000 = 'rep-pr-5000-four-2362.2-762', PR4000 = 'rep-pr-4000-four-2362.2-762', HYDRA = 'bos-hydra-four-2286-762', MANTICORE = 'bos-manticore-four-2286-762';
+const X3 = 'titan-x3-four-2286-609.6', T3RACK = 'titan-t3-four-2311.4-609.6', PR5000 = 'rep-pr-5000-four-2362.2-762', PR4000 = 'rep-pr-4000-four-2362.2-762', HYDRA = 'bos-hydra-four-2286-762', MANTICORE = 'bos-manticore-four-2286-762';
 
 test('each part mounts on the racks its maker sells it for and explains the rest', () => {
   // Rogue Monster (3x3, 1 in hardware): the 1 in roller and the Monster Pritchett Pad.
@@ -146,8 +152,10 @@ test('each part mounts on the racks its maker sells it for and explains the rest
   // Monster Lite (3x3, 5/8 in): the hanger roller and the Monster Lite Pritchett Pad; the 1 in parts are refused by the bore.
   assert.ok(place(RML390, ROGUE_MONSTER_LITE_LEG_ROLLER).units?.length); assert.equal(place(RML390, ROGUE_MONSTER_PRITCHETT_PAD).params?.series, 1);
   assert.match(place(RML390, ROGUE_MONSTER_SINGLE_LEG_ROLLER_2).reason ?? '', /bore/);
+  // Titan: the X-3 (3x3, 11/16 in holes) takes the Titan roller.
+  assert.ok(place(X3, TITAN_RACK_MOUNTED_LEG_ROLLER).units?.length, 'Titan roller on the X-3');
   // 2x3 and 2x2 posts are refused with a fit message.
-  for (const preset of [R3, T2]) for (const part of PARTS) assert.match(place(preset, part).reason ?? '', /fit|bore|station|hole|face|mount/i, `${part.id} on ${preset}`);
+  for (const preset of [R3, T3RACK, T2]) for (const part of PARTS) assert.match(place(preset, part).reason ?? '', /fit|bore|station|hole|face|mount/i, `${part.id} on ${preset}`);
   // REP: Leg Roller 2.0 is PR-5000 only; Pegasus picks its series from the bore.
   assert.ok(place(PR5000, REP_LEG_ROLLER_2).units?.length); assert.match(place(PR4000, REP_LEG_ROLLER_2).reason ?? '', /bore/);
   assert.equal(place(PR5000, REP_PEGASUS).params?.series, 0); assert.equal(place(PR4000, REP_PEGASUS).params?.series, 1);

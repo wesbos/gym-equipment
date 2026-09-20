@@ -58,6 +58,14 @@ export function bosRoller(p: NumericParams) {
   const tip = pad1 + BOS_ROLLER.bushing[1] - 4, knob0 = -face - BOS_ROLLER.knob[1];
   return { face, plate1, pad0, pad1, tip, knob0, back: knob0 - BOS_ROLLER.stub };
 }
+/** Titan Rack Mounted Leg Roller (402100, fits T-3 and X-3). Published: 17.75 in x 4.75 in pad, 22.5 in overall, 16 mm
+ * threaded pin, powder coat and black zinc, HeftyGrip vinyl, rubber bumper and nylon washers. Bumper, hub and knob sizes
+ * estimated; the knob thickness follows from the overall length on a 3 in tube. */
+export const TITAN_ROLLER = { overall: inch(22.5), pad: inch(17.75), padDiameter: inch(4.75), pin: 16, bumper: [62, 6] as const, hub: [44, 20] as const, end: 6, knob: [50, 12] as const } as const;
+export function titanRoller(p: NumericParams) {
+  const face = faceOf(p), pad0 = face + TITAN_ROLLER.bumper[1] + TITAN_ROLLER.hub[1], pad1 = pad0 + TITAN_ROLLER.pad;
+  return { face, pad0, pad1, tip: pad1 + TITAN_ROLLER.end, knob0: -face - TITAN_ROLLER.knob[1] };
+}
 const rollerBody = (r: number, y0: number, y1: number): LocalBox => box([-r, y0, -r], [r, y1, r]);
 
 export const REP_LEG_ROLLER_2 = defineRackPart({
@@ -119,6 +127,20 @@ export const BELLS_OF_STEEL_SPLIT_SQUAT_LEG_ROLLER = defineRackPart({
   pair: { default: false },
   placement: { height: 515, face: 'front' },
   autoFit: rack => ({ hardware: rack.holeDiameter < 20 ? 0 : 1 }),
+});
+
+export const TITAN_RACK_MOUNTED_LEG_ROLLER = defineRackPart({
+  id: 'titan-rack-mounted-leg-roller', name: 'Titan Rack Mounted Leg Roller', title: 'Titan Rack Mounted Leg Roller', noun: 'leg roller', section: 'Rollers & pads',
+  description: 'X-3 leg roller on a 16 mm threaded pin with a knurled knob behind the upright · 17.75 x 4.75 in HeftyGrip pad · 22.5 in overall. ' + DESCRIPTION_END('Titan Fitness'),
+  params: [],
+  vendor: {
+    vendor: 'Titan Fitness', url: 'https://titan.fitness/products/rack-mounted-leg-roller-fits-t-3-and-x-3-series', credit: 'Titan Fitness — Rack Mounted Leg Roller, fits T-3 & X-3 Series (402100)', trademark: 'Titan Fitness and HeftyGrip are trademarks of Titan Fitness.',
+    reconstruction: 'Published 22.5 in overall, 17.75 in x 4.75 in pad and 16 mm threaded pin. The rubber bumper, hub, end disc and knob are estimated from the 10 Titan photos and dimension drawing; modelled for 3x3 X-3 uprights (the T-3 short-side spacer is not modelled); physical fit unverified.',
+  },
+  mount: { pin: PIN_5_8IN, extent: { below: TITAN_ROLLER.padDiameter / 2, above: TITAN_ROLLER.padDiameter / 2 }, validate: threeByThree('Titan leg roller') },
+  bodies: p => { const g = titanRoller(p); return [rollerBody(TITAN_ROLLER.padDiameter / 2 - 2, g.pad0, g.pad1)]; },
+  pair: { default: false },
+  placement: { height: 515, face: 'front' },
 });
 
 // ───────────────────────────── Rogue Monster Pritchett Pad ─────────────────────────────
@@ -349,5 +371,5 @@ export const PRIME_PRODIGY_STABILITY_PAD = defineRackPart({
 
 export const PARTS = [
   REP_PEGASUS, REP_LEG_ROLLER_2, ROGUE_MONSTER_SINGLE_LEG_ROLLER_2, ROGUE_MONSTER_PRITCHETT_PAD, BELLS_OF_STEEL_SEAL_ROW_PAD,
-  PRIME_PRODIGY_STABILITY_PAD, ROGUE_MONSTER_LITE_LEG_ROLLER, BELLS_OF_STEEL_SPLIT_SQUAT_LEG_ROLLER,
+  PRIME_PRODIGY_STABILITY_PAD, ROGUE_MONSTER_LITE_LEG_ROLLER, BELLS_OF_STEEL_SPLIT_SQUAT_LEG_ROLLER, TITAN_RACK_MOUNTED_LEG_ROLLER,
 ] as const satisfies readonly RackPart[];

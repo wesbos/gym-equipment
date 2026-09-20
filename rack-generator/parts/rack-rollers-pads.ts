@@ -10,7 +10,7 @@ import { revolveProfile } from './rogue-band-pegs.ts';
 import {
   REP_LEG_ROLLER_2, REP_LR2, repLr2, ROGUE_MONSTER_SINGLE_LEG_ROLLER_2, ROGUE_SLR2, rogueSlr2, ROGUE_MONSTER_LITE_LEG_ROLLER, ROGUE_ML_ROLLER, rogueMlRoller,
   BELLS_OF_STEEL_SPLIT_SQUAT_LEG_ROLLER, BOS_ROLLER, bosRoller, ROGUE_MONSTER_PRITCHETT_PAD, PRITCHETT, pritchettLayout, BELLS_OF_STEEL_SEAL_ROW_PAD, SEAL_ROW, sealRowLayout,
-  REP_PEGASUS, PEGASUS, pegasusLayout, PRIME_PRODIGY_STABILITY_PAD, PRODIGY, prodigyLayout, PEGASUS_HANDLE,
+  REP_PEGASUS, PEGASUS, pegasusLayout, PRIME_PRODIGY_STABILITY_PAD, PRODIGY, prodigyLayout, PEGASUS_HANDLE, TITAN_RACK_MOUNTED_LEG_ROLLER, TITAN_ROLLER, titanRoller,
 } from '../rack-parts/rack-rollers-pads.ts';
 type Scope = Parameters<Parameters<typeof vendorSolid>[1]>[0];
 type Finish = { color: string; metalness: number; roughness: number; role?: MaterialRole };
@@ -153,6 +153,18 @@ export function buildBosSplitSquatRoller(api: ManifoldAPI, params: NumericParams
     s.add('Zinc pad bushings', s.k(s.M.union([s.alongY(0, 0, g.plate1 + B.standoff, g.pad0 + 3, B.bushing[0] / 2, .8, 0), s.alongY(0, 0, g.pad1 - 3, g.pad1 + B.bushing[1] - 6, B.bushing[0] / 2, 0, .8)])), ZINC);
     s.add('Pin tip', s.alongY(0, 0, g.pad1 + B.bushing[1] - 7, g.tip, 11, 0, 1.5, 24), F('#26272a', .6, .45));
     gatheredRollerY(s, 'Vinyl high-density foam pad', g.pad0, g.pad1, B.padDiameter / 2, F('#1f2022', 0, .74));
+  });
+}
+
+export function buildTitanLegRoller(api: ManifoldAPI, params: NumericParams): SolidPart[] {
+  const p = { ...TITAN_RACK_MOUNTED_LEG_ROLLER.defaults, ...params }, g = titanRoller(p), T = TITAN_ROLLER, r = T.padDiameter / 2;
+  return build(api, s => {
+    s.add('16 mm threaded pin', s.alongY(0, 0, g.knob0 - 3, g.pad1 - 10, T.pin / 2, 1, 0, 32), F('#232427', .7, .4));
+    s.add('Rubber bumper', s.alongY(0, 0, g.face, g.face + T.bumper[1], T.bumper[0] / 2, 0, 1.2, 48), F('#121213', 0, .9, 'liner'));
+    s.add('Black zinc hub', s.alongY(0, 0, g.face + T.bumper[1] - .5, g.pad0 + 2, T.hub[0] / 2, 0, 1.5, 40), F('#202124', .75, .4));
+    gatheredRollerY(s, 'HeftyGrip vinyl foam pad', g.pad0, g.pad1, r, F('#1f2022', 0, .7));
+    s.add('Pad end disc and bolt', s.k(s.k(s.alongY(0, 0, g.pad1 - 1, g.pad1 + 3, 26, 0, .8, 40)).add(s.alongY(0, 0, g.pad1 + 2.5, g.tip, 7, 0, 1.5, 6))), F('#232427', .7, .4));
+    s.add('Knurled knob', s.k(s.k(s.prismY(s.knurled(T.knob[0] / 2, 48, .8), g.knob0 + 2, T.knob[1] - 2)).add(s.alongY(0, 0, g.knob0 - 3, g.knob0 + 2.5, 13, 2, 0, 32))), F('#161719', .4, .45));
   });
 }
 
@@ -334,4 +346,5 @@ export const definitions: PartDefinition[] = [
   rackDefinition(PRIME_PRODIGY_STABILITY_PAD, buildProdigy),
   rackDefinition(ROGUE_MONSTER_LITE_LEG_ROLLER, buildRogueMonsterLiteLegRoller),
   rackDefinition(BELLS_OF_STEEL_SPLIT_SQUAT_LEG_ROLLER, buildBosSplitSquatRoller),
+  rackDefinition(TITAN_RACK_MOUNTED_LEG_ROLLER, buildTitanLegRoller),
 ];
