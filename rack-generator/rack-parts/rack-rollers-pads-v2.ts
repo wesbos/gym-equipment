@@ -42,7 +42,8 @@ export const ROGUE_MULTI_USE_RACK_ROLLER = defineRackPart({
     extent: { below: -RACK_ROLLER.axisZ + RACK_ROLLER.padDiameter / 2 + 2, above: RACK_ROLLER.bracketTop + 2 },
     validate: (_r: RackDimensions, p: NumericParams) => {
       const w = faceWidth(p); if (Math.abs(w - inch(3)) > 2.5) throw Error(`The Multi-Use Rack Roller brackets fit 3 in uprights, not ${(w / 25.4).toFixed(2)} in.`);
-      if (p.uprightSpan !== undefined) { const gap = p.uprightSpan - (p.upright ?? 75); if (gap < 1060 || gap > 1110) throw Error(`The Multi-Use Rack Roller is a fixed 41 in roller for 43 in inside-width racks; these uprights are ${(gap / 25.4).toFixed(1)} in apart.`); }
+      if (p.uprightSpan === undefined) throw Error('The Multi-Use Rack Roller spans two uprights: mount it on the inner side face, facing the other post.');
+      { const gap = p.uprightSpan - (p.upright ?? 75); if (gap < 1060 || gap > 1110) throw Error(`The Multi-Use Rack Roller is a fixed 41 in roller for 43 in inside-width racks; these uprights are ${(gap / 25.4).toFixed(1)} in apart.`); }
     },
   },
   bodies: p => {
@@ -92,7 +93,7 @@ export const REP_UTILITY_SEAT = defineRackPart({
       if (p.hostWidth === undefined) return;
       if (p.hostSpan === undefined) throw Error('The Utility Seat spans two matching spotter arms or safeties; add the pair across the rack first.');
       const gap = utilitySeatLayout(p).gap;
-      if (gap < 1000 || gap > 1160) throw Error(`The Utility Seat spans 41–43 in between members; these are ${(gap / 25.4).toFixed(1)} in apart.`);
+      if (gap < 1000 || gap > 1200) throw Error(`The Utility Seat spans 41–43 in between members; these are ${(gap / 25.4).toFixed(1)} in apart.`);
     },
   },
   bodies: p => {

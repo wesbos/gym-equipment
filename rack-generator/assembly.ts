@@ -508,7 +508,8 @@ export function unpairAccessory(input: RackDoc, id: string): RackDoc {
     if (isHostedTarget(h.target) && h.target.unit === 1) h.target = { ...h.target, host: secondId, unit: 0 };
     if (h.pairHost?.unit === 1) h.pairHost = { ...h.pairHost, host: secondId, unit: 0 };
   }
-  return validateAssembly(doc);
+  // Parts that spanned both units (a seat across the pair) no longer have their partner: they are dropped.
+  return settleHosted(doc);
 }
 /** Replace a storage pin's plate stack (root outward); both sides of a pair carry it. */
 export function setPlateStack(input: RackDoc, id: string, plates: readonly PlateId[]): RackDoc {

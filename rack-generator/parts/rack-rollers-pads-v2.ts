@@ -28,10 +28,11 @@ export function buildRackRoller(api: ManifoldAPI, params: NumericParams): SolidP
         rod([0, l.plate0 - 1, l.detentZ], [0, l.plate1 + 1, l.detentZ], pinR + 1.2, 24), rod([s * inch(.75), l.plate0 - 1, l.detentZ - inch(1.9)], [s * inch(.75), l.plate1 + 1, l.detentZ - inch(1.9)], pinR + 1.2, 24),
         box([-s * inch(.9) - 2, l.plate0 - 1, -inch(3.2)], [-s * inch(.9) + 2, l.plate1 + 1, -inch(1.6)]));
       // Diagonal formed gusset from the plate's front edge forward and inward to the ear plate.
-      const A: Vec2 = [s * l.w, l.plate0], B: Vec2 = [l.earX, l.ear0 - t], n = t * 1.3;
-      const diag = prism([A, [A[0] + s * n, A[1]], [B[0] + s * n, B[1]], B], r.bracketBottom, r.webTop, 'z');
-      const earPts: Vec2[] = [[l.earX, r.webTop], [l.axisX, r.axisZ + r.earRadius], [l.axisX, r.axisZ - r.earRadius], [l.earX, r.bracketBottom]];
-      const ear = minus(union([prism(earPts, l.ear0 - t, l.ear0, 'y'), rod([l.axisX, l.ear0 - t, r.axisZ], [l.axisX, l.ear0, r.axisZ], r.earRadius, 40)]),
+      // Members overlap rather than touch (coplanar seams leave zero-area triangles in the print export).
+      const A: Vec2 = [s * (l.w - 1.5), l.plate0 + 1], B: Vec2 = [l.earX, l.ear0 - t / 2], n = t * 1.3;
+      const diag = prism([A, [A[0] + s * n, A[1]], [B[0] + s * n, B[1]], B], r.bracketBottom + .4, r.webTop - .4, 'z');
+      const earPts: Vec2[] = [[l.earX + s * .4, r.webTop - .8], [l.axisX - s * 10, r.axisZ + r.earRadius - 3], [l.axisX - s * 10, r.axisZ - r.earRadius + 3], [l.earX + s * .4, r.bracketBottom + .8]];
+      const ear = minus(union([prism(earPts, l.ear0 - t + .3, l.ear0 - .3, 'y'), rod([l.axisX, l.ear0 - t, r.axisZ], [l.axisX, l.ear0, r.axisZ], r.earRadius, 40)]),
         rod([l.axisX, l.ear0 - t - 1, r.axisZ], [l.axisX, l.ear0 + 1, r.axisZ], inch(.34), 24),
         ...[-1, 1].map(side => box([l.axisX + side * inch(.95) - 2.5, l.ear0 - t - 1, r.axisZ - inch(.45)], [l.axisX + side * inch(.95) + 2.5, l.ear0 + 1, r.axisZ + inch(.45)])));
       const steel = union([plate, diag, ear]);
@@ -125,7 +126,7 @@ export function buildThresherPad(api: ManifoldAPI, params: NumericParams): Solid
     const plates = [-1, 1].map(side => {
       const [x0, x1] = side > 0 ? [l.x0, l.x1] : [-l.x1, -l.x0];
       const cuts = [...at.map(([y, z]) => rod([x0 - 1, y, z], [x1 + 1, y, z], hole, 24)), prism(d, x0 - 1, x1 + 1, 'x')];
-      const flange = box([side > 0 ? l.x1 - .5 : -l.x1 - t.flange, inch(-4.7), t.padZ - t.steel], [side > 0 ? l.x1 + t.flange : -l.x1 + .5, inch(1), t.padZ]);
+      const flange = box([side > 0 ? l.x1 - .5 : -l.x1 - t.flange, inch(-4.6), t.padZ - t.steel - .3], [side > 0 ? l.x1 + t.flange : -l.x1 + .5, inch(.9), t.padZ - .3]);
       return union([minus(prism(outline, x0, x1, 'x'), ...cuts), flange]);
     });
     put('Wrinkle black 3/16 in side plates', turn(union(plates)), { color: '#1b1c1e', metalness: .25, roughness: .88 }, 'source');
