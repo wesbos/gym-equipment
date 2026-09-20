@@ -245,10 +245,11 @@ export function createBuilderScene(
           color: m.color || "#283e32",
           metalness: m.metalness ?? 0.55,
           roughness: m.roughness ?? 0.4,
+          ...(m.emissive ? { emissive: m.color || "#ffffff", emissiveIntensity: m.emissive } : {}),
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.name = m.name;
-        mesh.userData.materialSource = { authoredFastenerFinish: m.authoredFastenerFinish, role: m.role, color: m.color, metalness: m.metalness, roughness: m.roughness };
+        mesh.userData.materialSource = { authoredFastenerFinish: m.authoredFastenerFinish, role: m.role, color: m.color, metalness: m.metalness, roughness: m.roughness, ...(m.emissive ? { emissive: m.emissive } : {}) };
         model.add(mesh);
       }
       request.resolve(model);

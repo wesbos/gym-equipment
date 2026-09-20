@@ -7,8 +7,8 @@ export function cloneInstanceMaterials(model: THREE.Group, appearance: Appearanc
   clone.traverse(object => {
     if (!(object instanceof THREE.Mesh)) return;
     const source = object.userData.materialSource as MaterialSource;
-    const { color, metalness, roughness } = resolveMaterial(source, appearance, instanceId);
-    object.material = finishes?.material(source, appearance, instanceId) ?? new THREE.MeshStandardMaterial({ color, metalness, roughness });
+    const { finish: _finish, ...pbr } = resolveMaterial(source, appearance, instanceId);
+    object.material = finishes?.material(source, appearance, instanceId) ?? new THREE.MeshStandardMaterial(pbr);
   });
   return clone;
 }
