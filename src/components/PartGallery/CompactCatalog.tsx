@@ -19,7 +19,7 @@ export const CompactCatalog = memo(function CompactCatalog({ store }: { store: B
   const activePart = useStoreSelector(store, selectActivePart);
   const prefs = useGalleryPrefs();
   const { byId, defaults } = galleryCatalog(definitions);
-  useEffect(() => warmGalleryCatalog(definitions), [definitions]);
+  useEffect(() => warmGalleryCatalog(definitions, () => store.getSnapshot().doc.rack), [definitions, store]);
   const pick = (ids: readonly string[]) => ids.flatMap(id => byId.get(id) ?? []).slice(0, SHOWN);
   const favourites = pick(prefs.favourites), recent = pick(prefs.recent.filter(id => !prefs.favourites.includes(id)));
   const card = (item: GalleryItem) => <SidebarCard key={item.id} item={item} store={store} active={activePart === item.id}

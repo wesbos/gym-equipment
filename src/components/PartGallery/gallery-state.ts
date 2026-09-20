@@ -3,8 +3,8 @@
  * the builder page, and the builder store's frequent patches (drags, proposals) never re-render the gallery. */
 import { useSyncExternalStore } from 'react';
 import type { BuilderSnapshot, BuilderStore } from '../../state/builder-store.ts';
-import type { PartId } from '../../../rack-generator/types.ts';
-import { buildGalleryItems, loadPrefs, savePrefs, pushRecent, toggleFavourite, CATALOG_PART_IDS, type GalleryDefinition, type GalleryItem, type GalleryPrefs, type GalleryScope } from './gallery-model.ts';
+import type { PartId, RackDimensions } from '../../../rack-generator/types.ts';
+import { buildGalleryItems, loadPrefs, savePrefs, pushRecent, rackFitCache, toggleFavourite, CATALOG_PART_IDS, type GalleryDefinition, type GalleryItem, type GalleryPrefs, type GalleryScope, type RackFit } from './gallery-model.ts';
 
 type Listener = () => void;
 function createAtom<T>(initial: () => T) {
@@ -82,19 +82,34 @@ export function galleryCatalog(definitions: readonly GalleryDefinition[]) {
   return catalog;
 }
 
-/** Computes every card's spec line in idle slices once the catalog has loaded, so opening the gallery or typing a
- * search never pays for the few expensive footprints (posed specialty bars) on the main thread. */
+/** "Fits my rack" lookups shared by the gallery and the idle warm-up, per rack (by value: commits clone the doc). */
+const fits = new Map<string, (id: string) => RackFit | null>();
+export function rackFits(rack: RackDimensions) {
+  const key = JSON.stringify(rack);
+  let fit = fits.get(key);
+  if (!fit) {
+    if (fits.size > 8) fits.clear();
+    fit = rackFitCache(rack);
+    fits.set(key, fit);
+  }
+  return fit;
+}
+
+/** Computes every card's spec line, then the current rack's fit checks, in idle slices once the catalog has loaded,
+ * so opening the gallery or typing a search never pays for the few expensive footprints (posed specialty bars) or
+ * the first run of the attachments' fit rules on the main thread. */
 const warmed = new WeakSet<object>();
-export function warmGalleryCatalog(definitions: readonly GalleryDefinition[]) {
+export function warmGalleryCatalog(definitions: readonly GalleryDefinition[], rack: () => RackDimensions) {
   if (!definitions.length || warmed.has(definitions) || typeof window === 'undefined') return;
   warmed.add(definitions);
   const { items } = galleryCatalog(definitions);
   const idle = (fn: (deadline?: IdleDeadline) => void) => { if ('requestIdleCallback' in window) window.requestIdleCallback(fn, { timeout: 4000 }); else setTimeout(fn, 50); };
+  const work = [...items.map(item => () => item.spec), ...items.map(item => () => rackFits(rack())(item.id))];
   let next = 0;
   const step = (deadline?: IdleDeadline) => {
     const until = performance.now() + 8;
-    while (next < items.length && (deadline ? deadline.timeRemaining() > 2 : performance.now() < until)) if (!items[next++].spec) break;
-    if (next < items.length) idle(step);
+    while (next < work.length && (deadline ? deadline.timeRemaining() > 2 : performance.now() < until)) work[next++]();
+    if (next < work.length) idle(step);
   };
   idle(step);
 }

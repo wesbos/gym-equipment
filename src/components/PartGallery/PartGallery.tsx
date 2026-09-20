@@ -10,11 +10,11 @@ import { VendorCredit } from '../VendorControls.tsx';
 import { pairedByDefault } from '../../../rack-generator/assembly.ts';
 import { partAttribution } from '../../../rack-generator/attribution.ts';
 import {
-  brandFacets, categoryTree, detailRows, filterItems, gridLayout, moveIndex, rackFitCache, rackSummary, scopeItems, visibleRows,
+  brandFacets, categoryTree, detailRows, filterItems, gridLayout, moveIndex, rackSummary, scopeItems, visibleRows,
   CATALOG_PART_IDS, type GalleryDefinition, type GalleryItem, type GalleryScope, type RackFit,
 } from './gallery-model.ts';
 import {
-  addPart, closeGallery, galleryCatalog, galleryView, openGallery, selectDefinitions, selectRack, toggleFavouritePart,
+  addPart, closeGallery, galleryCatalog, galleryView, openGallery, rackFits, selectDefinitions, selectRack, toggleFavouritePart,
   useGalleryOpen, useGalleryPrefs,
 } from './gallery-state.ts';
 import { shallowEqual, useStoreSelector } from '../../state/use-store.ts';
@@ -77,7 +77,7 @@ function GalleryDialog({ store }: { store: BuilderStore }) {
   view.current = { scope, query, brands, fitsOnly };
 
   const { items, defaults } = galleryCatalog(definitions);
-  const fit = useMemo(() => rackFitCache(rack), [rack]);
+  const fit = useMemo(() => rackFits(rack), [rack]);
   const tree = useMemo(() => categoryTree(items), [items]);
   const scoped = useMemo(() => scopeItems(items, scope, prefs), [items, scope, prefs]);
   // Brand chips count what the search and fit filter leave, so every chip's number is what clicking it shows.
