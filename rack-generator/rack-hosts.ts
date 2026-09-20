@@ -8,6 +8,7 @@
  * removed with it (assembly.ts prunes orphans). Hosted frame: origin on the host's hole (or bar) axis at the station,
  * local +Y along the host, Z up, X across it along the hole axis. */
 import { resolveBy } from './floor-part.ts';
+import { pairSuffix } from './physical-identity.ts';
 import { rackPart, rackHosts, rackTargets, type RackHost, type RackPart } from './rack-registry.ts';
 import { rackContextParams, rackSpan } from './rack-mounts.ts';
 import { applyBasis, basisEuler, cross, eulerBasis, isHostedTarget } from './rack-targets.ts';
@@ -62,10 +63,9 @@ export function hostedParams(doc: HostDoc, a: Accessory, h: RackHost): NumericPa
 }
 /** Validates a hosted accessory against its host and returns the target normalised to the host's upright and face.
  * Throws user-facing messages. */
-export function validateHostedMount(doc: HostDoc, a: Accessory): HostedTarget {
-  const p = entry(a.part), t = a.target as HostedTarget, name = Title(p);
-  if (typeof t.host !== 'string' || !Number.isInteger(t.unit) || !Number.isInteger(t.frame) || !Number.isInteger(t.station)) throw Error(`${name} needs a host accessory, unit, frame and station.`);
-  if (a.paired) throw Error(`${name} mounts singly on its ${t.kind === 'pull-up-bar' ? 'bar' : 'arm'}.`);
+export function validateHostedMount(doc: HostDoc, a: Accessory, t: HostedTarget = a.target as HostedTarget): HostedTarget {
+  const p = entry(a.part), name = Title(p);
+  if (!isHostedTarget(t) || typeof t.host !== 'string' || !Number.isInteger(t.unit) || !Number.isInteger(t.frame) || !Number.isInteger(t.station)) throw Error(`${name} needs a host accessory, unit, frame and station.`);
   const host = doc.accessories.find(x => x.id === t.host);
   if (!host || host.id === a.id) throw Error(`${name} needs a ${t.kind === 'pull-up-bar' ? 'pull-up bar' : 'spotter arm or box safety'} to mount on; ${t.host} is not on this rack.`);
   const frames = hostFrames(doc, host, t.unit), h = frames[t.frame];
@@ -78,6 +78,18 @@ export function validateHostedMount(doc: HostDoc, a: Accessory): HostedTarget {
   p.mount.validate?.(doc.rack, params);
   const ut = unitTarget(host, t.unit)!;
   return { ...t, uprightId: ut.uprightId, face: ut.face, hole: 0 };
+}
+/** Second unit of a hosted pair: the same station on the host's other unit (a paired spotter arm or safety), else
+ * the station mirrored about the middle of the same tube or bar (two VOLTRAs on one pull-up bar). */
+export function hostedPairTarget(doc: HostDoc, a: Accessory): HostedTarget {
+  const p = entry(a.part), t = a.target as HostedTarget, host = doc.accessories.find(x => x.id === t.host);
+  if (!host) throw Error(`${Title(p)} needs its host for a matching pair.`);
+  const other = hostFrames(doc, host, 1 - t.unit)[t.frame];
+  if (t.unit <= 1 && other?.kind === t.kind) return { ...t, unit: 1 - t.unit };
+  const h = hostFrames(doc, host, t.unit)[t.frame];
+  const station = h ? Math.round((h.span[0] + h.span[1]) / h.pitch - t.station) : t.station;
+  if (!h || station === t.station || station < 0 || station >= h.stations) throw Error(`${Title(p)} has no room for a matching pair on this ${h?.label.toLowerCase() ?? 'host'}; move it off the middle.`);
+  return { ...t, station };
 }
 /** World frame of a host station: origin, basis (local X across, Y along the host, Z up). */
 function stationFrame(hostInstance: ResolvedInstance, h: RackHost, station: number) {
@@ -92,14 +104,16 @@ export function hostedMount(t: HostedTarget, hostInstance: ResolvedInstance, h: 
   const f = stationFrame(hostInstance, h, t.station);
   return { ...t, position: f.origin, center: f.origin, pinAxis: h.hole > 0 ? f.X : f.Y, hostId: hostInstance.id, label: `${hostInstance.name ?? h.label} · ${h.label.toLowerCase()} ${h.kind === 'pull-up-bar' ? 'clamp station' : 'hole'} ${t.station + 1}` };
 }
-/** Resolves a hosted accessory on its (already resolved) host. */
-export function resolveHosted(doc: HostDoc, a: Accessory, resolved: readonly ResolvedInstance[]): ResolvedInstance {
-  const p = entry(a.part), t = a.target as HostedTarget, host = doc.accessories.find(x => x.id === t.host)!, h = hostFrames(doc, host, t.unit)[t.frame];
-  const hi = hostUnit(resolved, t.host, t.unit);
-  if (!hi || !h) throw Error(`${Title(p)} lost its host ${t.host}.`);
-  const f = stationFrame(hi, h, t.station), params = hostedParams(doc, a, h), m = hostedMount(t, hi, h);
-  return { id: a.id, part: a.part, params, position: f.origin, rotation: basisEuler(f.X, f.Y, f.Z), mount: m, mounts: [m], ownerId: a.id, kind: 'accessory', paired: false,
-    connectedTo: [t.host, ...hi.connectedTo], localOutward: [0, 0, 1], collisionBoxes: resolveBy(p.bodies, params).map(b => ({ min: [...b.min] as Vec3, max: [...b.max] as Vec3 })), name: p.name };
+/** Resolves a hosted accessory (one instance, two for a pair) on its (already resolved) host. */
+export function resolveHosted(doc: HostDoc, a: Accessory, resolved: readonly ResolvedInstance[]): ResolvedInstance[] {
+  const p = entry(a.part), targets = [a.target as HostedTarget, ...(a.paired && a.pairHost ? [a.pairHost] : [])], host = doc.accessories.find(x => x.id === targets[0].host)!;
+  return targets.map((t, i) => {
+    const h = hostFrames(doc, host, t.unit)[t.frame], hi = hostUnit(resolved, t.host, t.unit);
+    if (!hi || !h) throw Error(`${Title(p)} lost its host ${t.host}.`);
+    const f = stationFrame(hi, h, t.station), params = hostedParams(doc, a, h), m = hostedMount(t, hi, h);
+    return { id: targets.length > 1 ? `${a.id}:${pairSuffix(targets, i)}` : a.id, part: a.part, params, position: f.origin, rotation: basisEuler(f.X, f.Y, f.Z), mount: m, mounts: [m], ownerId: a.id, kind: 'accessory', paired: targets.length > 1,
+      connectedTo: [t.host, ...hi.connectedTo], localOutward: [0, 0, 1], collisionBoxes: resolveBy(p.bodies, params).map(b => ({ min: [...b.min] as Vec3, max: [...b.max] as Vec3 })), name: p.name };
+  });
 }
 /** Every host station of the kinds this entry accepts (before full validation). */
 export function hostedCandidates(doc: HostDoc, resolved: readonly ResolvedInstance[], part: string): Mount[] {

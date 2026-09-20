@@ -39,7 +39,7 @@ export interface CrossmemberTopTarget { orientation?: number; kind: 'crossmember
  * `hole` is 0. The part follows the host when it moves and is removed with it. */
 export interface HostedTarget { orientation?: number; kind: 'spotter-arm' | 'pull-up-bar'; host: string; unit: number; frame: number; station: number; uprightId: UprightId; face: Face; hole: number }
 export type Target = UprightTarget | CrossmemberTopTarget | HostedTarget;
-export interface Accessory { /** Radians about the adapter-defined axis; omitted means zero. */ rotation?: number; id: string; part: PartId; target: Target; paired: boolean; params: NumericParams; spanTo?: string; pairTo?: string; pairedSpanTo?: string; pairTarget?: CrossmemberTopTarget; /** Storage-pin plate stack, root outward; each side of a pair carries it. */ plates?: PlateId[] }
+export interface Accessory { /** Radians about the adapter-defined axis; omitted means zero. */ rotation?: number; id: string; part: PartId; target: Target; paired: boolean; params: NumericParams; spanTo?: string; pairTo?: string; pairedSpanTo?: string; pairTarget?: CrossmemberTopTarget; /** Hosted parts (#178): the second unit of a matching pair (the other arm of a paired host, or the mirrored station on the same bar). */ pairHost?: HostedTarget; /** Storage-pin plate stack, root outward; each side of a pair carries it. */ plates?: PlateId[] }
 export interface StructureVariant { part: PartId; params: NumericParams }
 /** `cradle` (parking parts only, #83): bar-cradle key from barbell-cradles.ts; position/rotation are then its floor drop spot. */
 /** Plates loaded on a bar's two sleeves (#160), each stack from the inner collar outward. `both` loads the sleeves

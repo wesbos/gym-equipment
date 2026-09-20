@@ -15,7 +15,7 @@ import { VOLTRA_IDS, DARKO_IDS, isDarkoTop } from './vendor-metadata.ts';
 import { validateMountShaft } from './mount-shafts.ts';
 import { RACK_PART_IDS, isRackPart, rackPart, rackTargets } from './rack-registry.ts';
 import { acceptsRail, acceptsTarget, rackPlacementFace, rackDefaults, rackDefaultHole, rackLimits, rackPlacement, rackRailMounts, railMount, resolveRack, validateRackMount, validateRackPartParams } from './rack-mounts.ts';
-import { hostedCandidates, hostedOn, resolveHosted, validateHostedMount } from './rack-hosts.ts';
+import { hostedCandidates, hostedOn, hostedPairTarget, resolveHosted, validateHostedMount } from './rack-hosts.ts';
 import { TARGET_KINDS, isHostedTarget, isRailTarget, isUprightTarget } from './rack-targets.ts';
 import { gridProfile, type GridProfile } from './profiles.ts';
 import { legacyGraph, validateGraph, structureSlots } from './topology.ts';
@@ -182,7 +182,7 @@ function mount(rack: RackDimensions & { uprights?: RackDoc["uprights"] }, uprigh
 function targetsFor(accessory: Accessory): Target[] {
   const targets = [accessory.target];
   if (isRailTarget(accessory.target)) return accessory.paired && accessory.pairTarget ? [...targets, accessory.pairTarget] : targets;
-  if (isHostedTarget(accessory.target)) return targets;
+  if (isHostedTarget(accessory.target)) return accessory.paired && accessory.pairHost ? [...targets, accessory.pairHost] : targets;
   if (accessory.paired) {
     const face = accessory.target.face;
     targets.push({ ...accessory.target, uprightId: accessory.pairTo ?? otherSide(accessory.target.uprightId), face: face === 'left' ? 'right' : face === 'right' ? 'left' : face });
@@ -395,8 +395,11 @@ export function validateAssembly(input: unknown): RackDoc {
   for (const a of accessories) if (isHostedTarget(a.target)) {
     const host = accessories.find(x => x.id === (a.target as { host?: string }).host);
     if (host && isHostedTarget(host.target)) fail(`${a.id} cannot mount on another mounted attachment.`);
-    a.target = validateHostedMount({ rack, uprights: graph.uprights, removed, accessories }, a);
+    const hostDoc = { rack, uprights: graph.uprights, removed, accessories };
+    a.target = validateHostedMount(hostDoc, a);
+    if (a.paired) a.pairHost = validateHostedMount(hostDoc, a, a.pairHost ?? hostedPairTarget(hostDoc, a)); else delete a.pairHost;
   }
+  for (const a of accessories) if (!isHostedTarget(a.target)) delete a.pairHost;
   if (typeof input.nextId !== 'number' || !Number.isSafeInteger(input.nextId) || input.nextId < 1 || input.nextId > 1000000) fail('Invalid next accessory ID.');
   const appearance = validateAppearance(input.appearance);
   const floorItems = validateFloorItems(input.floorItems, [...Object.keys(graph.uprights), ...graph.connections.map(e=>e.id), ...accessories.map(a=>a.id)]);
@@ -476,7 +479,7 @@ export function moveAccessory(input: RackDoc, id: string, target: Partial<Target
   delete a.target.orientation;
   // A plain upright target (no kind) replaces a rail or hosted target outright instead of merging into it.
   if (!('kind' in target) && 'face' in target && 'hole' in target && !isUprightTarget(a.target)) { a.target = { uprightId: a.target.uprightId, face: a.target.face, hole: a.target.hole }; delete a.pairTarget; }
-  a.target = { ...a.target, ...target } as Target; if (isRailTarget(a.target)) delete a.pairTarget; if (paired !== undefined) a.paired = supportsPair(a.part) && !isHostedTarget(a.target) ? paired : false;
+  a.target = { ...a.target, ...target } as Target; if (isRailTarget(a.target)) delete a.pairTarget; delete a.pairHost; if (paired !== undefined) a.paired = supportsPair(a.part) ? paired : false;
   if (!isHostedTarget(a.target)) { delete (a.target as { host?: string }).host; for (const key of ['unit', 'frame'] as const) delete (a.target as unknown as Record<string, unknown>)[key]; }
   return settleHosted(doc, ownerId);
 }
@@ -498,10 +501,13 @@ export function unpairAccessory(input: RackDoc, id: string): RackDoc {
   }
   a.paired = false;
   const second = { ...a, id: secondId, target: { ...other }, ...(a.pairedSpanTo ? { spanTo: a.pairedSpanTo } : {}), params: { ...a.params } };
-  delete second.pairTarget; delete a.pairTarget; delete second.pairTo; delete second.pairedSpanTo; delete a.pairTo; delete a.pairedSpanTo;
+  delete second.pairTarget; delete a.pairTarget; delete second.pairHost; delete a.pairHost; delete second.pairTo; delete second.pairedSpanTo; delete a.pairTo; delete a.pairedSpanTo;
   doc.accessories.push(second);
   // Parts mounted on the second unit (#178) move with it to the new accessory.
-  for (const h of hostedOn(doc.accessories, a.id)) if (isHostedTarget(h.target) && h.target.unit === 1) h.target = { ...h.target, host: secondId, unit: 0 };
+  for (const h of hostedOn(doc.accessories, a.id)) {
+    if (isHostedTarget(h.target) && h.target.unit === 1) h.target = { ...h.target, host: secondId, unit: 0 };
+    if (h.pairHost?.unit === 1) h.pairHost = { ...h.pairHost, host: secondId, unit: 0 };
+  }
   return validateAssembly(doc);
 }
 /** Replace a storage pin's plate stack (root outward); both sides of a pair carry it. */
@@ -766,7 +772,7 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
     }
   }
   // Hosted parts (#178) ride on their resolved host instance.
-  for (const a of doc.accessories) if (isRackPart(a.part) && isHostedTarget(a.target)) result.push(resolveHosted(doc, a, result));
+  for (const a of doc.accessories) if (isRackPart(a.part) && isHostedTarget(a.target)) result.push(...resolveHosted(doc, a, result));
   result.push(...resolveSystems(doc));
   parkBarbells(result, doc.floorItems);
   return result;
