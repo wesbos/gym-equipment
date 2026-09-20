@@ -1,4 +1,5 @@
 import { test, expect, chromium, type Page } from '@playwright/test';
+import { addFromGallery, openGallery } from './part-gallery.ts';
 import { createAssembly, resizeAssembly, addAccessory, resolveAssembly } from '../rack-generator/assembly.ts';
 import { DocumentHistory } from '../src/state/history.ts';
 import type { ConfigCollection } from '../src/state/config-storage.ts';
@@ -79,12 +80,13 @@ test('full timeline: 30+ edits, pointer scrubbing, replay, restoration, persiste
     await expect(page.getByRole('button', { name: 'Download GLB', exact: true })).toBeDisabled();
     await expect(page.getByText('Return to latest to export the applied rack.', { exact: false })).toBeVisible();
     await page.keyboard.press('Escape');
-    // Input shortcuts retain focus and never navigate history.
-    await page.getByLabel('Search parts').fill('hook');
+    // Input shortcuts retain focus and never navigate history (the parts gallery search, #183).
+    await openGallery(page, 'hook');
     await page.keyboard.press('End'); await page.keyboard.press('ArrowLeft');
     await expect(page.getByLabel('Search parts')).toBeFocused();
     await expect(slider).toHaveAttribute('aria-valuenow', '0');
-    await page.getByLabel('Search parts').fill('');
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.part-gallery')).toHaveCount(0);
     // Editing an old preview must retain the latest part and dimensions.
     await page.getByRole('button', { name: 'Rack: Green', exact: true }).click();
     const edited = await snapshot();
@@ -126,7 +128,7 @@ test('full timeline: 30+ edits, pointer scrubbing, replay, restoration, persiste
     console.log('Saved timeline reload + old-step scene dimensions verified');
     // A staged part preview is canceled by history navigation, with no late ghost commit.
     await page.getByRole('button', { name: 'Return to latest', exact: true }).click();
-    await page.locator('[data-part="j-hook-standard"]').click();
+    await addFromGallery(page, 'j-hook-standard');
     await expect(page.locator('#placement-hint')).toBeVisible();
     await slider.focus(); await page.keyboard.press('Home');
     await expect(page.locator('#placement-hint')).toHaveCount(0);

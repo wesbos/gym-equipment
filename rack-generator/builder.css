@@ -34,3 +34,6 @@
 /* Maintain measurement contrast above dark gym flooring. */
 .builder-page .stage-caption{background:#f6f8f0e8;border:1px solid #cdd8c5;border-radius:6px;padding:9px 12px}
 .bom-row[aria-pressed="true"] { border-color: #c77c36; background: #c77c3622; }
+/* The toolbar's popovers (export menu, configurations) paint above the stage overlays, the timeline and the status
+ * bar: those share the shell's stacking context at z-index 5–8, and the toolbar is its own context. */
+.builder-page .toolbar{z-index:20}

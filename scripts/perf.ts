@@ -127,21 +127,51 @@ try {
       for (let i = 0; i < 90; i++) { await page.mouse.wheel(0, i < 45 ? 400 : -400); await page.waitForTimeout(33); }
       await page.waitForTimeout(500);
     });
-    r.search = await measure(page, cdp, async () => {
-      await page.locator('#search').click();
-      for (const ch of 'rogue') { await page.keyboard.type(ch); await page.waitForTimeout(120); }
-      await page.locator('#search').fill(''); await page.waitForTimeout(500);
+    // The full catalog lives in the parts gallery (#183): open/close cost, catalog scroll, search and card
+    // click-to-paint are measured through it. `galleryOpenMs` is open-to-paint (two frames after the click).
+    const openGallery = async () => {
+      if (!(await page.locator('.part-gallery').count())) await page.locator('#open-gallery').click();
+      await page.waitForSelector('.part-gallery .pg-card');
+    };
+    const closeGallery = async () => { await page.keyboard.press('Escape'); await page.waitForSelector('.part-gallery', { state: 'detached' }); };
+    const opens: number[] = [];
+    r.galleryOpenClose = await measure(page, cdp, async () => {
+      for (let i = 0; i < 6; i++) {
+        const launcher = await page.locator('#open-gallery').elementHandle();
+        opens.push(round(await page.evaluate(el => new Promise<number>(res => { const t = performance.now(); (el as HTMLElement).click(); requestAnimationFrame(() => requestAnimationFrame(() => res(performance.now() - t))); }), launcher)));
+        await page.waitForTimeout(400); await closeGallery(); await page.waitForTimeout(300);
+      }
     });
-    // Click-to-paint: pick a catalog card, time until two frames after the click handler ran.
+    r.galleryOpenMs = opens;
+    await openGallery(); await page.waitForTimeout(1500);
+    const grid = (await page.locator('.part-gallery .pg-scroller').boundingBox())!;
+    r.galleryScroll = await measure(page, cdp, async () => {
+      await page.mouse.move(grid.x + grid.width / 2, grid.y + grid.height / 2);
+      for (let i = 0; i < 90; i++) { await page.mouse.wheel(0, i < 45 ? 400 : -400); await page.waitForTimeout(33); }
+      await page.waitForTimeout(500);
+    });
+    r.search = await measure(page, cdp, async () => {
+      await page.locator('#gallery-search').click();
+      for (const ch of 'rogue') { await page.keyboard.type(ch); await page.waitForTimeout(120); }
+      await page.locator('#gallery-search').fill(''); await page.waitForTimeout(500);
+    });
+    await closeGallery();
+    // Click-to-paint: pick a gallery card, time until two frames after the click handler ran (the click also
+    // closes the gallery, so this includes tearing it down).
     const clicks: number[] = [];
     for (const part of ['rep-nighthawk', 'rogue-echo-bike', 'j-hook-standard']) {
-      const card = page.locator(`.catalog-panel [data-part="${part}"]`).first();
-      if (!(await card.count())) continue;
-      await card.scrollIntoViewIfNeeded();
+      await openGallery();
+      await page.locator('#gallery-search').fill(part.replaceAll('-', ' '));
+      const card = page.locator(`.part-gallery [data-part="${part}"]`).first();
+      await card.waitFor(); await page.waitForTimeout(300);
       const handle = await card.elementHandle();
-      const ms = await page.evaluate(`(el => new Promise(res => { const t = performance.now(); el.click(); requestAnimationFrame(() => requestAnimationFrame(() => res(performance.now() - t))); }))`, handle) as number;
+      // An inline arrow (no named helpers for tsx to decorate); a string expression would not receive the handle.
+      const ms = await page.evaluate(el => new Promise<number>(res => { const t = performance.now(); (el as HTMLElement).click(); requestAnimationFrame(() => requestAnimationFrame(() => res(performance.now() - t))); }), handle);
       clicks.push(round(ms)); await page.keyboard.press('Escape'); await page.waitForTimeout(400);
     }
+    // The edit loop below clicks the kettlebell's sidebar card: adding it once from the gallery puts it in Recent.
+    await openGallery(); await page.locator('#gallery-search').fill('rogue kettlebell');
+    await page.locator('.part-gallery [data-part="rogue-kettlebell"]').click(); await page.keyboard.press('Escape'); await page.waitForTimeout(300);
     r.clickToPaintMs = clicks;
     // History growth: place floor items through the UI (one commit each) and time click-to-paint per edit,
     // then drag the last one around (a continuous gesture) and record its frame times.

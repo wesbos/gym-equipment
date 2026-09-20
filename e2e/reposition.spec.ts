@@ -1,4 +1,5 @@
 import { test, expect, chromium, type Page } from '@playwright/test';
+import { addFromGallery } from './part-gallery.ts';
 import { createAssembly, addAccessory } from '../rack-generator/assembly.ts';
 import fs from 'node:fs/promises';
 
@@ -64,7 +65,7 @@ test('isolated reposition: double-click, pair opt-out, floor, rotation, Escape, 
     // A real orbit drag followed by dblclick must not pick up an item.
     await page.mouse.move(516,301); await page.mouse.down(); await page.mouse.move(535,310); await page.mouse.up();
     await page.mouse.dblclick(535,310); await expect(page.locator('#placement-hint')).toHaveCount(0);
-    await page.getByRole('button', {name:/REP Nighthawk adjustable bench/}).click();
+    await addFromGallery(page, 'rep-nighthawk');
     await page.getByRole('button', {name:'Place',exact:true}).click(); await ready();
     await page.getByRole('button', {name:'Top',exact:true}).click();
     await page.screenshot({ path:'/tmp/gym-wave4/reposition-floor-top.png' });

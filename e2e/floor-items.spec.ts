@@ -1,4 +1,5 @@
 import { unzipSync, strFromU8 } from 'fflate';
+import { addFromGallery } from './part-gallery.ts';
 import { test, expect, chromium } from '@playwright/test';
 import fs from 'node:fs/promises';
 
@@ -21,7 +22,7 @@ test('gym-wave2-floor_items: ghost, plane drag, snap, rotate, Escape, undo, insp
   // The recovery draft is debounced (AUTOSAVE_DELAY_MS, then idle time): let a pending write land before reading it.
   const floor=()=>page.evaluate(async()=>{await new Promise(r=>setTimeout(r,450));await new Promise(r=>requestIdleCallback(()=>r(null),{timeout:1000}));await new Promise(r=>setTimeout(r,0));const data=JSON.parse(localStorage.getItem('bos-strength-configurations-v1') ?? '{}');return (data.draft ?? data.configs?.find((c:{id:string})=>c.id===data.activeId)?.doc)?.floorItems ?? [];});
   await ready(); console.log('Rack ready');
-  await page.getByRole('button',{name:/REP Nighthawk adjustable bench/}).click();
+  await addFromGallery(page,'rep-nighthawk');
   await expect(page.getByRole('button',{name:'Place',exact:true})).toBeVisible();
   expect(await floor()).toEqual([]); // ghost has not mutated the document
   await page.getByRole('button',{name:'Place',exact:true}).click();await ready();
@@ -83,7 +84,7 @@ test('gym-wave2-floor_items: ghost, plane drag, snap, rotate, Escape, undo, insp
   await page.getByRole('button',{name:'Remove parts',exact:true}).click();await ready();expect(await floor()).toEqual([]);
   await page.getByRole('button',{name:'Undo',exact:true}).click();await ready();expect(await floor()).toEqual(saved);
   await page.getByRole('button',{name:'Top',exact:true}).click();
-  await page.getByRole('button',{name:/REP Nighthawk adjustable bench/}).click();
+  await addFromGallery(page,'rep-nighthawk');
   await page.mouse.click(550,320);await ready();expect(await floor()).toHaveLength(2);
   await expect(page.getByText('Bench overlaps the rack footprint.',{exact:false})).toBeVisible();
   await page.getByRole('button',{name:'Undo',exact:true}).click();await ready();expect(await floor()).toEqual(saved);

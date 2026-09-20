@@ -1,4 +1,5 @@
 import { unzipSync, strFromU8 } from 'fflate';
+import { addFromGallery } from './part-gallery.ts';
 import { XMLParser } from 'fast-xml-parser';
 import { NodeIO } from '@gltf-transform/core';
 import Module from 'manifold-3d';
@@ -42,7 +43,7 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   await expect(controls).toContainText('bridge');
   await controls.getByRole('button', { name: 'Apply logo to rack' }).click();
   await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeEnabled();
-  await page.getByRole('button', { name: 'Nameplate panel +', exact: true }).click();
+  await addFromGallery(page, 'nameplate', 'nameplate panel');
   await page.getByRole('button', { name: 'Replace rear crossmember' }).click();
   await page.getByRole('button', { name: 'Place', exact: true }).click();
   await glbReady();
