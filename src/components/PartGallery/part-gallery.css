@@ -230,46 +230,4 @@
   .pg-fit { width: auto; max-width: 45%; padding: 4px 10px; }
   .pg-fit small { display: none; }
 }
-/* Phone landscape: too short for stacked bands. A one-row header, categories on the left, a slim detail column. */
-@media (max-height: 520px) and (orientation: landscape) {
-  .pg-panel {
-    inset: 0; border-radius: 0;
-    grid-template-columns: min(170px, 24vw) minmax(0, 1fr) min(220px, 30vw); grid-template-rows: auto minmax(0, 1fr);
-    grid-template-areas: 'header header header' 'nav main detail';
-  }
-  .pg-header { flex-wrap: nowrap; gap: 10px; padding: 6px max(10px, env(safe-area-inset-right)) 6px max(14px, env(safe-area-inset-left)); }
-  .pg-header .pg-eyebrow { display: none; }
-  .pg-heading { flex: none; }
-  .pg-heading h2 { font-size: 17px; margin: 0; }
-  .pg-search { order: 0; flex: 1; flex-basis: auto; max-width: none; margin: 0; }
-  .pg-search input { font-size: 16px; padding: 10px 0; }
-  .pg-nav {
-    display: block; overflow: auto; padding: 8px 6px max(8px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
-    border-right: 1px solid var(--pg-line); border-bottom: 0;
-  }
-  .pg-nav ul, .pg-nav > ul:first-child { display: block; }
-  .pg-nav > ul:first-child { padding-bottom: 6px; margin-bottom: 6px; border-bottom: 1px solid var(--pg-line); }
-  .pg-nav li { display: list-item; }
-  .part-gallery .pg-nav-item { width: 100%; padding: 6px 8px; border-color: transparent; background: transparent; border-radius: 6px; }
-  .pg-sections { display: block !important; }
-  .part-gallery .pg-sections .pg-nav-item { border-style: none; }
-  .pg-nav-label { overflow: hidden; }
-  .pg-filters { flex-direction: row; align-items: center; gap: 8px; padding: 8px 10px 4px; }
-  .pg-brands { width: auto; }
-  .pg-fit { width: auto; max-width: 42%; padding: 0 10px; }
-  .pg-fit small { display: none; }
-  .pg-status { padding: 0 10px 6px; }
-  .pg-scroller { padding: 0 8px; }
-  .pg-detail {
-    flex-direction: column; flex-wrap: nowrap; align-items: stretch; max-height: none; border-top: 0; border-left: 1px solid var(--pg-line);
-    padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) 0;
-  }
-  .pg-detail-thumb { display: none; }
-  .pg-detail-body { flex: 1; max-height: none; padding: 10px 12px 6px; }
-  .pg-detail .pg-eyebrow { display: block; }
-  .pg-detail h3 { font-size: 15px; }
-  .pg-dims { display: none; }
-  .pg-detail-actions { flex-direction: row; flex-wrap: wrap; width: auto; border-left: 0; border-top: 1px solid var(--pg-line); padding: 8px 10px; gap: 6px; }
-  .part-gallery .pg-detail-actions button { flex: 1; padding: 8px 10px; }
-  .part-gallery .pg-detail-actions .pg-fav { flex: none; width: 44px; }
-}
+/* Short landscape phones: the builder shell (MobileShell/mobile-shell.css, #203) owns that layout. */

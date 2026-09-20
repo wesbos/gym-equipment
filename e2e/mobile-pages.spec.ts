@@ -187,10 +187,10 @@ for (const [name, { defaultBrowserType: _, ...device }] of Object.entries(DEVICE
         page.setDefaultTimeout(30000);
         await page.addInitScript(() => localStorage.removeItem('bos-strength-part-gallery-v1'));
         await page.goto(`${base()}/`);
-        const launcher = page.locator('#open-gallery');
-        await expect(page.locator('#root')).not.toBeEmpty();
-        if (await launcher.isVisible().catch(() => false)) await launcher.tap();
-        else await page.locator('body').press('/');
+        // Phones open it from the top bar's "Add parts" (#203); wider screens from the sidebar launcher.
+        const launcher = page.locator('.toolbar-add:visible, #open-gallery:visible').first();
+        await expect(launcher).toBeVisible();
+        await launcher.tap();
         const gallery = page.locator('.part-gallery');
         await expect(gallery.locator('.pg-card').first()).toBeVisible();
         // Let the open animation (a 10 px rise) finish before measuring.
@@ -206,9 +206,12 @@ for (const [name, { defaultBrowserType: _, ...device }] of Object.entries(DEVICE
 
         await gallery.getByRole('button', { name: /^Benches/ }).tap();
         await expect(gallery.locator('.pg-status')).toContainText('Benches');
-        await gallery.locator('.pg-card-info').first().tap();
-        const name = await gallery.locator('.pg-card').first().getAttribute('aria-label');
-        await expect(gallery.locator('#pg-detail-name')).toHaveText(name!);
+        // The detail pane (and each card's (i)) is hidden on short landscape phones, where a tap adds the part.
+        if (await gallery.locator('.pg-detail').isVisible()) {
+          await gallery.locator('.pg-card-info').first().tap();
+          const name = await gallery.locator('.pg-card').first().getAttribute('aria-label');
+          await expect(gallery.locator('#pg-detail-name')).toHaveText(name!);
+        }
         await gallery.getByRole('button', { name: /^All parts/ }).tap();
         await gallery.locator('#gallery-search').fill('echo bike');
         await expect(gallery.locator('[data-part="rogue-echo-bike"]')).toBeVisible();
