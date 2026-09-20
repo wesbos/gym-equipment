@@ -62,13 +62,14 @@ LB Change 11, 26'ER 8 (5 Rogue plus 3 video stills).
 | The Strength Co. Olympic Iron · [page](https://thestrengthco.com/products/olympic-barbell-plates) | 45 17.75 × 1.25", 35 14.75 × 1.25", 25 11.75 × 1.25", 10 9.13 × .88", 5 8 × .63", 2.5 6.5 × .5", 1.25 5 × .3", 100 17.75 × 2.25"; 1.99" bore; e-coat | 450.9 × 31.8 … 127 × 7.6 | dish 55 %, X spokes (≥ 225 mm), 3-line raised name block |
 | CAP 2" Olympic Plate (OPG#2 grey, OP black) · [page](https://capbarbell.com/products/cap-barbell-cast-iron-olympic-weight-plate), sizes from [Iron Company](https://www.ironcompany.com/cap-barbell-gray-cast-iron-olympic-plates) | 2.5 6.5 × .5", 5 8 × .75", 10 9 × 1", 25 11 × 1.5", 35 14 × 1.5", 45 17.75 × 1.5", 100 17.75 × 2.5" | as published | hammertone, rib (spoke) and dish, silver lettering |
 | CAP 2" Olympic Grip Plate · [page](https://capbarbell.com/products/cap-barbell-cast-iron-olympic-grip-plate) | weights, 2" opening, three grip openings, silver-painted weights | 45 452 × 40.6 … 2.5 175 × 19.1 | **all sizes estimated** from photos against the bore; tri-grip windows 0.62–0.82 R; badges |
+| Fitness Gear Olympic Cast Plate (Dick's house brand, 45 gyms) · [Dick's page, archived 2022](https://web.archive.org/web/20220706070947/https://www.dickssportinggoods.com/p/fitness-gear-olympic-cast-plate-single-16fgeufg25lblycstwpl/16fgeufg25lblycstwpl), [Gym Radar](https://gymradar.com/equipment/fitness-gear-weight-plates) | weights 2.5 / 5 / 10 / 25 / 35 / 45 lb, cast iron, Olympic (2") hole, grip handles; an owner review (archived 2017 Dick's 45 lb page) gives "about 15.5 in diameter" for the 45 | 45 399 × 38, 35 340 × 36, 25 306 × 33, 10 242 × 22, 5 187 × 18, 2.5 156 × 14 | **all sizes estimated.** Diameters from Dick's six straight-on catalogue photos (`dks.scene7.com` image set `16FGEUFG25LBLYCSTWPL_is`, reached without the blocked store pages): plate ÷ hole pixel ratios 3.08 / 3.70 / 4.76 / 5.98 / 6.76 / 7.91 × the 50.8 mm bore (±3–5 %; the 45 lb 15.7" agrees with the owner's 15.5"). Rim widths from the mass (cast iron 7.15 g/cm³ over the solid face area, rim ≈ 1.3 × the average; no edge-on photo, ±15 %). Tri-grip windows at 12 / 4 / 8 o'clock (0.48–0.85 R), raised rim and dish, raised FITNESS GEAR arc over the hub and "{w}LBS" on the bottom spoke with silver-painted tops; no kg marking. Grey hammertone (current) and the older gloss-black run as finishes |
 | York Legacy Precision Milled · [page](https://yorkbarbell.com/product/2-inch-legacy-cast-iron-precision-milled-olympic-plate/) | 2.5 6.5 × 7/16", 5 7.5 × 3/4", 10 9.125 × 1", 25 12 × 1.25", 35 14.875 × 1.375", 45 17.5 × 1.5"; milled back and edge | as published | dish, spokes, white-filled YORK/weight |
 | Weight It Out Cast Iron Machined · [page](https://www.weightitout.us/products/cast-iron-machined-weight-plate-pairs) | 100 17.72 × 1.75", 45 17.72 × 3/4", 25 14.5 × 5/8", 10 8.9 × 5/8", 5 7 × 1/2", 2.5 5.6 × 2/5"; dual handle; 9 colours | as published; black default + 8 finishes | slot size and position, deboss layout |
 | Ivanko OM Series · [page](https://ivankobarbell.com/products/om-series-olympic-machined-plate) | 45 17-3/4 × 1-9/16", 35 14-3/16 × 1-9/16", 25 11-13/16 × 1-9/16", 10 9 × 1-1/4", 5 7-3/4 × 7/8", 2.5 6-7/16 × 5/8", 1.25 5-1/4 × 1/2"; machined back, edge and rim | as published | 1985 grey, 3 spokes, lettering (100 lb skipped: its listed 1-2/8" width is not usable) |
 | REP Equalizer Urethane · [page](https://repfitness.com/products/urethane-coated-equalizer-plate-pairs) | REP drawing: 45 17.7 × 1.8", 35 14.3 × 2.0", 25 12.25 × 2.0", 10 8.8 × 1.4", 5 7.7 × 1.0", 2.5 6.25 × .9"; six grip holes; debossed white inlay | as published | hex size 0.19 R at 0.64 R, rib, hub insert 78 mm |
 | REP Old School Iron · [page](https://repfitness.com/products/old-school-iron-plate-pairs) | REP drawing: 45 17.7 × 1.5", 35 14.3 × 1.5", 25 10.7 × 1.5", 10 8.8 × 1", 5 7.7 × .75", 2.5 6.25 × .5"; deep lip; raised silver lettering | as published | spokes, dish |
 
-Photo sets: Strength Co 20, CAP iron 12, CAP grip 14, York 14, Weight It Out 57, Ivanko 18, Equalizer 14 (with the drawing), Old School 15.
+Photo sets: Strength Co 20, CAP iron 12, CAP grip 14, Fitness Gear 16 (11 Dick's catalogue images, 5 Gym Radar owner photos), York 14, Weight It Out 57, Ivanko 18, Equalizer 14 (with the drawing), Old School 15.
 REP drawings (`acf.*_Dims.png`) have white thickness labels on a transparent background; they were composited on grey to read them.
 
 ## Other bumpers, change and fractional plates, wagon wheels
@@ -89,11 +90,13 @@ Photo sets: REP Black 18, REP Change 13 (LB and KG galleries share the design), 
 
 ## Not shipped
 
-- **Fitness Gear plates** (Dick's Sporting Goods house brand). dickssportinggoods.com returns 403 to every client we tried
-  (curl, fetch and headless Chromium), and no retailer or review page publishes sizes or a usable gallery, so the line
-  could not be sourced to the playbook's bar.
 - **Micro Gainz dumbbell fractional plates** (the magnetic or wrap-on 1.25/2.5 lb dumbbell add-ons). They are not Olympic
   plates and don't load on pins or sleeves. The Olympic fractional set (same 1.25 lb weight) is shipped.
+
+## Fitness Gear review rounds (#129 follow-up)
+
+1. Front lineup (45 / 25 / 10 / 2.5 lb) next to the Dick's photos: the grip windows were too small and the lettering too light, so the windows grew to 0.48–0.85 R and both markings to 0.1 R cap height.
+2. The 25 lb face-on and in three-quarter view against the Gym Radar main image, then on a storage pin in the builder.
 
 ## Visual review rounds
 

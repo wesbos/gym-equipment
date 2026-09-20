@@ -78,6 +78,12 @@ test('published dimensions per weight are in the table', () => {
     ['titan-wagon-wheel:45', inch(26), inch(2)],
   ];
   for (const [id, d, w, e = .02] of cases) { near(spec(id).diameter, d, e, `${id} diameter`); near(spec(id).width, w, e, `${id} width`); }
+  // Fitness Gear publishes no sizes: the 45 lb photo measurement must agree with the owner's "about 15.5 in" within 3 %,
+  // and the line carries the six weights Dick's sells, tri-grip windows and no kg marking.
+  const fg = plateLine('fitness-gear-olympic-cast')!;
+  assert.deepEqual(fg.weights.map(w => w.weight), [45, 35, 25, 10, 5, 2.5]);
+  near(spec('fitness-gear-olympic-cast:45').diameter, inch(15.5), inch(15.5) * .03, 'Fitness Gear 45 lb vs owner measurement');
+  assert.ok(fg.face.grips?.kind === 'tri' && fg.face.grips.n === 3 && fg.weights.every(w => w.est) && !fg.markings.some(m => m.text.includes('{k')));
 });
 
 test('every plate of every line and finish builds valid closed solids that match its table size', () => {
