@@ -23,10 +23,10 @@ const flag = (name: string, fallback: string) => {
 const port = Number(flag('port', '5661')), view = flag('view', 'iso'), external = flag('base', ''), defaultZoom = Number(flag('zoom', '1.5'));
 /** Per-gym dolly factors, tuned by eye so each gym fills its card. */
 const ZOOMS: Record<string, number> = {
-  'b3-brian-s-barbells-and-brewskis': 1.7,
+  'b3-brian-s-barbells-and-brewskis': 1.6,
   'cable-compound': 1.6,
-  'erik-mains-s-gym': 1.9,
-  'fe-strength-lab': 1.8,
+  'erik-mains-s-gym': 1.5,
+  'fe-strength-lab': 1.6,
 };
 const base = external || `http://127.0.0.1:${port}`;
 const WIDTH = 1200, HEIGHT = 800, MAX_BYTES = 150 * 1024;
@@ -113,8 +113,11 @@ try {
       await page.waitForTimeout(1200);
       // OrbitControls dollies by 0.95 per 100 px wheel notch, toward the fitted target at the frame centre.
       const zoom = zoomOf(slug), notches = Math.round(Math.log(1 / zoom) / Math.log(0.95));
-      await page.mouse.move(WIDTH / 2, HEIGHT / 2);
-      for (let i = 0; i < notches; i++) { await page.mouse.wheel(0, -100); await page.waitForTimeout(60); }
+      // Synthetic events, with the pointer never over the canvas: a real wheel over a hovered floor item rotates it.
+      for (let i = 0; i < notches; i++) {
+        await page.locator('#viewport canvas').first().evaluate((canvas, [x, y]) => canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, clientX: x, clientY: y, bubbles: true, cancelable: true })), [WIDTH / 2, HEIGHT / 2]);
+        await page.waitForTimeout(60);
+      }
       await page.waitForTimeout(1500);
       const png = await page.locator('#viewport').screenshot({ type: 'png' });
       const { bytes, quality } = await toWebp(page, png);
