@@ -108,7 +108,7 @@ export const RITFIT_DEADLIFT_JACK = defineFloorPart({
 // ── Bench Blokz ─────────────────────────────────────────────────────────────────────────────────
 /** Big Blok face and slot depths solved from the published board heights (2-board 3", 3-board 4.5", 4-board 6", 5-board 7.5")
  * against the outline drawing (~38.7 px/in); thickness from the 3" flat position (bar in the cross-face channel). */
-export const BENCH_BLOKZ = { height: inch(8.35), width: inch(5.6), thick: inch(3.5), topSlot: inch(2.35), bottomSlot: inch(.85), sideSlot: inch(1.1), channel: inch(.5), channelY: inch(3.64), chamfer: inch(.3) } as const;
+export const BENCH_BLOKZ = { height: inch(8.56), width: inch(5.75), thick: inch(3.5), topSlot: inch(2.56), bottomSlot: inch(1.06), sideSlot: inch(1.25), channel: inch(.5), channelY: inch(3.74), chamfer: inch(.32) } as const;
 export const BENCH_BLOKZ_MODELS = [{ name: 'Big Blok 2-5 (28 mm bars)', slot: 30 }, { name: 'Big Blok for BandBell (38 mm bars)', slot: 40 }] as const;
 export const BENCH_BLOKZ_ENTRY = defineFloorPart({
   id: 'bench-blokz', name: 'Bench Blokz', title: 'Bench Blokz Big Blok', noun: 'bench blok', section: 'Accessories',
@@ -116,7 +116,7 @@ export const BENCH_BLOKZ_ENTRY = defineFloorPart({
   params: [{ key: 'model', label: 'Model', default: 0, options: idx(BENCH_BLOKZ_MODELS.length), format: named(BENCH_BLOKZ_MODELS.map(m => m.name)) }],
   footprint: { width: BENCH_BLOKZ.width, depth: BENCH_BLOKZ.height },
   vendor: vendorOf('Bench Blokz', 'https://benchblokz.com/', 'Bench Blokz — Big Blok 2-5 and Big Blok for BandBell', 'Bench Blokz is a trademark of Bench Blokz; BandBell is a trademark of BandBell.',
-    'Independent Manifold reconstruction. Published: 3/4.5/6/7.5" board heights, 28 mm (38 mm BandBell) bar slots, 600 lb rating. Estimated: 8.35" × 5.6" face and slot depths solved from those heights against the outline drawing, 3.5" thickness, 0.5" cross channel. BENCHBLOKZ.COM stencil shown as a plain plate. Small Blok not modelled (its outline could not be dimensioned). Scenery only, excluded from print export.'),
+    'Independent Manifold reconstruction. Published: 3/4.5/6/7.5" board heights, 28 mm (38 mm BandBell) bar slots, 600 lb rating. Estimated: 8.56" × 5.75" face and slot depths (2.56 / 1.06 / 1.25") solved from those heights against the outline drawing, 3.5" thickness, 0.5" cross channel. BENCHBLOKZ.COM stencil shown as a plain plate. Small Blok not modelled (its outline could not be dimensioned). Scenery only, excluded from print export.'),
 });
 
 // ── Lifting platforms ───────────────────────────────────────────────────────────────────────────
@@ -135,13 +135,13 @@ export const DIY_LIFTING_PLATFORM = defineFloorPart({
     'Independent Manifold reconstruction of the published build: 96" × 96", two crossed 3/4" base layers, 3/4" top (4\' × 8\' plywood centre, 2\' × 8\' stall-mat strips), 2.25" total. Estimated: screw rows, stain colours and the logo plate. Scenery only, excluded from print export.'),
 });
 /** Rogue 8'×8' Oly Platform (XX12931): 2"×2" 11-gauge frame around an 8'×8' bay of 24"×24"×1.5" tiles. */
-export const ROGUE_PLATFORM = { inner: inch(96), tube: inch(2), tile: inch(24), tileH: inch(1.5), corner: inch(3) } as const;
+export const ROGUE_PLATFORM = { inner: inch(96), tube: inch(2), tile: inch(24), tileH: inch(1.5), corner: inch(3), /** frame-bolt head proud of each outer face */ bolt: 6 } as const;
 export const ROGUE_PLATFORM_FLOORS = ['16 crumb rubber tiles', '16 smooth black tiles', "Wood centre (4'×8') + 8 crumb tiles"] as const;
 export const ROGUE_OLY_PLATFORM = defineFloorPart({
   id: 'rogue-8x8-oly-platform', name: "Rogue 8'×8' Oly Platform", title: "Rogue 8'×8' Oly Platform", noun: 'platform', section: 'Accessories', underlay: true,
   description: "Rogue 8'×8' Oly Platform: a bolt-together 2\"×2\" 11-gauge steel frame (8'4\" outside) with gusseted corner blocks, filled with 24\"×24\"×1.5\" rubber tiles or a 4'×8' wood centre. Independent reconstruction from published dimensions; Rogue trademarks belong to Rogue Fitness.",
   params: [{ key: 'floor', label: 'Flooring', default: 0, options: idx(ROGUE_PLATFORM_FLOORS.length), format: named(ROGUE_PLATFORM_FLOORS) }],
-  footprint: { width: ROGUE_PLATFORM.inner + 2 * ROGUE_PLATFORM.tube, depth: ROGUE_PLATFORM.inner + 2 * ROGUE_PLATFORM.tube }, placement: { side: 'front', gap: 0 },
+  footprint: { width: ROGUE_PLATFORM.inner + 2 * (ROGUE_PLATFORM.tube + ROGUE_PLATFORM.bolt), depth: ROGUE_PLATFORM.inner + 2 * (ROGUE_PLATFORM.tube + ROGUE_PLATFORM.bolt) }, placement: { side: 'front', gap: 0 },
   vendor: vendorOf('Rogue Fitness', 'https://www.roguefitness.com/rogue8x8-oly-platform', "Rogue Fitness — 8'×8' Oly Platform", 'Rogue and Rogue Fitness are trademarks of Rogue Fitness.',
     "Independent Manifold reconstruction. Published: 8'×8' inside, 8'4\" outside, 2\"×2\" 11-gauge frame, 24\"×24\"×1.5\" tiles (16, or 8 with a 4'×8' wood centre). Estimated: 3\" corner-block radius, bolt and anchor-tab positions, wood colour. The rail wordmark and wood stencil are plain plates. Scenery only, excluded from print export."),
 });
@@ -185,11 +185,27 @@ export const REP_CORK_SQUAT_WEDGE = defineFloorPart({
     'Independent Manifold reconstruction. Published: 8.8" × 5.3", 25° / 45° slopes, 2.2 lb, 700 lb rating, sold as a pair. Estimated: 0.5" end lips and the resulting 3.3" height (the published 4.9" does not fit the slopes), 0.25" tape border, edge chamfers; side logos are plain plates. Scenery only, excluded from print export.'),
 });
 export const TITAN_WEDGE = { ramp: inch(15.5), sheet: 4.8, hem: 9, widths: [inch(20.5), inch(8.5)], angles: [15, 22.5, 30], heights: [inch(4.5), inch(6.5), inch(8.5)] } as const;
-export const titanWedge = (p: NumericParams) => {
-  const i = TITAN_WEDGE.angles.indexOf(p.angle as 15), a = p.angle * Math.PI / 180; if (i < 0) throw Error('Unsupported squat wedge angle.');
-  const width = TITAN_WEDGE.widths[p.style]; if (!width) throw Error('Unsupported squat wedge style.');
-  return { a, width, height: TITAN_WEDGE.heights[i], run: TITAN_WEDGE.ramp * Math.cos(a) + TITAN_WEDGE.hem / 2 };
-};
+type P2 = [number, number];
+/** Folded-sheet layout in the (y, z) side plane, centred on the footprint. The published heights fix the sheet length from the toe
+ * hem to the top bend (~16.3" at every angle); the 15.5" ramp is the taped surface centred on it. The back leg drops at 68° to a
+ * forward foot flange. */
+export function titanWedgeLayout(p: NumericParams) {
+  const i = TITAN_WEDGE.angles.indexOf(p.angle as 15), width = TITAN_WEDGE.widths[p.style];
+  if (i < 0) throw Error('Unsupported squat wedge angle.'); if (!width) throw Error('Unsupported squat wedge style.');
+  const a = p.angle * Math.PI / 180, t = TITAN_WEDGE.sheet, r = TITAN_WEDGE.hem / 2, height = TITAN_WEDGE.heights[i], u: P2 = [Math.cos(a), Math.sin(a)], n: P2 = [-u[1], u[0]];
+  const A: P2 = [r, r], Ls = (height - r - t / 2) / u[1], B: P2 = [A[0] + u[0] * Ls, A[1] + u[1] * Ls];
+  const legAngle = 68 * Math.PI / 180, F: P2 = [B[0] - (B[1] - t / 2) / Math.tan(legAngle), t / 2], d: P2 = [(B[0] - F[0]) / Math.hypot(B[0] - F[0], B[1] - F[1]), (B[1] - F[1]) / Math.hypot(B[0] - F[0], B[1] - F[1])];
+  const off = (q: P2, v: P2, k: number): P2 => [q[0] + v[0] * k, q[1] + v[1] * k], ln: P2 = [d[1], -d[0]]; // leg normal, outward (+y)
+  const ramp = [off(A, n, -t / 2), off(B, n, -t / 2), off(B, n, t / 2), off(A, n, t / 2)], leg = [off(F, ln, -t / 2), off(F, ln, t / 2), off(B, ln, t / 2), off(B, ln, -t / 2)];
+  const foot: P2[] = [[F[0] - 30, 0], [F[0] + t / 2, 0], [F[0] + t / 2, t], [F[0] - 30, t]], s0 = (Ls - TITAN_WEDGE.ramp) / 2;
+  const ys = [...ramp, ...leg, ...foot].map(q => q[0]), minY = Math.min(0, ...ys), maxY = Math.max(B[0] + t / 2, ...ys), shift = -(minY + maxY) / 2, sh = (q: P2): P2 => [q[0] + shift, q[1]];
+  const mid: P2 = [(B[0] + F[0]) / 2, (B[1] + F[1]) / 2];
+  return {
+    a, width, height, depth: maxY - minY, hem: sh(A), bend: sh(B), ramp: ramp.map(sh), leg: leg.map(sh), foot: foot.map(sh),
+    rampTop: [sh(off(off(A, n, t / 2), u, s0)), sh(off(off(A, n, t / 2), u, s0 + TITAN_WEDGE.ramp))] as [P2, P2],
+    legTilt: -Math.asin(d[0]) * 180 / Math.PI, slotAt: sh(off(B, d, -38)), logoAt: sh(off(mid, ln, t / 2)),
+  };
+}
 export const TITAN_SQUAT_WEDGE = defineFloorPart({
   id: 'titan-squat-wedge', name: 'Titan squat wedge', title: 'Titan Fitness Squat Wedge', noun: 'squat wedge', section: 'Accessories',
   description: 'Titan Fitness folded-steel squat wedge (15.5" ramp at 15°, 22.5° or 30°) with inset grip tape, an angle window and a slanted back leg with handle slot — one 20.5" wide single or an 8.5" wide pair. Independent reconstruction from published dimensions; Titan Fitness trademarks belong to Titan Fitness.',
@@ -197,18 +213,19 @@ export const TITAN_SQUAT_WEDGE = defineFloorPart({
     { key: 'angle', label: 'Angle', default: 15, options: TITAN_WEDGE.angles, format: v => `${v}°` },
     { key: 'style', label: 'Style', default: 0, options: [0, 1], format: named(['Single (20.5" wide)', 'Pair (8.5" wide each)']) },
   ],
-  footprint: p => { const w = titanWedge(p); return { width: w.width, depth: w.run }; }, pair: { gap: 60 },
+  footprint: p => { const w = titanWedgeLayout(p); return { width: w.width, depth: w.depth }; }, pair: { gap: 60 },
   vendor: vendorOf('Titan Fitness', 'https://www.titan.fitness/products/squat-wedge', 'Titan Fitness — Squat Wedge', 'Titan Fitness is a trademark of Titan Fitness.',
     'Independent Manifold reconstruction. Published: 15.5" ramp; 15° / 22.5° / 30° at 4.5" / 6.5" / 8.5" tall; 20.5" single or 8.5" pair. Estimated: 3/16" sheet, toe hem, back-leg slope and foot, tape border and window; the leg logo is a plain plate. Scenery only, excluded from print export.'),
 });
 
 // ── Medicine and slam balls ─────────────────────────────────────────────────────────────────────
-export const ROGUE_MED_BALL = { diameter: inch(14), weights: [4, 6, 8, 10, 12, 14, 16, 18, 20, 25, 30] } as const;
+/** `lace`: how far the laced seam stands proud of the 14" sphere at the front (-Y). */
+export const ROGUE_MED_BALL = { diameter: inch(14), lace: 3.9, weights: [4, 6, 8, 10, 12, 14, 16, 18, 20, 25, 30] } as const;
 export const ROGUE_MEDICINE_BALL = defineFloorPart({
   id: 'rogue-medicine-ball', name: 'Rogue medicine ball', title: 'Rogue Medicine Ball', noun: 'medicine ball', section: 'Accessories',
   description: 'Rogue Medicine Ball: a 14" soft-shell wall ball in black coated vinyl with a laced closing seam, gore panels and printed weight (4–30 lb). Independent reconstruction from published dimensions; Rogue trademarks belong to Rogue Fitness.',
   params: [{ key: 'weight', label: 'Weight', default: 20, options: ROGUE_MED_BALL.weights, format: lbs }],
-  footprint: { width: ROGUE_MED_BALL.diameter, depth: ROGUE_MED_BALL.diameter },
+  footprint: { width: ROGUE_MED_BALL.diameter, depth: ROGUE_MED_BALL.diameter + ROGUE_MED_BALL.lace, offset: [0, -ROGUE_MED_BALL.lace / 2] },
   vendor: vendorOf('Rogue Fitness', 'https://www.roguefitness.com/rogue-medicine-balls', 'Rogue Fitness — Rogue Medicine Balls', 'Rogue and Rogue Fitness are trademarks of Rogue Fitness.',
     'Independent Manifold reconstruction. Published: 14" diameter, 4–30 lb, black coated-vinyl shell, double-stitched nylon seams. Estimated: lacing length and latitude, gore count, soft contact flat. ROGUE / MADE IN THE USA wordmark as a plain plate; weight numerals in a plain stroke font. Scenery only, excluded from print export.'),
 });
@@ -223,7 +240,7 @@ export const ROGUE_ECHO_SLAM_BALL = defineFloorPart({
   vendor: vendorOf('Rogue Fitness', 'https://www.roguefitness.com/rogue-echo-slam-balls', 'Rogue Fitness — Rogue Echo Slam Balls', 'Rogue, Rogue Fitness and Echo are trademarks of Rogue Fitness.',
     'Independent Manifold reconstruction. Published: 9" (10–30 lb) and 10" (35–50 lb) diameter, red PVC shell with white LB and Rogue markings. Estimated: groove latitudes and fill-plug size from photos; the ESB and ROGUE marks are plain plates, weights in a plain stroke font. Scenery only, excluded from print export.'),
 });
-export const DYNAMAX = { diameter: inch(14), weights: [4, 6, 8, 10, 12, 14, 16, 18, 20, 25, 30] } as const;
+export const DYNAMAX = { diameter: inch(14), lace: 3.0, weights: [4, 6, 8, 10, 12, 14, 16, 18, 20, 25, 30] } as const;
 export const DYNAMAX_COLORS: readonly (Swatch & { band: string })[] = [
   { name: 'Black / Gray', hex: '#1c1c1e', band: '#b9bbbd' }, { name: 'Red / Gray', hex: '#b3232a', band: '#b9bbbd' }, { name: 'Blue / Gray', hex: '#2c5fb0', band: '#b9bbbd' },
   { name: 'Navy / Gray', hex: '#1f2b52', band: '#b9bbbd' }, { name: 'Green / Gray', hex: '#2b7a3d', band: '#b9bbbd' }, { name: 'Orange / Gray', hex: '#e06a1e', band: '#b9bbbd' },
@@ -233,7 +250,7 @@ export const DYNAMAX_MEDICINE_BALL = defineFloorPart({
   id: 'dynamax-medicine-ball', name: 'Dynamax medicine ball', title: 'Dynamax Medicine Ball', noun: 'medicine ball', section: 'Accessories',
   description: 'Dynamax Standard 14" medicine ball: a padded soft ball with a contrasting label panel front and back, laced seam and printed weight, in the Dynamax colour pairs. Independent reconstruction from published dimensions; Dynamax trademarks belong to Dynamax.',
   params: [{ key: 'weight', label: 'Weight', default: 10, options: DYNAMAX.weights, format: lbs }, colorParam(DYNAMAX_COLORS, 'Ball / panel colour')],
-  footprint: { width: DYNAMAX.diameter, depth: DYNAMAX.diameter },
+  footprint: { width: DYNAMAX.diameter, depth: DYNAMAX.diameter + DYNAMAX.lace, offset: [0, -DYNAMAX.lace / 2] },
   vendor: vendorOf('Dynamax', 'https://www.medicineballs.com/product/standard-ball/', 'Dynamax — Standard 14" Medicine Ball', 'Dynamax is a trademark of Dynamax Inc.',
     'Independent Manifold reconstruction. Published: 14" diameter, 2–35 lb (Rogue lists 4–30), colour pairs. Estimated: label-panel extents, lacing length and latitude; the DYNAMAX print is a plain plate, weights in a plain stroke font. Scenery only, excluded from print export.'),
 });
