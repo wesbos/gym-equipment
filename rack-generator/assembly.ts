@@ -407,7 +407,17 @@ export function validateAssembly(input: unknown): RackDoc {
   const hangItems = validateHangItems(input.hangItems, wallItems, [...Object.keys(graph.uprights), ...graph.connections.map(e=>e.id), ...accessories.map(a=>a.id), ...floorItems.map(f=>f.id), ...wallItems.map(w=>w.id)]);
   const systems = validateSystems({ ...input, ...graph, rack, removed, structure, accessories, floorItems } as RackDoc, input.systems);
   const logo = validateLogo(input.logo);
-  return { ...copy(input), ...(input.floorItems !== undefined ? { floorItems } : {}), ...(input.wallItems !== undefined ? { wallItems } : {}), ...(input.hangItems !== undefined ? { hangItems } : {}), ...(room ? { room } : {}), ...(logo ? { logo } : {}), ...(appearance ? { appearance } : {}), ...graph, ...(systems ? { systems } : {}), version: ASSEMBLY_VERSION, rack, removed: [...removed], structure, accessories, nextId: input.nextId };
+  const validated: Record<string, unknown> = { ...(input.floorItems !== undefined ? { floorItems } : {}), ...(input.wallItems !== undefined ? { wallItems } : {}), ...(input.hangItems !== undefined ? { hangItems } : {}), ...(room ? { room } : {}), ...(logo ? { logo } : {}), ...(appearance ? { appearance } : {}), ...graph, ...(systems ? { systems } : {}), version: ASSEMBLY_VERSION, rack, removed: [...removed], structure, accessories, nextId: input.nextId };
+  // Same result as `{ ...copy(input), ...validated }` (input key order, other fields JSON-copied) without
+  // serialising the fields that are replaced anyway.
+  const result: Record<string, unknown> = {};
+  const define = (key: string, value: unknown) => Object.defineProperty(result, key, { value, enumerable: true, writable: true, configurable: true });
+  for (const key of Object.keys(input)) {
+    const value = input[key];
+    if (Object.hasOwn(validated, key)) define(key, undefined);
+    else if (value !== undefined && typeof value !== 'function' && typeof value !== 'symbol') define(key, copy(value));
+  }
+  return Object.assign(result, validated) as unknown as RackDoc;
 
 }
 export function getPartPlacementInfo(part: string, input?: RackDoc): PlacementInfo | null {
