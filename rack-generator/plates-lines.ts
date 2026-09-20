@@ -496,4 +496,23 @@ export const PLATE_LINES: readonly PlateLine[] = [
     url: 'https://www.titan.fitness/products/45-lb-pair-wagon-wheel-pulling-blocks',
     reconstruction: 'Published 26" diameter, 0.375" laser-cut steel, 51 mm collar and 2" carrying lip, 45 lb each. Nine wedge windows, collar size and the cut-through TITAN / 45 LB lettering estimated from Titan photos.',
   },
+  {
+    // Dick's house brand. Only the weights, "cast iron", "Olympic" and "grip handles" are published; every size is measured
+    // off Dick's straight-on catalogue photos against the 2" bore, and the widths come from the plate mass (research/plates.md).
+    id: 'fitness-gear-olympic-cast', code: 33, brand: 'Fitness Gear', name: 'Olympic Cast Plate (tri-grip)', unit: 'lb', group: 'Iron plates',
+    vendor: "Dick's Sporting Goods", trademark: "Fitness Gear trademarks belong to Dick's Sporting Goods.",
+    material: 'hammertone', color: '#4f5154', ink: '#c4c7ca',
+    face: { kind: 'iron', lip: .1, dish: .3, boss: 80, edge: 2.5, back: .2, grips: { kind: 'tri', n: 3, r: .665, size: .37, deg: 90 } },
+    markings: [
+      { text: 'FITNESS GEAR', at: 90, r: .4, h: .1, sx: 1.05, arc: 'out', style: 'raised', color: '#c4c7ca' },
+      { text: '{w}LBS', at: 270, r: .6, h: .1, style: 'raised', color: '#c4c7ca' },
+    ],
+    weights: [
+      M(45, 399, 38, { est: 'diameter, width' }), M(35, 340, 36, { est: 'diameter, width' }), M(25, 306, 33, { est: 'diameter, width' }),
+      M(10, 242, 22, { est: 'diameter, width' }), M(5, 187, 18, { est: 'diameter, width' }), M(2.5, 156, 14, { est: 'diameter, width' }),
+    ],
+    finishes: [{ id: 'hammertone', label: 'Grey hammertone', color: '#4f5154', ink: '#c4c7ca' }, { id: 'black', label: 'Gloss black (older run)', color: '#1d1e20', ink: '#e9eaea' }],
+    url: 'https://www.dickssportinggoods.com/p/fitness-gear-olympic-cast-plate-single-16fgeufg25lblycstwpl/16fgeufg25lblycstwpl',
+    reconstruction: "Dick's publishes the weights (2.5–45 lb), cast iron, the 2\" Olympic hole and grip handles only. Diameters are measured on Dick's straight-on photos against the 2\" bore (45 lb ≈ 15.7\", matching an owner's \"about 15.5 in\" review); rim widths are solved from the plate mass; tri-grip windows, rim, dish and the raised FITNESS GEAR / weight lettering follow the photos, typeset without logo artwork.",
+  },
 ];
