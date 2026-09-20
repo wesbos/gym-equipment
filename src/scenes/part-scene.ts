@@ -9,7 +9,7 @@ import { toCreasedNormals } from "three/addons/utils/BufferGeometryUtils.js";
 import { createStudioLighting } from './studio-lighting.ts';
 import { fitRackShadow } from './gym-floor.ts';
 import { resolveMaterial } from '../../rack-generator/appearance.ts';
-import { createRenderLoop } from './render-loop.ts';
+import { createMotionCheck, createRenderLoop } from './render-loop.ts';
 export type View = "iso" | "front" | "top" | "side" | "detail";
 export type { LibraryMesh as MeshData } from "../../rack-generator/worker-types.ts";
 import type { LibraryMesh as MeshData } from "../../rack-generator/worker-types.ts";
@@ -306,18 +306,16 @@ export function createPartScene(
   observer.observe(viewport);
   const onContextRestored = () => invalidate();
   renderer.domElement.addEventListener("webglcontextrestored", onContextRestored);
-  const lastPosition = new THREE.Vector3();
+  // Damping crawls on below a pixel for seconds at millimetre scale; stop once the camera stops visibly moving.
+  const cameraMoving = createMotionCheck();
   /** One frame; true while damping still moves the camera. */
   function renderFrame() {
     if (disposed) return false;
-    lastPosition.copy(camera.position);
     updatingControls = true;
-    let moving = controls.update();
+    const damping = controls.update();
     updatingControls = false;
+    const moving = cameraMoving(camera, controls.target) && damping;
     const distance = camera.position.distanceTo(controls.target);
-    // OrbitControls' own threshold is absolute (1e-6 mm²), so a millimetre-scale damped orbit crawls on for seconds
-    // below a pixel. Settle once the camera moves less than 1/10,000 of its distance (well under a pixel) in a frame.
-    if (moving && camera.position.distanceTo(lastPosition) < distance * 1e-4) moving = false;
     camera.near = Math.max(0.5, distance / 200);
     camera.far = Math.max(10000, distance * 20);
     camera.updateProjectionMatrix();
