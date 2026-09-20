@@ -6,7 +6,13 @@
  *     Metadata only (it ships in the main bundle): never import Manifold builders here.
  *  2. rack-generator/parts/<part>.ts — the builder, `export const definitions = [wallDefinition(MY_PART, buildMyPart)]`.
  *     Source axes: X along the wall, -Y out of the wall, Z up; origin at the face centre on the wall surface.
- *  3. Register: add MY_PART to WALL_PARTS below, and spread its `definitions` into catalog.ts. */
+ *  3. Register: add MY_PART to WALL_PARTS below, and spread its `definitions` into catalog.ts.
+ *
+ * Windows and doors (room finishes, #200): add `opening` to the spec (`true` for the whole face, or a WallFace / params
+ * function for a smaller hole). The item is placed like any wall part (`wall` + `position` [u along the wall from its
+ * centre, height of the face centre]; world placement from walls.ts wallFrames(room)[wall]), and the scene cuts that
+ * rectangle out of every wall finish behind it (wall-items.ts wallOpenings → gym-walls.ts). The part draws its own frame,
+ * sill and glass; nothing shows through the hole but the distant backdrop. */
 import type { WallPart } from './wall-part.ts';
 import { PEGBOARD } from './wall-parts/pegboard.ts';
 // Family slots: each file owns its PARTS list, so parallel families never edit this file.

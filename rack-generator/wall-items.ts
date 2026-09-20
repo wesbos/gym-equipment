@@ -1,7 +1,7 @@
 import { wallPart, wallFace } from './wall-registry.ts';
-import { validateFloorParams as validateParams } from './floor-part.ts';
+import { resolveBy, validateFloorParams as validateParams } from './floor-part.ts';
 import { rackBounds } from './floor-items.ts';
-import { ROOM_DEFAULTS, isWallId, wallFrames, wallToFloor, type Room, type WallId } from './walls.ts';
+import { ROOM_DEFAULTS, isWallId, wallFrames, wallToFloor, type Room, type WallId, type WallOpening } from './walls.ts';
 import type { RackDoc, ResolvedInstance, Vec2, WallItem } from './types.ts';
 type Rect = { min: Vec2; max: Vec2 };
 const entry = (part: string) => { const found = wallPart(part); if (!found) throw Error('Unknown wall item.'); return found; };
@@ -24,6 +24,20 @@ export function resolveWallItems(items: WallItem[] = [], room: Room = ROOM_DEFAU
   const frames = wallFrames(room);
   return items.map(item => { const frame = frames[item.wall], [x, z] = wallToFloor(frame, item.position[0]);
     return { id:item.id, ownerId:item.id, part:item.part, params:{...item.params}, position:[x,-z,item.position[1]], rotation:[0,0,frame.rotation], kind:'wall-item', mount:null, mounts:[], connectedTo:[], paired:false, name:entry(item.part).name }; });
+}
+/** Openings cut into the wall finishes (#200) by wall items whose part declares `opening` (windows, doors), clipped to
+ * their wall. A decor part only needs `opening` in its wall-part spec: the scene cuts the hole, and the part (placed like
+ * any wall item: `wall` + `[u, height]` of its face centre, frame from wallFrames(room)[wall]) draws the frame and glass. */
+export function wallOpenings(doc: Pick<RackDoc, 'room' | 'wallItems'>): WallOpening[] {
+  const frames = wallFrames(roomOf(doc)), openings: WallOpening[] = [];
+  for (const item of doc.wallItems ?? []) {
+    const part = entry(item.part);
+    if (!part.opening) continue;
+    const { width, height } = part.opening === true ? wallFace(part, item.params) : resolveBy(part.opening, item.params), [u, h] = item.position, frame = frames[item.wall];
+    const min: Vec2 = [Math.max(-frame.length / 2, u - width / 2), Math.max(0, h - height / 2)], max: Vec2 = [Math.min(frame.length / 2, u + width / 2), Math.min(frame.height, h + height / 2)];
+    if (min[0] < max[0] && min[1] < max[1]) openings.push({ id: item.id, wall: item.wall, min, max });
+  }
+  return openings;
 }
 export function wallRect(item: Pick<WallItem, 'part' | 'params' | 'position'>): Rect {
   const { width, height } = wallFace(entry(item.part), item.params), [u, h] = item.position;

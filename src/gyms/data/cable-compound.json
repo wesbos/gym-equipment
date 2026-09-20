@@ -671,7 +671,14 @@
       "left": 1100,
       "right": 2300,
       "front": 4650,
-      "height": 3000
+      "height": 3000,
+      "walls": {
+        "finish": "drywall",
+        "color": "#ebe3cc"
+      },
+      "ceiling": {
+        "color": "#ecebe6"
+      }
     },
     "hangItems": [
       {

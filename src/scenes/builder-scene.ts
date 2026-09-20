@@ -7,9 +7,11 @@ import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { isFloorPart } from '../../rack-generator/floor-registry.ts';
 import { barSpec, freeCradles, parkedPose, parksInCradles, type BarCradle } from '../../rack-generator/barbell-cradles.ts';
 import { isWallPart, wallPart } from '../../rack-generator/wall-registry.ts';
-import { roomOf, wallWarnings } from '../../rack-generator/wall-items.ts';
+import { roomOf, wallOpenings, wallWarnings } from '../../rack-generator/wall-items.ts';
 import { wallFrames, wallHit, wallPlaneHit, type WallId } from '../../rack-generator/walls.ts';
 import { createGymWalls } from './gym-walls.ts';
+import { RoomMaterials, createRoomScenery } from './room-scenery.ts';
+import { resolveFinishes, roomLighting } from '../../rack-generator/room-finishes.ts';
 import { isHangPart } from '../../rack-generator/hang-registry.ts';
 import { freeSlots, hangWarnings, hookAnchor, type HangTarget } from '../../rack-generator/hang-items.ts';
 import { createGymFloor, fitRackShadow } from './gym-floor.ts';
@@ -127,15 +129,32 @@ export function createBuilderScene(
     root.addEventListener("childremoved", invalidate);
   }
   const floor = createGymFloor(renderer.capabilities.getMaxAnisotropy());
-  scene.add(floor.mesh);
+  scene.add(floor.mesh, floor.room);
   const backdrop = createGymBackdrop();
   scene.add(backdrop.group);
-  const walls = createGymWalls();
-  scene.add(walls.group);
-  walls.group.addEventListener("childadded", invalidate);
-  walls.group.addEventListener("childremoved", invalidate);
+  // Room finishes (#200): walls, ceiling and turf share long-lived materials; the floor swaps its own map.
+  const roomMaterials = new RoomMaterials(renderer.capabilities.getMaxAnisotropy());
+  const walls = createGymWalls(roomMaterials), roomScenery = createRoomScenery(roomMaterials);
+  scene.add(walls.group, roomScenery.group);
+  for (const group of [walls.group, ...roomScenery.group.children]) {
+    group.addEventListener("childadded", invalidate);
+    group.addEventListener("childremoved", invalidate);
+  }
   const placingWall = () => isWallPart(snapshot.placing?.part), placingHang = () => isHangPart(snapshot.placing?.part);
-  const updateWalls = () => walls.update(roomOf(snapshot.doc), !!snapshot.doc.wallItems?.length || placingWall() || placingHang());
+  let roomLights = '';
+  /** Walls, floor, ceiling, turf and the light balance for the room's finishes. Uniform and visibility changes only. */
+  const updateWalls = () => {
+    const room = roomOf(snapshot.doc), finish = resolveFinishes(room, room.height);
+    walls.update(room, finish.showWalls || !!snapshot.doc.wallItems?.length || placingWall() || placingHang(), wallOpenings(snapshot.doc));
+    if (floor.update(room, finish.floor)) invalidate();
+    roomScenery.update(room);
+    const light = roomLighting(room), key = JSON.stringify(light);
+    if (key === roomLights) return;
+    roomLights = key;
+    renderer.toneMappingExposure = light.exposure; scene.environmentIntensity = light.environment;
+    lighting.hemisphere.intensity = light.hemisphere; lighting.key.intensity = light.key; lighting.fill.intensity = light.fill;
+    invalidate();
+  };
   const raycaster = new THREE.Raycaster(),
     pointer = new THREE.Vector2(),
     instances = new Map<string, THREE.Group>();
@@ -859,6 +878,11 @@ export function createBuilderScene(
     const hit = raycaster.intersectObject(assemblyRoot, true)[0];
     let object: THREE.Object3D | null = hit?.object ?? null;
     while (object && !object.userData.ownerId) object = object.parent;
+    // A bare wall or the ceiling selects the room (#200): its finishes open in the inspector.
+    if (!object && !event.shiftKey && !event.metaKey && !event.ctrlKey && (walls.group.visible && wallHit(roomOf(snapshot.doc), raycaster.ray.origin.toArray(), raycaster.ray.direction.toArray()) || roomScenery.ceilingVisible && raycaster.ray.direction.y > 0)) {
+      store.openRoom();
+      return;
+    }
     store.select(
       typeof object?.userData.id === "string"
         ? object.userData.id
@@ -1016,6 +1040,7 @@ export function createBuilderScene(
     const focus = build ? build.animation.focus : controls.target;
     backdrop.follow(camera, focus);
     walls.follow(camera);
+    roomScenery.follow(camera);
     camera.far = Math.max(40000, camera.position.distanceTo(focus) * 4);
     camera.near = Math.max(
       0.5,
@@ -1029,10 +1054,11 @@ export function createBuilderScene(
     if (!prewarmed && instances.size) {
       // Once lights, fog and environment are final, link the variants the next interactions will need.
       prewarmed = true;
-      prewarmPrograms(renderer, camera, scene, finishes, { meshes: [overlay.ghost, overlay.cradle], instanced: [overlay.mount, overlay.hook], lines: [overlay.selection] }).then(release => {
+      const room = roomMaterials.standIns();
+      prewarmPrograms(renderer, camera, scene, finishes, { meshes: [overlay.ghost, overlay.cradle], instanced: [overlay.mount, overlay.hook], lines: [overlay.selection], scenery: room.materials }).then(release => {
         if (!disposed) pinPrograms(renderer, pinned);
-        release();
-      }, () => {});
+        release(); room.release();
+      }, () => room.release());
     }
     return again;
   }
@@ -1144,6 +1170,8 @@ export function createBuilderScene(
       floor.dispose();
       backdrop.dispose();
       walls.dispose();
+      roomScenery.dispose();
+      roomMaterials.dispose();
 
       finishes.dispose();
       lighting.dispose();

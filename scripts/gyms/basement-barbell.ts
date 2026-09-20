@@ -9,7 +9,8 @@ const ft = (f: number) => Math.round(f * 304.8);
 // Irwin Fitness Pro Series 6-post rack (white) → Rogue RM-6 Monster Rack 2.0: 3×3 uprights, 43″ deep + 24″ storage.
 let doc = rack('rogue-rm-monster-2-six-2295.525-1092.2', '#e9e9e6');
 // About 30' × 25' of basement; the rack's storage posts back onto the wall beside the door.
-doc = room(doc, { back: 1500, front: ft(25) - 1500, left: 1600, right: ft(30) - 1600, height: 2450 });
+// Finishes (#200): bare poured-concrete foundation walls (a light grey-beige paint) over grey-fleck rubber; open joists.
+doc = room(doc, { back: 1500, front: ft(25) - 1500, left: 1600, right: ft(30) - 1600, height: 2450, walls: { finish: 'drywall', color: '#c8c2b6' }, floor: 'grey-fleck' });
 
 // Rack: Irwin return roller J-cups, strap safeties, UDA, band pegs, landmine, a Voltra on its strap mount, Oak Club Iron,
 // and plate pins on the storage posts loaded with black urethane plates.

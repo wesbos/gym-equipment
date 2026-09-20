@@ -3,7 +3,7 @@
   "title": "Coop’s Basement Gym",
   "owner": "Coop · Garage Gym Reviews",
   "sourceUrl": "https://www.youtube.com/watch?v=QCfulhfSSNo",
-  "summary": "Coop’s brand-new ~1,300 sq ft basement gym from his Garage Gym Reviews build tour: a long, bright room with white walls over birch plywood, grey-fleck PLAE rubber and a turf sprint lane, a long silver-upright rig on the end wall, plate-loaded and cable machines down the window wall, and a storage cove of kettlebells and cable attachments. The rig is shown as an extended Rogue Monster 2.0; the turf lane, monkey bars and Lever Rack cabinets are not in the catalog.",
+  "summary": "Coop’s brand-new ~1,300 sq ft basement gym from his Garage Gym Reviews build tour: a long, bright room with white walls over birch plywood, grey-fleck PLAE rubber and a turf sprint lane, a long silver-upright rig on the end wall, plate-loaded and cable machines down the window wall, and a storage cove of kettlebells and cable attachments. The rig is shown as an extended Rogue Monster 2.0; the monkey bars and Lever Rack cabinets are not in the catalog.",
   "highlights": [
     "About 1,300 sq ft of finished basement",
     "Three-bay rig across the end wall",
@@ -24,8 +24,8 @@
     "PLAE 3×3 11-gauge storage rack full of colour-banded kettlebells (closest match: REP Kettlebell Rack 2.0 with REP kettlebells)",
     "OmniWall pegboard with cable attachments, bands, rings and straps (closest match: black Wall Control pegboard)",
     "Wall-hung rack attachment storage by the door (closest match: Rogue Multi-Use Hangers)",
-    "PLAE Achieve 18 mm grey-fleck rolled rubber and a PLAE turf sprint lane, white walls over a birch plywood wainscot (the builder shows its own black rubber floor and black slat walls; the turf and wall finish are not shown)",
-    "Not placed: Lever Rack (Levrack) storage cabinets and workbench, kids’ monkey-bar course and rings under the beam, Sorinex machine beside the kettlebells, hip thrust / plate-loaded machine and vertical knee raise on the window wall, H.E. Williams linear lights, Big Ass Fans, Sonos Five speakers, birch-clad beam and posts, and the desk in the bay-window cove"
+    "PLAE Achieve 18 mm grey-fleck rolled rubber and a PLAE turf sprint lane with hash marks and lettering, white walls over a birch plywood wainscot and a white ceiling with long linear lights (shown as the builder’s room finishes)",
+    "Not placed: Lever Rack (Levrack) storage cabinets and workbench, kids’ monkey-bar course and rings under the beam, Sorinex machine beside the kettlebells, hip thrust / plate-loaded machine and vertical knee raise on the window wall, Big Ass Fans, Sonos Five speakers, birch-clad beam and posts, and the desk in the bay-window cove"
   ],
   "doc": {
     "version": 2,
@@ -590,7 +590,40 @@
       "left": 4200,
       "right": 4300,
       "front": 12400,
-      "height": 2750
+      "height": 2750,
+      "walls": {
+        "finish": "wainscot",
+        "color": "#f2f1ec",
+        "wainscot": 1220,
+        "overrides": {
+          "front": {
+            "finish": "drywall",
+            "color": "#f2f1ec"
+          }
+        }
+      },
+      "floor": "grey-fleck",
+      "turf": [
+        {
+          "position": [
+            -2300,
+            6400
+          ],
+          "size": [
+            1850,
+            10000
+          ],
+          "lines": true,
+          "text": "PLAE"
+        }
+      ],
+      "ceiling": {
+        "color": "#f4f4f1",
+        "lights": {
+          "count": 4,
+          "along": "z"
+        }
+      }
     },
     "hangItems": [
       {

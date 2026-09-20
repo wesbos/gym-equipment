@@ -40,7 +40,7 @@
     "Everyday Essentials bumpers (closest match: REP black bumper plates)",
     "Titan and BalanceFrom plyo boxes (closest match: Titan 3-in-1 soft foam plyo box)",
     "DIY platform at the entry end; stall-mat zone around the rack",
-    "Green turf runner down the aisle, hex LED ceiling and wall mural (not modelled)"
+    "Green turf runner down the aisle and matte black walls and ceiling (shown as room finishes); hex LED ceiling lights and wall mural (not modelled)"
   ],
   "doc": {
     "version": 2,
@@ -520,7 +520,26 @@
       "left": 5400,
       "right": 7400,
       "front": 3360,
-      "height": 2400
+      "height": 2400,
+      "walls": {
+        "finish": "drywall",
+        "color": "#1e1e20"
+      },
+      "turf": [
+        {
+          "position": [
+            1200,
+            1750
+          ],
+          "size": [
+            8000,
+            1200
+          ]
+        }
+      ],
+      "ceiling": {
+        "color": "#1a1a1a"
+      }
     },
     "hangItems": [
       {

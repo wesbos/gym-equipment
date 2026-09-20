@@ -11,6 +11,8 @@ export interface PrewarmOverlays {
   instanced: THREE.Material[];
   /** Shared line materials (selection outline). */
   lines: THREE.Material[];
+  /** Room finish surfaces (#200) as [material, instanced], so switching walls, floor, turf or ceiling links nothing. */
+  scenery?: [THREE.Material, boolean][];
 }
 
 /**
@@ -24,7 +26,8 @@ export async function prewarmPrograms(renderer: THREE.WebGLRenderer, camera: THR
   const finish = [undefined, { frameFinish: 'stainless' as const }, { frameFinish: 'clear-grind' as const }].map(appearance => finishes.material({ role: 'frame' }, appearance));
   const owned: THREE.Material[] = [...finish, ...finish.map(m => pickup(m.clone()))];
   for (const material of [...owned, ...overlays.meshes]) warm.add(new THREE.Mesh(geometry, material));
-  const dots = overlays.instanced.map(material => new THREE.InstancedMesh(geometry, material, 1));
+  const dots = [...overlays.instanced, ...(overlays.scenery ?? []).filter(([, instanced]) => instanced).map(([m]) => m)].map(material => new THREE.InstancedMesh(geometry, material, 1));
+  for (const [material, instanced] of overlays.scenery ?? []) if (!instanced) warm.add(new THREE.Mesh(geometry, material));
   const box = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3(1, 1, 1));
   const lines = overlays.lines.map(material => {
     const helper = new THREE.Box3Helper(box);

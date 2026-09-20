@@ -21,7 +21,8 @@ const bay = (from: [string, string]) => {
 const bay1 = bay(['front-right', 'rear-right']);
 const bay2 = bay(bay1);
 // Three-car garage, about 30' × 22'; the rig runs along the back wall from the left third of the room.
-doc = room(doc, { back: 1000, front: ft(22) - 1000, left: 2500, right: ft(30) - 2500, height: 2900 });
+// Finishes (#200): off-white drywall over black rubber mats.
+doc = room(doc, { back: 1000, front: ft(22) - 1000, left: 2500, right: ft(30) - 2500, height: 2900, walls: { finish: 'drywall', color: '#efeae0' } });
 
 // Main bay: Griffin flat sandwich J-cups (REP flat sandwich), X-3 spotter arms (REP spotter arms), REP pull-up bar,
 // AML-2 monolift, Kleva Adroit landmine, REP leg roller, band pegs and loaded plate storage.

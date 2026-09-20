@@ -21,13 +21,16 @@ import type { WallId } from '../../rack-generator/walls.ts';
 // Room: rack wall = back wall. The fold-back rack's brackets sit ~533 mm behind the rack origin; the builder's
 // closest allowed back wall is 600 mm.
 const ROOM = { back: 600, front: 3360, left: 5400, right: 7400, height: 2400 };
+// Finishes (#200): matte black walls and ceiling, and the green turf runner down the aisle, from the entry-end platform
+// about two-thirds of the way to the mural (~1.2 × 8 m). The floor is black rubber (the default).
+const FINISHES = { walls: { finish: 'drywall' as const, color: '#1e1e20' }, ceiling: { color: '#1a1a1a' }, turf: [{ position: [1200, 1750] as Vec2, size: [8000, 1200] as Vec2 }] };
 const backWallZ = -ROOM.back, frontWallZ = ROOM.front;
 const midX = (ROOM.right - ROOM.left) / 2, midZ = (ROOM.front - ROOM.back) / 2;
 
 // Titan T-3 Series *folding* power rack → closest catalog match: Rogue RML-3W fold-back wall rack, 41.5″ deep
 // (same fold-back wall-mount layout, ~90″ tall, black; T-3 folding is 2×3 tubing, the RML-3W 3×3).
 let doc: RackDoc = applyPreset('rogue-rml-3w-wall-2295.525-1054.1');
-doc.room = ROOM;
+doc.room = { ...ROOM, ...FINISHES };
 
 const last = <T>(items: T[] | undefined) => items![items!.length - 1];
 const lastAccessory = () => last(doc.accessories).id;
@@ -172,7 +175,7 @@ writeGym({
     'Everyday Essentials bumpers (closest match: REP black bumper plates)',
     'Titan and BalanceFrom plyo boxes (closest match: Titan 3-in-1 soft foam plyo box)',
     'DIY platform at the entry end; stall-mat zone around the rack',
-    'Green turf runner down the aisle, hex LED ceiling and wall mural (not modelled)',
+    'Green turf runner down the aisle and matte black walls and ceiling (shown as room finishes); hex LED ceiling lights and wall mural (not modelled)',
   ],
   doc,
 });

@@ -97,7 +97,7 @@ floor('titan-rackable-strongman-log', 2800, 800); // Rogue 10" log (closest: Tit
 floor('rogue-cyclone-strongman-sandbag', 3700, -1000);
 floor('freedom-strength-strongman-sandbag', 3700, -300);
 floor('titan-circus-dumbbell', 4200, 250);
-// The turf sled lane along the right wall (the turf itself isn't in the catalog): yoke, farmers handles and sled.
+// The turf sled lane along the right wall (a room finish, below): yoke, farmers handles and sled.
 floor('titan-t3-series-yoke', 4600, -4000, Q);
 floor('titan-farmers-walk-handles', 5000, -1800, 0, {}, true);
 floor('rogue-dog-sled', 5200, 1300);
@@ -108,7 +108,9 @@ floor('assault-airbike-classic', 2900, 4300);
 floor('concept2-rowerg', 4300, 3700);
 
 // --- Walls: the Rogue 9-bar holder, and the white slatwall of belts and straps (closest: Wall Control) -----------------
-doc.room = { back: 5200, front: 5800, left: 4600, right: 6000, height: 3500 };
+// Finishes (#200): pale yellow spray-foam walls (as paint), black stall mats (the default floor), and the ~3.6 m wide
+// turf sled lane down the right wall to the end wall; open truss roof, so no ceiling.
+doc.room = { back: 5200, front: 5800, left: 4600, right: 6000, height: 3500, walls: { finish: 'drywall', color: '#e6d49a' }, turf: [{ position: [4150, -700], size: [3600, 8800] }] };
 const wall = (part: string, id: WallId, u: number, h: number, params: NumericParams = {}) => {
   doc = addWallItem(doc, part, { wall: id, position: [u, h] });
   Object.assign(doc.wallItems!.at(-1)!.params, params);
@@ -157,7 +159,7 @@ writeGym({
     'DIY plyo boxes (closest match: Rogue Games Box)',
     'Rogue 9-bar holder, Titan barbell storage holder and plate tree',
     'Menards slatwall with belts, straps and bands (closest match: white Wall Control pegboard)',
-    'Not placed: turf sled lane, Rogue Echo/Bella/Boneyard bars, specialty bars, grip tools, jerk blocks, Rogue peg board',
+    'Not placed: Rogue Echo/Bella/Boneyard bars, specialty bars, grip tools, jerk blocks, Rogue peg board',
   ],
   doc,
 });

@@ -5,6 +5,7 @@ import { isSystemPart } from '../../rack-generator/system-types.ts';
 import { FloorInspector } from '../components/FloorInspector.tsx';
 import { PlateStackEditor } from '../components/PlateStackEditor.tsx';
 import { WallInspector } from '../components/WallInspector.tsx';
+import { RoomInspector } from '../components/RoomInspector.tsx';
 import { wallWarnings } from '../../rack-generator/wall-items.ts';
 import { HangInspector } from '../components/HangInspector.tsx';
 import { hangWarnings } from '../../rack-generator/hang-items.ts';
@@ -104,10 +105,11 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
     </label>
   );
 }
-type InspectorRoute = { kind: "floor" | "wall" | "hang"; id: string } | { kind: "full" };
+type InspectorRoute = { kind: "floor" | "wall" | "hang"; id: string } | { kind: "full" | "room" };
 /** Which inspector the selection needs. Floor, wall and hang items get their own inspectors, which subscribe to their
  * item only, so dragging one does not re-render the generic inspector. */
 function inspectorRoute(s: BuilderSnapshot): InspectorRoute {
+  if (s.roomInspector) return { kind: "room" };
   if (s.structureChoice || s.selection.length > 1) return { kind: "full" };
   const ownerId = s.resolved.find(r => r.id === s.selected)?.ownerId || s.selected;
   const entry = s.doc.accessories.find(a => a.id === ownerId),
@@ -121,6 +123,7 @@ function inspectorRoute(s: BuilderSnapshot): InspectorRoute {
 function Inspector({ store }: { store: BuilderStore }) {
   const [snapHint, setSnapHint] = useState("");
   const route = useStoreSelector(store, inspectorRoute, shallowEqual);
+  if (route.kind === "room") return <RoomInspector store={store} />;
   if (route.kind === "floor") return <FloorInspector store={store} id={route.id} />;
   if (route.kind === "hang") return <HangInspector store={store} id={route.id} />;
   if (route.kind === "wall") return <WallInspector store={store} id={route.id} />;
@@ -502,6 +505,14 @@ const CatalogPanel = memo(function CatalogPanel({ store }: { store: BuilderStore
     </aside>
   );
 });
+function RoomButton({ store }: { store: BuilderStore }) {
+  const open = useStoreSelector(store, s => s.roomInspector);
+  return <button id="room-button" aria-pressed={open} title="Walls, floor, turf and ceiling" onClick={() => open ? store.select(null) : store.openRoom()}>Room</button>;
+}
+/** The rack's own appearance, logo and cable controls step aside while the room inspector is open. */
+function RackPanels({ children, store }: { children: ReactNode; store: BuilderStore }) {
+  return useStoreSelector(store, s => s.roomInspector) ? null : <>{children}</>;
+}
 function SelectToolButton({ store }: { store: BuilderStore }) {
   const selectionTool = useStoreSelector(store, s => s.selectionTool);
   return <button aria-pressed={selectionTool} onClick={() => store.patch({ selectionTool: !selectionTool })}>Select</button>;
@@ -730,6 +741,7 @@ export default function BuilderPage() {
           <div id="viewport" ref={viewport} />
           <div className="view-controls">
             <SelectToolButton store={store} />
+            <RoomButton store={store} />
             {(["iso", "front", "side", "top"] as const).map((mode) => (
               <button
                 key={mode}
@@ -770,9 +782,11 @@ export default function BuilderPage() {
             ← Rack settings
           </button>
           <SelectionCount store={store} />
-          <AppearanceControls store={store} />
-          <CableSmithControls store={store} />
-          <LogoControls store={store} />
+          <RackPanels store={store}>
+            <AppearanceControls store={store} />
+            <CableSmithControls store={store} />
+            <LogoControls store={store} />
+          </RackPanels>
           <SwapAccessory store={store} />
           <InspectorSlot store={store} />
           <Warnings store={store} />

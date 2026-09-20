@@ -463,7 +463,18 @@
       "left": 3048,
       "right": 3048,
       "front": 5196,
-      "height": 2750
+      "height": 2750,
+      "walls": {
+        "finish": "drywall",
+        "color": "#c5c8ca"
+      },
+      "ceiling": {
+        "color": "#e8e8e4",
+        "lights": {
+          "count": 4,
+          "along": "x"
+        }
+      }
     },
     "hangItems": [
       {

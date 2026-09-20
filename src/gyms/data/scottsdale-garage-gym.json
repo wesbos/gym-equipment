@@ -686,7 +686,11 @@
       "left": 2500,
       "right": 6644,
       "front": 5706,
-      "height": 2900
+      "height": 2900,
+      "walls": {
+        "finish": "drywall",
+        "color": "#efeae0"
+      }
     },
     "hangItems": [
       {
