@@ -14,8 +14,8 @@ export const runnerCurve = (s: number) => 1.4737e-4 * s * s - .3164 * s + 618.4;
 export function buildAssaultRunner(api: ManifoldAPI, elite: boolean): SolidPart[] {
   const env = elite ? ASSAULTRUNNER_ELITE : ASSAULTRUNNER_PRO, { L, W, H } = env, belt = env.belt[0];
   return withCardioKit(api, elite ? 'AssaultRunner Elite' : 'AssaultRunner Pro', L, K => {
-    const P = K.P, cover = elite ? finish('source', '#4b4e52', .35, .45) : finish('source', '#3b3d41', .15, .55), dark = finish('source', '#1a1b1d', .1, .6);
-    const post = elite ? finish('source', '#55585d', .55, .35) : finish('source', '#1c1d1f', .3, .45), red = finish('source', '#e2231a', .05, .45);
+    const P = K.P, cover = elite ? finish('source', '#5f6368', .35, .45) : finish('source', '#3b3d41', .15, .55), dark = finish('source', '#1a1b1d', .1, .6);
+    const post = elite ? finish('source', '#74787d', .6, .32) : finish('source', '#1c1d1f', .3, .45), red = finish('source', '#e2231a', .05, .45);
     // Banana side covers: top edge follows the running curve, rounded ends, flat-ish underside.
     // The slats ride just above the cover's top edge; both ends are rounded bumpers.
     const s0 = 150, s1 = L - 150, top: Vec2[] = [];

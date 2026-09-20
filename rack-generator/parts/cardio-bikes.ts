@@ -212,8 +212,8 @@ export function buildSunnyB1002(api: ManifoldAPI): SolidPart[] {
     K.add('Frame', frame, K.bar(dA, dB, 62, 112, 14));
     K.add('Frame', frame, K.bar(P(935, 270), P(1005, 705), 58, 76, 12));
     K.add('Frame', frame, K.bar(P(940, 300), P(L - 60, 62), 50, 70, 10));
-    sideWord(K, 'SUNNY', 44, dA, dB, .6, 1, 31, ['Frame lettering · red', red], 170);
-    sideWord(K, 'HEALTH & FITNESS', 22, dA, dB, .32, 1, 31, ['Frame lettering', F.white], 260);
+    sideWord(K, 'SUNNY', 44, dA, dB, .74, 1, 31, ['Frame lettering · red', red], 170);
+    sideWord(K, 'HEALTH & FITNESS', 22, dA, dB, .4, 1, 31, ['Frame lettering', F.white], 240);
     K.add('Chrome posts', F.chrome, K.bar(P(470, 820), P(492, 1062), 44, 44, 4));
     const fly = P(380, 320);
     K.add('Flywheel rim', F.chrome, K.hoop(fly, 'x', 450, 34, 64, 12));
@@ -222,7 +222,7 @@ export function buildSunnyB1002(api: ManifoldAPI): SolidPart[] {
     // Grey crank cover ("SUNNY BIKE") from the crank to the flywheel hub, pedals.
     const bb = P(906, 320);
     K.add('Crank cover', grey, K.hull([K.disc([56, bb[1], bb[2]], 'x', 290, 20, 40), K.disc([56, fly[1] + 60, fly[2]], 'x', 120, 20, 28)]));
-    const cw = K.word('SUNNY BIKE', 28, [66.2, (bb[1] + fly[1]) / 2 + 30, bb[2] + 95], [0, -1, 0], [0, 0, 1], 1, 190);
+    const cw = K.word('SUNNY BIKE', 28, [66.2, (bb[1] + fly[1]) / 2 + 30, bb[2] + 95], [0, 1, 0], [0, 0, 1], 1, 190);
     if (cw) K.add('Frame lettering', F.white, cw);
     crankset(K, 906, 320, 92, 40, F.plastic);
     // Seat post, slider, saddle; red pop pins and the resistance knob.
