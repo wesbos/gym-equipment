@@ -13,13 +13,15 @@ async function download(page: Page, name: string) {
   return { name: file.suggestedFilename(), bytes: await readFile((await file.path())!) };
 }
 
+const base = process.env.GYM_EXPORT_MENU_BASE_URL ?? 'http://127.0.0.1:5314';
+
 test('gym-wave2-export_menu: keyboard, memory, failures, cancellation and real downloads', async () => {
   test.setTimeout(180000);
   if (!process.env.GYM_EXPORT_CDP_URL) throw Error('Start agent-browser session gym-wave2-export_menu on :5314 and set GYM_EXPORT_CDP_URL to its CDP endpoint.');
   const browser = await chromium.connectOverCDP(process.env.GYM_EXPORT_CDP_URL);
-  const page = browser.contexts()[0].pages().find(p => p.url().includes(':5314/builder'))!;
+  const page = browser.contexts()[0].pages().find(p => p.url().startsWith(base))!;
   page.setDefaultTimeout(20000);
-  await page.goto('http://127.0.0.1:5314/builder');
+  await page.goto(base + '/builder');
   await page.evaluate(() => sessionStorage.removeItem('bos-strength-export-format'));
   await page.reload();
   await page.setViewportSize({ width: 1440, height: 1000 });

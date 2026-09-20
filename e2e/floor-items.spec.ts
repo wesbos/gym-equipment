@@ -3,11 +3,12 @@ import { test, expect, chromium } from '@playwright/test';
 import fs from 'node:fs/promises';
 
 test('gym-wave2-floor_items: ghost, plane drag, snap, rotate, Escape, undo, inspector, Save and GLB', async () => {
-  test.setTimeout(120000);
+  test.setTimeout(240000);
   if (!process.env.GYM_FLOOR_CDP_URL) throw Error('Use isolated gym-wave2-floor_items session, port 5316, and set GYM_FLOOR_CDP_URL.');
   const browser = await chromium.connectOverCDP(process.env.GYM_FLOOR_CDP_URL, {timeout:15000});
   try {
-  const page = browser.contexts()[0].pages().find(p => p.url().includes(':5316/builder'))!;
+  const base = process.env.GYM_FLOOR_BASE_URL ?? 'http://127.0.0.1:5316';
+  const page = browser.contexts()[0].pages().find(p => p.url().startsWith(base))!;
   await page.setViewportSize({width:1280,height:633});
   await page.evaluate(() => localStorage.removeItem('bos-strength-configurations-v1'));
   await page.reload();
@@ -17,7 +18,8 @@ test('gym-wave2-floor_items: ghost, plane drag, snap, rotate, Escape, undo, insp
     await expect(page.getByRole('button',{name:`Download ${format}`,exact:true})).toBeEnabled({timeout:30000});
   };
   const ready=async()=>{await chooseExport('GLB');await page.keyboard.press('Escape');};
-  const floor=()=>page.evaluate(()=>{const data=JSON.parse(localStorage.getItem('bos-strength-configurations-v1') ?? '{}');return (data.draft ?? data.configs?.find((c:{id:string})=>c.id===data.activeId)?.doc)?.floorItems ?? [];});
+  // The recovery draft is debounced (AUTOSAVE_DELAY_MS, then idle time): let a pending write land before reading it.
+  const floor=()=>page.evaluate(async()=>{await new Promise(r=>setTimeout(r,450));await new Promise(r=>requestIdleCallback(()=>r(null),{timeout:1000}));await new Promise(r=>setTimeout(r,0));const data=JSON.parse(localStorage.getItem('bos-strength-configurations-v1') ?? '{}');return (data.draft ?? data.configs?.find((c:{id:string})=>c.id===data.activeId)?.doc)?.floorItems ?? [];});
   await ready(); console.log('Rack ready');
   await page.getByRole('button',{name:/REP Nighthawk adjustable bench/}).click();
   await expect(page.getByRole('button',{name:'Place',exact:true})).toBeVisible();
