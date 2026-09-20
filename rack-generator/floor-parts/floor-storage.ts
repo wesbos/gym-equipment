@@ -288,7 +288,68 @@ export const REP_KETTLEBELL_RACK = defineFloorPart({
     'Published 51.41″ × 23.25″ × 30.84″ (two-tier) and 51.42″ × 23.25″ × 33.60″ (three-tier), 11 ga frame, flat shelves with moulded plastic liners, 1500 lb per shelf; shelf heights/depths, frame tube path and end caps estimated from product photos. Stored bells use the REP kettlebell body and handle layout in a low-poly form. Scenery only, excluded from print export.'),
 });
 
+// ── Yes4All Deluxe Vertical Barbell Holder (5 bars) ──────────────────────────────────────────────────
+/** Amazon B07WFB6Z93 (model RW6H): published 12″ × 12″ × 7.5″, 11.75″ box body 6.05″ to the top plate, 2″ (51 mm) liners, 5 bars.
+ * Quincunx hole pitch, liner flange, tube OD, logo cut and foot notch measured on the Amazon and Gym Radar owner photos. */
+export const YES4ALL_HOLDER = { side: inch(12), box: inch(11.75), top: inch(6.05), height: inch(7.5), sheet: 3, base: 3, lip: 15,
+  bore: 51, tube: 61, flange: 63, corner: 76, notch: [150, 9.5] as [number, number] } as const;
+/** Sleeve centres: the centre first, then the four corners of a 152 mm square. */
+export const yes4allSleeves = (): [number, number][] => { const c = YES4ALL_HOLDER.corner; return [[0, 0], [-c, -c], [c, -c], [-c, c], [c, c]]; };
+export const YES4ALL_BARBELL_HOLDER = defineFloorPart({
+  id: 'yes4all-vertical-barbell-holder', name: 'Yes4All Vertical Barbell Holder', title: 'Yes4All Vertical Barbell Storage Rack (5 bars)', noun: 'barbell holder', section: 'Floor storage',
+  description: `Yes4All Deluxe Vertical Barbell Holder: a 12″ square, 7.5″ tall black steel box (top plate and two side walls with the cut-out Yes4All logo, open ends over a lipped base tray) with five welded tubes and 2″ plastic liners in a quincunx for Olympic bars. Show stored bars standing in it. ${tail('Yes4All')}`,
+  params: [{ key: 'loaded', label: 'Stored barbells', default: 0, options: range(5), format: count('bar') }],
+  footprint: { width: YES4ALL_HOLDER.side, depth: YES4ALL_HOLDER.side },
+  placement: { side: 'right', gap: 300 },
+  vendor: credit('Yes4All', 'https://www.amazon.com/dp/B07WFB6Z93', 'Deluxe Vertical Barbell Holder, 5 bars (RW6H)', 'Yes4All is a trademark of Yes4All.',
+    'Published 12″ × 12″ × 7.5″ overall, 11.75″ box body 6.05″ to the top plate, 2″ liners, five bars, heavy-gauge steel (Amazon listing and dimension image). Estimated from the Amazon and Gym Radar owner photos: 152 mm corner pitch, 61 mm tubes, 63 mm liner flange, 15 mm tray lips, 150 × 9.5 mm foot notch and the logo cut (typeset, not the logo artwork). Scenery only, excluded from print export.'),
+});
+
+// ── CAP Barbell A-Frame Olympic Plate Rack (RK-2A 7-post, RK-2BB 5-post) ─────────────────────────────
+export interface AFramePeg { x: 1 | -1; z: number; root: number; tip: number }
+export interface AFrameSpec {
+  name: string; height: number; width: number; depth: number;
+  /** Foot tube section (x wide × z tall) and its centreline x; leg section (x × y) from the bottom centreline x/z to the apex. */
+  foot: [number, number]; footX: number; leg: [number, number]; legBottom: [number, number]; apex: [number, number];
+  /** Base crossmember section (y deep × z tall) and its underside height; optional welded mid crossbar height. */
+  cross: [number, number]; crossZ: number; mid?: number;
+  pegs: AFramePeg[]; posts: { z: number; h: number }[]; pegD: number;
+  /** Plates per peg tier for the loaded views, heaviest low. */ loads: { z: number; plate: PlateId }[]; postPlate?: PlateId;
+  ribbedCaps: boolean;
+}
+/** RK-2A: 22″ D × 19″ W × 37″ H welded A-frame, mid crossbar, five side pegs (3 right, 2 left) and two vertical posts (Amazon B0013SZC8S, CAP gallery). */
+export const CAP_RK2A: AFrameSpec = {
+  name: 'RK-2A · 7 posts, 37″', height: inch(37), width: inch(19), depth: inch(22), foot: [40, 45], footX: inch(19) / 2 - 20, leg: [25, 50], legBottom: [200, 45], apex: [0, inch(37)],
+  cross: [50, 25], crossZ: 12, mid: 470, pegD: 48,
+  pegs: [{ x: 1, z: 880, root: 0, tip: inch(19) / 2 }, { x: 1, z: 675, root: 0, tip: inch(19) / 2 }, { x: 1, z: 415, root: 0, tip: inch(19) / 2 }, { x: -1, z: 845, root: 0, tip: inch(19) / 2 }, { x: -1, z: 495, root: 0, tip: inch(19) / 2 }],
+  posts: [{ z: 37, h: 100 }, { z: 482, h: 90 }],
+  loads: [{ z: 600, plate: 'lb45' }, { z: 780, plate: 'lb35' }, { z: 2000, plate: 'lb25' }], postPlate: 'lb10', ribbedCaps: true,
+};
+/** RK-2BB: 12″ D × 19.9″ W × 30″ H bolt-together A-frame of 25 × 50 mm tube, four 4″ side pegs and a 4″ centre post (CAP manual + Amazon B00ZEYG9WK). */
+export const CAP_RK2BB: AFrameSpec = {
+  name: 'RK-2BB · 5 posts, 30″', height: inch(30), width: 505.5, depth: inch(12), foot: [50, 25], footX: 505.5 / 2 - 25, leg: [25, 50], legBottom: [171, 50], apex: [14, inch(30) - 17],
+  cross: [50, 25], crossZ: 25, pegD: 48,
+  pegs: [{ x: 1, z: 698, root: 49, tip: 159 }, { x: -1, z: 698, root: 49, tip: 159 }, { x: 1, z: 292, root: 138, tip: 240 }, { x: -1, z: 292, root: 138, tip: 240 }],
+  posts: [{ z: 50, h: inch(4) }],
+  loads: [{ z: 400, plate: 'lb25' }, { z: 2000, plate: 'lb10' }], postPlate: 'lb10', ribbedCaps: false,
+};
+export const CAP_AFRAMES = [CAP_RK2A, CAP_RK2BB] as const;
+export const capAFrame = (p: NumericParams) => { const s = CAP_AFRAMES[p.model]; if (!s) throw Error('Unsupported plate rack model.'); return s; };
+/** Leg centreline x at height z. */
+export const aFrameLegX = (s: AFrameSpec, z: number) => s.legBottom[0] + (s.apex[0] - s.legBottom[0]) * (z - s.legBottom[1]) / (s.apex[1] - s.legBottom[1]);
+/** Peg root: RK-2A pegs start at the leg's outer face; the RK-2BB saddles set their own published root. */
+export const aFramePegRoot = (s: AFrameSpec, peg: AFramePeg) => peg.root || aFrameLegX(s, peg.z) + s.leg[0] / 2;
+export const CAP_A_FRAME_PLATE_RACK = defineFloorPart({
+  id: 'cap-a-frame-olympic-plate-rack', name: 'CAP A-Frame Plate Rack', title: 'CAP Barbell A-Frame Olympic Plate Rack', noun: 'plate rack', section: 'Floor storage',
+  description: `CAP Barbell A-frame Olympic plate storage rack: black powder-coated steel A-frame on two foot tubes with 2″ plate pegs out to each side and vertical centre posts — the welded 7-post RK-2A (37″) or the bolt-together 5-post RK-2BB (30″). Show iron plates on the pegs. ${tail('CAP Barbell')}`,
+  params: [enumParam('model', 'Model', CAP_AFRAMES.map(s => s.name)), loadParam('Plates')],
+  footprint: p => ({ width: capAFrame(p).width, depth: capAFrame(p).depth }),
+  placement: { side: 'left', gap: 400 },
+  vendor: credit('CAP Barbell', 'https://www.capbarbell.com/products/cap-a-style-olympic-plate-storage-rack', 'A-Frame Olympic Plate Storage Rack (RK-2A 7-post, RK-2BB 5-post)', 'CAP and CAP Barbell are trademarks of CAP Barbell.',
+    'Published: RK-2BB 30″ H × 19.9″ W × 12″ D with 4″ side pegs and a 4″ centre post, 25 × 50 mm tubes, five 2″ pegs, M10 bolts, 13.9 lb (Amazon dimension image, CAP assembly manual); RK-2A 37″ H × 19″ W × 22″ D, 500 lb (Amazon). Estimated from CAP / Amazon front elevations and Gym Radar owner photos: leg rake and apex, peg heights and saddles, foot sections, the RK-2A mid crossbar and ribbed foot caps. Scenery only, excluded from print export.'),
+});
+
 export const PARTS = [
   ROGUE_PLATE_TREE, TITAN_BARBELL_HOLDER, REP_DUMBBELL_RACK, TITAN_PLATE_TREE, REP_PLATE_TREE, REP_DUMBBELL_CART, TITAN_DUMBBELL_STAND,
-  REP_KETTLEBELL_RACK, ROGUE_DUMBBELL_RACK,
+  REP_KETTLEBELL_RACK, ROGUE_DUMBBELL_RACK, YES4ALL_BARBELL_HOLDER, CAP_A_FRAME_PLATE_RACK,
 ] as const;

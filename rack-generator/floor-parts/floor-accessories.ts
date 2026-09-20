@@ -146,6 +146,26 @@ export const ROGUE_OLY_PLATFORM = defineFloorPart({
     "Independent Manifold reconstruction. Published: 8'×8' inside, 8'4\" outside, 2\"×2\" 11-gauge frame, 24\"×24\"×1.5\" tiles (16, or 8 with a 4'×8' wood centre). Estimated: 3\" corner-block radius, bolt and anchor-tab positions, wood colour. The rail wordmark and wood stencil are plain plates. Scenery only, excluded from print export."),
 });
 
+/** Beyond Power Travel VOLTRA Platform: published 700 × 390 × 22 mm maple board, 6.2 kg. Everything else is measured on the
+ * Beyond Power renders, the help-centre dock video and owner photos against that outline (research/floor-accessories.md).
+ * Front (-Y) is the handle-slot edge; the dock sits centred along the length, 145 mm in from the rear edge. */
+export const VOLTRA_PLATFORM = {
+  length: 700, width: 390, board: 22, pad: 2.5, tape: .8, tapeInset: 5, corner: 28, edge: 4,
+  slot: { w: 95, h: 50, inset: 20 }, dock: { d: 90, bore: 76, rise: 22, fromRear: 145, bolts: 78, counterbore: 98 },
+  strips: { l: 240, w: 60, x: 190, y: 120 }, centrePad: [95, 110] as const,
+  /** VOLTRA I envelope (docs/vendor/voltra.md): 323 × 139 × 100 mm. */
+  voltra: { length: 323, width: 139, height: 100 },
+} as const;
+export const voltraDockY = () => VOLTRA_PLATFORM.width / 2 - VOLTRA_PLATFORM.dock.fromRear;
+export const BEYOND_POWER_TRAVEL_PLATFORM = defineFloorPart({
+  id: 'beyond-power-travel-voltra-platform', name: 'Travel VOLTRA Platform', title: 'Beyond Power Travel VOLTRA Platform', noun: 'platform', section: 'Accessories',
+  description: 'Beyond Power Travel Platform for VOLTRA I: a 700 × 390 × 22 mm laminated maple board with black grip tape printed with a white half-court, a stainless dock the VOLTRA clicks into, a carry slot on the front edge and rubber pads underneath; optionally shown with a VOLTRA I docked. Independent reconstruction from published dimensions; Beyond Power and VOLTRA trademarks belong to Beyond Power.',
+  params: [{ key: 'voltra', label: 'VOLTRA I', default: 0, options: [0, 1], format: named(['Empty dock', 'VOLTRA I docked']) }],
+  footprint: { width: VOLTRA_PLATFORM.length, depth: VOLTRA_PLATFORM.width }, placement: { side: 'front', gap: 300 },
+  vendor: vendorOf('Beyond Power', 'https://www.beyond-power.com/products/travel-platform', 'Beyond Power — Travel Platform (VOLTRA I), SKU 1.02.001.0022', 'Beyond Power and VOLTRA are trademarks of Beyond Power.',
+    'Independent Manifold reconstruction. Published: 700 × 390 × 22 mm (27.6 × 15.4 × 0.87 in), maple wood, 6.2 kg, VOLTRA I aligned on the silver mounting circle, dock held by 8 screws under a rubber pad. Estimated from the Beyond Power renders, help-centre video and owner photos scaled to that outline: 90 mm dock 145 mm from the rear edge, 95 × 50 mm carry slot, 28 mm corners, grip-tape inset, court-line layout, four 240 × 60 mm rubber strips and the centre pad. The Beyond Power wordmark is typeset; the docked VOLTRA I is a simplified 323 × 139 × 100 mm body. Scenery only, excluded from print export.'),
+});
+
 // ── Foam rollers ────────────────────────────────────────────────────────────────────────────────
 /** TriggerPoint GRID 1.0: 13" × 5.5" EVA over a hollow core. Zone lengths (ribs / flat "palm" bands) measured on the studio photo. */
 export const GRID = { length: inch(13), diameter: inch(5.5), core: 102, bore: 95 } as const;
@@ -271,5 +291,5 @@ export const U4C_CALF_CURVE = defineFloorPart({
 export const PARTS = [
   TSC_STALL_MAT, MASSENOMICS_GRIPPER, ABMAT_HIP_THRUST_PAD, ABMAT, ABMAT_BARBELL_PILLOWS, REP_GENESIS_JACK, BENCH_BLOKZ_ENTRY, DIY_LIFTING_PLATFORM,
   TRIGGERPOINT_GRID, RITFIT_DEADLIFT_JACK, REP_CORK_SQUAT_WEDGE, TITAN_SQUAT_WEDGE, AMAZON_BASICS_ROLLER, U4C_CALF_CURVE, ROGUE_MEDICINE_BALL, ROGUE_ECHO_SLAM_BALL,
-  DYNAMAX_MEDICINE_BALL, ROGUE_OLY_PLATFORM,
+  DYNAMAX_MEDICINE_BALL, ROGUE_OLY_PLATFORM, BEYOND_POWER_TRAVEL_PLATFORM,
 ] as const satisfies readonly FloorPart[];

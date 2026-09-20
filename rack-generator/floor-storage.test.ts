@@ -5,6 +5,7 @@ import {
  PARTS, IN, ROGUE_PLATE_TREE, REP_PLATE_TREE, TITAN_PLATE_TREE, TITAN_BARBELL_HOLDER, REP_DUMBBELL_RACK, ROGUE_DUMBBELL_RACK, REP_DUMBBELL_CART,
  TITAN_DUMBBELL_STAND, REP_KETTLEBELL_RACK, rogueTreeSpec, REP_TREE, TITAN_TREE, treeBox, hornLoad, titanHolderSleeves, TITAN_HOLDER,
  repRackLayout, rogueRackWeights, REP_DB_RACK, REP_KB_RACKS, REP_KB, packBells, repKbLoad, titanStandPegLoad, TITAN_STAND, REP_CART, repCartBox,
+ YES4ALL_BARBELL_HOLDER, YES4ALL_HOLDER, yes4allSleeves, CAP_A_FRAME_PLATE_RACK, CAP_RK2A, CAP_RK2BB, aFramePegRoot,
 } from './floor-parts/floor-storage.ts';
 import {definitions} from './parts/floor-storage.ts';
 import {floorPart, FLOOR_PART_IDS} from './floor-registry.ts';
@@ -29,8 +30,8 @@ function combos(part:(typeof PARTS)[number]){
  const max={...part.defaults};for(const p of part.params){const o=floorOptions(p,max);max[p.key]=o.at(-1)!;}out.push(max);
  return out;
 }
-test('nine floor-storage products are registered under Floor storage with vendor credit',()=>{
- assert.equal(PARTS.length,9);
+test('eleven floor-storage products are registered under Floor storage with vendor credit',()=>{
+ assert.equal(PARTS.length,11);
  for(const part of PARTS){
   assert.equal(part.section,'Floor storage');assert.ok(FLOOR_PART_IDS.includes(part.id as never));assert.equal(floorPart(part.id),part);
   const def=definitions.find(d=>d.id===part.id)!;assert.ok(def,`${part.id} has a builder`);assert.equal(def.name,part.title);assert.equal(def.category,'Floor storage');
@@ -41,7 +42,7 @@ test('nine floor-storage products are registered under Floor storage with vendor
   assert.throws(()=>validateFloorParams(part,{bogus:1}));
   for(const p of part.params)assert.throws(()=>validateFloorParams(part,{[p.key]:-7.5}),`${part.id} rejects junk ${p.key}`);
  }
- assert.equal(new Set(PARTS.map(p=>p.id)).size,9);
+ assert.equal(new Set(PARTS.map(p=>p.id)).size,11);
 });
 test('every param extreme builds valid closed solids on the floor, inside the footprint, frame matching it',()=>{
  for(const part of PARTS)for(const params of combos(part)){
@@ -120,4 +121,23 @@ test('REP Kettlebell Rack 2.0: published heights, both sets fit, heaviest bells 
    for(const [i,a] of s.entries())for(const c of s.slice(i+1))if(a.tier===c.tier){const ra=repBell(0,a.kg).layout.R,rc=repBell(0,c.kg).layout.R;assert.ok(Math.hypot(a.x-c.x,a.y-c.y)>=ra+rc,`${a.kg}/${c.kg} bodies clear`);}
   }
  }
+});
+test('Yes4All vertical barbell holder: 12″ × 12″ × 7.5″, 6.05″ box, five 2″ liners in a quincunx, stored bars on the tray',()=>{
+ const parts=build(YES4ALL_BARBELL_HOLDER.id,{loaded:0}),b=bounds(parts);
+ near(b.max[0]-b.min[0],12*IN,.5,'12″ wide');near(b.max[1]-b.min[1],12*IN,.5,'12″ deep');near(b.max[2],7.5*IN,.5,'7.5″ to the liner tops');
+ const steel=bounds(parts,p=>/powder-coated/.test(p.name));near(steel.max[2],6.05*IN,.5,'6.05″ box');free(parts);
+ const s=yes4allSleeves();assert.equal(s.length,5);assert.deepEqual(s[0],[0,0]);near(Math.abs(s[1][0]-s[2][0]),152,.5,'6″ corner pitch');near(YES4ALL_HOLDER.bore,2*IN,.5,'2″ liner bore');
+ const full=build(YES4ALL_BARBELL_HOLDER.id,{loaded:5}),bars=bounds(full,p=>/bar sleeves|end caps/.test(p.name));near(bars.min[2],YES4ALL_HOLDER.base,1,'bars stand on the tray');assert.ok(bars.max[2]>2200);free(full);
+});
+test('CAP A-frame plate racks: RK-2A 37″ × 19″ × 22″ with seven posts, RK-2BB 30″ × 19.9″ × 12″ with 4″ pegs, plates stay clear of each other',()=>{
+ for(const [model,s] of [CAP_RK2A,CAP_RK2BB].entries()){
+  const parts=build(CAP_A_FRAME_PLATE_RACK.id,{model,loaded:0}),b=bounds(parts);
+  near(b.max[2],s.height,1,`${s.name} height`);near(b.max[0]-b.min[0],s.width,1,`${s.name} width`);near(b.max[1]-b.min[1],s.depth,1,`${s.name} depth`);free(parts);
+  assert.equal(s.pegs.length+s.posts.length,model?5:7,'post count');
+  const full=build(CAP_A_FRAME_PLATE_RACK.id,{model,loaded:2}),plates=full.filter(p=>/Stored plates/.test(p.name));assert.ok(plates.length,'plates loaded');
+  const u=api.Manifold.union(plates.map(p=>p.solid)),v=plates.reduce((a,p)=>a+p.solid.volume(),0);near(u.volume(),v,v*1e-3,`${s.name} plates do not intersect`);u.delete();free(full);
+ }
+ // RK-2BB: 4″ usable side pegs (saddle root to tip) and a 4″ centre post.
+ for(const peg of CAP_RK2BB.pegs)near(peg.tip-aFramePegRoot(CAP_RK2BB,peg),4*IN,10,'4″ peg');
+ near(CAP_RK2BB.posts[0].h,4*IN,.01,'4″ centre post');
 });

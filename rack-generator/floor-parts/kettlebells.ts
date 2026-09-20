@@ -234,6 +234,12 @@ export const ONNIT_FACE_REACH = 1.1;
 /** Head envelope (mm) and handle layout for a Primal Bell; the handle roots into the crown of the head. */
 export function onnitLayout(animal: number) {
   const a = ONNIT_ANIMALS[animal]; if (!a) throw Error('Unsupported kettlebell animal.');
+  return { animal: a, ...sculptedLayout(a) };
+}
+/** A sculpted-head bell: overall height, handle outer width, grip diameter and head (width, depth, height) as shares of the height. */
+export interface SculptedBell { height: number; width: number; grip: number; head: readonly [number, number, number] }
+/** Head envelope (mm) and handle layout for a sculpted-head bell; the handle roots into the crown of the head. */
+export function sculptedLayout(a: SculptedBell) {
   const [hw, hd, hh] = a.head.map(v => v * a.height);
   // Virtual crown sphere for the horn roots: radius ~ half the skull height, centred at 55% of the head height.
   const crown = { R: hh * .46, zc: hh * .54 };
@@ -241,7 +247,29 @@ export function onnitLayout(animal: number) {
   const shift = crown.zc - bellLayout(shape).zc;
   const layout = bellLayout({ ...shape, height: a.height - shift });
   const tubeX = Math.max(...layout.path.map(p => p.x + p.r)), tubeY = Math.max(...layout.path.map(p => p.r));
-  return { animal: a, hw, hd, hh, crown, layout, shift, halfWidth: Math.max(tubeX, hw / 2), halfDepth: Math.max(tubeY, hd / 2) };
+  return { hw, hd, hh, crown, layout, shift, halfWidth: Math.max(tubeX, hw / 2), halfDepth: Math.max(tubeY, hd / 2) };
+}
+/** Footprint of a sculpted bell whose face (nose, brow) reaches `reach` × the half depth forward of the skull. */
+export const sculptedFootprint = (o: ReturnType<typeof sculptedLayout>, reach = ONNIT_FACE_REACH) => {
+  const front = Math.max(o.halfDepth, o.hd / 2 * reach), back = o.halfDepth; return { width: 2 * o.halfWidth, depth: front + back, offset: [0, (back - front) / 2] as [number, number] };
+};
+
+// ---------- Onnit Zombie Bells (2013 limited edition) ----------
+/** No dimensions were ever published. Relative sizes are measured on Onnit's same-distance studio lineup (uncrate / Gym Radar
+ * copies): overall heights 1 : 0.91 : 0.82 : 0.72 (72 → 18 lb), handle width ≈ constant (the "enlarged handles"), head width with
+ * ears 0.98 / 0.87 / 0.80 / 0.76 of the handle width (widened ~6 % in review so the cheeks and jaw fill the face as in the photos), head 63 / 65 / 60 / 55 % of the height. Absolute scale: the 2-pood
+ * Mega Dead is taken at the 14.5" of Onnit's 2-pood Primal Gorilla; grips 35–40 mm from the handle-leg widths. Depth ≈ 0.95 ×
+ * head height (Onnit side view). `reach`: how far the face comes forward of the skull, as a share of the half depth (the brow and
+ * teeth on the skull-nosed heads, the fleshy nose on the Mega Dead and Brain Goblin). */
+export const ZOMBIE_HEADS = [
+  { name: 'Brain Goblin', lb: 18, height: 266, width: 202, grip: 35, head: [.62, .52, .55], reach: 1.18 },
+  { name: 'Staple Head', lb: 36, height: 303, width: 227, grip: 38, head: [.64, .57, .6], reach: 1 },
+  { name: 'Ghostface Thrilla', lb: 54, height: 335, width: 231, grip: 40, head: [.64, .62, .65], reach: 1 },
+  { name: 'Mega Dead', lb: 72, height: inch(14.5), width: 228, grip: 40, head: [.64, .6, .63], reach: 1.18 },
+] as const;
+export function zombieLayout(head: number) {
+  const z = ZOMBIE_HEADS[head]; if (!z) throw Error('Unsupported kettlebell head.');
+  return { zombie: z, ...sculptedLayout(z) };
 }
 
 // ---------- Competition bells (constant size, colour by weight) ----------
@@ -380,8 +408,15 @@ export const ONNIT_PRIMAL_KETTLEBELL = defineFloorPart({
   ...common, id: 'onnit-primal-kettlebell', name: 'Onnit Primal Bell', title: 'Onnit Primal Kettlebells',
   description: 'Onnit Primal Bell cast iron kettlebells with sculpted primate heads: Howler 18 lb, Chimp 36 lb, Orangutan 54 lb, Gorilla 72 lb, Bigfoot 90 lb (discontinued). Independent reconstruction; Onnit trademarks belong to Onnit.',
   params: [{ key: 'animal', label: 'Bell', default: 1, options: ONNIT_ANIMALS.map((_, i) => i), format: v => ONNIT_ANIMALS[v] ? `${ONNIT_ANIMALS[v].name} · ${ONNIT_ANIMALS[v].lb} lb` : String(v) }],
-  footprint: p => { const o = onnitLayout(p.animal), front = Math.max(o.halfDepth, o.hd / 2 * ONNIT_FACE_REACH), back = o.halfDepth; return { width: 2 * o.halfWidth, depth: front + back, offset: [0, (back - front) / 2] }; },
+  footprint: p => sculptedFootprint(onnitLayout(p.animal)),
   vendor: { vendor: 'Onnit', url: 'https://www.onnit.com/primal-bells/', credit: 'Onnit — Primal Bells (Howler, Chimp, Orangutan, Gorilla, Bigfoot)', trademark: 'Onnit and Primal Bell are trademarks of Onnit Labs.', reconstruction: 'Weights published; heights from retailer listings (Gorilla 14.5", Chimp ~10.5") and product-photo proportions, others estimated. Heads sculpted from smooth-blended primitives after the product photos, not scanned; scenery only.' },
+});
+export const ONNIT_ZOMBIE_KETTLEBELL = defineFloorPart({
+  ...common, id: 'onnit-zombie-kettlebell', name: 'Onnit Zombie Bell', title: 'Onnit Zombie Kettlebells',
+  description: 'Onnit Zombie Bells, the 2013 limited-edition cast iron kettlebells with hand-sculpted undead human heads and enlarged handles: Brain Goblin 18 lb, Staple Head 36 lb, Ghostface Thrilla 54 lb, Mega Dead 72 lb (discontinued). Independent reconstruction; Onnit trademarks belong to Onnit.',
+  params: [{ key: 'head', label: 'Bell', default: 1, options: ZOMBIE_HEADS.map((_, i) => i), format: v => ZOMBIE_HEADS[v] ? `${ZOMBIE_HEADS[v].name} · ${ZOMBIE_HEADS[v].lb} lb` : String(v) }],
+  footprint: p => { const o = zombieLayout(p.head); return sculptedFootprint(o, o.zombie.reach); },
+  vendor: { vendor: 'Onnit', url: 'https://www.onnit.com/zombie-bells/', credit: 'Onnit — Zombie Bells (Brain Goblin, Staple Head, Ghostface Thrilla, Mega Dead)', trademark: 'Onnit and Zombie Bells are trademarks of Onnit Labs.', reconstruction: 'Weights, names and the enlarged handles published (archived onnit.com/zombie-bells, 2013–2025). No dimensions were published: relative sizes are measured on Onnit\'s same-distance studio lineup and the Mega Dead is scaled to the 14.5" of Onnit\'s 2-pood Primal Gorilla, with depth from the side view. Heads are sculpted from smooth-blended primitives after the Onnit photos, not scanned; scenery only.' },
 });
 export const KBK_COMPETITION_KETTLEBELL = defineFloorPart({
   ...common, id: 'kettlebell-kings-competition-kettlebell', name: 'Kettlebell Kings Competition Kettlebell', title: 'Kettlebell Kings Competition Kettlebell',
@@ -447,6 +482,6 @@ export const LB_KG = LB;
 export const PARTS = [
   ROGUE_KETTLEBELL, REP_KETTLEBELL, ROGUE_USA_KETTLEBELL, CAP_KETTLEBELL, IRONMASTER_KETTLEBELL, FREAK_KETTLEBELL, REP_ADJUSTABLE_KETTLEBELL,
   YES4ALL_KETTLEBELL, BOS_ADJUSTABLE_KETTLEBELL, ONNIT_PRIMAL_KETTLEBELL, BOWFLEX_840_KETTLEBELL, KBK_COMPETITION_KETTLEBELL,
-  FRINGE_PRIME_KETTLEBELL, FRINGE_SAVAGE_KETTLEBELL, TITAN_CAST_KETTLEBELL, TITAN_COMPETITION_KETTLEBELL,
+  FRINGE_PRIME_KETTLEBELL, FRINGE_SAVAGE_KETTLEBELL, TITAN_CAST_KETTLEBELL, TITAN_COMPETITION_KETTLEBELL, ONNIT_ZOMBIE_KETTLEBELL,
 ] as const;
 export type KettlebellParams = NumericParams;

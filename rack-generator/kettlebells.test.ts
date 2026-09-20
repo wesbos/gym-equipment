@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import Module from 'manifold-3d';
 import {
   PARTS, BOS, BOS_ADJUSTABLE_KETTLEBELL, BOWFLEX_840, FREAK, FREAK_KETTLEBELL, IRONMASTER, IRONMASTER_KETTLEBELL, KBK_COMPETITION_KETTLEBELL, ONNIT_ANIMALS,
-  ONNIT_PRIMAL_KETTLEBELL, REP_ADJUSTABLE_KETTLEBELL, REP_KETTLEBELL, ROGUE_CHART, ROGUE_KETTLEBELL, ROGUE_USA_KETTLEBELL, TITAN_CAST_KETTLEBELL, TITAN_COMPETITION_KETTLEBELL,
+  ONNIT_PRIMAL_KETTLEBELL, ONNIT_ZOMBIE_KETTLEBELL, ZOMBIE_HEADS, REP_ADJUSTABLE_KETTLEBELL, REP_KETTLEBELL, ROGUE_CHART, ROGUE_KETTLEBELL, ROGUE_USA_KETTLEBELL, TITAN_CAST_KETTLEBELL, TITAN_COMPETITION_KETTLEBELL,
   TITAN_LB_CHART, YES4ALL_CHART, YES4ALL_KETTLEBELL, bellLayout, bosWeights, freakPinZ, ironmasterStack, ironmasterWeights, kbkBell, repAdjSpares, rogueBell, titanCastBell, titanCompBell, yes4allBell,
 } from './floor-parts/kettlebells.ts';
 import { definitions } from './parts/kettlebells.ts';
@@ -31,13 +31,13 @@ function variants(part: FloorPart) {
 }
 
 test('every kettlebell builds closed solids inside its footprint for defaults and param extremes', () => {
-  assert.equal(PARTS.length, 16);
+  assert.equal(PARTS.length, 17);
   for (const part of PARTS) for (const params of variants(part)) {
     const parts = build(part, params), label = `${part.id} ${JSON.stringify(params)}`;
     for (const p of parts) { assert.ok(!p.solid.isEmpty() && p.solid.status() === 'NoError' && p.solid.volume() > 0, `${label} ${p.name}`); assert.notEqual(p.role, 'frame', 'factory colours'); }
     const b = box(parts)!, fp = resolveBy(part.footprint, params), [ox, oy] = fp.offset ?? [0, 0];
     // Sphere and handle extremes are exact vertices; the SDF-sculpted Onnit heads are meshed to ~3 mm.
-    const tol = part === ONNIT_PRIMAL_KETTLEBELL ? 3.5 : 1.2;
+    const tol = part === ONNIT_PRIMAL_KETTLEBELL || part === ONNIT_ZOMBIE_KETTLEBELL ? 3.5 : 1.2;
     assert.ok(b.min[2] >= -1e-6, `${label} on the floor`);
     assert.ok(Math.abs(b.max[0] - b.min[0] - fp.width) < tol && Math.abs(b.max[1] - b.min[1] - fp.depth) < tol, `${label} footprint ${(b.max[0] - b.min[0]).toFixed(1)}×${(b.max[1] - b.min[1]).toFixed(1)} vs ${fp.width.toFixed(1)}×${fp.depth.toFixed(1)}`);
     assert.ok(Math.abs((b.max[0] + b.min[0]) / 2 - ox) < tol && Math.abs((b.max[1] + b.min[1]) / 2 - oy) < tol, `${label} footprint centre`);
@@ -127,6 +127,21 @@ test('Onnit Primal bells: one sculpted head per weight', () => {
   free(g);
 });
 
+test('Onnit Zombie Bells: four sculpted heads at the lineup proportions, enlarged handles, triangle budget', () => {
+  assert.deepEqual(ZOMBIE_HEADS.map(z => [z.name, z.lb]), [['Brain Goblin', 18], ['Staple Head', 36], ['Ghostface Thrilla', 54], ['Mega Dead', 72]]);
+  const heights: number[] = [];
+  for (const [head, z] of ZOMBIE_HEADS.entries()) {
+    const parts = build(ONNIT_ZOMBIE_KETTLEBELL, { head }), b = box(parts)!, tris = parts.reduce((n, p) => n + p.solid.numTri(), 0);
+    assert.ok(Math.abs(b.max[2] - z.height) < 1, `${z.name} height`); heights.push(b.max[2]);
+    assert.ok(Math.abs(b.max[0] - b.min[0] - Math.max(z.width, z.head[0] * z.height)) < 4, `${z.name} handle / ear width`);
+    assert.ok(tris < 80000, `${z.name} ${tris} triangles`);
+    free(parts);
+  }
+  // Onnit's same-distance lineup: 72 : 54 : 36 : 18 lb heights 1 : 0.91 : 0.82 : 0.72; the Mega Dead matches the 14.5" 2-pood Primal Gorilla.
+  [1, .91, .82, .72].forEach((r, i) => assert.ok(Math.abs(heights[3 - i] / heights[3] - r) < .015, `height ratio ${r}`));
+  assert.ok(Math.abs(heights[3] - inch(14.5)) < 1);
+});
+
 test('params validate strictly, coerce dependent options and add as a pair', () => {
   assert.deepEqual(validateFloorParams(REP_KETTLEBELL, { unit: 1, weight: 35 }), { unit: 1, weight: 35 });
   for (const bad of [{ weight: 17 }, { unit: 2 }, { unit: 1, weight: 16 }, { color: 1 }]) assert.throws(() => validateFloorParams(REP_KETTLEBELL, bad), /kettlebell/);
@@ -134,6 +149,7 @@ test('params validate strictly, coerce dependent options and add as a pair', () 
   assert.throws(() => validateFloorParams(ROGUE_USA_KETTLEBELL, { finish: 1, weight: 4 }), /kettlebell/, 'powder coat starts at 13 lb');
   assert.deepEqual(coerceFloorParams(IRONMASTER_KETTLEBELL, { handle: 0, weight: 80 }), { handle: 0, weight: 70 });
   assert.throws(() => validateFloorParams(TITAN_CAST_KETTLEBELL, { weight: 85 }), /kettlebell/);
+  assert.throws(() => validateFloorParams(ONNIT_ZOMBIE_KETTLEBELL, { head: 4 }), /kettlebell/);
   for (const part of PARTS) assert.deepEqual(validateFloorParams(part, {}), part.defaults);
   const doc = addFloorItem(createAssembly(), 'rogue-kettlebell', undefined, true), [a, b] = doc.floorItems!;
   assert.ok(b.position[0] - a.position[0] > resolveBy(ROGUE_KETTLEBELL.footprint, ROGUE_KETTLEBELL.defaults).width);

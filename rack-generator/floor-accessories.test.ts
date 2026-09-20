@@ -4,7 +4,7 @@ import Module from 'manifold-3d';
 import {
   PARTS, ABMAT, ABMAT_MODELS, ABMAT_BARBELL_PILLOWS, AMAZON_BASICS_ROLLER, BENCH_BLOKZ, BENCH_BLOKZ_ENTRY, CALF_CURVE, DIY_LIFTING_PLATFORM, DYNAMAX_MEDICINE_BALL, GENESIS_JACK,
   GRID, HIP_THRUST_PAD, ABMAT_HIP_THRUST_PAD, MASSENOMICS_GRIPPER, REP_CORK_SQUAT_WEDGE, REP_GENESIS_JACK, REP_WEDGE, RITFIT_DEADLIFT_JACK, RITFIT_JACK, ROGUE_ECHO_SLAM_BALL,
-  ROGUE_MEDICINE_BALL, ROGUE_OLY_PLATFORM, ROGUE_PLATFORM, STALL_MAT, TITAN_SQUAT_WEDGE, TITAN_WEDGE, TRIGGERPOINT_GRID, TSC_STALL_MAT, U4C_CALF_CURVE, inch, repWedgePeak,
+  ROGUE_MEDICINE_BALL, ROGUE_OLY_PLATFORM, ROGUE_PLATFORM, STALL_MAT, BEYOND_POWER_TRAVEL_PLATFORM, VOLTRA_PLATFORM, voltraDockY, TITAN_SQUAT_WEDGE, TITAN_WEDGE, TRIGGERPOINT_GRID, TSC_STALL_MAT, U4C_CALF_CURVE, inch, repWedgePeak,
 } from './floor-parts/floor-accessories.ts';
 import { definitions } from './parts/floor-accessories.ts';
 import { GENESIS_PROFILE } from './parts/floor-accessories-jacks.ts';
@@ -34,7 +34,7 @@ function variants(part: FloorPart) {
 }
 
 test('every floor accessory builds closed solids inside its footprint for defaults and param extremes', () => {
-  assert.equal(PARTS.length, 18);
+  assert.equal(PARTS.length, 19);
   assert.equal(definitions.length, PARTS.length);
   for (const part of PARTS) {
     assert.equal(part.section, 'Accessories', part.id);
@@ -95,6 +95,26 @@ test('mats and platforms are underlays: no overlap warnings and nothing steps ar
   assert.ok(floorBounds(mat).max[0] - floorBounds(mat).min[0] > 1200);
 });
 
+test('Beyond Power Travel VOLTRA Platform: 700 × 390 × 22 mm board, dock 145 mm from the rear, carry slot, docked VOLTRA I', () => {
+  const P = VOLTRA_PLATFORM, empty = build(BEYOND_POWER_TRAVEL_PLATFORM), [w, d] = size(box(empty)!);
+  near(w, 700, .1, 'length 700 mm'); near(d, 390, .1, 'width 390 mm');
+  const board = box(empty, 'Maple board')!; near(board.max[2] - board.min[2], 22, .01, 'board 22 mm'); near(board.min[2], P.pad, .01, 'board on the rubber pads');
+  const dock = box(empty, 'Stainless VOLTRA dock')!;
+  near(dock.max[0] - dock.min[0], P.dock.d, .5, 'dock diameter'); near(P.width / 2 - (dock.max[1] + dock.min[1]) / 2, P.dock.fromRear, .5, 'dock 145 mm from the rear edge');
+  near((dock.max[0] + dock.min[0]) / 2, 0, .5, 'dock centred along the length'); assert.equal(voltraDockY(), P.width / 2 - P.dock.fromRear);
+  // The carry slot is a through hole in the board and the tape near the front edge.
+  const slotY = -P.width / 2 + P.slot.inset + P.slot.h / 2, probe = api.Manifold.cube([20, 20, 40], true).translate([0, slotY, 20]);
+  for (const name of ['Maple board', 'Black grip tape']) { const s = empty.find(p => p.name === name)!.solid, hit = api.Manifold.intersection([s, probe]); assert.ok(hit.isEmpty(), `${name} slot open`); hit.delete(); }
+  probe.delete();
+  assert.ok(empty.some(p => p.name === 'White court print') && empty.some(p => p.name === 'Rubber pads' && p.role === 'liner'));
+  assert.ok(!empty.some(p => p.name.startsWith('VOLTRA I')), 'empty dock by default');
+  free(empty);
+  const loaded = build(BEYOND_POWER_TRAVEL_PLATFORM, { voltra: 1 }), unit = box(loaded, 'VOLTRA I housing')!;
+  near(unit.max[1] - unit.min[1], P.voltra.width, .5, 'VOLTRA I 139 mm body'); assert.ok(unit.min[2] > dock.max[2] - 2, 'VOLTRA rests on the dock');
+  near(box(loaded, 'VOLTRA I')!.max[0] - box(loaded, 'VOLTRA I')!.min[0], P.voltra.length, 1, 'VOLTRA I 323 mm long');
+  free(loaded);
+});
+
 test('jacks, blocks, wedges and the calf block hit their published dimensions', () => {
   const gj = build(REP_GENESIS_JACK), [gw, gd, gh] = size(box(gj)!);
   near(gh, GENESIS_JACK.height, 1, 'Genesis 18.25" tall'); near(gw, inch(7.5), .05, 'Genesis 7.5" foot'); near(gd, inch(2.25), .05, 'Genesis 2.25" foot');
@@ -140,7 +160,7 @@ test('pads, balls and rollers hit their published sizes', () => {
 test('params validate and coerce', () => {
   for (const part of PARTS) assert.deepEqual(validateFloorParams(part, part.defaults), part.defaults, part.id);
   for (const [part, bad] of [[TSC_STALL_MAT, { across: 7 }], [ABMAT, { model: 2 }], [ROGUE_MEDICINE_BALL, { weight: 22 }], [ROGUE_ECHO_SLAM_BALL, { weight: 5 }], [TITAN_SQUAT_WEDGE, { angle: 20 }],
-    [AMAZON_BASICS_ROLLER, { length: 30 }], [DYNAMAX_MEDICINE_BALL, { color: 8 }], [REP_GENESIS_JACK, { color: 9 }], [ROGUE_OLY_PLATFORM, { floor: 3 }], [MASSENOMICS_GRIPPER, { size: 1 }]] as const)
+    [AMAZON_BASICS_ROLLER, { length: 30 }], [DYNAMAX_MEDICINE_BALL, { color: 8 }], [REP_GENESIS_JACK, { color: 9 }], [ROGUE_OLY_PLATFORM, { floor: 3 }], [MASSENOMICS_GRIPPER, { size: 1 }], [BEYOND_POWER_TRAVEL_PLATFORM, { voltra: 2 }]] as const)
     assert.throws(() => validateFloorParams(part, bad), new RegExp(part.noun), part.id);
   assert.deepEqual(coerceFloorParams(TSC_STALL_MAT, { across: 3, deep: 1, side: 1 }), { across: 3, deep: 1, side: 0 }, 'tiled mats snap to top-up');
   assert.deepEqual(coerceFloorParams(ROGUE_ECHO_SLAM_BALL, { weight: 33 }), { weight: 35 });

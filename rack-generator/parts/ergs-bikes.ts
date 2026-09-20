@@ -10,7 +10,7 @@ export interface Plate { a: Vec3; b: Vec3; h: number; color: string; mirror?: bo
 export interface AirBikeSpec {
   label: string; L: number; W: number; H: number;
   frame: string; accent: string; black?: string; roughness?: number;
-  fan: { y: number; z: number; d: number; width: number; blades: number; bladeD: number; bladeW: number; guard: Guard; spokes: number; rings: number; bands: number; guardColor: string; bladeColor: string; rim?: string; hub?: string; windGuard?: boolean };
+  fan: { y: number; z: number; d: number; width: number; blades: number; bladeD: number; bladeW: number; guard: Guard; spokes: number; rings: number; bands: number; guardColor: string; bladeColor: string; rim?: string; hub?: string; /** Solid band over the top of the fan: true = black plastic, or a colour (chrome on the Airdyne AD3). */ windGuard?: boolean | string };
   feet: { front: { y: number; w: number; wheel: number; depth?: number; wheelY?: number }; rear: { y: number; w: number; depth?: number; u?: number } };
   tubes: Tube[];
   drive: { y: number; z: number; d: number; t: number; color: string; shroud?: [number, number][] };
@@ -62,7 +62,7 @@ function fan(K: Kit, s: AirBikeSpec) {
   for (let i = 0; i < f.bands; i++) band.push(K.hoop([-w / 2 + w * (i + .5) / f.bands, f.y, f.z], 'x', 2 * R - 6, 4, 64, 6));
   for (const x of faces) band.push(K.hoop([x, f.y, f.z], 'x', 2 * R - 6, 9, 72, 8));
   K.add('Fan guard rims', F(f.rim ?? f.guardColor, .45, .35), ...band);
-  if (f.windGuard) K.add('Wind guard', F('#1a1b1d', .5, .1), K.cut(K.ring([0, f.y, f.z], 'x', 2 * R + 10, 2 * R - 4, w + 6, 72), [K.span([-w, f.y - R - 20, f.z - R - 20], [w, f.y + R + 20, f.z + R * .15])]));
+  if (f.windGuard) K.add('Wind guard', typeof f.windGuard === 'string' ? F(f.windGuard, .2, .9) : F('#1a1b1d', .5, .1), K.cut(K.ring([0, f.y, f.z], 'x', 2 * R + 10, 2 * R - 4, w + 6, 72), [K.span([-w, f.y - R - 20, f.z - R - 20], [w, f.y + R + 20, f.z + R * .15])]));
 }
 
 function tubes(K: Kit, s: AirBikeSpec) {

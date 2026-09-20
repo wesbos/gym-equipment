@@ -5,6 +5,7 @@ Sources checked 2026-09-19. For each product I read the spec table on the manufa
 | Product (part id) | Spec source | Photos viewed | Manual |
 |---|---|---|---|
 | Titan Leg Extension & Hamstring Curl, 401556 V2 (`titan-leg-extension-curl`) | [titan.fitness](https://www.titan.fitness/products/leg-extension-curl-machine) spec table | 13 gallery images | [Operator's manual LEGEXTCRLV2](https://manuals.titanfitness.com/24845): exploded view and parts list |
+| Mikolo × GMWD TAWERET 1:1, LE09 (`mikolo-taweret-leg-extension-curl`) | archived [gym-mikolo.com product page](http://web.archive.org/web/20260208091030/https://gym-mikolo.com/products/taweret%E2%84%A2-leg-extension-and-prone-leg-curl-machine) (Feb 2026) spec table and dimension drawing; images still served from the live `gym-mikolo.com/cdn/shop/files/` CDN; [launch video](https://www.youtube.com/watch?v=2mFnye_OQag) and the 8 s gallery video; [Gym Radar](https://gymradar.com/equipment/taweret-1-1-cable-ratio-leg-extension-and-curl-machine) (34 gyms) | 25: black and red renders, dimension drawing, studio 3/4, pad-callout photo, extension and prone-curl in use, right-side plate-loaded frame, top view, under-seat lever, pulley guard, cable bracket, cam disc, roller arm, backrest slide, handles, mode pin, horn loading, 6" roller callout, prone 13° tilt | none published |
 | GMWD LE08 2.0 (`gmwd-le08-leg-extension-curl`) | [gmwdfitness.com](https://www.gmwdfitness.com/products/commercial-leg-extension-prone-leg-curl-machine-le08) "Details" and "Measurements" | 26 gallery images, including the product-size, load-ratio, back-pad and 8+9-position panels | none published |
 | Lionscool Leg Extension & Curl V4.0 (`lionscool-leg-extension-curl-v4`) | [lionscool.com](https://lionscool.com/products/lionscool-leg-extension-machine) dimensions block | 9 gallery images, including the space-efficient dimension panel and the dual-mode side views | [V4 owner's manual](https://www.lionscool.com/cdn/shop/files/Leg_Extension_4.0_Manual.pdf) |
 | RitFit PLC01 (`ritfit-plc01-leg-extension-curl`) | [ritfit.com](https://www.ritfit.com/products/ritfit-plc01-leg-extension-curl-machine) "PLC01 General Info" | 9 gallery images (black and pink) | [PLC01 manual](https://cdn.shopify.com/s/files/1/2350/9323/files/PLC01-MANUAL-26.1.7.pdf) |
@@ -19,6 +20,7 @@ Sources checked 2026-09-19. For each product I read the spec table on the manufa
 | Machine | L × W × H | Other published figures |
 |---|---|---|
 | Titan LEC | 36" D × 42" W × 39" H | seat 22" × 17" × 2", back pad 15" × 10" × 2", rollers 17" × 5", seat height 24–26.5", weight post 10" × 49 mm, 7 seat-depth and 7 knee-pad positions, seat angle 7/10.5/14°, 11-ga steel, 300 lb |
+| Mikolo TAWERET | 49.6" L × 30.6" W × 43.5" H | backrest 14.2" × 25.6", seat 20.5" (the drawing's 23.6" call-out is ambiguous; seat width estimated 15"), 17.8" leg roller (5.5" in the table, Ø6" in the video: 6" used), 2" × 2" 14-ga and 2" × 3" 12-ga steel, 1:1 cable, 2" plates, 400 lb plates / 400 lb user, 122 lb, 25 cam + 7 roller + 5 backrest positions, black or red frame, user 4'11"–6'5" |
 | GMWD LE08 2.0 | 54.6" L × 55.4" W × 38.8" H (62.6" as a curl) | 21.7" shin roller, 10.6" load horn, 10" storage posts, 2.4" pads, 7.3" grips, 7 back-pad positions, 8 lever + 9 tibia settings, 1.1/1.2 ratio, 12-ga steel, red/black/white/blue arms |
 | Lionscool V4.0 | 40.8" L × 33" W × 38.3" H | backrest 12.4" × 21.6", seat 16" × 16.7", 19.7" leg roller, 16" thigh roller, dual 7.1" horns, 2.2" pads, 1:1 |
 | RitFit PLC01 | 50.9" L × 43.5" W × 42.7" H | 13.01" weight holder, 16.54" leg stop, 4 backrest angles, 12 range positions, 3:2 cable ratio, 375 lb, black/pink |
@@ -40,10 +42,31 @@ Sources checked 2026-09-19. For each product I read the spec table on the manufa
 - **Quadsend length** builds to 2504 mm, not the published 99.3" (2522 mm). The 3MF exporter lays each catalog part out as one object on a 256 mm plate at 1:10, and 2 mm packing margins leave room for at most 2520 mm. The difference is in the rear foot and the recline of the leg-press back pad. The Quadsend's groups are also split per side, so each laid-out object stays compact. That test constraint was lifted for scenery parts (floor, wall and hang parts now run the print checks at 1:20), so the model can be lengthened to the published 2522 mm when it's next revised.
 - **Plates** are 45 lb iron plates (`buildPlateStack`), loaded from the horn collar. The `plates` param is per horn or sleeve, capped at the plates that physically fit on the published sleeve length.
 
+## Mikolo TAWERET (LE09)
+
+- **Found again.** The product page left gym-mikolo.com after the store moved to the NOVA (LE12) and LUNA (LE13) machines, but a
+  Wayback capture of 8 Feb 2026 keeps the full spec table, gallery and description, and every gallery image and the gallery video still
+  resolve on Mikolo's Shopify CDN. The TAWERET is not a rename of either: LUNA shares the design language but is 47.8 × 57.3 × 43.8 in with
+  a 245 lb capacity, and NOVA is a lever-and-horn machine.
+- **How it works.** Cable, not a pendulum: a drum on the knee pivot winds the cable up over a red aluminium pulley at the top of the
+  front tower and down to a plate-loaded lever under the seat, whose chrome 2" horn sits on the user's right at the rear (the 1:1 ratio
+  is the drum/lever geometry). Modes: seated leg extension and prone leg curl only; the backrest folds flat behind the seat and the seat
+  front tilts up into a thigh pad (13° in the video graphic; the page says 18.5°, the video is used). One red pop-pin switches modes.
+- **Estimates** (right-side video frame scaled to the 43.5" height, cross-checked on the dimension drawing): knee pivot 640 mm up and
+  125 mm behind the front foot on a 51 × 100 mm tower on the right, 260 mm silver cam disc with 25 holes, Ø110 mm pulley in a black
+  triangular guard at 780 mm, seat top 520 mm, backrest hinge 480 mm with a 15° recline, 380–500 mm roller arm (7 × 20 mm steps), load
+  lever pivot at the tower 470 mm up and 560 mm long to the horn (plate centre ~360 mm at rest, 17.7" plates clear the floor by ~5"), a
+  10.6" horn whose tip sets the right-hand half width, 2 × 3 base rails with rubber-capped front and rear feet, 2 × 2 A-frame seat supports
+  (red on the red version), rear bent handles whose grips set the 30.6" width and ~14" height, short seat handles. The lever lift for the
+  three rep poses follows the drum/lever ratio.
+- **Review rounds.** (1) Side / iso / front / top renders against the black render, the right-side frame and the top view: the horn tip
+  pushed the width to 827 mm, so the load lever moved inboard under the seat edge to put the horn tip at the published 30.6" half width.
+  (2) The backrest frame was pulled against the pad and the white logo became a mark over three typeset lines (plain plates), as on the
+  backrest photos.
+
 ## Not shipped
 
-- **Mikolo TAWERET 1:1 Leg Extension & Curl.** Mikolo's current store (gym-mikolo.com, 177 products listed) has no TAWERET product; it now sells the NOVA and LUNA machines. mikolo.com returned 503, and Amazon search results showed no TAWERET listing. Without a spec source or photos of that exact model, I did not build it.
-- **REP Fitness leg press / hack squat.** REP's store search for "leg press" and "hack squat" returns only the bench leg-extension attachment, leg rollers and the belt squat. REP sells no leg press or hack squat machine, so there is nothing to model.
+- **REP Fitness leg press / hack squat.** Closed as not applicable: REP's store search for "leg press" and "hack squat" returns only the bench leg-extension attachment, leg rollers and the belt squat. REP sells no leg press or hack squat machine, so there is nothing to model.
 
 ## Geometry contract
 
