@@ -262,6 +262,7 @@ export function createBuilderScene(
       disposeMaterial(helper.material); helper.material = overlay.selection;
       selectionBoxes.push(helper); scene.add(helper);
     });
+    invalidate(); // Reused helpers only change their box.
   }
   function dimensions(measured = false) {
     const rack = snapshot.doc.rack,
@@ -563,6 +564,7 @@ export function createBuilderScene(
     if (!previewBusy && ghostKey && ghostRoot.children.length === proposal.entries.length && ghostKeyOf(proposal.entries) === ghostKey) {
       // Hover moves of the same ghost (floor/wall drags, R rotation): transforms only, no material churn.
       proposal.entries.forEach((entry, i) => placeInstance(ghostRoot.children[i], entry, partAttribution(entry.part)));
+      invalidate();
       return;
     }
     clearGhost();
