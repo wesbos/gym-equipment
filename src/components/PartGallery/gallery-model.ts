@@ -217,13 +217,17 @@ export function rackFit(id: string, rack: RackDimensions): RackFit | null {
   const tubeDepth = rack.tubeDepth ?? rack.tube;
   // Nominal stand-ins for the placement context (span to the facing post, v2 rack context), so fit rules that need
   // them judge the tube, bore and pitch rather than a missing target.
-  const span = part.mount.span === 'normal' ? rack.width + rack.tube : part.mount.span === 'across' ? rack.depth + tubeDepth : undefined;
+  // 'normal' spans cross the rack from a side face (its width) or run front to back from a front/back face (its depth).
+  const spanFor = (face: Face) => {
+    const frontBack = face === 'front' || face === 'back', width = rack.width + rack.tube, depth = rack.depth + tubeDepth;
+    return part.mount.span === 'normal' ? (frontBack ? depth : width) : part.mount.span === 'across' ? (frontBack ? width : depth) : undefined;
+  };
   const extra = { holeHeight: rackPlacementFor(part, params).height ?? 1000, rackWidth: rack.width, rackDepth: rack.depth, rackHeight: rack.height, acrossOut: 1 };
   let reason = '';
   const faces = part.mount.faces?.length ? part.mount.faces : ['front', 'left'] as Face[];
   for (const face of faces) {
     try {
-      const context = rackContextParams(part, params, rack, false, face, span, extra);
+      const context = rackContextParams(part, params, rack, false, face, spanFor(face), extra);
       const pin = resolveBy(part.mount.pin, context);
       if (pin > rack.holeDiameter) throw Error(`Needs ${pinLabel(pin)} hardware; your rack has ${mm(rack.holeDiameter)} mm holes.`);
       part.mount.validate?.(rack, context);
