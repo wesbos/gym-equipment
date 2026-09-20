@@ -1,0 +1,384 @@
+{
+  "slug": "b3-brian-s-barbells-and-brewskis",
+  "title": "B3 (Brian's Barbells and Brewskis)",
+  "owner": "𝖇𝖎𝖌 𝖇𝖗𝖎𝖆𝖓 (𝖓𝖔 𝖗𝖊𝖑𝖆𝖙𝖎𝖔𝖓) 🌿 🐌",
+  "sourceUrl": "https://gymradar.com/gym/b3-brian-s-barbells-and-brewskis",
+  "summary": "A 150 sq ft powerlifting corner of a two-car garage in Grand Prairie, Texas: a black Bells of Steel Manticore folding rack on an OSB wall, plate horns and a Wall Control pegboard beside it, and a DIY platform a car parks over. The Manticore 4-post stands in for the folding rack, and the closest catalog matches stand in for the bench, plates and wall storage.",
+  "highlights": [
+    "Both cars still park",
+    "Car parks over the platform",
+    "Folding Manticore rack",
+    "Three Texas Power Bars",
+    "Massenomics certified"
+  ],
+  "equipment": [
+    "Bells of Steel Manticore Folding Power Rack (closest match: Manticore 4-post, 90″ × 43″)",
+    "Bells of Steel standard J-cups, safety straps and adjustable pull-up bar",
+    "Bells of Steel magnetic rack attachment pins",
+    "GymPala 3×3 weight horns (closest match: long storage pins) with Nike Grind bumpers (closest match: Rogue Fleck)",
+    "Bells of Steel hanging barbell holders (closest match: Rogue Vertical Bar Hanger)",
+    "Massenomics Drink Spotter XL and Drink Spotter Chill (not modelled)",
+    "Amazon band hooks (not modelled)",
+    "Bells of Steel flat utility bench (closest match: Rogue Flat Utility Bench 2.0)",
+    "Amazon bench block and EliteFTS Manta Ray (not modelled)",
+    "Texas Power Bar PRO 29 mm, Texas Deadlift Bar and Big Tex Deadlift Bar",
+    "Titan Safety Squat Bar with Spud SSB strap, XMark Lumberjack curl bar, Living.Fit Everyday bar, Fringe Stubby Axle (on the bar hanger)",
+    "Bells of Steel calibrated LB plates (closest match: Rogue LB Competition plates)",
+    "CAP 2″ grip, Fitness Gear and The Strength Co. iron plates; Micro Gainz and EVERYMATE change plates",
+    "CAP cast-iron hex and neoprene dumbbells",
+    "Bells of Steel wall-mounted plate storage and Yes4All wall plate holders (closest match: REP wall horns)",
+    "Bells of Steel change plate pegs",
+    "Wall Control pegboard (white) with belt, wraps, straps, collars and bands",
+    "Titan TwistLock and Bells of Steel magnetic clamp collars",
+    "DIY lifting platform on Tractor Supply stall mats (closest match: DIY 8′×8′ platform; the real one is cut 6″ narrow)",
+    "Bells of Steel deadlift jack (closest match: RitFit Deadlift Jack)",
+    "Fat Gripz Extreme, Massenomics stall-mat gripper, DIY chains, ab wheel, loading pin"
+  ],
+  "doc": {
+    "version": 2,
+    "rack": {
+      "height": 2286,
+      "width": 1092.2,
+      "depth": 1092.2,
+      "tube": 76.2,
+      "holeDiameter": 25.4,
+      "pitch": 50.8,
+      "firstHole": 65
+    },
+    "uprights": {
+      "front-left": {
+        "x": -584.2,
+        "y": -584.2
+      },
+      "front-right": {
+        "x": 584.2,
+        "y": -584.2
+      },
+      "rear-left": {
+        "x": -584.2,
+        "y": 584.2
+      },
+      "rear-right": {
+        "x": 584.2,
+        "y": 584.2
+      }
+    },
+    "connections": [
+      {
+        "id": "left-upper-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "upper"
+      },
+      {
+        "id": "left-lower-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "lower"
+      },
+      {
+        "id": "right-upper-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "upper"
+      },
+      {
+        "id": "right-lower-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "lower"
+      },
+      {
+        "id": "rear-crossmember",
+        "from": "rear-left",
+        "to": "rear-right",
+        "level": "upper"
+      }
+    ],
+    "profileId": "bos-manticore",
+    "removed": [],
+    "structure": {},
+    "accessories": [
+      {
+        "id": "accessory-1",
+        "part": "j-hook-standard",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 25
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-2",
+        "part": "bells-of-steel-safety-straps",
+        "target": {
+          "uprightId": "front-left",
+          "face": "right",
+          "hole": 12
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-3",
+        "part": "pullup-straight",
+        "target": {
+          "uprightId": "front-left",
+          "face": "right",
+          "hole": 39
+        },
+        "paired": false,
+        "params": {},
+        "spanTo": "front-right"
+      },
+      {
+        "id": "accessory-4",
+        "part": "storage-pin-long",
+        "target": {
+          "uprightId": "front-left",
+          "face": "left",
+          "hole": 4
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right",
+        "plates": [
+          "rogue-fleck:45",
+          "rogue-fleck:45",
+          "rogue-fleck:25"
+        ]
+      }
+    ],
+    "nextId": 25,
+    "appearance": {
+      "frameColor": "#1c1d1f"
+    },
+    "floorItems": [
+      {
+        "id": "floor-5",
+        "part": "rogue-flat-utility-bench-2",
+        "position": [
+          -1025,
+          0
+        ],
+        "rotation": 0,
+        "params": {}
+      },
+      {
+        "id": "floor-6",
+        "part": "texas-power-bar-pro",
+        "position": [
+          0,
+          900
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 0,
+          "knurl": 0
+        },
+        "cradle": "accessory-1:left#0+accessory-1:right#0"
+      },
+      {
+        "id": "floor-7",
+        "part": "diy-lifting-platform",
+        "position": [
+          0,
+          1866
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 0,
+          "logo": 0
+        }
+      },
+      {
+        "id": "floor-8",
+        "part": "texas-deadlift-bar",
+        "position": [
+          0,
+          1900
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 0
+        },
+        "plates": {
+          "both": [
+            "rogue-lb-competition:55",
+            "rogue-lb-competition:45"
+          ]
+        }
+      },
+      {
+        "id": "floor-9",
+        "part": "ritfit-deadlift-jack",
+        "position": [
+          1650,
+          2400
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {}
+      },
+      {
+        "id": "floor-10",
+        "part": "cap-cast-iron-hex-dumbbell",
+        "position": [
+          900,
+          250
+        ],
+        "rotation": 0,
+        "params": {
+          "weight": 50
+        }
+      },
+      {
+        "id": "floor-11",
+        "part": "cap-cast-iron-hex-dumbbell",
+        "position": [
+          1083.7794549146836,
+          250
+        ],
+        "rotation": 0,
+        "params": {
+          "weight": 50
+        }
+      }
+    ],
+    "wallItems": [
+      {
+        "id": "wall-12",
+        "part": "rogue-vertical-bar-hanger",
+        "wall": "back",
+        "position": [
+          -650,
+          1175
+        ],
+        "params": {
+          "size": 1,
+          "loaded": 3
+        }
+      },
+      {
+        "id": "wall-13",
+        "part": "rep-wall-mounted-plate-storage",
+        "wall": "left",
+        "position": [
+          2750,
+          1850
+        ],
+        "params": {
+          "variant": 0,
+          "loaded": 2
+        }
+      },
+      {
+        "id": "wall-14",
+        "part": "rep-wall-mounted-plate-storage",
+        "wall": "left",
+        "position": [
+          2750,
+          1300
+        ],
+        "params": {
+          "variant": 0,
+          "loaded": 1
+        }
+      },
+      {
+        "id": "wall-15",
+        "part": "rep-wall-mounted-plate-storage",
+        "wall": "left",
+        "position": [
+          2750,
+          750
+        ],
+        "params": {
+          "variant": 0,
+          "loaded": 1
+        }
+      },
+      {
+        "id": "wall-16",
+        "part": "bells-of-steel-change-plate-pegs",
+        "wall": "left",
+        "position": [
+          2150,
+          1750
+        ],
+        "params": {
+          "version": 1,
+          "loaded": 1
+        }
+      },
+      {
+        "id": "wall-17",
+        "part": "wall-control-pegboard",
+        "wall": "left",
+        "position": [
+          1450,
+          1350
+        ],
+        "params": {
+          "size": 0,
+          "panels": 2,
+          "color": 2
+        }
+      }
+    ],
+    "room": {
+      "back": 650,
+      "left": 1500,
+      "right": 4600,
+      "front": 5450,
+      "height": 2440
+    },
+    "hangItems": [
+      {
+        "id": "hang-18",
+        "part": "inzer-forever-lever-belt-10mm",
+        "panel": "wall-17",
+        "slot": 13
+      },
+      {
+        "id": "hang-19",
+        "part": "rogue-wrist-wraps-2",
+        "panel": "wall-17",
+        "slot": 21
+      },
+      {
+        "id": "hang-20",
+        "part": "rogue-ohio-lifting-straps",
+        "panel": "wall-17",
+        "slot": 4
+      },
+      {
+        "id": "hang-21",
+        "part": "fat-gripz-extreme",
+        "panel": "wall-17",
+        "slot": 25
+      },
+      {
+        "id": "hang-22",
+        "part": "titan-twistlock-pro-collars",
+        "panel": "wall-17",
+        "slot": 0
+      },
+      {
+        "id": "hang-23",
+        "part": "bells-of-steel-magnetic-clamp-collars",
+        "panel": "wall-17",
+        "slot": 54
+      },
+      {
+        "id": "hang-24",
+        "part": "elitefts-pro-resistance-band-pack",
+        "panel": "wall-17",
+        "slot": 56
+      }
+    ]
+  }
+}

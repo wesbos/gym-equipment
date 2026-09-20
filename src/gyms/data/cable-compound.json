@@ -1,0 +1,757 @@
+{
+  "slug": "cable-compound",
+  "title": "Cable Compound",
+  "owner": "Chris’s Cable Compound",
+  "sourceUrl": "https://gymradar.com/gym/cable-compound",
+  "summary": "A single garage bay packed with cable stacks: an Athena crossover rig in the middle, a second dual-stack trainer and an Adonis tower on the walls, and a Rhino belt squat by the door, all on black rubber. The owner’s Rogue Monster uprights are shown as a REP PR-5000 (the Athena’s supported rack) and his ARES 2.0 as a REP Arcadia.",
+  "highlights": [
+    "Almost all cable: just move a pin",
+    "Athena crossover built into the rig",
+    "Four weight stacks in one bay",
+    "Pegboards full of cable handles",
+    "The owner’s fourth garage gym"
+  ],
+  "equipment": [
+    "REP Athena selectorized side-mount functional trainer, dual stacks",
+    "Rogue Monster uprights, 70″ crossmember and Black Widow flush extension (closest match: REP PR-5000 6-post, 93″ × 30″)",
+    "REP Adonis cable tower",
+    "REP ARES 2.0 dual-stack functional trainer (closest match: REP Arcadia functional trainer)",
+    "Rogue Monster Rhino belt squat",
+    "Temple of Gainz selectorized standing multi-flight V3",
+    "Bolt Fitness Storm Hydra leg extension / curl (closest match: Temple of Gainz selectorized leg extension + seated curl)",
+    "Irwin Fitness return roller J-cups 2.0",
+    "Mutant Metals Snap-Back monolift rollers",
+    "Mutant Metals Ultimate Dip Attachment (UDA)",
+    "Rogue Monster Landmine 2.0 and REP × Kleva Adroit landmine",
+    "REP 1.25″ pull-up bar (closest match for the Rogue Monster Solo pull-up bar)",
+    "Black Widow low-profile spotters (closest match: REP spotter arms) carrying the REP Utility Seat",
+    "REP Pegasus, Rogue Monster Pritchett Pad, Bullet Proof VTS and JD Gym Equipped wrist roller on the rig",
+    "Beyond Power VOLTRA I (fixed mount; the owner uses a Darko QuickMount)",
+    "Rogue Thompson Fat Pad, REP FB-5000 flat bench, PRIME Shorty adjustable bench",
+    "REP × PÉPIN FAST adjustable dumbbells on the REP stand",
+    "IronMaster Quick-Lock dumbbells and stand, Kensui AdaptaBELL pair",
+    "Black Widow dumbbell cart (closest match: REP dumbbell storage cart)",
+    "Rogue 45 lb Ohio Power Bar and Texas Power Bar, racked",
+    "Rogue 6-Shooter grip plates (closest match: CAP gray Olympic iron) on plate horns",
+    "Medicine balls and an Elitefts plyo box (closest match: Rogue Games Box)",
+    "Black pegboards with MAG grips, Darko Shorty, Porter Eclipse, PRIME Kaz and RO-T8, Mutant ARC, rope, V-grip, straight bar and Spud ab strap",
+    "Not placed: Darko Thresher pad, Exponent Edge GHD 2.0 and Infinity Arm, Rogue Shrimp Trawler and Multi-Use Roller, Prodigy RO-T8 station, Torque Relentless Ripper, Rogue MG-4CN, American Barbell California Bar, Bridge Built plate dock and much of the handle collection"
+  ],
+  "doc": {
+    "version": 2,
+    "rack": {
+      "height": 2362.2,
+      "width": 1140.32,
+      "depth": 762,
+      "tube": 75,
+      "holeDiameter": 25.4,
+      "pitch": 50.8,
+      "firstHole": 65
+    },
+    "uprights": {
+      "front-left": {
+        "x": -607.66,
+        "y": -418.5
+      },
+      "front-right": {
+        "x": 607.66,
+        "y": -418.5
+      },
+      "rear-left": {
+        "x": -607.66,
+        "y": 418.5
+      },
+      "rear-right": {
+        "x": 607.66,
+        "y": 418.5
+      },
+      "upright-1": {
+        "x": -607.66,
+        "y": 899.9
+      },
+      "upright-4": {
+        "x": 607.66,
+        "y": 899.9
+      }
+    },
+    "connections": [
+      {
+        "id": "left-upper-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "upper"
+      },
+      {
+        "id": "left-lower-crossmember",
+        "from": "front-left",
+        "to": "rear-left",
+        "level": "lower"
+      },
+      {
+        "id": "right-upper-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "upper"
+      },
+      {
+        "id": "right-lower-crossmember",
+        "from": "front-right",
+        "to": "rear-right",
+        "level": "lower"
+      },
+      {
+        "id": "rear-crossmember",
+        "from": "rear-left",
+        "to": "rear-right",
+        "level": "upper"
+      },
+      {
+        "id": "connection-2",
+        "from": "rear-left",
+        "to": "upright-1",
+        "level": "upper"
+      },
+      {
+        "id": "connection-3",
+        "from": "rear-left",
+        "to": "upright-1",
+        "level": "lower"
+      },
+      {
+        "id": "connection-5",
+        "from": "rear-right",
+        "to": "upright-4",
+        "level": "upper"
+      },
+      {
+        "id": "connection-6",
+        "from": "rear-right",
+        "to": "upright-4",
+        "level": "lower"
+      }
+    ],
+    "profileId": "rep-pr-5000",
+    "removed": [],
+    "structure": {},
+    "accessories": [
+      {
+        "id": "accessory-8",
+        "part": "irwin-return-roller-j-cups",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 26
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-9",
+        "part": "mutant-metals-snap-back-monolift",
+        "target": {
+          "uprightId": "rear-left",
+          "face": "front",
+          "hole": 22
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "rear-right"
+      },
+      {
+        "id": "accessory-10",
+        "part": "rep-pull-up-bar",
+        "target": {
+          "uprightId": "front-left",
+          "face": "right",
+          "hole": 42
+        },
+        "paired": false,
+        "params": {}
+      },
+      {
+        "id": "accessory-11",
+        "part": "mutant-metals-ultimate-dip-attachment",
+        "target": {
+          "uprightId": "upright-4",
+          "face": "back",
+          "hole": 20
+        },
+        "paired": false,
+        "params": {}
+      },
+      {
+        "id": "accessory-12",
+        "part": "rogue-monster-landmine-2",
+        "target": {
+          "uprightId": "upright-1",
+          "face": "back",
+          "hole": 1
+        },
+        "paired": false,
+        "params": {}
+      },
+      {
+        "id": "accessory-13",
+        "part": "rep-kleva-adroit-landmine",
+        "target": {
+          "uprightId": "upright-4",
+          "face": "back",
+          "hole": 1
+        },
+        "paired": false,
+        "params": {}
+      },
+      {
+        "id": "accessory-14",
+        "part": "rep-spotter-arms",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 8
+        },
+        "paired": true,
+        "params": {},
+        "pairTo": "front-right"
+      },
+      {
+        "id": "accessory-15",
+        "part": "rep-utility-seat",
+        "target": {
+          "kind": "spotter-arm",
+          "host": "accessory-14",
+          "unit": 0,
+          "frame": 0,
+          "station": 2,
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 0,
+          "position": [
+            -607.66,
+            -660,
+            471.4
+          ],
+          "center": [
+            -607.66,
+            -660,
+            471.4
+          ],
+          "pinAxis": [
+            -1,
+            0,
+            0
+          ],
+          "hostId": "accessory-14",
+          "label": "REP Spotter Arm · hole 3"
+        },
+        "paired": false,
+        "params": {}
+      },
+      {
+        "id": "accessory-16",
+        "part": "rep-pegasus",
+        "target": {
+          "uprightId": "front-right",
+          "face": "front",
+          "hole": 12
+        },
+        "paired": false,
+        "params": {}
+      },
+      {
+        "id": "accessory-17",
+        "part": "bulletproof-vts",
+        "target": {
+          "uprightId": "upright-4",
+          "face": "left",
+          "hole": 30
+        },
+        "paired": false,
+        "params": {}
+      },
+      {
+        "id": "accessory-18",
+        "part": "voltra-fixed",
+        "target": {
+          "uprightId": "front-right",
+          "face": "front",
+          "hole": 30
+        },
+        "paired": false,
+        "params": {}
+      },
+      {
+        "id": "accessory-19",
+        "part": "rogue-monster-pritchett-pad",
+        "target": {
+          "uprightId": "upright-1",
+          "face": "back",
+          "hole": 14
+        },
+        "paired": false,
+        "params": {}
+      },
+      {
+        "id": "accessory-20",
+        "part": "jd-gym-equipped-wrist-roller",
+        "target": {
+          "uprightId": "front-left",
+          "face": "front",
+          "hole": 38
+        },
+        "paired": false,
+        "params": {}
+      },
+      {
+        "id": "accessory-21",
+        "part": "storage-pin-long",
+        "target": {
+          "uprightId": "upright-1",
+          "face": "left",
+          "hole": 6
+        },
+        "paired": false,
+        "params": {},
+        "plates": [
+          "cap-olympic-iron:45",
+          "cap-olympic-iron:45",
+          "cap-olympic-iron:45"
+        ]
+      },
+      {
+        "id": "accessory-22",
+        "part": "storage-pin-long",
+        "target": {
+          "uprightId": "upright-1",
+          "face": "left",
+          "hole": 16
+        },
+        "paired": false,
+        "params": {},
+        "plates": [
+          "cap-olympic-iron:25",
+          "cap-olympic-iron:25",
+          "cap-olympic-iron:10"
+        ]
+      },
+      {
+        "id": "accessory-23",
+        "part": "storage-pin-long",
+        "target": {
+          "uprightId": "upright-4",
+          "face": "right",
+          "hole": 6
+        },
+        "paired": false,
+        "params": {},
+        "plates": [
+          "cap-olympic-iron:45",
+          "cap-olympic-iron:45",
+          "cap-olympic-iron:35"
+        ]
+      },
+      {
+        "id": "accessory-24",
+        "part": "storage-pin-long",
+        "target": {
+          "uprightId": "upright-4",
+          "face": "right",
+          "hole": 16
+        },
+        "paired": false,
+        "params": {},
+        "plates": [
+          "cap-olympic-iron:25",
+          "cap-olympic-iron:10",
+          "cap-olympic-iron:10"
+        ]
+      }
+    ],
+    "nextId": 58,
+    "appearance": {
+      "frameColor": "#17191a"
+    },
+    "floorItems": [
+      {
+        "id": "floor-25",
+        "part": "rogue-ohio-power-bar",
+        "position": [
+          0,
+          509.85
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 0
+        },
+        "cradle": "accessory-8:left#0+accessory-8:right#0"
+      },
+      {
+        "id": "floor-26",
+        "part": "texas-power-bar",
+        "position": [
+          0,
+          -241
+        ],
+        "rotation": 0,
+        "params": {
+          "finish": 0
+        },
+        "cradle": "accessory-9:left#0+accessory-9:right#0"
+      },
+      {
+        "id": "floor-27",
+        "part": "rogue-thompson-fat-pad",
+        "position": [
+          100,
+          1200
+        ],
+        "rotation": 0,
+        "params": {
+          "base": 0
+        }
+      },
+      {
+        "id": "floor-28",
+        "part": "rep-adonis-cable-tower",
+        "position": [
+          1550,
+          -900
+        ],
+        "rotation": 0,
+        "params": {
+          "loading": 0,
+          "pin": 0,
+          "loaded": 2,
+          "carriage": 20,
+          "base": 1
+        }
+      },
+      {
+        "id": "floor-29",
+        "part": "rep-arcadia-functional-trainer",
+        "position": [
+          1800,
+          650
+        ],
+        "rotation": -1.5707963267948966,
+        "params": {
+          "stack": 0,
+          "pin": 60,
+          "left": 26,
+          "right": 26,
+          "bar": 0
+        }
+      },
+      {
+        "id": "floor-30",
+        "part": "rogue-monster-rhino-belt-squat",
+        "position": [
+          1580,
+          2270
+        ],
+        "rotation": 0,
+        "params": {
+          "pose": 0,
+          "plate": 5,
+          "loaded": 3
+        }
+      },
+      {
+        "id": "floor-31",
+        "part": "rep-dumbbell-storage-cart",
+        "position": [
+          1950,
+          3600
+        ],
+        "rotation": -1.5707963267948966,
+        "params": {
+          "color": 0,
+          "hooks": 0,
+          "dumbbells": 1,
+          "set": 85
+        }
+      },
+      {
+        "id": "floor-32",
+        "part": "ironmaster-quick-lock-stand",
+        "position": [
+          1400,
+          4300
+        ],
+        "rotation": 0,
+        "params": {
+          "load": 75
+        }
+      },
+      {
+        "id": "floor-33",
+        "part": "temple-of-gainz-multi-flight-v3",
+        "position": [
+          -725,
+          1200
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "carriage": 14,
+          "pin": 55,
+          "headPad": 1
+        }
+      },
+      {
+        "id": "floor-34",
+        "part": "tog-selectorized-leg-extension-seated-curl-v3",
+        "position": [
+          -550,
+          2500
+        ],
+        "rotation": 0,
+        "params": {
+          "mode": 0,
+          "rep": 0,
+          "roller": 3,
+          "thighPad": 4,
+          "backPad": 4,
+          "pin": 30
+        }
+      },
+      {
+        "id": "floor-35",
+        "part": "rep-fb-5000",
+        "position": [
+          300,
+          2600
+        ],
+        "rotation": 0,
+        "params": {
+          "pad": 0
+        }
+      },
+      {
+        "id": "floor-36",
+        "part": "prime-shorty-adjustable-bench",
+        "position": [
+          -450,
+          3700
+        ],
+        "rotation": 1.5707963267948966,
+        "params": {
+          "backAngle": 0,
+          "seatAngle": 0,
+          "color": 0,
+          "headEnd": 0
+        }
+      },
+      {
+        "id": "floor-37",
+        "part": "rep-pepin-stand",
+        "position": [
+          600,
+          3900
+        ],
+        "rotation": 0,
+        "params": {
+          "height": 18,
+          "load": 85
+        }
+      },
+      {
+        "id": "floor-38",
+        "part": "kensui-adaptabell",
+        "position": [
+          -700,
+          4450
+        ],
+        "rotation": 0,
+        "params": {
+          "model": 0,
+          "load": 10
+        }
+      },
+      {
+        "id": "floor-39",
+        "part": "kensui-adaptabell",
+        "position": [
+          -400,
+          4450
+        ],
+        "rotation": 0,
+        "params": {
+          "model": 0,
+          "load": 10
+        }
+      },
+      {
+        "id": "floor-40",
+        "part": "rogue-medicine-ball",
+        "position": [
+          -900,
+          -600
+        ],
+        "rotation": 0,
+        "params": {
+          "weight": 20
+        }
+      },
+      {
+        "id": "floor-41",
+        "part": "dynamax-medicine-ball",
+        "position": [
+          -900,
+          -150
+        ],
+        "rotation": 0,
+        "params": {
+          "weight": 10,
+          "color": 0
+        }
+      },
+      {
+        "id": "floor-42",
+        "part": "rogue-games-box",
+        "position": [
+          -600,
+          -1300
+        ],
+        "rotation": 0,
+        "params": {
+          "height": 24
+        }
+      }
+    ],
+    "systems": [
+      {
+        "id": "system-7",
+        "part": "cable-athena",
+        "params": {
+          "sides": 3,
+          "loading": 1,
+          "upgrade": 0,
+          "shroud": 0,
+          "trolley": 979.4,
+          "anchored": 0
+        },
+        "bay": [
+          "front-left",
+          "front-right",
+          "rear-left",
+          "rear-right",
+          "upright-1",
+          "upright-4"
+        ]
+      }
+    ],
+    "wallItems": [
+      {
+        "id": "wall-43",
+        "part": "pegboard-panel",
+        "wall": "back",
+        "position": [
+          -600,
+          1400
+        ],
+        "params": {
+          "width": 1219
+        }
+      },
+      {
+        "id": "wall-44",
+        "part": "pegboard-panel",
+        "wall": "left",
+        "position": [
+          1900,
+          1300
+        ],
+        "params": {
+          "width": 1219
+        }
+      }
+    ],
+    "room": {
+      "back": 1650,
+      "left": 1100,
+      "right": 2300,
+      "front": 4650,
+      "height": 3000
+    },
+    "hangItems": [
+      {
+        "id": "hang-45",
+        "part": "mag-wide-grip",
+        "panel": "wall-43",
+        "slot": 5
+      },
+      {
+        "id": "hang-46",
+        "part": "mag-medium-grip-neutral",
+        "panel": "wall-43",
+        "slot": 27
+      },
+      {
+        "id": "hang-47",
+        "part": "mag-close-grip-neutral",
+        "panel": "wall-43",
+        "slot": 22
+      },
+      {
+        "id": "hang-48",
+        "part": "mag-medium-grip-pronate",
+        "panel": "wall-43",
+        "slot": 49
+      },
+      {
+        "id": "hang-49",
+        "part": "darko-lifting-shorty-bar",
+        "panel": "wall-44",
+        "slot": 5
+      },
+      {
+        "id": "hang-50",
+        "part": "porter-physed-eclipse-grip",
+        "panel": "wall-43",
+        "slot": 31
+      },
+      {
+        "id": "hang-51",
+        "part": "prime-fitness-kaz-handles",
+        "panel": "wall-43",
+        "slot": 44
+      },
+      {
+        "id": "hang-52",
+        "part": "prime-fitness-ro-t8-handles",
+        "panel": "wall-43",
+        "slot": 54
+      },
+      {
+        "id": "hang-53",
+        "part": "mutant-metals-arc-cable-attachment",
+        "panel": "wall-44",
+        "slot": 27
+      },
+      {
+        "id": "hang-54",
+        "part": "rep-tricep-rope",
+        "panel": "wall-44",
+        "slot": 0
+      },
+      {
+        "id": "hang-55",
+        "part": "rogue-rotating-v-grip",
+        "panel": "wall-44",
+        "slot": 10
+      },
+      {
+        "id": "hang-56",
+        "part": "rep-straight-bar-25",
+        "panel": "wall-44",
+        "slot": 49
+      },
+      {
+        "id": "hang-57",
+        "part": "spud-long-ab-strap",
+        "panel": "wall-44",
+        "slot": 32
+      }
+    ]
+  }
+}
