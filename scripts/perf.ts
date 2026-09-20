@@ -45,6 +45,7 @@ function heavyDoc(): RackDoc {
 const pct = (xs: number[], p: number) => { if (!xs.length) return 0; const s = [...xs].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(p * s.length))]; };
 const round = (n: number) => Math.round(n * 10) / 10;
 
+type GLCounts = { frames: number; draws: number; links: number };
 async function metrics(cdp: CDPSession) {
   const { metrics } = await cdp.send('Performance.getMetrics');
   return Object.fromEntries(metrics.map(m => [m.name, m.value])) as Record<string, number>;
@@ -52,16 +53,19 @@ async function metrics(cdp: CDPSession) {
 /** Runs `action` while recording rAF frame intervals, long tasks and main-thread busy time. */
 async function measure(page: Page, cdp: CDPSession, action: () => Promise<void>) {
   await page.evaluate('window.__frames = []; window.__long = [];');
+  const gl0 = await page.evaluate('({ ...window.__gl })') as GLCounts;
   const before = await metrics(cdp), t0 = Date.now();
   await action();
   const seconds = (Date.now() - t0) / 1000, after = await metrics(cdp);
-  const { frames, long } = await page.evaluate('({ frames: window.__frames, long: window.__long })') as { frames: number[]; long: number[] };
+  const { frames, long, gl } = await page.evaluate('({ frames: window.__frames, long: window.__long, gl: { ...window.__gl } })') as { frames: number[]; long: number[]; gl: GLCounts };
   const gaps = frames.slice(1).map((t, i) => t - frames[i]);
   return {
     seconds: round(seconds), fps: round(frames.length / seconds), frameP50: round(pct(gaps, .5)), frameP95: round(pct(gaps, .95)), frameMax: round(Math.max(0, ...gaps)),
     jank: gaps.filter(g => g > 50).length, longTasks: long.length, longTaskMs: round(long.reduce((a, b) => a + b, 0)),
     busyPct: round(100 * (after.TaskDuration - before.TaskDuration) / seconds), scriptPct: round(100 * (after.ScriptDuration - before.ScriptDuration) / seconds),
     heapMB: round(after.JSHeapUsedSize / 1048576),
+    // Builder canvas only (thumbnail contexts excluded): frames that issued draws, draw calls, shader programs linked.
+    renderedFrames: gl.frames - gl0.frames, draws: gl.draws - gl0.draws, programLinks: gl.links - gl0.links,
   };
 }
 
@@ -80,7 +84,19 @@ try {
       const doc = ${JSON.stringify(doc)};
       if (doc) localStorage.setItem('bos-strength-configurations-v1', JSON.stringify({ configs: [], activeId: null, draft: doc }));
       window.__frames = []; window.__long = [];
-      const tick = t => { window.__frames.push(t); requestAnimationFrame(tick); }; requestAnimationFrame(tick);
+      let tickNo = 0, drawnTick = -1;
+      const tick = t => { tickNo++; window.__frames.push(t); requestAnimationFrame(tick); }; requestAnimationFrame(tick);
+      // Count WebGL work on the builder's own canvas (#viewport), not the thumbnail renderers.
+      window.__gl = { frames: 0, draws: 0, links: 0 };
+      const isBuilder = new WeakMap();
+      const builder = gl => { let v = isBuilder.get(gl); if (v === undefined) { if (!gl.canvas.isConnected) return false; v = !!gl.canvas.closest('#viewport'); isBuilder.set(gl, v); } return v; };
+      const proto = WebGL2RenderingContext.prototype;
+      for (const name of ['drawElements', 'drawArrays', 'drawElementsInstanced', 'drawArraysInstanced', 'drawRangeElements']) {
+        const original = proto[name];
+        proto[name] = function (...a) { if (builder(this)) { window.__gl.draws++; if (drawnTick !== tickNo) { drawnTick = tickNo; window.__gl.frames++; } } return original.apply(this, a); };
+      }
+      const link = proto.linkProgram;
+      proto.linkProgram = function (p) { if (builder(this)) window.__gl.links++; return link.call(this, p); };
       new PerformanceObserver(list => { for (const e of list.getEntries()) window.__long.push(e.duration); }).observe({ type: 'longtask', buffered: true });
     `);
     const page = await context.newPage(), cdp = await context.newCDPSession(page);
