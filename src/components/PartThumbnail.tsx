@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { NumericParams } from '../../rack-generator/types.ts';
 import { prebuiltThumbnail } from '../thumbnails/prebuilt.ts';
+import { revealed, revealWhenVisible } from '../thumbnails/reveal.ts';
 import { thumbnailKey } from '../thumbnails/queue.ts';
 import { requestThumbnail, retainThumbnails } from '../thumbnails/service.ts';
 import { partIcon } from './part-icon.ts';
@@ -15,6 +16,13 @@ export function PartThumbnail({ part, params = {}, className = '', enabled = tru
   const prebuilt = prebuiltThumbnail(part, params, key);
   const live = prebuilt === undefined;
   useEffect(() => (live ? retainThumbnails() : undefined), [live]);
+  // Prebuilt images get a src once near view (then are never observed again), or at once if already seen.
+  const [shown, setShown] = useState<string>();
+  const src = prebuilt && (shown === prebuilt || revealed(prebuilt)) ? prebuilt : undefined;
+  useEffect(() => {
+    if (!prebuilt || src) return;
+    return revealWhenVisible(element.current!, prebuilt, () => setShown(prebuilt));
+  }, [prebuilt, src]);
   useEffect(() => {
     if (!enabled || !live) return;
     const request = { part, params: { ...params } };
@@ -35,7 +43,7 @@ export function PartThumbnail({ part, params = {}, className = '', enabled = tru
   if (!live) {
     return (
       <span ref={element} className={`part-thumbnail ${className}`} aria-hidden="true" data-thumbnail={prebuilt ? 'ready' : 'fallback'}>
-        {prebuilt ? <img src={prebuilt} alt="" width="128" height="128" loading="lazy" decoding="async" draggable={false} /> : <span dangerouslySetInnerHTML={{ __html: partIcon(part) }} />}
+        {prebuilt ? src && <img src={src} alt="" width="128" height="128" loading="lazy" decoding="async" draggable={false} /> : <span dangerouslySetInnerHTML={{ __html: partIcon(part) }} />}
       </span>
     );
   }

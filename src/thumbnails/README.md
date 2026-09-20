@@ -13,8 +13,12 @@ and framing as the runtime PNG). Output: `public/thumbnails/<part>.<hash>.webp`
 
 `PartThumbnail` looks the key up first (`prebuilt.ts`; empty params mean
 defaults, so rows show images before definitions load). A hit renders a plain
-`<img loading="lazy" decoding="async">`: no observer, queue, worker, Manifold
-build or main-thread render. Only non-default params or keys missing from the
+fixed-size `<img loading="lazy" decoding="async">`: no queue, worker, Manifold
+build or main-thread render. Its `src` is set by one shared observer per scroll
+container (`reveal.ts`, 300px preload margin) that unobserves each card once
+seen; images already shown this session render immediately. (Native lazy
+loading alone keeps every unloaded image in a per-frame intersection check,
+about 0.8 ms/frame for the sidebar while the builder canvas animates.) Only non-default params or keys missing from the
 manifest use the live pipeline below. The generator is incremental (only new or
 changed keys; `--force` re-renders all, naming parts re-renders those) and
 deletes unreferenced images. `prebuilt.test.ts` fails when a catalog part has
