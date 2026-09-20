@@ -1,5 +1,8 @@
 import { test, expect, chromium, type Page } from '@playwright/test';
 import { addFromGallery, openGallery } from './part-gallery.ts';
+
+/** Isolated builder server: GYM_TIMELINE_BASE_URL (default :5341). */
+const timelineBase = process.env.GYM_TIMELINE_BASE_URL ?? 'http://127.0.0.1:5341';
 import { createAssembly, resizeAssembly, addAccessory, resolveAssembly } from '../rack-generator/assembly.ts';
 import { DocumentHistory } from '../src/state/history.ts';
 import type { ConfigCollection } from '../src/state/config-storage.ts';
@@ -16,12 +19,16 @@ test('full timeline: 30+ edits, pointer scrubbing, replay, restoration, persiste
     const page = testPage = await context.newPage();
     page.setDefaultTimeout(15000);
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.goto('http://127.0.0.1:5341');
+    await page.goto(timelineBase);
     await page.evaluate(() => localStorage.clear());
-    await page.goto('http://127.0.0.1:5341/builder');
+    await page.goto(`${timelineBase}/builder`);
     page.on('dialog', dialog => dialog.accept());
     const snapshot = async () => {
-      const collection = await page.evaluate(() => JSON.parse(localStorage.getItem('bos-strength-configurations-v1') ?? '{}')) as ConfigCollection;
+      // The recovery draft is debounced (AUTOSAVE_DELAY_MS, then idle time, #185): let a pending write land before reading it.
+      const collection = await page.evaluate(async () => {
+        await new Promise(r => setTimeout(r, 450)); await new Promise(r => requestIdleCallback(() => r(null), { timeout: 1000 })); await new Promise(r => setTimeout(r, 0));
+        return JSON.parse(localStorage.getItem('bos-strength-configurations-v1') ?? '{}');
+      }) as ConfigCollection;
       const saved = collection.configs?.find(config => config.id === collection.activeId);
       const applied = collection.draft ?? saved?.doc ?? createAssembly();
       const history = collection.draftTimeline ?? saved?.timeline;
@@ -157,7 +164,7 @@ test('3MF availability follows the applied rack, including empty historical view
   try {
     const page = await browser.newPage();
     await page.addInitScript(() => localStorage.clear());
-    await page.goto('http://127.0.0.1:5341/builder');
+    await page.goto(`${timelineBase}/builder`);
     const full = createAssembly();
     const empty = { ...full, accessories: [], removed: [...Object.keys(full.uprights), ...full.connections.map(edge => edge.id)] };
     const history = new DocumentHistory(empty);
@@ -168,6 +175,8 @@ test('3MF availability follows the applied rack, including empty historical view
     });
     await load(full);
     const slider = page.getByRole('slider', { name: 'History playhead' });
+    // Imports land asynchronously: wait for the imported history before navigating it.
+    await expect(slider).toHaveAttribute('aria-valuemax', '1');
     await slider.focus(); await page.keyboard.press('Home');
     await expect(slider).toHaveAttribute('aria-valuenow', '0');
     await expect(page.locator('#parts-toggle')).toHaveText('Parts list (0)');
@@ -177,6 +186,7 @@ test('3MF availability follows the applied rack, including empty historical view
     await page.keyboard.press('Escape');
     history.append(empty);
     await load(empty);
+    await expect(slider).toHaveAttribute('aria-valuemax', '2');
     await slider.focus(); await page.keyboard.press('ArrowLeft');
     await expect(slider).toHaveAttribute('aria-valuenow', '1');
     await expect(page.locator('#parts-toggle')).not.toHaveText('Parts list (0)');
@@ -193,7 +203,7 @@ test('30 part additions deconstruct and reconstruct under a held playhead withou
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     page.setDefaultTimeout(15000);
     await page.addInitScript(() => localStorage.clear());
-    await page.goto('http://127.0.0.1:5341/builder');
+    await page.goto(`${timelineBase}/builder`);
     const initial = createAssembly(), history = new DocumentHistory(initial);
     let applied = initial;
     for (let i = 0; i < 30; i++) {

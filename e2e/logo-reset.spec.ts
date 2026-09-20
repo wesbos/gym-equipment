@@ -36,7 +36,7 @@ test('stock reset clears drafts, cancels async completions, and only records app
       }
     };
   });
-  await page.goto('http://127.0.0.1:5305/builder');
+  await page.goto(`${process.env.GYM_LOGO_BASE_URL ?? 'http://127.0.0.1:5305'}/builder`);
   console.log('Reset fixture loaded');
   await page.locator('.logo-controls summary').click();
   const controls = page.locator('.logo-controls');
