@@ -21,6 +21,7 @@ import { swapCandidate, swapCandidates, type SwapCandidate } from '../../rack-ge
 import { createSwapRegions } from './swap-regions.ts';
 import { cloneInstanceMaterials } from './instance-materials.ts';
 import { BuildAnimation, planBuild } from './build-animation.ts';
+import { InstanceSync, placeInstance } from './instance-sync.ts';
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
@@ -150,11 +151,10 @@ export function createBuilderScene(
     g.traverse(object => {
       if (object instanceof THREE.Mesh) object.castShadow = object.receiveShadow = true;
     });
-    g.position.set(...entry.position);
-    g.rotation.set(...entry.rotation);
-    g.userData = { id: entry.id, ownerId: entry.ownerId || entry.id, ...(partAttribution(entry.part) ? { vendorAttribution: partAttribution(entry.part) } : {}) };
+    placeInstance(g, entry, partAttribution(entry.part));
     return g;
   }
+  const assembly = new InstanceSync(assemblyRoot, instances, transformed, g => disposeMeshes(g, false));
   worker.onmessage = ({ data }: MessageEvent<LibraryWorkerResponse>) => {
     if (disposed) return;
     if (data.type === "catalog") {
@@ -234,9 +234,12 @@ export function createBuilderScene(
     return `${Math.ceil(size.x)} W × ${Math.ceil(size.z)} D × ${Math.ceil(size.y)} H mm`;
   }
   let rebuilding = false;
+  /** Every model of the batch is already built: the rebuild settles within microtasks, before the next paint. */
+  const cached = (entries: readonly ResolvedInstance[]) => entries.every(entry => cache.isReady(geometryKey(entry)));
   function requestRebuild() {
     ++generation;
-    store.patch({ loading: true, dimensions: dimensions() });
+    // Moves and other edits of already-built parts skip the transient loading patches (one store update, not three).
+    if (!cached(snapshot.resolved)) store.patch({ loading: true, dimensions: dimensions() });
     if (!rebuilding) void rebuild();
   }
   async function rebuild() {
@@ -244,7 +247,7 @@ export function createBuilderScene(
     const serial = generation,
       entries = snapshot.resolved;
     let releaseBatch = cache.pin(entries.map(geometryKey));
-    store.patch({
+    if (!cached(entries)) store.patch({
       loading: true,
       status: "Building your rack…",
       error: false,
@@ -258,18 +261,11 @@ export function createBuilderScene(
         if (result.status === 'rejected') throw result.reason;
         return result.value;
       });
-      // Allocate per-instance materials only after rejecting stale/failed batches.
-      const built = models.map((model, i) => transformed(model, entries[i]));
-      disposeMeshes(assemblyRoot, false);
-      assemblyRoot.clear();
+      // Allocate per-instance materials only after rejecting stale/failed batches; unchanged instances only move.
+      assembly.sync(entries, models, snapshot.doc.appearance, partAttribution);
       releaseAssembly();
       releaseAssembly = releaseBatch;
       releaseBatch = () => {};
-      instances.clear();
-      for (const g of built) {
-        assemblyRoot.add(g);
-        instances.set(String(g.userData.id), g);
-      }
       scene.updateMatrixWorld(true);
       fitRackShadow(lighting.key, new THREE.Box3().setFromObject(assemblyRoot));
       refreshSelection();
@@ -1059,9 +1055,7 @@ export function createBuilderScene(
       clearMounts();
       clearCradles();
       clearSelection();
-      disposeMeshes(assemblyRoot, false);
-      assemblyRoot.clear();
-      instances.clear();
+      assembly.clear();
       releaseAssembly();
       cache.dispose();
       floor.dispose();
