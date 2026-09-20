@@ -106,6 +106,8 @@ try {
     await page.waitForSelector('.catalog-panel .part-card', { timeout: 120000 });
     await page.waitForSelector('#viewport canvas');
     const firstCards = Date.now() - t0;
+    // The stored draft is only offered on load; --recover-heavy actually loads it (without it "heavy" is the default rack).
+    if (doc && has('recover-heavy')) await page.evaluate(`[...document.querySelectorAll('button')].find(b => b.textContent.includes('Recover unsaved draft'))?.click()`);
     // Settle: definitions + scene geometry + first thumbnails.
         await page.waitForTimeout(6000);
     const gpu = await page.evaluate(`(() => { const c = document.createElement('canvas').getContext('webgl2'); const d = c && c.getExtension('WEBGL_debug_renderer_info'); return d ? c.getParameter(d.UNMASKED_RENDERER_WEBGL) : 'unknown'; })()`);
