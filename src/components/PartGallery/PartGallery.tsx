@@ -80,8 +80,10 @@ function GalleryDialog({ store }: { store: BuilderStore }) {
   const fit = useMemo(() => rackFitCache(rack), [rack]);
   const tree = useMemo(() => categoryTree(items), [items]);
   const scoped = useMemo(() => scopeItems(items, scope, prefs), [items, scope, prefs]);
-  const facets = useMemo(() => brandFacets(scoped), [scoped]);
-  const results = useMemo(() => filterItems(items, { scope, query: deferredQuery, brands, fitsOnly }, { ...prefs, fit }), [items, scope, deferredQuery, brands, fitsOnly, prefs, fit]);
+  // Brand chips count what the search and fit filter leave, so every chip's number is what clicking it shows.
+  const unbranded = useMemo(() => filterItems(items, { scope, query: deferredQuery, brands: [], fitsOnly }, { ...prefs, fit }), [items, scope, deferredQuery, fitsOnly, prefs, fit]);
+  const facets = useMemo(() => brandFacets(unbranded), [unbranded]);
+  const results = useMemo(() => { const keys = new Set(brands); return keys.size ? unbranded.filter(i => keys.has(i.brandKey)) : unbranded; }, [unbranded, brands]);
   const rackParts = useMemo(() => scoped.filter(i => fit(i.id) !== null), [scoped, fit]);
   const refused = useMemo(() => rackParts.filter(i => fit(i.id)?.fits === false).length, [rackParts, fit]);
   const favourites = useMemo(() => new Set(prefs.favourites), [prefs.favourites]);
@@ -248,7 +250,8 @@ const GalleryGrid = memo(function GalleryGrid({ items, grouped, activeIndex, act
   const inner = size.width - (size.width < 500 ? 16 : 24), min = size.width < 500 ? 136 : CARD_MIN;
   const columns = Math.max(1, Math.floor((inner + GAP) / (min + GAP)));
   const layout = useMemo(() => gridLayout(items, columns, { grouped, rowHeight: ROW_HEIGHT, headerHeight: HEADER_HEIGHT, gap: GAP }), [items, columns, grouped]);
-  const [first, last] = visibleRows(layout, scrollTop, size.height, 2);
+  // Three rows of overscan either side: wheel scrolling reaches already-mounted cards before new rows render.
+  const [first, last] = visibleRows(layout, scrollTop, size.height, 3);
   const frame = useRef(0);
   const onScroll = () => {
     if (frame.current) return;

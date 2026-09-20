@@ -7,7 +7,8 @@
 }
 .part-gallery * { box-sizing: border-box; }
 .part-gallery.pg-dragging { opacity: 0; pointer-events: none; transition: opacity .12s; }
-.pg-backdrop { position: absolute; inset: 0; background: #16261dcc; backdrop-filter: blur(3px); animation: pg-fade .14s ease-out; }
+/* No backdrop-filter: blurring the live WebGL canvas behind a full-screen overlay stalls the compositor. */
+.pg-backdrop { position: absolute; inset: 0; background: #16261dd9; animation: pg-fade .14s ease-out; }
 .pg-panel {
   position: absolute; inset: clamp(8px, 3vh, 32px) clamp(8px, 2.5vw, 40px); max-width: 1480px; margin: 0 auto;
   display: grid; grid-template-columns: 218px minmax(0, 1fr) 300px; grid-template-rows: auto minmax(0, 1fr);
@@ -32,7 +33,7 @@
 .pg-search { flex: 1; max-width: 620px; margin-left: auto; display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 8px; padding: 0 14px; box-shadow: inset 0 0 0 1px #0000; }
 .pg-search:focus-within { box-shadow: 0 0 0 3px var(--pg-accent); }
 .pg-search svg { width: 16px; height: 16px; fill: none; stroke: #7d9175; stroke-width: 1.6; flex: none; }
-.pg-search input:focus-visible { outline: none; }
+.part-gallery .pg-search input:focus-visible { outline: none; }
 .pg-search input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; padding: 13px 0; font: inherit; font-size: 14px; color: var(--pg-ink); }
 .pg-search input::placeholder { color: #98a590; }
 .part-gallery .pg-close { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: #ffffff12; border-color: #ffffff2e; color: #fff; font-size: 20px; line-height: 1; }
@@ -74,7 +75,8 @@
 .pg-status strong { color: var(--pg-ink); font-weight: 650; }
 .pg-scroller { position: relative; flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 0 12px; scrollbar-width: thin; scrollbar-color: #c6d1bd transparent; contain: strict; }
 .pg-grid { position: relative; }
-.pg-row, .pg-row-header { position: absolute; left: 0; right: 0; top: 0; will-change: transform; }
+/* Rows sit at fixed offsets (transform only changes on relayout), so no will-change: no extra layer per row. */
+.pg-row, .pg-row-header { position: absolute; left: 0; right: 0; top: 0; }
 .pg-row { display: grid; gap: 12px; contain: layout style; }
 .pg-row-header { display: flex; align-items: flex-end; padding: 0 2px 9px; }
 .pg-row-header span { font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; font-weight: 650; color: #6d8264; }

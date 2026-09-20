@@ -29,7 +29,7 @@ Put tests in `rack-generator/<family>.test.ts` and research notes in `rack-gener
 
 - **One catalog entry per product**, each with its own `id`, `title`, `vendor` attribution and `section`. Share one parametric builder across a family's products when they're structurally similar (e.g. all hex dumbbells). Real variants of one product (weights, lengths, colourways, leg heights) are **params** on that entry, not separate entries.
 - **IDs:** `<brand>-<product>` in kebab case, e.g. `rogue-echo-bike`, `cap-rubber-hex-dumbbell`. Grep first so you never reuse an existing id.
-- **Sections:** set `section` to one of `FLOOR_SECTIONS` / `HANG_SECTIONS` / `WALL_SECTIONS` / `RACK_SECTIONS` in `rack-generator/catalog-sections.ts`. The sidebar and `/library` group by it automatically.
+- **Sections:** set `section` to one of `FLOOR_SECTIONS` / `HANG_SECTIONS` / `WALL_SECTIONS` / `RACK_SECTIONS` in `rack-generator/catalog-sections.ts`. The builder's parts gallery and `/library` group by it automatically (`GALLERY_CATEGORIES` in `src/components/PartGallery/gallery-model.ts` files each section under a gallery category; a new section becomes its own category).
 - **Vendor attribution is required:** `{vendor, url, credit, trademark, reconstruction}`, like `floor-parts/powerblock.ts`. `reconstruction` states honestly what is published and what is estimated. Descriptions end with "Independent reconstruction …; <Brand> trademarks belong to <Brand>."
 - **Params** are numeric selects: enums are 0/1/… with `format`, and `options` may depend on earlier params. Keep defaults to the most common real configuration.
 
@@ -90,7 +90,7 @@ export const MY_JCUP = defineRackPart({
 - **Bodies:** use a few boxes that follow the real pads, arms and cups, and leave out the pin or collar inside the hole. Every hole in `holes` is also checked for shared-slot conflicts with other accessories.
 - **Cradles:** give J-cups, spotter arms and bar storage `cradles` so the barbell parks in them like the built-in J-hooks. Two coaxial supports 300 mm or more apart form a cradle. `kind: 'storage'` ranks below working cradles.
 - **Tests:** `rack-registry.test.ts` already checks every entry. It builds every param combination (and mirror) on 75 and 76.2 mm tubes, and checks the triangle and time budgets, that the solids stay inside `extent`, and that `bodies` sit inside the build and outside the tube. It also checks catalog, section and attribution, placement on the stock rack, the pair default, the mount count, the JSON round trip, allowed faces, removal with the upright, and strict params on the BOS, REP and Hydra profiles. `placement-proposals.test.ts` sweeps every accessory for a collision-free proposal. Your family test adds the published dimensions (as `rack-attachments.test.ts` does) and any fit rules, such as the bore and pitch.
-- **Screens:** `scripts/shoot-part.ts` renders the part in the viewer with the default 75 mm context. Also check it mounted in the builder (`/builder`, click the sidebar card, **Place**), then try the face select, the hole number, **Matching pair** and undo.
+- **Screens:** `scripts/shoot-part.ts` renders the part in the viewer with the default 75 mm context. Also check it mounted in the builder (`/builder`, press `/` for the parts gallery, search for the part, click its card, **Place**), then try the face select, the hole number, **Matching pair** and undo.
 
 ## Worktree setup
 
