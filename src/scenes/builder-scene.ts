@@ -306,6 +306,7 @@ export function createBuilderScene(
       });
       // Allocate per-instance materials only after rejecting stale/failed batches; unchanged instances only move.
       assembly.sync(entries, models, snapshot.doc.appearance, partAttribution);
+      invalidate(); // Kept instances only move: no child is added or removed to wake the renderer.
       releaseAssembly();
       releaseAssembly = releaseBatch;
       releaseBatch = () => {};
