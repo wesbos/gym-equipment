@@ -3,6 +3,22 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { BuilderStore } from "../state/builder-store.ts";
 import { loadGym } from "./gyms.ts";
 
+/** The scene reports each finished build in the status bar; say where the kept draft went once the gym has built. */
+function announceAfterBuild(store: BuilderStore, message: string) {
+  const done = () => {
+    unsubscribe();
+    clearTimeout(timer);
+  };
+  const unsubscribe = store.subscribe(() => {
+    const { loading, status } = store.getSnapshot();
+    if (!loading && /\d+ parts/.test(status)) {
+      done();
+      store.status(message);
+    }
+  });
+  const timer = setTimeout(done, 60000);
+}
+
 /** Search param the gallery's "Open in builder" links use: `/?gym=<slug>`. */
 export const GYM_PARAM = "gym";
 
@@ -25,7 +41,8 @@ export function useOpenGym(store: BuilderStore, beforeOpen?: () => void) {
         if (!gym) store.status(`No gym called “${slug}” in the gallery.`, true);
         else {
           beforeOpen?.();
-          await store.openDesign(gym.doc, gym.title);
+          const kept = await store.openDesign(gym.doc, gym.title);
+          if (kept) announceAfterBuild(store, `Opened ${gym.title}. Your unsaved design is kept under Configurations as “${kept}”.`);
         }
       } catch (error) {
         store.status(`Could not open gym: ${error instanceof Error ? error.message : String(error)}`, true);
