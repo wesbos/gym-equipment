@@ -132,7 +132,7 @@ export function hostSpan(doc: HostDoc, host: Accessory, t: HostedTarget): number
 /** Mount marker for a hosted target (world). */
 export function hostedMount(t: HostedTarget, pose: HostPose, h: RackHost): Mount {
   const f = stationFrame(pose, h, t.station);
-  return { ...t, position: f.origin, center: f.origin, pinAxis: h.hole > 0 ? f.X : f.Y, hostId: t.host, label: `${pose.name ?? h.label} · ${h.label.toLowerCase()} ${h.kind === 'pull-up-bar' ? 'clamp station' : 'hole'} ${t.station + 1}` };
+  return { ...t, position: f.origin, center: f.origin, pinAxis: h.hole > 0 ? f.X : f.Y, hostId: t.host, label: `${pose.name ?? h.label} · ${h.kind === 'pull-up-bar' ? `${h.label.toLowerCase()} station` : 'hole'} ${t.station + 1}` };
 }
 /** Resolves a hosted accessory (one instance, two for a pair) on its host. */
 export function resolveHosted(doc: HostDoc, a: Accessory): ResolvedInstance[] {

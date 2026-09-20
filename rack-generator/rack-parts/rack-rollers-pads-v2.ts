@@ -131,7 +131,8 @@ export function thresherLayout(p: NumericParams) {
   const t = THRESHER, deg = t.angles[p.angle ?? 0] ?? 0, turn = thresherTurn(deg), pitch = p.hostPitch ?? inch(2);
   const hw = (p.hostWidth ?? inch(3)) / 2, x0 = hw + t.liner, x1 = x0 + t.steel;
   const [pw, pl, ph] = t.pad, y0 = t.padY - pl / 2, y1 = t.padY + pl / 2;
-  const padCorners: Vec2[] = ([[y0, t.padZ], [y1, t.padZ], [y0, t.padZ + ph], [y1, t.padZ + ph]] as Vec2[]).map(turn);
+  // Pad outline in the plate plane: full length up to 12 mm below the top, the pillowed top edge 10 mm in.
+  const padCorners: Vec2[] = ([[y0, t.padZ], [y1, t.padZ], [y0, t.padZ + ph - 12], [y1, t.padZ + ph - 12], [y0 + 10, t.padZ + ph], [y1 - 10, t.padZ + ph]] as Vec2[]).map(turn);
   const plate = thresherOutline().map(turn), all = [...padCorners, ...plate];
   const ys = plate.map(q => q[0]), zs = all.map(q => q[1]);
   return { deg, turn, pitch, lockR: 2 * pitch, hw, x0, x1, padW: pw, padCorners, plate, back: -Math.min(...ys), front: Math.max(...ys), zMin: Math.min(...zs), zMax: Math.max(...zs),
