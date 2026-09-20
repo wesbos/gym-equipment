@@ -28,6 +28,8 @@ export interface FloorPartSpec<Id extends string = string> {
   /** Pairable: "Add matching pair" places a second unit `gap` mm beside the first along local X. */ pair?: { gap: number };
   colors?: readonly (readonly [string, string])[]; colorLabel?: string; vendor?: VendorAttribution;
   /** Parks in rack bar cradles (barbell-cradles.ts); floor placement is the fallback. */ parks?: boolean;
+  /** Flat floor covering (mats, platforms): the rack and other floor items may stand on it, so it is exempt from overlap
+   * warnings and placement stepping. */ underlay?: boolean;
   /** Bars: own shaft/sleeve/axis geometry. Parking bars without one use the 20 kg Olympic bar's; any part with one
    * (parking or not, e.g. trap bars) takes plates on its sleeves (bar-loads.ts). */ bar?: ByParams<BarSpec>;
   /** Parked, the bar hangs in its worn roll instead of keeping its floor roll (a CB-1's legs hang down): the resolved
