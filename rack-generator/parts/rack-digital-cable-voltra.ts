@@ -102,7 +102,7 @@ export function buildStrapMount(api: ManifoldAPI, params: NumericParams): SolidP
     for (const x of [-38, 38]) add('Rubber post pad', box([16, s.pad, h - 30], [x, l.face + s.pad / 2, 0]), 'liner', '#17181a', 0, .9);
     const { x0, x1, z, inner, thick } = s.loop;
     const loop = k(roundXZ(v, x1 - x0 + 10, 2 * z, 22, (x0 + x1 - 10) / 2 + 5, 0, l.plateY0 + 6, thick).subtract(roundXZ(v, inner[0], inner[1], 12, (x0 + x1) / 2 - 4, 0, l.plateY0, thick + 12)));
-    add('D-loop carry handle', loop, 'handle', ...BP_DARK);
+    add('D-loop carry handle', loop, 'handle', '#9a9fa3', .85, .3);
     // Strap: from the plate's side slots, back around the post; the cam buckle closes it behind the post.
     const R = l.ring, front = l.plateY0 + 10, st = s.strapThick;
     const outer = k(k(k(C.square([2 * R - 10, front + R - 10], true)).offset(5, 'Round', 16)).translate([0, (front - R) / 2]));
