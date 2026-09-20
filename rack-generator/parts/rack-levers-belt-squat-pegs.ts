@@ -119,7 +119,7 @@ export function buildWristRoller(api: ManifoldAPI, params: NumericParams): Solid
   return buildKit(api, g => {
     const y0 = f + W.washer, y1 = wristRollerEnd(p), R = W.diameter / 2, s0 = y0 + W.spool[0], s1 = y0 + W.spool[1], sr = W.spoolDiameter / 2;
     // Stainless axle through the upright, a retaining collar behind the far face.
-    g.add('Stainless axle', g.rod([0, -f - 16, 0], [0, y1 + W.endCap + W.stub, 0], m.axle / 2, 1, 1, 32), STAINLESS);
+    g.add('Stainless axle', g.rod([0, -f - 16, 0], [0, y1 + W.endCap + (p.crank ? -2 : W.stub), 0], m.axle / 2, 1, 1, 32), STAINLESS);
     g.add('Rear retaining collar', g.rod([0, -f - 14, 0], [0, -f, 0], Math.max(m.axle / 2 + 7, 17), .8, .8, 32), STAINLESS);
     g.add('Delrin face washer', g.rod([0, f, 0], [0, y0, 0], R - 2, 0, 0, 48), UHMW);
     // 2-inch grip either side of the turned-down cord spool.
@@ -128,7 +128,7 @@ export function buildWristRoller(api: ManifoldAPI, params: NumericParams): Solid
     // Paracord coils on the spool and the line dropping to the stainless carabiner.
     const cord: Finish = { color: '#2e3033', metalness: 0, roughness: .9 }, cr = 2.4, coils = Math.floor((s1 - s0) / (2 * cr + .2));
     g.add('Paracord line', g.union([
-      ...Array.from({ length: coils }, (_, i) => g.ring([0, s0 + cr + .1 + i * (2 * cr + .2), 0], Y, sr + cr, cr, 32)),
+      ...Array.from({ length: coils }, (_, i) => g.ring([0, s0 + cr + .1 + i * (2 * cr + .2), 0], Y, sr + cr + .4, cr, 32)),
       g.rod([0, s0 + (s1 - s0) / 2, -sr - cr], [0, s0 + (s1 - s0) / 2, -sr - W.cordDrop], cr, 0, 0, 12),
     ]), cord);
     const cy = s0 + (s1 - s0) / 2, cz = -sr - W.cordDrop - 22;
