@@ -28,7 +28,7 @@ export function buildAm2(api: ManifoldAPI, params: NumericParams): SolidPart[] {
     k.put('Red 1.25 in jaw', k.prism(jaw, -J, J, 'x', 2), TEX_RED, 'handle');
     // Recessed hook UHMW on both jaw faces and the black counterweight plates.
     const hook = jaw.slice(2, 9);
-    const liner = (x0: number, x1: number) => k.k(k.k(k.k(k.k(new k.C([hook], 'EvenOdd')).offset(-3, 'Round', 12)).extrude(x1 - x0)).translate([0, 0, x0])).transform([0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1]);
+    const liner = (x0: number, x1: number) => k.k(k.k(k.k(k.k(k.k(new k.C([hook], 'EvenOdd')).offset(-3, 'Round', 12)).extrude(x1 - x0)).translate([0, 0, x0])).transform([0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1]));
     k.put('Recessed hook UHMW', k.union([liner(J, J + 3), liner(-J - 3, -J)]), FINISH.uhmw, 'liner');
     k.put('Hook and backstop bolts', k.union([k.rod([-W - 6, f + 30, 32], [W + 6, f + 30, 32], 8, 20), k.rod([-W - 6, f + 30, 78], [W + 6, f + 30, 78], 8, 20), k.rod([-W - 6, f + 150, -20], [W + 6, f + 150, -20], 8, 20)]), FINISH.zinc, 'fastener');
     k.put(p.line ? '5/8 in detent pin' : '1 in detent pin', k.revolve([[0, 0], [pinR - 1.2, 0], [pinR, 1.2], [pinR, 70 + bt + 18], [0, 70 + bt + 18]], [0, f - 70, 0], 'y', 28), FINISH.blackZinc, 'rod');
@@ -44,10 +44,12 @@ export function buildSnapBack(api: ManifoldAPI, params: NumericParams): SolidPar
   const tone = (c: readonly [string, string]): Finish => c[0] === 'Clear Grind' ? { color: c[1], metalness: .85, roughness: .35 } : c[0].startsWith('Flat') ? { color: c[1], metalness: .1, roughness: .8 } : { color: c[1], metalness: .45, roughness: .3 };
   return buildWith(api, k => {
     const prof = shiftY(s.body, f), steel: Manifold[] = [k.prism(prof, g, g + t, 'x'), k.prism(prof, -g - t, -g, 'x')];
-    steel.push(k.box([-g - t, f, s.top - t], [g + t, f + s.reach, s.top]), k.box([-g - t, f, s.bottom], [g + t, f + t, s.top]));
+    // Members sit 0.3 mm off each other's faces (coplanar seams leave zero-area triangles in the print export).
+    const e = .3;
+    steel.push(k.box([-g - t + e, f + e, s.top - t], [g + t - e, f + s.reach - e, s.top - e]), k.box([-g - t + e, f + e, s.bottom + e], [g + t - e, f + t, s.top - e]));
     // J-cup style clasp box around the upright under the top pin.
     const cx = wu + .6;
-    for (const side of [1, -1]) steel.push(k.rbox([side > 0 ? cx : -cx - t, f - 60, -120], [side > 0 ? cx + t : -cx, f + t, -40], 6, 'x'), k.box([side > 0 ? g : -cx - t, f, -120], [side > 0 ? cx + t : -g, f + t, -40]));
+    for (const side of [1, -1]) steel.push(k.rbox([side > 0 ? cx : -cx - t, f - 60, -120], [side > 0 ? cx + t : -cx, f + t - e, -40], 6, 'x'), k.box([side > 0 ? g + e : -cx - t + e, f + e, -120 + e], [side > 0 ? cx + t - e : -g - e, f + t - 2 * e, -40 - e]));
     k.put('3/8 in steel side plates and clasp', k.union(steel), tone(body));
     k.put('MM logo cut-out', k.union([1, -1].map(side => k.box([side > 0 ? g + t : -g - t - .3, f + 170, -30], [side > 0 ? g + t + .3 : -g - t, f + 250, 20]))), { color: '#0c0c0d', metalness: 0, roughness: .9 });
     // Swing arm: a curved band from the ball-bearing pivot down along the arc to the roller catch.

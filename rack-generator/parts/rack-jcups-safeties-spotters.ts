@@ -26,7 +26,7 @@ function ringPin(k: Kit, f: number, z: number, r: number, yFront: number, ring: 
   const len = yFront + 12 - (f - 60);
   k.put(name, k.revolve([[0, 0], [r - 1.2, 0], [r, 1.2], [r, len], [0, len]], [0, f - 60, z], 'y', 24), FINISH.zinc, 'rod');
   const loop = k.k(k.k(k.k(k.C.circle(22, 36)).subtract(k.k(k.C.circle(15, 36)))).extrude(5));
-  k.put(name + ' ring', k.k(k.k(k.k(loop.rotate([0, 90, 0])).translate([-2.5, yFront + 12 + 18, z]))), ring, 'handle');
+  k.put(name + ' ring', k.k(k.k(loop.rotate([0, 90, 0])).translate([-2.5, yFront + 12 + 18, z])), ring, 'handle');
 }
 
 export function buildSaml(api: ManifoldAPI, params: NumericParams): SolidPart[] {
@@ -106,15 +106,17 @@ export function buildStealth(api: ManifoldAPI, params: NumericParams): SolidPart
   return buildWith(api, k => {
     const steel: Manifold[] = [], end = f + a.reach, cx = wu + .6, W = a.w / 2, bottom = a.low;
     // Side-mount channel: front web plus side cheeks with the rear locking slot, 7 in tall (three holes).
-    steel.push(k.box([-cx - t, f, bottom], [cx + t, f + t, a.high]));
+    // Members sit 0.3 mm off each other's faces (coplanar seams leave zero-area triangles in the print export).
+    const e = .3;
+    steel.push(k.box([-cx - t + e, f + e, bottom + e], [cx + t - e, f + t - e, a.high - e]));
     for (const side of [1, -1]) steel.push(k.minus(k.rbox([side > 0 ? cx : -cx - t, f - a.claspBack, bottom], [side > 0 ? cx + t : -cx, f + t, a.high], 6, 'x'),
       k.rbox([side > 0 ? cx - 1 : -cx - t - 1, f - a.claspBack + 8, -120], [side > 0 ? cx + t + 1 : -cx + 1, f - a.claspBack + 30, -60], 8, 'x')));
     // Arm: two 1/4 in side plates whose top rises to the channel, a bottom plate and the front lip plate.
     const prof: Vec2[] = [[f + t - .5, bottom], [end, bottom], [end, a.top + a.strip + a.lip], [end - 10, a.top + a.strip + a.lip], [end - 10, a.top], [f + a.flatFrom, a.top], [f + 40, a.high - 20], [f + t - .5, a.high - 20]];
     const holes = Array.from({ length: a.holes }, (_, i) => k.rod([-W - 1, f + 170 + i * 50.8, bottom + 38], [W + 1, f + 170 + i * 50.8, bottom + 38], a.holeD / 2, 24));
     for (const side of [1, -1]) steel.push(k.minus(k.prism(prof, side > 0 ? W - s : -W, side > 0 ? W : -W + s, 'x'), ...holes));
-    steel.push(k.box([-W + s - .5, f + t - .5, bottom], [W - s + .5, end, bottom + s]));
-    steel.push(k.box([-W, end - t, bottom], [W, end, a.top + a.strip + a.lip]));
+    steel.push(k.box([-W + s - .5, f + t - .5, bottom + e], [W - s + .5, end - e, bottom + s]));
+    steel.push(k.box([-W + e, end - t, bottom + 2 * e], [W - e, end - e, a.top + a.strip + a.lip]));
     k.put('Hand-welded side plates, channel and lip', k.union(steel), { color: tone[1], metalness: .2, roughness: .82 });
     k.put('Hole numbers', numberTabs(k, a.w, bottom + 12, { n: a.holes, from: f + 170, step: 50.8 }, end), { color: '#0b0b0c', metalness: 0, roughness: .9 });
     k.put('Lip logo cut-out', k.union([1, -1].map(side => k.box([side > 0 ? W : -W - .3, end - 60, bottom + 10], [side > 0 ? W + .3 : -W, end - 20, bottom + 45]))), { color: '#0b0b0c', metalness: 0, roughness: .9 });
@@ -130,15 +132,17 @@ export function buildAlpha(api: ManifoldAPI, params: NumericParams): SolidPart[]
     const steel: Manifold[] = [], end = f + a.reach, W = a.w / 2, cx = wu + .6, half = a.h / 2;
     // Wrap-around collar (front, both sides and back) centred on the pin, 1/4 in plate.
     const ch = a.collarH / 2;
-    steel.push(k.box([-cx - ct, f, -ch], [cx + ct, f + ct, ch]), k.box([-cx - ct, back - .6 - ct, -ch], [cx + ct, back - .6, ch]));
-    for (const side of [1, -1]) steel.push(k.minus(k.box([side > 0 ? cx : -cx - ct, back - .6 - ct, -ch], [side > 0 ? cx + ct : -cx, f + ct, ch]), k.rod([-cx - ct - 1, 0, 0], [cx + ct + 1, 0, 0], pinR + .6, 32)));
+    // Members sit 0.3 mm off each other's faces (coplanar seams leave zero-area triangles in the print export).
+    const e = .3;
+    steel.push(k.box([-cx - ct + e, f, -ch + e], [cx + ct - e, f + ct, ch - e]), k.box([-cx - ct + e, back - .6 - ct, -ch + e], [cx + ct - e, back - .6, ch - e]));
+    for (const side of [1, -1]) steel.push(k.minus(k.box([side > 0 ? cx : -cx - ct, back - .6 - ct - e, -ch], [side > 0 ? cx + ct : -cx, f + ct + e, ch]), k.rod([-cx - ct - 1, 0, 0], [cx + ct + 1, 0, 0], pinR + .6, 32)));
     // Double-sided arm: 3/16 in side plates that flare top and bottom toward the collar, with club and ring cut-outs.
     const prof: Vec2[] = [[f + ct - .5, -a.flare], [f + a.flatFrom, -half], [end, -half], [end, half], [f + a.flatFrom, half], [f + ct - .5, a.flare]];
     const cuts: Manifold[] = [];
     for (let i = 0; i < 9; i++) { const y = f + a.flatFrom + 25 + i * 50; if (y > end - 30) break; cuts.push(k.rod([-W - 1, y, 0], [W + 1, y, 0], i % 2 ? 9 : 14, 20)); }
     for (const side of [1, -1]) steel.push(k.minus(k.prism(prof, side > 0 ? W - s : -W, side > 0 ? W : -W + s, 'x'), ...cuts));
-    steel.push(k.box([-W + s - .5, f + ct - .5, -half], [W - s + .5, end, -half + s]), k.box([-W + s - .5, f + ct - .5, half - s], [W - s + .5, end, half]));
-    steel.push(k.box([-W, end - 6.35, -half], [W, end, half]));
+    steel.push(k.box([-W + s - .5, f + ct - .5, -half + e], [W - s + .5, end - e, -half + s]), k.box([-W + s - .5, f + ct - .5, half - s], [W - s + .5, end - e, half - e]));
+    steel.push(k.box([-W + e, end - 6.35, -half + 2 * e], [W - e, end, half - 2 * e]));
     k.put('Welded 3/16 in and 1/4 in plate arm and collar', k.union(steel), FINISH.black);
     k.put('Accent cut-out inserts', k.union(cuts.map(c => k.k(c.intersect(k.box([-W - .01, f, -half], [-W + 1.2, end, half]))))), { color: accent[1], metalness: .5, roughness: .4 });
     k.put('3/8 in UHMW catch, both faces', k.union([k.box([-W + 2, f + a.flatFrom, half], [W - 2, end - 1, half + a.strip]), k.box([-W + 2, f + a.flatFrom, -half - a.strip], [W - 2, end - 1, -half])]), FINISH.uhmw, 'liner');

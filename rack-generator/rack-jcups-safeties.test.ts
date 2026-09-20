@@ -4,7 +4,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import Module from 'manifold-3d';
-import { definitions } from './catalog.ts';
+import { unzipSync, strFromU8 } from 'fflate';
+import { catalog, definitions } from './catalog.ts';
+import { exportPrint3MF } from '../src/exports/print-3mf.ts';
+import { printableMesh } from '../src/exports/print-mesh.ts';
+import { floorOptions } from './floor-part.ts';
 import { addAccessory, createAssembly, resolveAssembly, validateAssembly } from './assembly.ts';
 import { suggestPlacement } from './placement-proposals.ts';
 import { barCradles, suggestCradle, parkedPose } from './barbell-cradles.ts';
@@ -183,4 +187,28 @@ test('bores and params: 1 in parts refuse 5/8 in racks, autoFit picks the 5/8 in
   assert.throws(() => validateRackParams(GHOST_ROLLER_J_CUP, { color: 99 }), /j-cup/);
   assert.deepEqual(coerceRackParams(REP_FLAT_SANDWICH_J_CUPS, { series: 0, version: 1 }), { series: 0, version: 1 });
   assert.equal(PARTS.length, 22);
+});
+test('every option exports closed, printable meshes (no zero-area or open triangles), spans included', () => {
+  for (const part of PARTS) {
+    let combos: NumericParams[] = [{ ...part.defaults }];
+    for (const param of part.params) combos = combos.flatMap(p => floorOptions(param, p).map(v => ({ ...p, [param.key]: v })));
+    const def = definitions.find(d => d.id === part.id)!;
+    const spans = part.mount.span === 'across' ? [undefined, -800, 1104] : part.mount.span === 'normal' ? [undefined, 1150] : [undefined];
+    for (const params of combos) for (const tube of [75, 76.2]) for (const uprightSpan of spans) {
+      const solids = def.build(api, { ...rackBuildParams(part, params), upright: tube, ...(uprightSpan ? { uprightSpan } : {}) });
+      try { for (const solid of solids) printableMesh(solid.solid, `${part.id} ${JSON.stringify(params)} ${tube} ${uprightSpan} ${solid.name}`); } finally { solids.forEach(x => x.solid.delete()); }
+    }
+  }
+});
+test('3MF export prints every brand J-cup, safety, spotter, bar and monolift with its vendor credit', () => {
+  const ours = new Set<string>(PARTS.map(p => p.id));
+  const builders = catalog.definitions.map(def => ours.has(def.id) ? def : { ...def, build: () => [{ name: 'Frame fixture', solid: api.Manifold.cube([1, 1, 1]), role: 'frame' as const }] });
+  const credited = new Set<string>();
+  for (let i = 0; i < PARTS.length; i += 4) {
+    let doc = createAssembly({ emptyAccessories: true });
+    for (const part of PARTS.slice(i, i + 4)) { const r = suggestPlacement(doc, part.id as PartId); assert.ok(r.proposal, `${part.id}: ${r.reason}`); doc = r.proposal!.doc; }
+    const result = exportPrint3MF(api, doc, builders, { layout: 'assembled' }, undefined, catalog.attribution);
+    for (const c of JSON.parse(strFromU8(unzipSync(result.bytes)['Metadata/print-report.json'])).vendorCredits as { part: string }[]) credited.add(c.part);
+  }
+  assert.deepEqual([...credited].filter(id => ours.has(id)).sort(), [...ours].sort());
 });

@@ -136,20 +136,21 @@ function buildRollerCup(api: ManifoldAPI, p: NumericParams, c: RollerCup, s: Rol
   return buildWith(api, k => {
     const parts: Manifold[] = [];
     parts.push(k.rbox([-W, f, z(0)], [W, f + c.backT, z(c.backH)], 8, 'y'));
-    const fz = c.floorZ, ft = fz + c.floorT;
-    parts.push(k.box([-CW, f + c.backT - .5, z(fz)], [CW, lipY + c.lipT, z(ft)]));
+    // Union members are nudged 0.3 mm off each other's faces: coplanar seams leave zero-area triangles in the print export.
+    const fz = c.floorZ, ft = fz + c.floorT, e = .3;
+    parts.push(k.box([-CW + e, f + c.backT - .5, z(fz + e)], [CW - e, lipY + c.lipT - e, z(ft)]));
     const lean = c.lipLean ?? 0;
     parts.push(lean ? k.prism([[lipY, z(fz)], [lipY + c.lipT, z(fz)], [lipY + c.lipT + lean, z(c.lipH)], [lipY + lean, z(c.lipH)]], -CW, CW, 'x') : k.rbox([-CW, lipY, z(fz)], [CW, lipY + c.lipT, z(c.lipH)], 5, 'y'));
     for (const side of s.claspSides) {
       const x0 = side > 0 ? cx : -cx - t, x1 = x0 + t;
-      parts.push(k.rbox([x0, f - c.clasp.back, z(c.clasp.z0)], [x1, f + c.backT, z(c.clasp.z1)], 5, 'x'));
+      parts.push(k.rbox([x0, f - c.clasp.back, z(c.clasp.z0)], [x1, f + c.backT - e, z(c.clasp.z1)], 5, 'x'));
       // Web from the back plate to the clasp wall across the face.
-      parts.push(k.box([side > 0 ? W - .5 : -cx - t, f, z(c.clasp.z0)], [side > 0 ? cx + t : -W + .5, f + c.backT, z(c.clasp.z1)]));
-      if (!s.band && side > 0 && CW < cx) parts.push(k.box([CW - .5, f + c.backT - .5, z(fz)], [cx + t, lipY + c.lipT, z(ft)]));
+      parts.push(k.box([side > 0 ? W - .5 : -cx - t + e, f + e, z(c.clasp.z0 + e)], [side > 0 ? cx + t - e : -W + .5, f + c.backT - e, z(c.clasp.z1 - e)]));
+      if (!s.band && side > 0 && CW < cx) parts.push(k.box([CW - .5, f + c.backT - .5, z(fz + 2 * e)], [cx + t - e, lipY + c.lipT - 2 * e, z(ft - e)]));
     }
-    if (s.band) parts.push(k.box([-cx - t, f - c.clasp.back, z(c.clasp.z0)], [cx + t, f - c.clasp.back + t, z(c.clasp.z1)]));
+    if (s.band) parts.push(k.box([-cx - t + e, f - c.clasp.back + e, z(c.clasp.z0 + e)], [cx + t - e, f - c.clasp.back + t + e, z(c.clasp.z1 - e)]));
     if (s.gusset) for (const side of [1, -1]) {
-      const x0 = side > 0 ? CW - 6 : -CW, g: Vec2[] = [[f + c.backT - .5, z(fz + .5)], [lipY + c.lipT, z(fz + .5)], [f + c.backT - .5, z(0)]];
+      const x0 = side > 0 ? CW - 6 - e : -CW + e, g: Vec2[] = [[f + c.backT - .5, z(fz + .5)], [lipY + c.lipT - e, z(fz + .5)], [f + c.backT - .5, z(e)]];
       parts.push(k.prism(g, x0, x0 + 6, 'x'));
     }
     k.put('Steel back plate, channel and clasp', k.union(parts), s.steel);

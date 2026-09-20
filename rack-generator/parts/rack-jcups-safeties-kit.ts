@@ -70,7 +70,12 @@ function kit(s: Scope) {
   };
   const union = (parts: Manifold[]) => parts.length === 1 ? parts[0] : k(M.union(parts));
   const minus = (a: Manifold, ...b: Manifold[]) => b.length ? k(M.difference([a, ...b])) : a;
-  const put = (name: string, solid: Manifold, f: Finish, role: MaterialRole = 'source') => add(name, solid, role, f.color, f.metalness, f.roughness);
+  // Coplanar Boolean seams can leave sliver triangles; collapse anything under 10 µm (the print export rejects them).
+  const put = (name: string, solid: Manifold, f: Finish, role: MaterialRole = 'source') => {
+    const clean = solid.simplify(.01);
+    if (clean !== solid) k(clean);
+    add(name, clean, role, f.color, f.metalness, f.roughness);
+  };
   /** Hex bolt head (+ washer) whose axis points along `dir` from `at` (head sits on the plane through `at`). */
   const hexHead = (at: Vec3, dir: 'x' | 'y' | 'z' | '-x' | '-y' | '-z', across: number, height: number) => {
     const circ = across / Math.sqrt(3);

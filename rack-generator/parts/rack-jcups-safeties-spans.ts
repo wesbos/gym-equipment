@@ -36,9 +36,10 @@ function buildStrapSafety(api: ManifoldAPI, p: NumericParams, s: StrapSpec, st: 
     const xa = strapBracket(k, p, s, 0, sx, st, steel), xb = strapBracket(k, p, s, S, -sx, st, steel);
     k.put('Steel strap brackets', k.union(steel), st.steel);
     // Webbing: loops around both bolts and a slightly sagging run between them, width along +Y.
-    const y0 = f + s.plate + 4, y1 = y0 + s.strapW, T = s.strapT, rIn = s.bolt / 2 + .8, rOut = rIn + T;
-    const loop = (x: number) => k.k(k.k(k.k(k.k(k.k(k.C.circle(rOut, 32)).subtract(k.k(k.C.circle(rIn, 32)))).extrude(s.strapW)).rotate([-90, 0, 0])).translate([x, y0, s.earZ]));
-    const zc = s.earZ - rIn - T / 2, N = 28, lo = Math.min(xa, xb), hi = Math.max(xa, xb);
+    // The loop is 0.8 mm thicker than the webbing so the run starts strictly inside it (tangent seams leave zero-area triangles).
+    const y0 = f + s.plate + 4, y1 = y0 + s.strapW, T = s.strapT, rIn = s.bolt / 2 + .8, rOut = rIn + T + .8;
+    const loop = (x: number) => k.k(k.k(k.k(k.k(k.k(k.C.circle(rOut, 32)).subtract(k.k(k.C.circle(rIn, 32)))).extrude(s.strapW - .6)).rotate([-90, 0, 0])).translate([x, y0 + .3, s.earZ]));
+    const zc = s.earZ - rIn - .4 - T / 2, N = 28, lo = Math.min(xa, xb), hi = Math.max(xa, xb);
     const seg = (u0: number, u1: number) => {
       const top: Vec2[] = [], bot: Vec2[] = [];
       for (let i = 0; i <= N; i++) { const u = u0 + (u1 - u0) * i / N, x = lo + (hi - lo) * u, z = zc - s.sag * 4 * u * (1 - u); top.push([x, z + T / 2]); bot.push([x, z - T / 2]); }
