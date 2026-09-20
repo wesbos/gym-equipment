@@ -4,6 +4,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { NodeIO } from '@gltf-transform/core';
 import Module from 'manifold-3d';
 import { definitions } from '../rack-generator/parts/structure.ts';
+import { printMinFeature } from '../rack-generator/print-detail.ts';
 import { resolveAssembly, validateAssembly } from '../rack-generator/assembly.ts';
 import { test, expect, chromium } from '@playwright/test';
 import path from 'node:path';
@@ -14,8 +15,10 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   if (!process.env.GYM_LOGO_CDP_URL) throw Error('Start isolated gym-wave2-logos Chrome and set GYM_LOGO_CDP_URL to its CDP endpoint. Serve the production build on port 5305.');
   const browser = await chromium.connectOverCDP(process.env.GYM_LOGO_CDP_URL, { timeout: 15000 });
   const baseURL = process.env.GYM_LOGO_BASE_URL ?? 'http://127.0.0.1:5305';
-  const page = browser.contexts()[0].pages().find(p => p.url().startsWith(baseURL + '/builder'))!;
+  const page = browser.contexts()[0].pages().find(p => p.url().startsWith(baseURL)) ?? await browser.contexts()[0].newPage();
   page.setDefaultTimeout(15000);
+  // A reused tab may hold unsaved work: accept its beforeunload prompt instead of hanging the navigation.
+  page.on('dialog', dialog => dialog.accept());
   const chooseExport = async (format: 'GLB' | '3MF') => {
     if (await page.locator('#export').getAttribute('aria-expanded') !== 'true') await page.locator('#export').click();
     await page.getByRole('menuitemradio', { name: new RegExp(format) }).click();
@@ -24,6 +27,9 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   const glbReady = async () => { await chooseExport('GLB'); await page.keyboard.press('Escape'); };
   console.log('Connected to isolated logo browser');
   await page.goto(baseURL + '/builder');
+  // Start from the stock rack: a reused browser keeps the previous run's saved logo configuration.
+  await page.evaluate(() => localStorage.removeItem('bos-strength-configurations-v1'));
+  await page.reload();
   await glbReady();
   await page.locator('.logo-controls summary').click();
   const controls = page.locator('.logo-controls');
@@ -78,7 +84,9 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   await expect(page.locator('.config-manager summary')).not.toContainText('Unsaved');
   const jsonDownload = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Save JSON', exact: true }).click();
-  const json = await jsonDownload; const doc = JSON.parse(await fs.readFile((await json.path())!, 'utf8'));
+  // Save JSON writes a session envelope ({format:'bos-strength-session', version, doc, timeline}); older files are a bare RackDoc.
+  const json = await jsonDownload; const saved = JSON.parse(await fs.readFile((await json.path())!, 'utf8'));
+  const doc = saved.format === 'bos-strength-session' ? saved.doc : saved;
   expect(doc.structure['rear-crossmember'].part).toBe('nameplate');
   expect(doc.logo.source.kind).toBe('raster'); expect(doc.logo.source.threshold).toBe(140); expect(doc.logo.loops.length).toBeGreaterThan(0);
   await controls.getByLabel('Upload logo', { exact: true }).setInputFiles(path.resolve('rack-generator/logos/fixtures/unsafe.svg'));
@@ -104,8 +112,8 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   const instance = resolveAssembly(validateAssembly(doc)).find(r => r.part === 'nameplate')!;
   const api = await Module(); api.setup();
   console.log('Manifold initialized for export comparison');
-  const parts = definitions.find(d => d.id === 'nameplate')!.build(api, instance.params, instance.logo);
-  const expectedVolume = parts[0].solid.volume();
+  const nameplate = definitions.find(d => d.id === 'nameplate')!;
+  const parts = nameplate.build(api, instance.params, instance.logo);
   try { expect(triangles).toBe(parts[0].solid.getMesh().triVerts.length / 3); } finally { parts.forEach(p=>p.solid.delete()); }
   console.log('Custom 3MF browser export');
   await chooseExport('3MF');
@@ -118,6 +126,10 @@ test('gym-wave2-logos: text, uploads, rejection, saved source, reset and GLB', a
   const panel = model.resources.object.find((o:{name:string})=>o.name.includes('stencil'));
   const vertices = panel.mesh.vertices.vertex.flatMap((v:{x:number;y:number;z:number})=>[v.x,v.y,v.z]);
   const indices = panel.mesh.triangles.triangle.flatMap((t:{v1:number;v2:number;v3:number})=>[t.v1,t.v2,t.v3]);
+  // The 3MF is built with print detail (#97): cut features narrower than two nozzle widths at this scale are dropped,
+  // so compare it with the same simplified build, not the full-detail GLB solid.
+  const printParts = nameplate.build(api, { ...instance.params, printMinFeature: printMinFeature(printReport.scale) }, instance.logo);
+  const expectedVolume = printParts[0].solid.volume(); printParts.forEach(p => p.solid.delete());
   const printSolid = new api.Manifold(new api.Mesh({numProp:3,vertProperties:new Float32Array(vertices),triVerts:new Uint32Array(indices)}));
   try { expect(printSolid.status()).toBe('NoError'); expect(Math.abs(printSolid.volume()-expectedVolume / printReport.scale ** 3)).toBeLessThan(.1 / printReport.scale ** 3); } finally { printSolid.delete(); }
   await page.locator('.config-manager summary').click();
