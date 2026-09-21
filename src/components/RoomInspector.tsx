@@ -11,6 +11,10 @@ import {
   TURF_TEXT, TURF_TEXT_ROTATIONS, type TurfTextRotation, WALL_FINISHES, WALL_FINISH_LABELS, WALL_PAINTS, type FloorFinish, type RoomCeiling, type TurfLane, type WallFinish, type WallSurface,
 } from '../../rack-generator/room-finishes.ts';
 import './appearance-controls.css';
+import { InspectorHeader } from './Inspector/InspectorHeader.tsx';
+import { Section } from './Inspector/Section.tsx';
+import { InspectorFooter } from './Inspector/controls.tsx';
+import { withUndo } from './Toast/toast-store.ts';
 
 const CEILING_PAINTS: readonly [string, string][] = [['White', '#f4f4f1'], ['Grey', '#b9bcbb'], ['Black', '#1c1d1f']];
 
@@ -60,9 +64,10 @@ export function RoomInspector({ store }: { store: BuilderStore }) {
   const setCeiling = (next: RoomCeiling | null) => edit({ ceiling: next });
   const changed = !!(walls || room.floor || turf.length || ceiling);
   return <>
-    <h2 id="selection-title">Room</h2>
-    <div id="inspector" className="inspector-fields room-inspector">
-      <fieldset className="paint-picker"><legend>Walls</legend>
+    <InspectorHeader store={store} title="Room" chip="Scenery" art={<span className="insp-room-art" aria-hidden="true" />}
+      subtitle={<span className="insp-brand">{Math.round(room.left + room.right)} × {Math.round(room.back + room.front)} mm · {Math.round(room.height)} mm ceiling</span>} />
+    <div id="inspector" className="insp-body inspector-fields room-inspector">
+      <Section id="room-walls" title="Walls" badge={WALL_FINISH_LABELS[walls?.finish ?? 'slat']}>
         <label className="field"><span>Edit</span>
           <select aria-label="Walls to edit" value={target} onChange={e => setTarget(e.target.value as 'all' | WallId)}>
             <option value="all">All walls</option>
@@ -87,8 +92,8 @@ export function RoomInspector({ store }: { store: BuilderStore }) {
             defaultValue={WAINSCOT_DEFAULT} {...gesture} onValue={v => setSurface({ ...surface, wainscot: v })} />
         </label>}
         {target !== 'all' && !own && <p className="note">This wall follows the room. Pick a finish to give it its own.</p>}
-      </fieldset>
-      <fieldset className="paint-picker"><legend>Floor</legend>
+      </Section>
+      <Section id="room-floor" title="Floor" badge={turf.length ? `${turf.length} turf` : undefined}>
         <label className="field"><span>Floor finish</span>
           <select aria-label="Floor finish" value={room.floor ?? 'black-rubber'} onChange={e => edit({ floor: e.target.value === 'black-rubber' ? null : e.target.value as FloorFinish })}>
             {FLOOR_FINISHES.map(f => <option key={f} value={f}>{FLOOR_FINISH_LABELS[f]}{f === 'black-rubber' ? ' (default)' : ''}</option>)}
@@ -115,8 +120,8 @@ export function RoomInspector({ store }: { store: BuilderStore }) {
           <button type="button" className="danger" onClick={() => setTurf(turf.filter((_, j) => j !== i))}>Remove turf lane {i + 1}</button>
         </fieldset>)}
         {turf.length < TURF_LIMITS.lanes && <button type="button" onClick={addLane}>Add turf lane</button>}
-      </fieldset>
-      <fieldset className="paint-picker"><legend>Ceiling</legend>
+      </Section>
+      <Section id="room-ceiling" title="Ceiling" badge={ceiling ? 'on' : 'off'}>
         <label className="field"><span>Ceiling</span><input type="checkbox" aria-label="Ceiling" checked={!!ceiling} onChange={e => setCeiling(e.target.checked ? {} : null)} /></label>
         {ceiling && <>
           <Swatches label="Ceiling paint" paints={CEILING_PAINTS} value={ceiling.color ?? DEFAULT_CEILING_COLOR} onValue={color => setCeiling({ ...ceiling, color })} />
@@ -133,17 +138,20 @@ export function RoomInspector({ store }: { store: BuilderStore }) {
             </select></label>}
           <p className="note">The ceiling shows from inside the room; orbit views from above look straight in.</p>
         </>}
-      </fieldset>
-      <fieldset className="paint-picker"><legend>Size</legend>
+      </Section>
+      <Section id="room-size" title="Size">
         {WALL_IDS.map(id => <label className="field" key={id}><span>{wallFrames(room)[id].label} distance (mm)</span>
           <NumericControl label={`${wallFrames(room)[id].label} distance`} value={room[id]} min={ROOM_LIMITS[id][0]} max={ROOM_LIMITS[id][1]} step={50} defaultValue={ROOM_DEFAULTS[id]} {...gesture} onValue={v => store.act(() => store.setRoom({ [id]: v }))} />
         </label>)}
         <label className="field"><span>Ceiling height (mm)</span>
           <NumericControl label="Room height" value={room.height} min={Math.max(ROOM_LIMITS.height[0], (walls?.wainscot ?? 0) + 1)} max={ROOM_LIMITS.height[1]} step={50} defaultValue={ROOM_DEFAULTS.height} {...gesture} onValue={v => store.act(() => store.setRoom({ height: v }))} />
         </label>
-      </fieldset>
-      <button type="button" disabled={!changed} onClick={() => edit({ walls: null, floor: null, turf: null, ceiling: null })}>Reset room finishes</button>
-      <p className="note">Scenery only: finishes show in the builder and gallery previews, never in 3MF or GLB exports.</p>
+      </Section>
+      <p className="note insp-credit">Scenery only: finishes show in the builder and gallery previews, never in 3MF or GLB exports.</p>
     </div>
+    <InspectorFooter>
+      <button type="button" className="primary" onClick={() => store.select(null)}>Done</button>
+      <button type="button" disabled={!changed} onClick={() => withUndo(store, 'Room finishes reset', () => edit({ walls: null, floor: null, turf: null, ceiling: null }))}>Reset room finishes</button>
+    </InspectorFooter>
   </>;
 }

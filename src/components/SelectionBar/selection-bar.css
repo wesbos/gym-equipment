@@ -1,0 +1,138 @@
+/* Selection action bar (#205). Desktop and tablet: a floating pill positioned by transform from the scene's frame
+   callback (left/top stay 0). Phones: docked above the bottom sheet (data-placement="docked"). */
+/* z-index: above the stage chrome (view controls 2) and below the stage's own overlays (placement hint 5, parts
+   drawer 6) and the toolbar popovers (20), which all share the root stacking context. */
+.selection-bar {
+  position: fixed;
+  z-index: 4;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #1f3329f0;
+  color: #eef3ea;
+  box-shadow: 0 10px 28px #0d1a1335, 0 0 0 1px #ffffff12 inset;
+  backdrop-filter: blur(14px);
+  will-change: transform;
+  font-family: inherit;
+}
+.selection-bar[data-placement="pending"],
+.selection-bar[data-placement="off"] { visibility: hidden; }
+.builder-page .selection-bar .sb-button,
+.selection-bar .sb-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.builder-page .selection-bar .sb-button:hover,
+.selection-bar .sb-button:hover { background: #ffffff17; }
+.builder-page .selection-bar .sb-button[aria-pressed="true"],
+.selection-bar .sb-button[aria-pressed="true"] { background: #ffffff24; color: var(--accent, #bdcd78); }
+.builder-page .selection-bar .sb-button:focus-visible { outline: 2px solid var(--accent, #bdcd78); outline-offset: 1px; }
+.builder-page .selection-bar .sb-danger:hover,
+.selection-bar .sb-danger:hover { background: #d98f5a2e; color: #ffc9a3; }
+.selection-bar .sb-icon { flex: none; }
+/* Desktop shows labels only on the rotate and swap/pair buttons; the rest are icons with tooltips. */
+.selection-bar .sb-label { display: none; }
+.selection-bar .sb-button:is([aria-label^="Rotate"], [aria-label="Swap variant"], [aria-label="Split pair"], [aria-label="Add matching pair"]) .sb-label { display: inline; }
+.selection-bar .sb-divider { width: 1px; height: 20px; margin: 0 3px; background: #ffffff24; }
+.selection-bar .sb-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  margin: 0 4px 0 2px;
+  padding: 0 6px;
+  border-radius: 13px;
+  background: var(--accent, #bdcd78);
+  color: #1f3329;
+  font-size: 12px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+.selection-bar .sb-swap { position: relative; display: inline-flex; }
+.selection-bar .sb-menu {
+  position: absolute;
+  z-index: 1;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 2px;
+  width: 260px;
+  max-height: min(360px, 50vh);
+  overflow: auto;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--paper, #f8f9f4);
+  color: var(--ink, #233b30);
+  box-shadow: 0 16px 40px #0d1a1340, 0 0 0 1px var(--line, #d6ded2);
+  scrollbar-width: thin;
+}
+.selection-bar .sb-menu[data-side="above"] { top: auto; bottom: calc(100% + 8px); }
+.builder-page .selection-bar .sb-menu-item,
+.selection-bar .sb-menu-item {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 5px 8px 5px 5px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font-size: 12px;
+  cursor: pointer;
+}
+.builder-page .selection-bar .sb-menu-item:hover,
+.builder-page .selection-bar .sb-menu-item:focus-visible { background: var(--sage, #e8eee6); outline: none; }
+.builder-page .selection-bar .sb-menu-item[aria-checked="true"] { background: #264d3a14; box-shadow: inset 0 0 0 1px #264d3a40; }
+.selection-bar .sb-menu-thumb { width: 40px; height: 40px; border-radius: 6px; background: #e9eee3; padding: 3px; }
+.selection-bar .sb-menu-item span { display: grid; gap: 2px; min-width: 0; }
+.selection-bar .sb-menu-item strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.selection-bar .sb-menu-item small { color: var(--muted, #819180); font-size: 10px; }
+
+/* Phones (#203): docked full width along the bottom of the stage overlay, which ends above the bottom sheet. */
+.selection-bar[data-placement="docked"] {
+  position: absolute;
+  left: max(8px, env(safe-area-inset-left));
+  right: max(8px, env(safe-area-inset-right));
+  top: auto;
+  bottom: 8px;
+  transform: none;
+  justify-content: space-around;
+  padding: 4px 2px;
+}
+.builder-page .selection-bar[data-placement="docked"] .sb-button,
+.selection-bar[data-placement="docked"] .sb-button { flex: 1 1 0; flex-direction: column; gap: 3px; min-width: 0; height: 52px; padding: 0 2px; font-size: 10px; font-weight: 550; }
+.selection-bar[data-placement="docked"] .sb-label { display: inline; }
+.selection-bar[data-placement="docked"] .sb-divider { display: none; }
+.selection-bar[data-placement="docked"] .sb-swap { flex: 1 1 0; }
+.selection-bar[data-placement="docked"] .sb-swap .sb-button { width: 100%; }
+.selection-bar[data-placement="docked"] .sb-menu { position: absolute; left: 0; right: 0; width: auto; transform: none; top: auto; bottom: calc(100% + 8px); }
+/* The placement hint sits where the docked bar would; the bar hides while placing, so they never overlap. */
+@media (pointer: coarse) {
+  .builder-page .selection-bar .sb-button,
+  .selection-bar .sb-button { min-width: 44px; height: 44px; }
+}
+/* The stage's own bottom-right actions (Fit view, Parts list) move up above the docked bar. */
+.builder-page[data-layout^=phone] .stage:has(.selection-bar[data-placement="docked"]) .stage-actions { bottom: 76px; }

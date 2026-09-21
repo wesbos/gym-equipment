@@ -105,12 +105,14 @@ test('isolated reposition: double-click, pair opt-out, floor, rotation, Escape, 
     };
     await select(storageId);
     const zoomRegion = {x:600,y:240,width:100,height:230};
-    const cameraBefore = await page.screenshot({clip:zoomRegion});
+    // Compare the rendered rack only: the selection action bar (#205) comes and goes with the selection.
+    const canvasOnly = ".selection-bar{visibility:hidden!important}";
+    const cameraBefore = await page.screenshot({clip:zoomRegion,style:canvasOnly});
     await page.keyboard.press('r'); await page.mouse.wheel(0,80);
     await expect(page.getByRole('button',{name:'Apply rotation',exact:true})).toBeVisible();
     expect(await doc()).toEqual(rotationBefore);
     await page.keyboard.press('Escape'); expect(await doc()).toEqual(rotationBefore);
-    const cameraAfter = await page.screenshot({clip:zoomRegion});
+    const cameraAfter = await page.screenshot({clip:zoomRegion,style:canvasOnly});
     await fs.writeFile('/tmp/gym-wave4/camera-before.png', cameraBefore);
     await fs.writeFile('/tmp/gym-wave4/camera-after.png', cameraAfter);
     const pixelDifference = async (a:Buffer,b:Buffer) => page.evaluate(async ([first,second]) => {
@@ -127,7 +129,7 @@ test('isolated reposition: double-click, pair opt-out, floor, rotation, Escape, 
     expect(await pixelDifference(cameraBefore,cameraAfter), 'rotation wheel must not zoom the rack').toBeLessThan(.005);
     await page.mouse.wheel(0,240); // No selected/hovered attachment: ordinary zoom remains available.
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-    expect(await pixelDifference(cameraAfter,await page.screenshot({clip:zoomRegion}))).toBeGreaterThan(.01);
+    expect(await pixelDifference(cameraAfter,await page.screenshot({clip:zoomRegion,style:canvasOnly}))).toBeGreaterThan(.01);
     await select(storageId); await page.mouse.wheel(0,80); await page.keyboard.press('r');
     await page.mouse.click(850,180); await ready();
     expect((await doc()).accessories.find((a:{id:string})=>a.id===storageId).rotation).toBeCloseTo(Math.PI/6);

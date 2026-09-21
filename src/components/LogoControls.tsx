@@ -1,3 +1,4 @@
+import { useSessionOpen } from './Inspector/Section.tsx';
 import { LOGO_DEFAULTS, defaultLogoSource, isDefaultLogoSource } from './logo-defaults.ts';
 import { ResetButton } from './ResetButton.tsx';
 import { GestureRange } from './GestureInputs.tsx';
@@ -63,7 +64,8 @@ export function LogoControls({ store }: { store: BuilderStore }) {
   // Raster tuning is draft-only today; bracketing keeps a single entry if it ever commits live.
   const gesture = { onGestureStart: store.beginGesture, onGestureEnd: store.endGesture, onGestureCancel: store.cancelGesture };
   const canResetStock = !!logo || !isDefaultLogoSource(source) || bridges !== LOGO_DEFAULTS.bridges || !!preview || !!error || busy;
-  return <details className="appearance-controls logo-controls">
+  const disclosure = useSessionOpen("logo");
+  return <details className="appearance-controls logo-controls" open={disclosure.open} onToggle={disclosure.onToggle}>
     <summary>Custom logo</summary>
     <label className="field"><span>Logo source</span><select aria-label="Logo source" value={source.kind} onChange={e => update(defaultLogoSource(e.target.value as LogoSource['kind']))}>
       <option value="text">Text</option><option value="svg">SVG upload</option><option value="raster">PNG / JPEG upload</option>

@@ -1,3 +1,4 @@
+import { useSessionOpen } from './Inspector/Section.tsx';
 import { smithHeightControls } from "../../rack-generator/smith-heights.ts";
 import {
   lockedTrolley,
@@ -275,8 +276,9 @@ function Installed({
 export function CableSmithControls({ store }: { store: BuilderStore }) {
   // Installed systems read the rack at render time; re-render when either changes, not on every document edit.
   const doc = useStoreSelector(store, s => s.doc, (a, b) => deepEqual(a.systems, b.systems) && deepEqual(a.rack, b.rack));
+  const disclosure = useSessionOpen('systems');
   return (
-    <details className="system-controls">
+    <details className="system-controls" open={disclosure.open} onToggle={disclosure.onToggle}>
       <summary>Cable systems & Smith</summary>
       {(doc.systems ?? []).map((s) => (
         <Installed key={s.id} system={s} store={store} />

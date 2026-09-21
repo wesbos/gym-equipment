@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { BuilderStore } from "../state/builder-store.ts";
 import { loadGym } from "./gyms.ts";
+import { openDesignWithUndo } from "../components/Toast/undo-actions.ts";
 
 /** The scene reports each finished build in the status bar; say where the kept draft went once the gym has built. */
 function announceAfterBuild(store: BuilderStore, message: string) {
@@ -41,7 +42,9 @@ export function useOpenGym(store: BuilderStore, beforeOpen?: () => void) {
         if (!gym) store.status(`No gym called “${slug}” in the gallery.`, true);
         else {
           beforeOpen?.();
-          const kept = await store.openDesign(gym.doc, gym.title);
+          let kept: string | null = null;
+          // Undo toast (#205): opening replaces the design and its history, so Undo restores a checkpoint.
+          await openDesignWithUndo(store, async () => { kept = await store.openDesign(gym.doc, gym.title); }, gym.title);
           if (kept) announceAfterBuild(store, `Opened ${gym.title}. Your unsaved design is kept under Configurations as “${kept}”.`);
         }
       } catch (error) {

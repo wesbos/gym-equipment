@@ -1,6 +1,7 @@
 /** Editor commands (#206): everything the command palette lists and the builder's keyboard shortcuts run. A command
  * names its shortcut from the registry (src/state/shortcuts.ts), so the palette shows the same keys the dispatcher
  * handles. No React: `builderShortcutHandlers` is what BuilderPage's single keydown listener dispatches to. */
+import { clearHistoryWithUndo, removeSelectionWithUndo } from '../Toast/undo-actions.ts';
 import type { BuilderSnapshot, BuilderStore } from '../../state/builder-store.ts';
 import type { BuilderScene, BuilderView } from '../../scenes/builder-scene.ts';
 import type { ExportFormat } from '../../exports/export-job.ts';
@@ -53,10 +54,10 @@ export const COMMANDS: readonly Command[] = [
   { id: 'redo', label: 'Redo', group: 'History', shortcut: 'redo', available: s => s.canRedo, run: ({ store }) => store.history('redo') },
   { id: 'latest', label: 'Return to the latest history step', group: 'History', keywords: 'timeline', available: s => s.timeline.viewing, run: ({ store }) => store.latestHistory() },
   { id: 'clear-history', label: 'Clear history (keep the current design)', group: 'History', keywords: 'erase timeline steps', available: s => s.timeline.latest > 0,
-    run: ({ store }) => { if (window.confirm('Erase all past steps? The current design stays.')) store.clearHistory(); } },
+    run: ({ store }) => { if (window.confirm('Erase all past steps? The current design stays.')) void clearHistoryWithUndo(store); } },
   { id: 'select-all', label: 'Select all', group: 'Selection', shortcut: 'select-all', available: s => !busy(s) && s.resolved.length > 0, run: ({ store }) => store.selectAll() },
   { id: 'deselect', label: 'Clear the selection', group: 'Selection', keywords: 'deselect none', available: hasSelection, run: ({ store }) => store.select(null) },
-  { id: 'delete', label: 'Delete the selection', group: 'Selection', keywords: 'remove', shortcut: 'delete', available: hasSelection, run: ({ store }) => store.act(() => store.removeSelected()) },
+  { id: 'delete', label: 'Delete the selection', group: 'Selection', keywords: 'remove', shortcut: 'delete', available: hasSelection, run: ({ store }) => { removeSelectionWithUndo(store); } },
   { id: 'duplicate', label: 'Duplicate the selection', group: 'Selection', keywords: 'copy clone', shortcut: 'duplicate', available: hasSelection, run: ({ store }) => store.act(() => store.duplicateSelected()) },
   // The store's rotateSelection / rotationSubject (#204) are what the R key and the touch rotate buttons use.
   { id: 'rotate', label: 'Rotate the selected part', group: 'Selection', keywords: 'turn spin', shortcut: 'rotate', available: (_, store) => !!store.rotationSubject(), run: ({ store }) => { store.rotateSelection(1); } },

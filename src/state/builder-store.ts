@@ -15,6 +15,7 @@ import type { FrameFinish } from '../../rack-generator/appearance.ts';
 import { addsStructure } from '../../rack-generator/structure-candidates.ts';
 import { resetPart } from '../../rack-generator/reset.ts';
 import { removeSelection, selectionOwners, sharedFields, type PhysicalInstanceId, type SelectionGesture } from './selection.ts';
+import { applyVariant, duplicateSelection, togglePair } from './selection-actions.ts';
 import { structureProposalAt, proposalAt, proposalCollision, suggestPlacement, type PlacementProposal } from '../../rack-generator/placement-proposals.ts';
 import {
   LocalConfigStorage,
@@ -90,6 +91,8 @@ export interface BuilderSnapshot {
   hidden: readonly string[];
   locked: readonly string[];
 }
+/** Everything `restoreCheckpoint` needs to put the working design back. */
+export interface WorkingCheckpoint { doc: RackDoc; timeline: TimelineData; activeId: string | null }
 /** Trailing delay before the recovery draft is written (then at the next idle moment). Lifecycle events flush it. */
 export const AUTOSAVE_DELAY_MS = 400;
 export class BuilderStore {
@@ -622,30 +625,41 @@ export class BuilderStore {
     const next = selectionOwners(resolved, selection).reduce((current, owner) => resetPart(current, owner, key), doc);
     this.commit(next);
   };
-  /** Copies complete accessory owners at existing mounts; the user can then move them. */
+  /** Copies the selection (selection-actions.ts `duplicateSelection`): accessory owners at their existing mounts, floor
+   * and wall items at the next free spot, hung items on the next free hook. One undo step; the copies are selected. */
   duplicateSelected = () => {
     if (this.state.timeline.viewing) this.latestHistory();
     const { doc, resolved, selection } = this.state;
-    const instances = resolved.filter(r => selection.includes(r.id));
-    if (!instances.length || instances.some(r => r.kind !== 'accessory' || !doc.accessories.some(a => a.id === r.ownerId))) return;
-    const owners = selectionOwners(resolved, selection);
-    if (resolved.some(r => owners.includes(r.ownerId) && !selection.includes(r.id))) return;
-    const next = structuredClone(doc), newOwners: string[] = [];
-    for (const owner of owners) {
-      const item = doc.accessories.find(a => a.id === owner)!;
-      let id: string;
-      do { id = `accessory-${next.nextId++}`; } while (next.accessories.some(a => a.id === id) || next.uprights[id] || next.connections.some(c => c.id === id));
-      next.accessories.push({ ...structuredClone(item), id }); newOwners.push(id);
-      for (const physical of instances.filter(r => r.ownerId === owner)) {
-        const color = doc.appearance?.overrides?.[physical.id];
-        if (color) { next.appearance ??= {}; next.appearance.overrides ??= {}; next.appearance.overrides[id + physical.id.slice(owner.length)] = color; }
-        const finish = doc.appearance?.finishOverrides?.[physical.id];
-        if (finish) { next.appearance ??= {}; next.appearance.finishOverrides ??= {}; next.appearance.finishOverrides[id + physical.id.slice(owner.length)] = finish; }
-      }
-    }
-    this.commit(next);
-    this.selectMany(this.state.resolved.filter(r => newOwners.includes(r.ownerId)).map(r => r.id));
-    this.status('Copies added at original mounts. Select a copy to move it.');
+    const result = duplicateSelection(doc, resolved, selection);
+    if (!result) return false;
+    const accessories = result.owners.some(id => result.doc.accessories.some(a => a.id === id));
+    this.commit(result.doc, { label: selection.length > 1 ? `Duplicate ${selection.length} parts` : 'Duplicate part' });
+    this.selectMany(this.state.resolved.filter(r => result.owners.includes(r.ownerId) || result.owners.includes(r.id)).map(r => r.id));
+    this.status(accessories ? 'Copies added at original mounts. Select a copy to move it.' : 'Copies added beside the originals.');
+    return true;
+  };
+  /** Swap the single selection to another variant of its family (or another frame member for its slot). */
+  swapSelectedVariant = (variant: PartId) => {
+    const { doc, resolved, selected } = this.state;
+    if (!selected) return;
+    this.commit(applyVariant(doc, resolved, selected, variant));
+  };
+  /** Pair an unpaired pairable attachment, or split a pair so each side edits independently. */
+  togglePairSelected = () => {
+    const { doc, resolved, selected } = this.state;
+    if (!selected) return;
+    this.commit(togglePair(doc, resolved, selected));
+  };
+  /** The whole working state (document, timeline and active configuration), for undoing operations that replace
+   * history itself: clearing it or opening a gallery gym. */
+  checkpoint = (): WorkingCheckpoint => {
+    this.materializeGesture();
+    return { doc: this.appliedDoc, timeline: structuredClone(this.journal.data), activeId: this.state.activeId };
+  };
+  restoreCheckpoint = (checkpoint: WorkingCheckpoint) => {
+    this.replaceWorking(checkpoint.doc, checkpoint.timeline);
+    this.patch({ activeId: checkpoint.activeId });
+    this.autosave();
   };
   /** Split only in the staged document; cancel and one undo preserve the original pair. */
   placementContext = (paired = this.state.paired) => {

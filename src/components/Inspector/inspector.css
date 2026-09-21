@@ -1,0 +1,243 @@
+/* Inspector redesign (#205): header, collapsible sections, segmented/swatch/slider controls and a sticky action footer.
+   Scoped to .insp so it works in the desktop right panel and the mobile inspector sheet alike; colours come from the
+   builder tokens (--paper, --sage, --line, --ink, --muted, --green, --accent). */
+.builder-page .insp {
+  --insp-gutter: 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  font-size: 12px;
+  color: var(--ink);
+}
+.builder-page .insp > * { order: 0; }
+.builder-page .insp .insp-footer { order: 10; }
+.builder-page .inspector-panel > .insp { flex: 1 0 auto; }
+
+/* Header */
+.builder-page .insp-header { display: grid; gap: 10px; margin-bottom: 14px; }
+.builder-page .insp .insp-back {
+  justify-self: start; margin: 0; padding: 4px 0; border: 0; background: none; width: auto;
+  font-size: 11px; font-weight: 600; color: #6f8763;
+}
+.builder-page .insp .insp-back:hover { background: none; color: var(--green); }
+.builder-page .insp-hero { display: grid; grid-template-columns: 60px minmax(0, 1fr); gap: 12px; align-items: center; }
+.builder-page .insp-art {
+  display: grid; place-items: center; width: 60px; height: 60px; border-radius: 12px; overflow: hidden;
+  background: linear-gradient(160deg, #eef2ea, #dfe7da); box-shadow: inset 0 0 0 1px #d2dccb;
+}
+.builder-page .insp-art .insp-thumb { width: 54px; height: 54px; }
+.builder-page .insp-multi-art { font-size: 22px; font-weight: 750; color: var(--green); font-variant-numeric: tabular-nums; }
+.builder-page .insp-room-art { width: 30px; height: 26px; border: 2px solid #6f8763; border-top-width: 5px; border-radius: 2px; }
+.builder-page .insp-titles { display: grid; gap: 3px; min-width: 0; justify-items: start; }
+.builder-page .insp-chip {
+  display: inline-block; max-width: 100%; padding: 3px 7px; border-radius: 999px; background: #264d3a14; color: #3f6247;
+  font-size: 9.5px; font-weight: 650; letter-spacing: .6px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.builder-page .insp #selection-title {
+  margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.4px; line-height: 1.2; overflow-wrap: anywhere;
+}
+.builder-page .insp-brand { font-size: 11px; color: var(--muted); text-decoration: none; }
+.builder-page a.insp-brand:hover { color: var(--green); text-decoration: underline; }
+.builder-page .insp-empty {
+  margin: 0 0 12px; padding: 10px 12px; border-radius: 10px; background: #edf2e6; color: #5f7658; font-size: 11px; line-height: 1.55;
+}
+
+/* Sections: our own <Section>, plus the self-contained <details> panels (systems, logo, topology) styled to match. */
+.builder-page .insp-body { display: grid; gap: 8px; margin: 0 0 14px; }
+.builder-page .insp .insp-section,
+.builder-page .insp-body > .system-controls,
+.builder-page .insp-body > .logo-controls,
+.builder-page .insp-body > .topology-editor,
+.builder-page .insp .insp-section .topology-editor {
+  margin: 0; padding: 0; border: 1px solid #dde5d8; border-radius: 12px; background: #fff; min-width: 0;
+}
+.builder-page .insp .insp-section > summary,
+.builder-page .insp-body > .system-controls > summary,
+.builder-page .insp-body > .logo-controls > summary,
+.builder-page .insp-body > .topology-editor > summary,
+.builder-page .insp .insp-section .topology-editor > summary {
+  display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 12px 0 14px; cursor: pointer; list-style: none;
+  font-size: 11px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; color: #4c6848; user-select: none;
+}
+.builder-page .insp summary::-webkit-details-marker { display: none; }
+.builder-page .insp-body > .system-controls > summary::after,
+.builder-page .insp-body > .logo-controls > summary::after,
+.builder-page .insp-body > .topology-editor > summary::after,
+.builder-page .insp .insp-section .topology-editor > summary::after {
+  content: ''; margin-left: auto; width: 7px; height: 7px; border: solid #87a07a; border-width: 0 1.6px 1.6px 0; transform: rotate(45deg) translate(-2px, -2px); transition: transform .15s;
+}
+.builder-page .insp details[open] > summary::after { transform: rotate(225deg) translate(-2px, -2px); }
+.builder-page .insp-section-title { flex: 1; min-width: 0; }
+.builder-page .insp-section-badge {
+  padding: 2px 7px; border-radius: 999px; background: var(--sage); color: #5c7454; font-size: 10px; font-weight: 600; letter-spacing: 0; text-transform: none;
+  max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.builder-page .insp-section > summary .sb-icon { flex: none; color: #87a07a; transition: transform .15s; }
+.builder-page .insp-section[open] > summary .sb-icon { transform: rotate(180deg); }
+.builder-page .insp .insp-section > summary:hover,
+.builder-page .insp-body > details > summary:hover { color: var(--green); }
+.builder-page .insp-section-body,
+.builder-page .insp-body > .system-controls > :not(summary),
+.builder-page .insp-body > .logo-controls > :not(summary) { padding-left: 14px; padding-right: 14px; }
+.builder-page .insp-section-body { padding-bottom: 14px; display: grid; gap: 12px; }
+.builder-page .insp-body > .logo-controls,
+.builder-page .insp-body > .system-controls { padding-bottom: 12px; }
+.builder-page .insp-body > .logo-controls[open],
+.builder-page .insp-body > .system-controls[open] { display: grid; gap: 8px; }
+.builder-page .insp-body > .topology-editor > :not(summary),
+.builder-page .insp .insp-section .topology-editor > :not(summary) { margin-left: 14px; margin-right: 14px; }
+.builder-page .insp .insp-section .topology-editor { border: 0; border-top: 1px solid #e3e9de; border-radius: 0; background: none; }
+.builder-page .insp .insp-section .topology-editor > summary { padding-left: 0; }
+.builder-page .insp .insp-section .topology-editor > :not(summary) { margin-left: 0; margin-right: 0; }
+.builder-page .insp-section .selection-form, .builder-page .insp .selection-form { display: contents; }
+/* Components that carried their own card chrome sit flat inside a section. */
+.builder-page .insp .insp-section .appearance-controls { margin: 0; padding: 0; border: 0; }
+.builder-page .insp .insp-section .appearance-controls > h3 { display: none; }
+.builder-page .insp .insp-section .paint-picker { margin: 0 0 10px; border-color: #e0e7db; border-radius: 10px; padding: 10px; }
+.builder-page .insp .insp-section .plate-stack { margin: 0 0 8px; border-radius: 10px; }
+.builder-page .insp .insp-section-body > .inspector-fields { margin: 0; display: grid; gap: 12px; }
+
+/* Fields: label and reset on one line, the control full width underneath. */
+.builder-page .insp .field,
+.builder-page .insp .inspector-fields label.field,
+.builder-page .insp-section-body > label {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 8px; row-gap: 6px; margin: 0; font-size: 11.5px; color: #587051;
+}
+.builder-page .insp .field > span:first-child { grid-column: 1; margin: 0; font-weight: 550; }
+.builder-page .insp .field > :not(:first-child) { grid-column: 1 / -1; }
+.builder-page .insp .field > .field-reset { grid-column: 2; grid-row: 1; }
+.builder-page .insp .field > .insp-hint { color: var(--muted); font-size: 10.5px; }
+.builder-page .insp .field-reset { margin: 0; padding: 3px 7px !important; min-height: 22px; width: auto; border-radius: 6px; font-size: 10px; background: transparent; border-color: transparent; color: #6f8763; }
+.builder-page .insp .field-reset:not(:disabled):hover { background: var(--sage); border-color: var(--line); }
+.builder-page .insp .field-reset:disabled { opacity: .3; }
+/* Resets are icon-only in the inspector (the accessible name and tooltip still say what they reset). */
+.builder-page .insp .field-reset span { display: none; }
+.builder-page .insp .field-reset { font-size: 13px; min-width: 26px; }
+.builder-page .insp select,
+.builder-page .insp .inspector-fields select,
+.builder-page .insp input:not([type=checkbox]):not([type=range]):not([type=color]):not([type=file]):not([type=hidden]),
+.builder-page .insp .inspector-fields input:not([type=checkbox]):not([type=range]):not([type=color]):not([type=file]) {
+  width: 100%; min-height: 36px; margin: 0; padding: 7px 10px; border: 1px solid #d3deca; border-radius: 8px; background: #fbfcf9;
+  color: #24402d; font-size: 13px; line-height: 1.2;
+}
+.builder-page .insp select:focus-visible, .builder-page .insp input:focus-visible { outline: 2px solid #799666; outline-offset: 1px; }
+.builder-page .insp select:disabled, .builder-page .insp input:disabled { opacity: .55; }
+.builder-page .insp .input-wrap { border: 0; background: none; overflow: visible; }
+.builder-page .insp .input-wrap { gap: 8px; }
+.builder-page .insp .input-wrap > .standard-size-control, .builder-page .insp .input-wrap > .numeric-control { flex: 1 1 auto; min-width: 0; }
+.builder-page .insp .standard-size-control { align-items: center; }
+.builder-page .insp .input-wrap > span:last-child:not(.numeric-control):not(.standard-size-control) { flex: none; padding: 0; font-size: 10px; color: var(--muted); }
+/* Slider plus value: range on the left, the scrubbable number on the right, reset after it. */
+.builder-page .insp .numeric-control { display: grid; grid-template-columns: minmax(0, 1fr) 76px auto; align-items: center; gap: 4px 10px; }
+.builder-page .insp .numeric-control > input[type=range] { order: 1; grid-column: 1; height: 24px; margin: 0; accent-color: var(--green); }
+.builder-page .insp .numeric-control > input[type=number] { order: 2; text-align: right; font-variant-numeric: tabular-nums; }
+.builder-page .insp .numeric-control > .field-reset { order: 3; }
+.builder-page .insp .numeric-control > small { order: 4; grid-column: 1 / -1; }
+.builder-page .insp .numeric-control:not(:has(> input[type=range])) { grid-template-columns: minmax(0, 1fr) auto; }
+.builder-page .insp .numeric-control:not(:has(> input[type=range])) > input[type=number] { text-align: left; }
+.builder-page .insp .standard-size-control .standard-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(98px, 1fr)); gap: 4px; width: 100%; }
+.builder-page .insp .standard-size-control .standard-options button,
+.builder-page .insp .standard-size-control .custom-size { min-height: 30px; padding: 5px 7px; border-radius: 8px; font-size: 11px; white-space: normal; line-height: 1.2; }
+/* Segmented buttons for short option lists. */
+.builder-page .insp .insp-segmented {
+  display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: #e9efe5; box-shadow: inset 0 0 0 1px #dbe4d4; min-width: 0;
+}
+.builder-page .insp .insp-segmented button {
+  flex: 1 1 0; min-width: 0; min-height: 30px; margin: 0; padding: 5px 6px; border: 0; border-radius: 7px; background: transparent;
+  color: #5d7556; font-size: 11.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.builder-page .insp .insp-segmented button:hover { background: #ffffff8c; }
+.builder-page .insp .insp-segmented button[aria-checked=true] { background: #fff; color: var(--green); box-shadow: 0 1px 3px #233b3024, 0 0 0 1px #c9d6c1; }
+.builder-page .insp .insp-segmented[aria-disabled=true] { opacity: .55; }
+/* Paint pickers (AppearanceControls, room paints): round swatches, names in the tooltip. */
+.builder-page .insp .paint-swatches { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.builder-page .insp .paint-swatches button {
+  width: 32px; height: 32px; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 50%; background: transparent; font-size: 0;
+  display: grid; place-items: center; box-shadow: 0 0 0 1px #cfd8c9;
+}
+.builder-page .insp .paint-swatches button span { width: 24px; height: 24px; border: 0; box-shadow: inset 0 0 0 1px #0000002a; }
+.builder-page .insp .paint-swatches button[aria-pressed=true] { outline: 0; box-shadow: 0 0 0 2px var(--green); }
+.builder-page .insp .paint-swatches button:hover { background: transparent; box-shadow: 0 0 0 2px #9fb393; }
+.builder-page .insp .paint-picker legend { font-size: 11px; font-weight: 650; color: #587051; }
+.builder-page .insp .appearance-controls input[type=color] { height: 36px; border-radius: 8px; border: 1px solid #d3deca; background: #fbfcf9; }
+/* Colour swatches. */
+.builder-page .insp .insp-swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.builder-page .insp .insp-swatch {
+  display: grid; place-items: center; width: 32px; height: 32px; min-height: 0; margin: 0; padding: 0; border-radius: 50%; border: 0; background: transparent;
+  box-shadow: 0 0 0 1px #cfd8c9;
+}
+.builder-page .insp .insp-swatch > span { display: block; width: 24px; height: 24px; border-radius: 50%; box-shadow: inset 0 0 0 1px #0000002a; }
+.builder-page .insp .insp-swatch-default > span { background: conic-gradient(#353739 0 25%, #c9ccc4 0 50%, #353739 0 75%, #c9ccc4 0); }
+.builder-page .insp .insp-swatch[aria-checked=true] { box-shadow: 0 0 0 2px var(--green); }
+.builder-page .insp .insp-swatch:hover { background: transparent; box-shadow: 0 0 0 2px #9fb393; }
+/* Switch-style checkboxes. */
+.builder-page .insp .insp-switch { grid-template-columns: minmax(0, 1fr) auto auto; }
+.builder-page .insp .insp-switch > input[type=checkbox] {
+  grid-column: 2; grid-row: 1; appearance: none; width: 34px; height: 20px; margin: 0; border-radius: 999px; background: #cfd9c8; position: relative; transition: background .15s;
+}
+.builder-page .insp .insp-switch > input[type=checkbox]::after {
+  content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px #0003; transition: transform .15s;
+}
+.builder-page .insp .insp-switch > input[type=checkbox]:checked { background: var(--green); }
+.builder-page .insp .insp-switch > input[type=checkbox]:checked::after { transform: translateX(14px); }
+.builder-page .insp .insp-switch > input[type=checkbox]:disabled { opacity: .45; }
+.builder-page .insp .insp-switch > .field-reset { grid-column: 3; }
+/* Notes and buttons inside the body. */
+.builder-page .insp .note, .builder-page .insp .insp-section-body p { margin: 0; font-size: 11px; line-height: 1.55; color: #7b8e71; }
+.builder-page .insp .insp-credit { padding: 2px 4px; }
+.builder-page .insp .insp-credit a { color: #5f7a55; text-decoration: underline; text-underline-offset: 2px; }
+.builder-page .insp .insp-section-body > button,
+.builder-page .insp .rotation-controls button,
+.builder-page .insp .insp-stack button { width: 100%; margin: 0; }
+.builder-page .insp .rotation-controls { display: grid; gap: 8px; }
+.builder-page .insp .insp-stack { display: grid; gap: 6px; }
+.builder-page .insp .insp-swap-existing { margin-bottom: 10px; }
+.builder-page .insp-extra:empty, .builder-page .insp-extra:has(> #warnings:empty) { display: none; }
+.builder-page .insp-extra #warnings { margin-top: 10px; }
+
+/* Sticky footer: primary action full width, secondary actions share a row, destructive last. */
+.builder-page .insp-footer {
+  position: sticky; bottom: calc(-1 * var(--insp-footer-bleed, 18px)); z-index: 3;
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin: auto calc(-1 * var(--insp-gutter)) calc(-1 * var(--insp-footer-bleed, 18px));
+  padding: 10px var(--insp-gutter) calc(10px + env(safe-area-inset-bottom, 0px));
+  background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line);
+}
+.builder-page .insp-footer button { flex: 1 1 auto; margin: 0; min-height: 36px; padding: 8px 10px; border-radius: 8px; font-size: 11.5px; width: auto; }
+.builder-page .insp-footer .primary { flex-basis: 100%; }
+.builder-page .insp-footer .danger { color: #935145; background: #fbf5ef; border-color: #e4d3c5; }
+.builder-page .insp-footer .danger:hover { background: #f6e7dc; border-color: #d8b9a6; }
+.builder-page .insp-footer .insp-danger-quiet { color: #8d5a4d; }
+
+/* The desktop panel's padding is the gutter; tablets narrow it. */
+@media (max-width: 1150px) { .builder-page .insp { --insp-gutter: 16px; } }
+@media (max-width: 900px) { .builder-page .insp { --insp-gutter: 14px; --insp-footer-bleed: 15px; } }
+/* Phone sheet (#203): the panel scroller pads by the sheet's hidden height (--sheet-full - --sheet-size), so the sticky
+   footer lifts by the same amount to sit on the sheet's visible bottom edge. */
+.builder-page[data-layout^=phone] .insp { --insp-gutter: 16px; --insp-footer-bleed: 0px; }
+.builder-page[data-layout=phone] .insp-footer { bottom: calc(var(--sheet-full, 0px) - var(--sheet-size, 0px)); }
+.builder-page[data-layout=phone-land] .insp { --insp-gutter: 14px; }
+.builder-page[data-layout=phone-land] .insp-footer { bottom: 0; }
+/* Touch: 44 px targets and 16 px inputs (no iOS focus zoom). */
+@media (pointer: coarse) {
+  .builder-page .insp .insp-section > summary, .builder-page .insp-body > details > summary { min-height: 48px; }
+  .builder-page .insp select, .builder-page .insp input:not([type=checkbox]):not([type=range]):not([type=color]):not([type=file]) { min-height: 44px; font-size: 16px; }
+  .builder-page .insp .insp-segmented button { min-height: 38px; }
+  .builder-page .insp .insp-swatch { width: 40px; height: 40px; }
+  .builder-page .insp .insp-swatch > span { width: 30px; height: 30px; }
+  .builder-page .insp-footer button { min-height: 44px; }
+  .builder-page .insp .field-reset { min-height: 32px; padding: 6px 10px !important; }
+}
+/* Narrow columns (tablet side panel, split view): a tighter header. */
+.builder-page .insp { container-type: inline-size; }
+@container (max-width: 260px) {
+  .builder-page .insp-hero { grid-template-columns: 46px minmax(0, 1fr); gap: 10px; }
+  .builder-page .insp-art { width: 46px; height: 46px; border-radius: 10px; }
+  .builder-page .insp-art .insp-thumb { width: 40px; height: 40px; }
+  .builder-page .insp #selection-title { font-size: 16px; }
+}
+/* Phones: the docked selection bar carries the quick actions, so the footer stays one compact row. */
+.builder-page[data-layout^=phone] .insp-footer { flex-wrap: nowrap; }
+.builder-page[data-layout^=phone] .insp-footer button { flex: 1 1 0; min-width: 0; padding-inline: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.builder-page[data-layout^=phone] .insp-footer .primary { flex: 1.4 1 0; }
