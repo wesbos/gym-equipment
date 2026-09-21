@@ -42,6 +42,22 @@ export default function PartsPage() {
     [reference, setReference] = useState(false),
     [overlay, setOverlay] = useState(false),
     [wireframe, setWireframe] = useState(false);
+  // Narrow screens: the part list is a drawer and the parameters a bottom sheet (CSS decides when they apply).
+  const [drawer, setDrawer] = useState(false),
+    [sheet, setSheet] = useState(false);
+  const drawerToggle = useRef<HTMLButtonElement>(null),
+    drawerClose = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!drawer) return;
+    drawerClose.current?.focus({ preventScroll: true });
+    const key = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setDrawer(false);
+      drawerToggle.current?.focus();
+    };
+    document.addEventListener("keydown", key);
+    return () => document.removeEventListener("keydown", key);
+  }, [drawer]);
   const currentParams = useRef<Record<string, number>>({});
   function build(def: Definition, next: Record<string, number>) {
     values.current.set(def.id, next);
@@ -168,10 +184,14 @@ export default function PartsPage() {
   const categories = [...new Set(definitions.map((d) => d.category))],
     missing = definitions.length > 0 && !definitions.some((d) => d.id === partId);
   return (
-    <div className="parts-page">
-      <aside>
+    <div className={`parts-page${drawer ? " drawer-open" : ""}${sheet ? " sheet-open" : ""}`}>
+      <div className="drawer-backdrop" aria-hidden="true" onClick={() => setDrawer(false)} />
+      <aside id="parts-drawer" aria-label="Parts">
         <div className="eyebrow">
           BOS STRENGTH <span>02 / PARTS</span>
+          <button ref={drawerClose} type="button" className="drawer-close" aria-label="Close parts list" onClick={() => { setDrawer(false); drawerToggle.current?.focus(); }}>
+            ×
+          </button>
         </div>
         <h1>Parts</h1>
         <p className="intro">
@@ -203,7 +223,10 @@ export default function PartsPage() {
                     key={d.id}
                     className={partId === d.id ? "active" : ""}
                     aria-current={partId === d.id ? "page" : undefined}
-                    onClick={() => navigate({ to: "/parts/$partId", params: { partId: d.id } })}
+                    onClick={() => {
+                      setDrawer(false);
+                      navigate({ to: "/parts/$partId", params: { partId: d.id } });
+                    }}
                   >
                     {d.name}
                   </button>
@@ -215,11 +238,25 @@ export default function PartsPage() {
       </aside>
       <main>
         <header>
-          <div>
+          <button
+            ref={drawerToggle}
+            type="button"
+            className="drawer-toggle"
+            aria-expanded={drawer}
+            aria-controls="parts-drawer"
+            onClick={() => setDrawer(true)}
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12" /></svg>
+            Parts
+          </button>
+          <Link className="back-link" to="/library" aria-label="Parts library">
+            ← Library
+          </Link>
+          <div className="study-label">
             <span className="live-dot" /> PARTS STUDY{" "}
             <span className="muted">/ MANIFOLD CAD</span>
           </div>
-          <div>
+          <div className="header-actions">
             <button
               id="save"
               disabled={!valid}
@@ -246,8 +283,9 @@ export default function PartsPage() {
                     "bos-strength-" + selected.id + ".json"
                   );
               }}
+              aria-label="Save parameters"
             >
-              Save parameters ↓
+              Save<span className="long"> parameters</span> ↓
             </button>
             <button
               id="export"
@@ -261,8 +299,9 @@ export default function PartsPage() {
                       setStatus(String(e));
                     });
               }}
+              aria-label="Export GLB"
             >
-              Export GLB ↓
+              <span className="long">Export </span>GLB ↓
             </button>
           </div>
         </header>
@@ -354,12 +393,26 @@ export default function PartsPage() {
           </span>
         </footer>
       </main>
-      <section id="editor">
+      <section id="editor" aria-label="Part parameters">
+        <button
+          type="button"
+          id="sheet-toggle"
+          aria-expanded={sheet}
+          aria-controls="editor-body"
+          onClick={() => setSheet(open => !open)}
+        >
+          <span className="sheet-grip" aria-hidden="true" />
+          <span>Parameters</span>
+          <small>{Object.keys(params).length || ""} {Object.keys(params).length === 1 ? "setting" : Object.keys(params).length ? "settings" : ""}</small>
+          <span className="sheet-chevron" aria-hidden="true">⌃</span>
+        </button>
+        <div id="editor-body" className="editor-body">
         <div className="section-title">
           03 <span>Part parameters</span>
           <small>MILLIMETRES / DEGREES</small>
         </div>
         {selected && <VendorCredit part={selected.id} />}
+        {selected?.description && <p id="part-note">{selected.description}</p>}
         <form
           id="parameters"
           ref={form}
@@ -410,6 +463,7 @@ export default function PartsPage() {
         >
           Original reference ↗
         </a>
+        </div>
       </section>
     </div>
   );

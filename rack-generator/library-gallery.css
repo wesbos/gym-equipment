@@ -116,13 +116,119 @@
   color: #274d3b;
   margin-top: 20px;
 }
+.library-gallery .library-links{display:flex;gap:8px;flex-wrap:wrap}
+.library-gallery .gallery-card small {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #647267;
+  margin-bottom: 8px;
+}
+/* 490 cards: the browser skips layout and paint for the ones far off screen; the reserved size keeps the scrollbar steady. */
+.library-gallery .gallery-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 330px;
+}
+.library-gallery header a,
+.library-gallery input,
+.library-gallery select {
+  min-height: 44px;
+}
+.library-gallery header a {
+  display: inline-flex;
+  align-items: center;
+}
+/* Phones and small tablets (#207): compact cards, several per row, and the search stays in reach while scrolling. */
+@media (max-width: 900px) {
+  .library-gallery {
+    padding: calc(20px + env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) calc(32px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  }
+  .library-gallery .gallery-filters {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: end;
+    gap: 10px 12px;
+    margin: 0 calc(-1 * max(14px, env(safe-area-inset-left))) 16px;
+    padding: calc(8px + env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 10px max(14px, env(safe-area-inset-left));
+    background: #e9eeeaf2;
+    border-bottom: 1px solid #d3dcd3;
+  }
+  .library-gallery label {
+    min-width: 0;
+  }
+  .library-gallery input,
+  .library-gallery select {
+    width: 100%;
+    font-size: 16px;
+  }
+  .library-gallery [role="status"] {
+    padding-bottom: 14px;
+    white-space: nowrap;
+  }
+  .library-gallery .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+    gap: 10px;
+  }
+  .library-gallery .gallery-card {
+    min-height: 0;
+    padding: 12px;
+    contain-intrinsic-size: auto 240px;
+  }
+  .library-gallery .part-thumbnail {
+    width: 104px;
+    height: 104px;
+    margin-bottom: 6px;
+  }
+  .library-gallery h2 {
+    font-size: 15px;
+    line-height: 1.25;
+    letter-spacing: -0.2px;
+    margin: 6px 0 4px;
+  }
+  .library-gallery .gallery-card small {
+    font-size: 11px;
+    color: #647267;
+  }
+  .library-gallery .gallery-specs {
+    font-size: 11px;
+    margin-top: 6px;
+  }
+  .library-gallery strong {
+    display: none;
+  }
+}
 @media (max-width: 650px) {
   .library-gallery header {
     display: block;
+    margin-bottom: 16px;
+  }
+  .library-gallery h1 {
+    margin: 8px 0 12px;
   }
   .library-gallery header a {
-    display: inline-block;
-    margin-top: 12px;
+    padding: 0 14px;
+    font-size: 14px;
+  }
+  .library-gallery .gallery-filters {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .library-gallery .gallery-filters label:first-child {
+    grid-column: 1 / -1;
   }
 }
-.library-gallery .library-links{display:flex;gap:8px;flex-wrap:wrap}
+@media (max-width: 380px) {
+  .library-gallery .gallery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .library-gallery .part-thumbnail {
+    width: 88px;
+    height: 88px;
+  }
+}
+@media (hover: none) {
+  .library-gallery .gallery-card:hover {
+    background: #f8f9f5;
+  }
+}

@@ -190,3 +190,44 @@
   .part-gallery .pg-card-info { top: 86px; }
   .part-gallery .pg-card .pg-thumb { height: 112px; }
 }
+
+/* Touch screens (#207): every control gets a 44 px hit area; the card's (i) keeps its 22 px look inside one. */
+@media (pointer: coarse) {
+  .part-gallery .pg-close { min-width: 44px; min-height: 44px; justify-content: center; }
+  .pg-close kbd { display: none; }
+  .part-gallery .pg-nav-item, .part-gallery .pg-sections .pg-nav-item { min-height: 44px; }
+  .part-gallery .pg-chip { min-height: 44px; padding: 0 14px; font-size: 12px; }
+  .part-gallery .pg-chip span { font-size: 10px; }
+  .pg-fit { min-height: 44px; }
+  .part-gallery .pg-empty button { min-height: 44px; }
+  .part-gallery .pg-detail-actions button { min-height: 44px; }
+  .part-gallery .pg-detail-actions .pg-fav { min-width: 44px; }
+  .part-gallery .pg-card-info {
+    top: 85px; right: -3px; width: 44px; height: 44px; border: 0;
+    background: radial-gradient(circle, #ffffffe6 10px, var(--pg-line) 10.5px 11.5px, #0000 12px);
+  }
+  .pg-drag-hint { display: none; }
+  .pg-search input { min-height: 44px; }
+  /* Taller hit area, same layout. */
+  .pg-credit a { display: inline-block; padding: 14px 0; margin: -14px 0; }
+  .pg-card-name { font-size: 13px; }
+  .pg-card-brand { font-size: 11px; }
+  .pg-card-spec { font-size: 10.5px; }
+}
+@media (pointer: coarse) and (max-width: 700px) {
+  .part-gallery .pg-card-info { top: 75px; }
+}
+/* Full-screen sheet on phones: keep clear of the notch, the home indicator and rounded corners. */
+@media (max-width: 700px) {
+  .pg-header { padding: calc(10px + env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left)); }
+  .pg-nav { padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right)); }
+  .pg-detail { padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  .pg-eyebrow { font-size: 10px; }
+  /* Give the grid the height: the count is in the status line, and brands and "fits" share one row. */
+  .pg-header .pg-eyebrow { display: none; }
+  .pg-filters { flex-direction: row; align-items: center; }
+  .pg-brands { width: auto; }
+  .pg-fit { width: auto; max-width: 45%; padding: 4px 10px; }
+  .pg-fit small { display: none; }
+}
+/* Short landscape phones: the builder shell (MobileShell/mobile-shell.css, #203) owns that layout. */

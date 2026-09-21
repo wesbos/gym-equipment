@@ -9,6 +9,7 @@ import { toCreasedNormals } from "three/addons/utils/BufferGeometryUtils.js";
 import { createStudioLighting } from './studio-lighting.ts';
 import { fitRackShadow } from './gym-floor.ts';
 import { resolveMaterial } from '../../rack-generator/appearance.ts';
+import { createMotionCheck, createRenderLoop } from './render-loop.ts';
 export type View = "iso" | "front" | "top" | "side" | "detail";
 export type { LibraryMesh as MeshData } from "../../rack-generator/worker-types.ts";
 import type { LibraryMesh as MeshData } from "../../rack-generator/worker-types.ts";
@@ -73,8 +74,18 @@ export function createPartScene(
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   viewport.append(renderer.domElement);
+  renderer.domElement.setAttribute("aria-label", "Part model: drag to orbit, pinch or scroll to zoom");
+  // Touch: one finger orbits, two fingers pinch-zoom and pan. The canvas claims every gesture (touch-action: none).
+  renderer.domElement.style.touchAction = "none";
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
+  controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+  // On-demand rendering (#189): input and scene changes schedule a frame; damping keeps frames coming until it settles.
+  let updatingControls = false;
+  const loop = createRenderLoop(renderFrame);
+  const invalidate = () => loop.invalidate();
+  controls.addEventListener("change", () => { if (!updatingControls) invalidate(); });
+  controls.addEventListener("end", invalidate);
   const lighting = createStudioLighting(scene, renderer, true);
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(40000, 40000), new THREE.ShadowMaterial({ opacity: 0.22 }));
   ground.rotation.x = -Math.PI / 2;
@@ -84,6 +95,10 @@ export function createPartScene(
   const group = new THREE.Group(),
     comparison = new THREE.Group();
   scene.add(group, comparison);
+  for (const root of [scene, group, comparison]) {
+    root.addEventListener("childadded", invalidate);
+    root.addEventListener("childremoved", invalidate);
+  }
   scene.add(new THREE.GridHelper(10000, 200, 0xb2c0b4, 0xd6ded5));
   const draco = new DRACOLoader().setDecoderPath("/draco/");
   const loader = new GLTFLoader().setDRACOLoader(draco),
@@ -147,7 +162,10 @@ export function createPartScene(
     camera.position.copy(center).addScaledVector(direction, distance);
     controls.target.copy(center);
     controls.maxDistance = Math.max(10000, distance * 4);
+    updatingControls = true;
     controls.update();
+    updatingControls = false;
+    invalidate();
   }
   function setMeshes(meshes: MeshData[], paired = false) {
     ++refToken;
@@ -282,16 +300,28 @@ export function createPartScene(
     camera.updateProjectionMatrix();
     renderer.setSize(width, height);
     fit();
+    // setSize clears the canvas: draw now rather than flash an empty frame.
+    loop.renderNow();
   });
   observer.observe(viewport);
-  renderer.setAnimationLoop(() => {
-    controls.update();
+  const onContextRestored = () => invalidate();
+  renderer.domElement.addEventListener("webglcontextrestored", onContextRestored);
+  // Damping crawls on below a pixel for seconds at millimetre scale; stop once the camera stops visibly moving.
+  const cameraMoving = createMotionCheck();
+  /** One frame; true while damping still moves the camera. */
+  function renderFrame() {
+    if (disposed) return false;
+    updatingControls = true;
+    const damping = controls.update();
+    updatingControls = false;
+    const moving = cameraMoving(camera, controls.target) && damping;
     const distance = camera.position.distanceTo(controls.target);
     camera.near = Math.max(0.5, distance / 200);
     camera.far = Math.max(10000, distance * 20);
     camera.updateProjectionMatrix();
     renderer.render(scene, camera);
-  });
+    return moving;
+  }
   return {
     fit,
     setMeshes,
@@ -303,6 +333,7 @@ export function createPartScene(
           for (const m of materials(o))
             if (m instanceof THREE.MeshStandardMaterial) m.wireframe = value;
       });
+      invalidate();
     },
     async exportGLB(name: string) {
       const output = group.clone();
@@ -324,7 +355,8 @@ export function createPartScene(
       disposed = true;
       ++refToken;
       observer.disconnect();
-      renderer.setAnimationLoop(null);
+      loop.dispose();
+      renderer.domElement.removeEventListener("webglcontextrestored", onContextRestored);
       controls.dispose();
       clearComparison();
       disposeTree(scene);
