@@ -44,16 +44,18 @@ const PanelIcon = ({ side }: { side: 'left' | 'right' | 'bottom' }) => (
 /** Tablet and desktop: show or hide the parts sidebar, the timeline and the inspector so the canvas can be large.
  * Writes `data-hide-left` / `data-hide-right` / `data-hide-timeline` on the shell; the choice persists per browser. */
 export function PanelToggles({ shell }: { shell: RefObject<HTMLElement | null> }) {
-  const prefs = usePanelPrefs();
+  const prefs = usePanelPrefs(), group = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
-    const el = shell.current;
+    // On mount the page's shell ref is not attached yet (a parent's ref comes after its children's layout effects), so
+    // find the shell from this group: panels hidden by default or by a saved choice apply before the first paint.
+    const el = shell.current ?? group.current?.closest<HTMLElement>('.builder-shell');
     if (!el) return;
     el.toggleAttribute('data-hide-left', !prefs.left);
     el.toggleAttribute('data-hide-right', !prefs.right);
     el.toggleAttribute('data-hide-timeline', !prefs.timeline);
-  }, [prefs, shell]);
+  }, [prefs.left, prefs.right, prefs.timeline, shell]);
   return (
-    <div className="panel-toggles" role="group" aria-label="Panels">
+    <div className="panel-toggles" ref={group} role="group" aria-label="Panels">
       <button type="button" aria-pressed={prefs.left} aria-label="Parts panel" title={prefs.left ? 'Hide parts panel' : 'Show parts panel'} onClick={() => togglePanel('left')}><PanelIcon side="left" /></button>
       <button type="button" aria-pressed={prefs.timeline} aria-label="Timeline panel" title={prefs.timeline ? 'Hide timeline' : 'Show timeline'} onClick={() => togglePanel('timeline')}><PanelIcon side="bottom" /></button>
       <button type="button" aria-pressed={prefs.right} aria-label="Inspector panel" title={prefs.right ? 'Hide inspector' : 'Show inspector'} onClick={() => togglePanel('right')}><PanelIcon side="right" /></button>

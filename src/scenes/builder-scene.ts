@@ -34,6 +34,7 @@ import { createStudioLighting } from './studio-lighting.ts';
 import { createMotionCheck, createRenderLoop, pinPrograms } from './render-loop.ts';
 import { prewarmPrograms } from './program-prewarm.ts';
 import { currentRenderEnvironment, fogRange, renderBudget } from './render-budget.ts';
+import { fitFrame, projectedFill } from './fit-frame.ts';
 import { LONG_PRESS_MS, TOUCH_PICK_RADIUS, TOUCH_TARGET_RADIUS, TouchTracker, choosePick, pickOffsets, pickScore, SMALL_PART_PX } from './touch-input.ts';
 import { detectCollisions } from "../../rack-generator/assembly-collisions.ts";
 import type {
@@ -51,7 +52,10 @@ export type BuilderView = "iso" | "front" | "side" | "top";
 /** Canvas edges covered by UI (CSS px): a phone's bottom sheet, a top bar. The view centres in what is left. */
 export interface ViewInsets { top: number; right: number; bottom: number; left: number }
 export interface BuilderScene {
+  /** Frame the content (the equipment, plus the room while its walls show) tightly in the uncovered canvas (#215). */
   fit(mode?: BuilderView): void;
+  /** Share of the uncovered canvas the framed content currently spans, per axis (1 = edge to edge). */
+  contentFill(): { x: number; y: number };
   refitOnNextBuild(): void;
   exportGLB(): Promise<ArrayBuffer>;
   /** Cinematic self-assembly of the rendered rack; presentation only. False when it cannot (or, reduced-motion, need not) run. */
@@ -1259,53 +1263,47 @@ export function createBuilderScene(
     invalidate();
     onEnd?.();
   }
-  function fit(mode: BuilderView = view) {
-    stopBuild();
-    flight = null;
-    view = mode;
+  /** What fit frames: the equipment, plus the room while its walls are drawn (the far backdrop never counts). */
+  function contentBox() {
+    scene.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(assemblyRoot);
+    if (walls.group.visible) {
+      const { back, left, right, front, height } = roomOf(snapshot.doc);
+      box.union(new THREE.Box3(new THREE.Vector3(-left, 0, -back), new THREE.Vector3(right, height, front)));
+    }
     if (box.isEmpty())
       box.set(
         new THREE.Vector3(-600, 0, -500),
         new THREE.Vector3(600, snapshot.doc.rack.height, 500),
       );
-    const center = box.getCenter(new THREE.Vector3()),
-      size = box.getSize(new THREE.Vector3()),
-      directions: Record<BuilderView, Vec3> = {
+    return box;
+  }
+  function fit(mode: BuilderView = view) {
+    stopBuild();
+    flight = null;
+    view = mode;
+    const directions: Record<BuilderView, Vec3> = {
         iso: [1, 0.65, 1.2],
         front: [0, 0, 1],
         side: [1, 0, 0],
         top: [0, 1, 0.0001],
       };
     const direction = new THREE.Vector3(...directions[mode]).normalize(),
-      right = new THREE.Vector3()
-        .crossVectors(new THREE.Vector3(0, 1, 0), direction)
-        .normalize(),
-      up = new THREE.Vector3().crossVectors(direction, right).normalize(),
       tangent = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)),
       // Frame the uncovered part of the canvas (the view offset centres it there).
-      [shownX, shownY] = shownFraction(),
-      tangentX = tangent * camera.aspect * shownX, tangentY = tangent * shownY;
-    let distance = 1;
-    for (const x of [-1, 1])
-      for (const y of [-1, 1])
-        for (const z of [-1, 1]) {
-          const corner = new THREE.Vector3(
-            (x * size.x) / 2,
-            (y * size.y) / 2,
-            (z * size.z) / 2,
-          );
-          distance = Math.max(
-            distance,
-            corner.dot(direction) +
-              Math.abs(corner.dot(right)) / tangentX,
-            corner.dot(direction) + Math.abs(corner.dot(up)) / tangentY,
-          );
-        }
-    camera.position.copy(center).addScaledVector(direction, distance * 1.3);
-    controls.target.copy(center);
+      [shownX, shownY] = shownFraction();
+    // Tight (#215): the content spans FIT_FILL of the uncovered canvas along its limiting axis, centred on screen.
+    const { target, distance } = fitFrame(contentBox(), direction, tangent * camera.aspect * shownX, tangent * shownY);
+    camera.position.copy(target).addScaledVector(direction, distance);
+    controls.target.copy(target);
     controls.update();
     invalidate();
+  }
+  /** Share of the uncovered canvas the framed content spans, per axis (1 = edge to edge). */
+  function contentFill() {
+    camera.updateMatrixWorld();
+    const fill = projectedFill(contentBox(), camera), [shownX, shownY] = shownFraction();
+    return { x: fill.x / shownX, y: fill.y / shownY };
   }
   /** Uncovered share of the canvas width and height. */
   function shownFraction(): [number, number] {
@@ -1481,6 +1479,7 @@ export function createBuilderScene(
   if (snapshot.placing || snapshot.structureChoice || snapshot.systemChoice) refreshPlacement();
   return {
     fit,
+    contentFill,
     refitOnNextBuild() {
       hasFit = false;
     },

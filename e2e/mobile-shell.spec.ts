@@ -199,14 +199,82 @@ test('iPhone landscape: slim top bar and side sheet', async () => {
   } finally { await close(); }
 });
 
+/** Top-bar controls (#215): each is inside the viewport and none overlaps the logo or another control. */
+async function toolbarRects(page: Page) {
+  return page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.toolbar .brand, .toolbar .history-actions button, .toolbar-actions > :is(button, a, details), .toolbar-slot > *, .toolbar-overflow > button, .toolbar-menu > :is(button, a, details, div)')]
+    // A closed phone menu is display: none, so its items measure 0 wide.
+    .filter(el => el.getBoundingClientRect().width > 0 && getComputedStyle(el).visibility !== 'hidden')
+    .map(el => { const r = el.getBoundingClientRect(); return { name: (el.id || el.className || el.tagName).toString().split(' ')[0], x: r.x, y: r.y, width: r.width, height: r.height }; }));
+}
+async function expectToolbarClear(page: Page) {
+  const rects = await toolbarRects(page), width = page.viewportSize()!.width;
+  expect(rects.length).toBeGreaterThan(3);
+  for (const r of rects) expect(r.x >= -0.5 && r.x + r.width <= width + 0.5, `${r.name} inside the viewport`).toBe(true);
+  for (let i = 0; i < rects.length; i++) for (let j = i + 1; j < rects.length; j++) {
+    const [a, b] = [rects[i], rects[j]];
+    // A 1 px shared edge is not an overlap.
+    const inset = (r: typeof a) => ({ x: r.x + 1, y: r.y + 1, width: r.width - 2, height: r.height - 2 });
+    expect(overlaps(inset(a), inset(b)), `${a.name} overlaps ${b.name}`).toBe(false);
+  }
+}
+
+test('narrow phones (320, 375, 390 px): the top bar never overlaps the logo, the sheet tabs fit or scroll', async () => {
+  test.setTimeout(180000);
+  for (const device of [devices['iPhone SE'], devices['iPhone SE (3rd gen)'], devices['iPhone 14']]) {
+    const { page, errors, close } = await open(device);
+    try {
+      await expect(page.locator('.builder-page')).toHaveAttribute('data-layout', 'phone');
+      await expectNoOverflow(page);
+      await expectToolbarClear(page);
+      // The Add button keeps its name when its label shortens.
+      await expect(page.getByRole('button', { name: 'Add parts' })).toBeVisible();
+      const tabs = await page.evaluate(() => {
+        const list = document.querySelector<HTMLElement>('.sheet-tabs')!;
+        return { overflow: list.scrollWidth > list.clientWidth + 1, marked: list.hasAttribute('data-overflow'),
+          tabs: [...list.querySelectorAll<HTMLElement>('[role=tab]')].map(t => {
+            const r = t.getBoundingClientRect(), label = t.querySelector('span:last-child')!.getBoundingClientRect();
+            return { name: t.textContent, width: r.width, height: r.height, clipped: t.scrollWidth > t.clientWidth + 1, labelInside: label.left >= r.left - 0.5 && label.right <= r.right + 0.5 };
+          }) };
+      });
+      expect(tabs.tabs.map(t => t.name)).toEqual(['Parts', 'Inspector', 'Timeline', 'Room', 'Outliner']);
+      for (const t of tabs.tabs) {
+        expect(t.clipped, `${t.name} label clipped`).toBe(false);
+        expect(t.labelInside, `${t.name} label inside its tab`).toBe(true);
+        expect(t.height).toBeGreaterThanOrEqual(44);
+      }
+      // Either every tab fits, or the strip scrolls and says so (faded edges).
+      expect(tabs.overflow).toBe(tabs.marked);
+      for (const name of ['Inspector', 'Outliner']) {
+        await page.getByRole('tab', { name }).click();
+        await expect(page.getByRole('tab', { name })).toBeInViewport({ ratio: 1 });
+      }
+      expect(errors).toEqual([]);
+    } finally { await close(); }
+  }
+});
+
 test('iPad: collapsible panels give the canvas the room, in both orientations', async () => {
-  test.setTimeout(120000);
-  for (const device of [devices['iPad Pro 11'], devices['iPad Pro 11 landscape']]) {
+  test.setTimeout(150000);
+  for (const device of [devices['iPad Pro 11'], devices['iPad Pro 11 landscape'], devices['iPad (gen 7)'], devices['iPad Mini']]) {
     const { page, errors, close } = await open(device);
     try {
       await expect(page.locator('.builder-page')).toHaveAttribute('data-layout', 'tablet');
       await expectNoOverflow(page);
+      await expectToolbarClear(page);
       await expect(page.locator('#export')).toBeInViewport();
+      const portrait = device.viewport.height > device.viewport.width;
+      // Portrait tablets (#215) start with the parts panel collapsed and "Add parts" in the toolbar; the choice to show
+      // it is remembered.
+      if (portrait) {
+        await expect(page.locator('.catalog-panel')).toBeHidden();
+        await expect(page.locator('.toolbar-add')).toBeVisible();
+        expect((await canvasBox(page)).width).toBeGreaterThan(device.viewport.width * 0.6);
+        await page.getByRole('button', { name: 'Parts panel' }).click();
+        await expect(page.locator('.catalog-panel')).toBeVisible();
+        await page.reload();
+        await expect(page.locator('#status')).toHaveText(/\d+ parts · All connections aligned/, { timeout: 90000 });
+        await expect(page.locator('.catalog-panel')).toBeVisible();
+      } else await expect(page.locator('.catalog-panel')).toBeVisible();
       const full = await canvasBox(page);
       await page.getByRole('button', { name: 'Parts panel' }).click();
       await page.getByRole('button', { name: 'Inspector panel' }).click();
@@ -225,6 +293,10 @@ test('iPad: collapsible panels give the canvas the room, in both orientations', 
       expect(overlaps(bar, hint)).toBe(false);
       await place(page);
       await expect.poll(() => partCount(page), { timeout: 60000 }).toBe(before + 1);
+      // The edit marked the design unsaved: "Configurations • Unsaved" (a dot on portrait tablets) stays on one line.
+      await expect(page.locator('.toolbar .config-unsaved')).toHaveCount(1);
+      expect((await rect(page, '.toolbar .config-manager > summary')).height).toBeLessThan(44);
+      await expectToolbarClear(page);
       await page.getByRole('button', { name: 'Undo', exact: true }).click();
       await expect.poll(() => partCount(page), { timeout: 60000 }).toBe(before);
       // Restore: the choice persists, so put the panels back for the next orientation.

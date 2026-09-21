@@ -16,11 +16,14 @@ import { structureSlots } from '../../rack-generator/topology.ts';
 import { ConfigManager } from "../components/ConfigManager.tsx";
 import { PartGallery, GalleryLauncher, CompactCatalog, BrowseCategories, openGallery } from "../components/PartGallery/index.ts";
 import { BuilderSheet, OverflowMenu, PanelToggles, isPhoneLayout, useLayoutMode, type SheetTab } from "../components/MobileShell/index.ts";
+import { TAB_ICONS } from "../components/MobileShell/tab-icons.tsx";
+import { placementCopy } from "../state/placement-copy.ts";
 import {
   memo,
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type RefObject,
 } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -204,11 +207,11 @@ function useViewportFitCover() {
 }
 /** Phone sheet tabs (see components/MobileShell). */
 const SHEET_TABS: readonly SheetTab[] = [
-  { id: "parts", label: "Parts" },
-  { id: "inspector", label: "Inspector" },
-  { id: "timeline", label: "Timeline" },
-  { id: "room", label: "Room", panel: "inspector" },
-  { id: "outliner", label: "Outliner" },
+  { id: "parts", label: "Parts", icon: TAB_ICONS.parts },
+  { id: "inspector", label: "Inspector", icon: TAB_ICONS.inspector },
+  { id: "timeline", label: "Timeline", icon: TAB_ICONS.timeline },
+  { id: "room", label: "Room", panel: "inspector", icon: TAB_ICONS.room },
+  { id: "outliner", label: "Outliner", icon: TAB_ICONS.outliner },
 ];
 function StageCaption({ store }: { store: BuilderStore }) {
   const { viewing, dimensions } = useStoreSelector(store, s => ({ viewing: s.timeline.viewing, dimensions: s.dimensions }), shallowEqual);
@@ -222,8 +225,17 @@ function StageCaption({ store }: { store: BuilderStore }) {
 function PartsCount({ store }: { store: BuilderStore }) {
   return <>{useStoreSelector(store, s => s.resolved.length)}</>;
 }
+/** `(pointer: coarse)`: the primary input is a finger (placement hints use touch wording, #215). */
+const COARSE = "(pointer: coarse)";
+function subscribeCoarse(notify: () => void) {
+  if (typeof matchMedia !== "function") return () => {};
+  const list = matchMedia(COARSE);
+  list.addEventListener("change", notify);
+  return () => list.removeEventListener("change", notify);
+}
+const useCoarsePointer = () => useSyncExternalStore(subscribeCoarse, () => typeof matchMedia === "function" && matchMedia(COARSE).matches, () => false);
 function PlacementHint({ store }: { store: BuilderStore }) {
-  const nameOf = usePartNames(store).name;
+  const nameOf = usePartNames(store).name, coarse = useCoarsePointer();
   const hint = useStoreSelector(store, s => (s.placing || s.structureChoice || s.systemChoice) ? {
     placingPart: s.placing?.part ?? null, structureChoice: s.structureChoice, placementText: s.placementText,
     hasProposal: !!s.proposal, rotationOnly: !!s.placing?.rotationOnly, addMode: !!s.structureChoice && s.structureMode === "add",
@@ -233,13 +245,13 @@ function PlacementHint({ store }: { store: BuilderStore }) {
   return (
     <div className="placement-hint" id="placement-hint">
       <span id="placement-text">
-        {hint.placementText ||
+        {hint.placementText ? placementCopy(hint.placementText, coarse) :
           `Place ${nameOf(hint.placingPart ?? hint.structureChoice!)}`}
       </span>
       {!hint.addMode && <button id="accept-placement" disabled={!hint.hasProposal} onClick={store.acceptProposal}>{hint.rotationOnly ? "Apply rotation" : "Place"}</button>}
       {hint.movePair && <label><input type="checkbox" checked={hint.paired} onChange={e => store.patch({ paired: e.target.checked })} /> Move pair together</label>}
       <button id="cancel-placement" onClick={store.cancelPlacement}>
-        Cancel <kbd>ESC</kbd>
+        Cancel{!coarse && <> <kbd>ESC</kbd></>}
       </button>
     </div>
   );
@@ -338,21 +350,23 @@ export default function BuilderPage() {
               </button>
             </div>
             <HistoryButtons store={store} />
-            <button type="button" className="toolbar-add primary" aria-haspopup="dialog" onClick={() => openGallery()}>
-              <span aria-hidden="true">+</span> Add parts
+            <button type="button" className="toolbar-add primary" aria-haspopup="dialog" aria-label="Add parts" onClick={() => openGallery()}>
+              {/* The narrowest phones show "+ Add" (#215). */}
+              <span aria-hidden="true">+</span><span className="toolbar-add-label">Add<span className="toolbar-add-noun"> parts</span></span>
             </button>
             <OverflowMenu>
               <Link className="gyms-link" to="/gyms" data-menu-close>Gym gallery</Link>
               <ConfigManager store={store} />
+              {/* "JSON" is visually hidden on portrait-tablet toolbars (#215); the accessible names stay whole. */}
               <button id="load" data-menu-close onClick={() => importFile.current?.click()}>
-                Load JSON
+                Load<span className="toolbar-word"> JSON</span>
               </button>
               <button
                 id="save"
                 data-menu-close
                 onClick={api.saveJSON}
               >
-                Save JSON
+                Save<span className="toolbar-word"> JSON</span>
               </button>
               <ExportControl store={store} controller={controller} />
               <button type="button" className="menu-only" data-menu-close onClick={() => store.openRoom()}>Room: walls, floor & ceiling</button>

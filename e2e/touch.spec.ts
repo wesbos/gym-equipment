@@ -179,3 +179,58 @@ test('touch: the Coop gym renders on a phone (not a fogged-out blank canvas)', a
     expect(drawn).toBeGreaterThan(0.3);
   } finally { await browser.close(); }
 });
+
+test('fit view frames the Coop gym tightly on an iPhone, in every view, with and without a sheet inset (#215)', async () => {
+  test.setTimeout(180_000);
+  const browser = await chromium.launch({ args: gpuArgs });
+  try {
+    const context = await browser.newContext({ ...devices['iPhone 14'] });
+    const page = await context.newPage();
+    page.on('pageerror', error => console.log('pageerror', error.message));
+    // The phone stage: the canvas between the 52 px top bar and a peeking sheet.
+    await page.route('**/__fit-review', route => route.fulfill({ contentType: 'text/html', body:
+      '<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0}#viewport{position:fixed;left:0;right:0;top:52px;bottom:112px}</style><div id="viewport"></div>' }));
+    await page.goto(new URL('/__fit-review', base).href);
+    await page.evaluate(async () => {
+      const { BuilderStore } = await import('/src/state/builder-store.ts');
+      const { createBuilderScene } = await import('/src/scenes/builder-scene.ts');
+      const { loadGym } = await import('/src/gyms/gyms.ts');
+      const store = new BuilderStore({ getItem: () => null, setItem: () => {} });
+      await store.ready;
+      const scene = createBuilderScene(document.querySelector('#viewport')!, store);
+      (window as any).t = { store, scene };
+      const gym = (await loadGym('coop-garage-gym-reviews'))!;
+      scene.refitOnNextBuild();
+      await store.openDesign(gym.doc, gym.title);
+    });
+    const built = () => page.evaluate(() => { const s = (window as any).t.store.getSnapshot(); return s.resolved.length > 30 && !s.loading && s.builtDoc === s.doc; });
+    await expect.poll(built, { timeout: 90_000 }).toBe(true);
+    await page.waitForTimeout(500);
+    type Fill = { x: number; y: number };
+    const fill = (view: string) => page.evaluate(v => { const s = (window as any).t.scene; s.fit(v); return s.contentFill(); }, view) as Promise<Fill>;
+    for (const view of ['iso', 'front', 'side', 'top']) {
+      const f = await fill(view);
+      // The limiting axis spans at least 80 % of the canvas (the fit aims at 88 %), and nothing is cut off.
+      expect(Math.max(f.x, f.y), `${view} ${JSON.stringify(f)}`).toBeGreaterThanOrEqual(0.8);
+      expect(Math.max(f.x, f.y), view).toBeLessThanOrEqual(0.92);
+    }
+    // A half-open sheet over the lower part: the fit frames what is left, just as tightly.
+    await page.evaluate(() => (window as any).t.scene.setViewInsets({ bottom: 250 }));
+    for (const view of ['iso', 'top']) expect(Math.max(...Object.values(await fill(view)))).toBeGreaterThanOrEqual(0.8);
+    await page.evaluate(() => (window as any).t.scene.setViewInsets({ bottom: 0 }));
+    await fill('iso');
+    await page.waitForTimeout(300);
+    // Still not a fogged-out canvas at the closer framing (#211).
+    const shot = await page.locator('#viewport canvas').screenshot();
+    const drawn = await page.evaluate(async (png: string) => {
+      const image = new Image(); image.src = `data:image/png;base64,${png}`; await image.decode();
+      const c = new OffscreenCanvas(image.width, image.height), g = c.getContext('2d')!; g.drawImage(image, 0, 0);
+      const { data } = g.getImageData(0, 0, image.width, image.height);
+      let count = 0, total = 0;
+      for (let i = 0; i < data.length; i += 4 * 7) { total++; if (Math.abs(data[i] - 0x34) + Math.abs(data[i + 1] - 0x3b) + Math.abs(data[i + 2] - 0x38) > 24) count++; }
+      return count / total;
+    }, shot.toString('base64'));
+    expect(drawn).toBeGreaterThan(0.3);
+    await page.evaluate(() => (window as any).t.scene.dispose());
+  } finally { await browser.close(); }
+});
