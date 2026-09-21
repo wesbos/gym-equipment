@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { contentDragMode, layoutFor, openSheet, setSheetSnap, settleSnap, sheetSizes, sheetState, stepSnap, LAYOUT_QUERIES } from './MobileShell/shell-state.ts';
+import { contentDragMode, defaultPanels, layoutFor, openSheet, resolvePanels, setSheetSnap, settleSnap, sheetSizes, sheetState, stepSnap, LAYOUT_QUERIES } from './MobileShell/shell-state.ts';
 
 /** Evaluates the layout queries against a viewport (the subset of media query syntax they use). */
 function matcher(width: number, height: number) {
@@ -75,4 +75,13 @@ test('content drags: the sheet moves below full and from a scrolled-to-top panel
   assert.equal(contentDragMode('full', 0, 0, 20), 'sheet');
   assert.equal(contentDragMode('full', 0, 0, -20), 'native');
   assert.equal(contentDragMode('full', 50, 0, 20), 'native');
+});
+
+test('panels: portrait tablets start with the parts panel collapsed; explicit choices win in any orientation', () => {
+  assert.deepEqual(defaultPanels(false), { left: true, right: true, timeline: true });
+  assert.deepEqual(defaultPanels(true), { left: false, right: true, timeline: true });
+  assert.deepEqual(resolvePanels({}, true), { left: false, right: true, timeline: true });
+  assert.deepEqual(resolvePanels({ left: true }, true), { left: true, right: true, timeline: true });
+  assert.deepEqual(resolvePanels({ timeline: false }, false), { left: true, right: true, timeline: false });
+  assert.deepEqual(resolvePanels({ timeline: false }, true), { left: false, right: true, timeline: false });
 });

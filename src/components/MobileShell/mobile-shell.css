@@ -10,7 +10,7 @@
 .builder-page .toolbar-slot { display: flex; align-items: center; gap: 6px; }
 .builder-page .toolbar-slot:empty { display: none; }
 .builder-page .toolbar-add { align-items: center; gap: 6px; white-space: nowrap; }
-.builder-page .toolbar-add > span { font-size: 16px; line-height: 1; }
+.builder-page .toolbar-add > span[aria-hidden] { font-size: 16px; line-height: 1; }
 
 /* Floating overlay slot over the canvas: children take pointer events, the slot does not. */
 .builder-page .stage-overlay { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
@@ -48,6 +48,25 @@
 .builder-page .panel-toggles button { display: grid; place-items: center; padding: 6px 7px; background: transparent; border-color: transparent; color: #8a9a80; border-radius: 4px; }
 .builder-page .panel-toggles button[aria-pressed=true] { background: #fff; border-color: #cbd7c4; color: #2d4b24; box-shadow: 0 1px 3px #233b3010; }
 @media (max-width: 1150px) { .builder-page .panel-toggles { top: 14px; right: 12px; } }
+/* The toolbar never wraps a label onto two lines (#215): "Configurations • Unsaved" keeps one line (a dot on tablets). */
+.builder-page:not([data-layout^=phone]) .toolbar-actions .config-manager > summary { white-space: nowrap; }
+.builder-page .toolbar-actions .toolbar-add .toolbar-add-label, .builder-page .toolbar-actions .toolbar-add-noun,
+.builder-page .toolbar-actions .toolbar-word { margin-left: 0; }
+/* Too many actions for the row: they run off the end rather than back over the logo. */
+.builder-page:not([data-layout^=phone]) .toolbar-actions { justify-content: safe flex-end; }
+/* Tablets (#215): with the parts panel collapsed (the portrait default) "Add parts" joins the toolbar. Make room: an
+ * icon-only Search, "Load" / "Save" (still named "Load JSON" / "Save JSON") and a dot for unsaved changes; portrait
+ * toolbars also get a narrower brand. */
+.builder-page[data-layout=tablet] .palette-launch .palette-launch-label { display: none; }
+.builder-page[data-layout=tablet] .toolbar-actions .palette-launch { padding: 9px 11px; }
+.builder-page[data-layout=tablet] .toolbar-word { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.builder-page[data-layout=tablet] .config-unsaved { font-size: 0; }
+.builder-page[data-layout=tablet] .config-unsaved::after { content: ''; display: inline-block; width: 7px; height: 7px; margin-left: 6px;
+  border-radius: 50%; background: #c77c36; vertical-align: 1px; }
+@media (max-width: 900px) {
+  .builder-page[data-layout=tablet] .toolbar { grid-template-columns: 136px minmax(0, 1fr) auto; }
+  .builder-page[data-layout=tablet] .brand small { display: none; }
+}
 /* Tablets are touch-first: roomier targets for the stage controls. */
 .builder-page[data-layout=tablet] .panel-toggles button { min-width: 36px; min-height: 34px; }
 .builder-page[data-layout=tablet] .view-controls button { min-height: 34px; padding-inline: 10px; font-size: 10px; }
@@ -65,10 +84,19 @@
 .builder-page[data-layout^=phone] .brand small { display: none; }
 .builder-page[data-layout^=phone] .brand-symbol { display: flex; height: 26px; }
 .builder-page[data-layout^=phone] .project-heading { display: none; }
-.builder-page[data-layout^=phone] .toolbar-actions { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 0; }
+.builder-page[data-layout^=phone] .toolbar-actions { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; padding: 0; }
 .builder-page[data-layout^=phone] .history-actions { order: -1; margin-right: auto; display: flex; gap: 2px; }
 .builder-page[data-layout^=phone] .toolbar-actions .history-actions button { width: 40px; height: 40px; padding: 0; font-size: 20px; border-color: transparent; background: transparent; }
 .builder-page[data-layout^=phone] .toolbar-actions .toolbar-add { display: inline-flex; height: 40px; padding: 0 16px; font-size: 14px; border-radius: 20px; }
+/* The actions start after undo/redo (its auto margin pushes the rest right), so a bar that is too full runs off the end
+ * instead of back over the logo (#215). The narrowest phones (320 px) shorten "Add parts" to "Add" and tighten gaps. */
+@media (max-width: 374px) {
+  .builder-page[data-layout^=phone] .toolbar { gap: 2px; }
+  .builder-page[data-layout^=phone] .brand { padding-right: 4px; }
+  .builder-page[data-layout^=phone] .toolbar-actions { gap: 4px; }
+  .builder-page[data-layout^=phone] .toolbar-actions .toolbar-add { padding: 0 14px; }
+  .builder-page[data-layout^=phone] .toolbar-add-noun { display: none; }
+}
 .builder-page[data-layout^=phone] .toolbar-overflow { display: block; }
 .builder-page[data-layout^=phone] .toolbar-actions .overflow-trigger { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border-radius: 20px; }
 .builder-page[data-layout^=phone] .overflow-trigger svg { fill: currentColor; }
@@ -135,9 +163,17 @@
 .builder-page[data-layout^=phone] .sheet-handle { height: 22px; display: grid; place-items: center; cursor: grab; outline-offset: -4px; border-radius: 8px; }
 .builder-page[data-layout^=phone] .sheet-handle::before { content: ''; width: 40px; height: 5px; border-radius: 3px; background: #c3cdbd; }
 .builder-page[data-layout^=phone] .sheet-handle:focus-visible { outline: 2px solid #648455; }
-.builder-page[data-layout^=phone] .sheet-tabs { display: flex; gap: 4px; }
-.builder-page[data-layout^=phone] .sheet-tabs [role=tab] { flex: 1; min-width: 0; min-height: 40px; padding: 6px 4px; font-size: 13px; font-weight: 600;
+/* Tabs (#215): an icon over a short label, equal widths. Each tab is at least as wide as its label, so on a screen too
+ * narrow for all of them the strip scrolls sideways (faded at the edges) instead of running labels together. */
+.builder-page[data-layout^=phone] .sheet-tabs { display: flex; gap: 2px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+.builder-page[data-layout^=phone] .sheet-tabs::-webkit-scrollbar { display: none; }
+.builder-page[data-layout^=phone] .sheet-tabs[data-overflow] { -webkit-mask-image: linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 12px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 12px), transparent); }
+.builder-page[data-layout^=phone] .sheet-tabs [role=tab] { flex: 1 1 0; min-width: max-content; min-height: 46px; padding: 4px 6px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font-size: 11px; line-height: 1.15; font-weight: 600; white-space: nowrap;
   border-color: transparent; background: transparent; color: #6b7f62; border-radius: 10px; }
+.builder-page[data-layout^=phone] .sheet-tab-icon { display: grid; place-items: center; height: 20px; }
 .builder-page[data-layout^=phone] .sheet-tabs [role=tab][aria-selected=true] { background: #e6ede0; color: var(--ink); }
 .builder-page[data-layout^=phone] .sheet-body { display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; }
 .builder-page[data-layout^=phone] .status-bar { order: -1; flex: none; height: 24px; background: transparent; border: 0; padding: 0 16px; font-size: 11px; }
@@ -168,10 +204,6 @@
 .builder-page[data-layout^=phone] #selection-title { font-size: 22px; margin-top: 6px; }
 .builder-page[data-layout^=phone] .field, .builder-page[data-layout^=phone] .inspector-fields label { font-size: 12px; }
 .builder-page[data-layout^=phone] .inspector-fields button { min-height: 42px; }
-.builder-page[data-layout^=phone] .inspector-bottom { padding-top: 24px; }
-/* In the sheet, the selection's own inspector comes first; the rack's appearance, cable and logo panels follow it. */
-.builder-page[data-layout^=phone] .inspector-panel > .rack-panels { order: 1; margin-top: 24px; }
-.builder-page[data-layout^=phone] .inspector-panel > .inspector-bottom { order: 2; }
 .builder-page[data-layout^=phone] .timeline-region .history-timeline { padding: 4px 12px 0; background: transparent; border: 0; }
 .builder-page[data-layout^=phone] .timeline-region .timeline-controls { flex-wrap: wrap; row-gap: 6px; white-space: normal; }
 .builder-page[data-layout^=phone] .timeline-region .timeline-controls button { min-height: 38px; font-size: 12px; }
@@ -189,7 +221,8 @@
 .builder-page[data-layout=phone-land] .sheet-handle { width: 16px; height: auto; align-self: stretch; }
 .builder-page[data-layout=phone-land] .sheet-handle::before { width: 5px; height: 40px; }
 .builder-page[data-layout=phone-land] .sheet-tabs { flex-direction: column; width: 64px; padding: 8px 6px 8px 0; gap: 4px; overflow-y: auto; }
-.builder-page[data-layout=phone-land] .sheet-tabs [role=tab] { flex: none; min-height: 44px; font-size: 11px; padding: 4px 2px; }
+.builder-page[data-layout=phone-land] .sheet-tabs { overflow-x: hidden; }
+.builder-page[data-layout=phone-land] .sheet-tabs [role=tab] { flex: none; min-width: 0; min-height: 48px; font-size: 10.5px; padding: 4px 2px; }
 .builder-page[data-layout=phone-land] .sheet-body { border-left: 1px solid var(--line);
   padding-right: calc(var(--sheet-full, 0px) - var(--sheet-size, 0px) + env(safe-area-inset-right)); }
 .builder-page[data-layout=phone-land] .sheet-body > [data-sheet-panel] { padding-bottom: calc(env(safe-area-inset-bottom) + 16px); }

@@ -211,11 +211,22 @@
     padding: 0 14px;
     font-size: 14px;
   }
+  /* Phones (#215): the sticky bar is one search row plus the section chips (which replace the category select), and
+   * the field labels stay for screen readers only. */
   .library-gallery .gallery-filters {
     grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px 10px;
   }
-  .library-gallery .gallery-filters label:first-child {
-    grid-column: 1 / -1;
+  .library-gallery .gallery-filters label {
+    font-size: 0;
+    gap: 0;
+  }
+  .library-gallery .gallery-filters label:has(select) {
+    display: none;
+  }
+  .library-gallery [role="status"] {
+    padding-bottom: 0;
   }
 }
 @media (max-width: 380px) {
@@ -230,5 +241,94 @@
 @media (hover: none) {
   .library-gallery .gallery-card:hover {
     background: #f8f9f5;
+  }
+}
+/* Category sections (#215): a heading per category; cards mount as a section nears the viewport. */
+.library-gallery .library-section {
+  margin-bottom: 34px;
+}
+.library-gallery .library-section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 22px;
+  letter-spacing: -0.4px;
+  margin: 0 0 14px;
+}
+.library-gallery .library-section-title span,
+.library-gallery .library-sections span {
+  font-family: "DM Sans", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: #819087;
+}
+/* An unmounted section reserves roughly its cards' height (four 330 px cards a row), so jump links land steadily. */
+.library-gallery .library-section-placeholder {
+  height: calc(var(--cards) * 82px);
+}
+.library-gallery .library-show-all {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #274d3b;
+  background: transparent;
+  border: 1px solid #b9c8bb;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.library-gallery .library-show-all:hover {
+  background: #dfe9de;
+}
+.library-gallery .library-sections {
+  display: none;
+}
+@media (max-width: 900px) {
+  .library-gallery .library-section {
+    margin-bottom: 24px;
+  }
+  .library-gallery .library-section-title {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+  /* Two 250 px cards a row. */
+  .library-gallery .library-section-placeholder {
+    height: calc(var(--cards) * 125px);
+  }
+  /* Sticky section nav: one scrolling row of category chips with faded edges. */
+  .library-gallery .library-sections {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    margin: 0 calc(-1 * max(14px, env(safe-area-inset-right))) 0 calc(-1 * max(14px, env(safe-area-inset-left)));
+    padding: 0 max(14px, env(safe-area-inset-right)) 0 max(14px, env(safe-area-inset-left));
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 28px), transparent);
+  }
+  .library-gallery .library-sections::-webkit-scrollbar {
+    display: none;
+  }
+  .library-gallery .library-sections a {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid #cbd6ca;
+    border-radius: 22px;
+    background: #f8f9f5;
+    color: #22322e;
+    font-size: 14px;
+    text-decoration: none;
+    white-space: nowrap;
   }
 }

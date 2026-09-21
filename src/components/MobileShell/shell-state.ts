@@ -105,19 +105,45 @@ export const stepSnap = (snap: SheetSnap, direction: 1 | -1): SheetSnap =>
 /* ---------- Collapsible panels (tablet and desktop) ---------- */
 
 export interface PanelPrefs { left: boolean; right: boolean; timeline: boolean }
-const PANELS_KEY = 'bos-strength-panels-v1';
+const PANELS = ['left', 'right', 'timeline'] as const;
+/** Tablet layout in portrait (#215): an iPad on its side edge. The canvas is narrow there, so the parts panel starts
+ * collapsed ("Add parts" moves to the top bar); the inspector and timeline stay. */
+export const PORTRAIT_TABLET = '(orientation: portrait) and (min-width: 761px) and (max-width: 1200px)';
+export const defaultPanels = (portraitTablet: boolean): PanelPrefs => ({ left: !portraitTablet, right: true, timeline: true });
+/** Only panels the user has toggled are stored, so the defaults can follow the orientation for the rest. */
+const PANELS_KEY = 'bos-strength-panels-v2', LEGACY_PANELS_KEY = 'bos-strength-panels-v1';
 const storage = () => { try { return window.localStorage; } catch { return undefined; } };
-export const panelPrefs = createAtom<PanelPrefs>(() => {
-  const shown: PanelPrefs = { left: true, right: true, timeline: true };
+export const panelPrefs = createAtom<Partial<PanelPrefs>>(() => {
+  const chosen: Partial<PanelPrefs> = {};
   try {
     const saved = JSON.parse(storage()?.getItem(PANELS_KEY) ?? 'null');
-    if (saved && typeof saved === 'object') for (const k of ['left', 'right', 'timeline'] as const) if (typeof saved[k] === 'boolean') shown[k] = saved[k];
-  } catch { /* Unreadable prefs: show every panel. */ }
-  return shown;
+    if (saved && typeof saved === 'object') for (const k of PANELS) { if (typeof saved[k] === 'boolean') chosen[k] = saved[k]; }
+    else {
+      // v1 stored all three panels on any toggle; only its hidden panels are certain choices (everything began shown).
+      const legacy = JSON.parse(storage()?.getItem(LEGACY_PANELS_KEY) ?? 'null');
+      if (legacy && typeof legacy === 'object') for (const k of PANELS) if (legacy[k] === false) chosen[k] = false;
+    }
+  } catch { /* Unreadable prefs: use the defaults. */ }
+  return chosen;
 });
+const portraitTablet = () => media() && window.matchMedia(PORTRAIT_TABLET).matches;
+/** The panels in effect: the user's choices over the defaults for this orientation. */
+export const resolvePanels = (chosen: Partial<PanelPrefs>, portrait: boolean): PanelPrefs => ({ ...defaultPanels(portrait), ...chosen });
 export function togglePanel(panel: keyof PanelPrefs) {
-  const next = { ...panelPrefs.get(), [panel]: !panelPrefs.get()[panel] };
+  const shown = resolvePanels(panelPrefs.get(), portraitTablet());
+  const next = { ...panelPrefs.get(), [panel]: !shown[panel] };
   panelPrefs.set(next);
   try { storage()?.setItem(PANELS_KEY, JSON.stringify(next)); } catch { /* Storage may be unavailable. */ }
 }
-export const usePanelPrefs = () => useSyncExternalStore(panelPrefs.subscribe, panelPrefs.get, panelPrefs.get);
+function subscribePortrait(fn: Listener) {
+  if (!media()) return () => {};
+  const list = window.matchMedia(PORTRAIT_TABLET);
+  list.addEventListener('change', fn);
+  return () => list.removeEventListener('change', fn);
+}
+const usePortraitTablet = () => useSyncExternalStore(subscribePortrait, portraitTablet, () => false);
+export function usePanelPrefs(): PanelPrefs {
+  const chosen = useSyncExternalStore(panelPrefs.subscribe, panelPrefs.get, panelPrefs.get), portrait = usePortraitTablet();
+  // Memo-free: three booleans; PanelToggles keys its effect on the values.
+  return resolvePanels(chosen, portrait);
+}

@@ -33,6 +33,7 @@ export function BuilderSheet({ store, tabs, children }: { store: BuilderStore; t
   const layout = useLayoutMode(), phone = isPhoneLayout(layout), side = layout === 'phone-land';
   const { tab, snap } = useSheetState();
   const dock = useRef<HTMLDivElement>(null), header = useRef<HTMLDivElement>(null), safe = useRef<HTMLSpanElement>(null);
+  const tabList = useRef<HTMLDivElement>(null);
   const sizes = useRef<SnapSizes>({ peek: 0, half: 0, full: 0 });
   const placed = useRef<{ layout: string; size: number } | null>(null);
   const drag = useRef<SheetDrag | null>(null);
@@ -73,6 +74,22 @@ export function BuilderSheet({ store, tabs, children }: { store: BuilderStore; t
     window.addEventListener('resize', resize);
     return () => { window.removeEventListener('resize', resize); clearTimeout(restTimer); };
   }, [phone, side, layout, snap]);
+
+  // A tab strip too wide for the screen scrolls; mark it so CSS fades its edges (#215).
+  useEffect(() => {
+    const list = tabList.current;
+    if (!list || !phone || side || typeof ResizeObserver !== 'function') return;
+    const check = () => list.toggleAttribute('data-overflow', list.scrollWidth > list.clientWidth + 1);
+    const observer = new ResizeObserver(check);
+    observer.observe(list);
+    check();
+    return () => { observer.disconnect(); list.removeAttribute('data-overflow'); };
+  }, [phone, side, tabs]);
+  // The chosen tab scrolls into view in an overflowing strip.
+  useEffect(() => {
+    const list = tabList.current, button = list?.querySelector<HTMLElement>(`[data-tab="${tab}"]`);
+    if (list?.hasAttribute('data-overflow') && button) list.scrollTo({ left: button.offsetLeft - (list.clientWidth - button.offsetWidth) / 2 });
+  }, [tab]);
 
   // Follow the editor: selecting opens the inspector, placing drops the sheet so the canvas is free, the room
   // inspector has its own tab.
@@ -229,7 +246,7 @@ export function BuilderSheet({ store, tabs, children }: { store: BuilderStore; t
           aria-orientation={side ? 'horizontal' : 'vertical'} aria-valuemin={0} aria-valuemax={SNAPS.length - 1}
           aria-valuenow={SNAPS.indexOf(snap)} aria-valuetext={SNAP_LABEL[snap]} onKeyDown={onKeyDown}
           onClick={() => setSheetSnap(snap === 'peek' ? 'half' : 'peek')} />
-        <div className="sheet-tabs" role="tablist" aria-label="Builder panels" aria-orientation={side ? 'vertical' : 'horizontal'} onKeyDown={onTabKey}>
+        <div className="sheet-tabs" ref={tabList} role="tablist" aria-label="Builder panels" aria-orientation={side ? 'vertical' : 'horizontal'} onKeyDown={onTabKey}>
           {tabs.map(t => (
             <button key={t.id} type="button" role="tab" data-tab={t.id} aria-selected={t.id === tab} tabIndex={t.id === tab ? 0 : -1}
               onClick={() => choose(t)}>

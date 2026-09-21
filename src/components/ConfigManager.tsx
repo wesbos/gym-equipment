@@ -19,7 +19,8 @@ export function ConfigManager({ store }: { store: BuilderStore }) {
   }
   return (
     <details className="config-manager">
-      <summary>Configurations {state.dirty ? "• Unsaved" : ""}</summary>
+      {/* The unsaved marker shrinks to a dot on narrow tablet toolbars (#215), so the summary never wraps. */}
+      <summary>Configurations{state.dirty && <span className="config-unsaved" title="Unsaved changes"> • Unsaved</span>}</summary>
       <fieldset disabled={busy || !state.storageReady}>
         {state.storageError && <p role="alert">{state.storageError}</p>}
         <label>
