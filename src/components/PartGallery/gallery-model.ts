@@ -161,7 +161,7 @@ export const normalize = (text: string) => text.toLowerCase().replace(/[-‐–/
 export const searchTokens = (query: string) => normalize(query).split(/\s+/).filter(Boolean);
 /** Relevance of an item for the query tokens, or 0 when any token is missing. Name prefixes beat word prefixes beat
  * substrings; brand beats section. */
-export function searchScore(item: GalleryItem, tokens: readonly string[]): number {
+export function searchScore(item: Pick<GalleryItem, 'name' | 'brand' | 'section' | 'category' | 'haystack'>, tokens: readonly string[]): number {
   if (!tokens.length) return 1;
   const name = normalize(item.name), brand = normalize(item.brand), meta = normalize(`${item.section} ${item.category}`);
   let score = 0;

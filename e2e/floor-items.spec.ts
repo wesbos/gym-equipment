@@ -75,12 +75,12 @@ test('gym-wave2-floor_items: ghost, plane drag, snap, rotate, Escape, undo, insp
   expect(strFromU8(archive['3D/3dmodel.model'])).not.toContain('rep-nighthawk');
   expect(strFromU8(archive['Metadata/model_settings.config'])).not.toContain('rep-nighthawk');
   console.log('Save/reload, GLB inclusion and 3MF exclusion passed');
-  await page.getByRole('button',{name:/Parts list \(/}).click();
-  await page.locator('[data-instance-id="floor-1"]').click();
-  await page.locator('[data-instance-id="front-left"]').click({modifiers:['Meta']});
+  await page.getByRole('button',{name:/Outliner \(/}).click();
+  await page.locator('#outliner [data-instance-id="floor-1"]').first().click();
+  await page.locator('#outliner [data-instance-id="front-left"]').first().click({modifiers:['Meta']});
   await expect(page.getByRole('heading',{name:'2 parts',exact:true})).toBeVisible();
   await expect(page.getByLabel('Backrest angle',{exact:true})).toHaveCount(0);
-  await page.getByRole('button',{name:'Close ×',exact:true}).click();
+  await page.getByRole('button',{name:'Close outliner',exact:true}).click();
   await page.getByRole('button',{name:'Remove parts',exact:true}).click();await ready();expect(await floor()).toEqual([]);
   await page.getByRole('button',{name:'Undo',exact:true}).click();await ready();expect(await floor()).toEqual(saved);
   await page.getByRole('button',{name:'Top',exact:true}).click();

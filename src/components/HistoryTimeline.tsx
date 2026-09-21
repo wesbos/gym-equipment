@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { historyKeyStep } from '../state/shortcuts.ts';
 
 export interface Timeline {
   entries: readonly { id: number; label: string; category: string }[];
@@ -9,13 +10,8 @@ export interface Timeline {
 }
 const spacing = 28;
 const icons: Record<string, string> = { add: '+', remove: '−', move: '↔', dimension: '↔', appearance: '◐', logo: 'A', structure: '▱', preset: '▦', restore: '↶', edit: '✎' };
-export function historyKeyStep(key: string, position: number, latest: number) {
-  if (key === 'Home') return 0;
-  if (key === 'End') return latest;
-  if (key === 'ArrowLeft') return Math.max(0, position - 1);
-  if (key === 'ArrowRight') return Math.min(latest, position + 1);
-  return undefined;
-}
+/** History keys come from the shortcut registry (src/state/shortcuts.ts); re-exported for existing callers. */
+export { historyKeyStep };
 /** Presentation-only showcase trigger; it never touches history. */
 export interface BuildPlayback { playing: boolean; disabled: boolean; toggle: () => void }
 export function HistoryTimeline({ timeline, loading, seek, restore, clear, build }: {

@@ -85,6 +85,10 @@ export interface BuilderSnapshot {
   canRedo: boolean;
   /** The room inspector (#200) is open: walls, floor, turf and ceiling finishes. Any selection or placement closes it. */
   roomInspector: boolean;
+  /** Session-only outliner state (#206), keyed by physical instance id; never saved in the document. Hidden parts are
+   * not drawn and cannot be picked; locked parts stay visible but the scene will not select or drag them. */
+  hidden: readonly string[];
+  locked: readonly string[];
 }
 /** Trailing delay before the recovery draft is written (then at the next idle moment). Lifecycle events flush it. */
 export const AUTOSAVE_DELAY_MS = 400;
@@ -155,6 +159,8 @@ export class BuilderStore {
       canUndo: false,
       canRedo: false,
       roomInspector: false,
+      hidden: [],
+      locked: [],
     };
     this.ready = this.repository
       .read()
@@ -370,6 +376,7 @@ export class BuilderStore {
       activeId: null,
       dirty: true,
       inputRevision: this.state.inputRevision + 1,
+      hidden: [], locked: [],
     });
   };
   recoverDraft = () => {
@@ -387,7 +394,7 @@ export class BuilderStore {
     this.patch({
       inputRevision: this.state.inputRevision + 1, doc, resolved: resolveAssembly(doc),
       timeline: this.journal.snapshot(this.journal.data.applied),
-      selection: [], selectionAnchor: null, selectionTool: false, selected: null,
+      selection: [], selectionAnchor: null, selectionTool: false, selected: null, hidden: [], locked: [],
       placing: null, structureChoice: null, structureMoveId: null, dirty: false,
       canUndo: this.journal.data.applied > 0, canRedo: !!this.journal.data.redo.length,
     });
@@ -540,6 +547,24 @@ export class BuilderStore {
     if (this.state.placing || this.state.structureChoice || this.state.systemChoice) return;
     const valid = ids.filter(id => this.state.resolved.some(r => r.id === id));
     this.patch({ selection: [...new Set([...(additive ? this.state.selection : []), ...valid])] });
+  };
+  /** Hide or show parts (session only). Hiding drops them from the selection; `hidden` omitted toggles by the first id. */
+  setHidden = (ids: readonly string[], hidden?: boolean) => {
+    const next = toggled(this.state.hidden, ids, hidden);
+    if (next === this.state.hidden) return;
+    const gone = new Set(next);
+    this.patch({ hidden: next, ...(this.state.selection.some(id => gone.has(id)) ? { selection: this.state.selection.filter(id => !gone.has(id)) } : {}) });
+  };
+  /** Lock or unlock parts (session only): the scene will not pick, select or drag a locked part. */
+  setLocked = (ids: readonly string[], locked?: boolean) => {
+    const next = toggled(this.state.locked, ids, locked);
+    if (next !== this.state.locked) this.patch({ locked: next });
+  };
+  showAll = () => { if (this.state.hidden.length) this.patch({ hidden: [] }); };
+  /** Every visible, unlocked part (what a scene marquee over everything would pick). */
+  selectAll = () => {
+    const skip = new Set([...this.state.hidden, ...this.state.locked]);
+    this.selectMany(this.state.resolved.filter(r => !skip.has(r.id)).map(r => r.id));
   };
   escape = () => { this.cancelGesture(); this.patch({ proposal: null, placing: null, structureChoice: null, selection: [], selectionAnchor: null, selectionTool: false }); };
   /** Paint/reset target physical IDs; resetting color leaves explicit steel finishes intact. */
@@ -927,6 +952,16 @@ export class BuilderStore {
     this.status(keptName ? `Opened ${title}. Your previous unsaved design was kept as “${keptName}”.` : `Opened ${title} as a new design.`);
     return keptName;
   };
+}
+/** `list` with `ids` added (`on`), removed (`!on`), or toggled together by the first id's state (`on` omitted).
+ * Returns `list` itself when nothing changes, so subscribers see no new identity. */
+export function toggled(list: readonly string[], ids: readonly string[], on?: boolean): readonly string[] {
+  if (!ids.length) return list;
+  const set = new Set(list), add = on ?? !set.has(ids[0]);
+  const changed = ids.filter(id => set.has(id) !== add);
+  if (!changed.length) return list;
+  for (const id of changed) { if (add) set.add(id); else set.delete(id); }
+  return [...set];
 }
 export function getBuilderStore() {
   let storage: StorageLike | undefined;

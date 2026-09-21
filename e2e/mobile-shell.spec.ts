@@ -132,10 +132,14 @@ test('iPhone portrait: bottom sheet snaps, drags and flicks; add, select, inspec
     await place(page);
     await expect.poll(() => partCount(page), { timeout: 60000 }).toBe(before + 1);
 
-    // Select from the parts list: the sheet opens on the inspector.
+    // Select from the outliner (#206), the sheet's Outliner tab on phones: the list stays up, the Inspector tab edits it.
     await page.locator('#parts-toggle').click();
-    await page.locator('.bom-row').filter({ hasText: 'Olympic barbell' }).first().click();
-    await page.locator('.parts-drawer .drawer-heading button').click();
+    await expect(page.getByRole('tab', { name: 'Outliner' })).toHaveAttribute('aria-selected', 'true');
+    const row = page.locator('#outliner .ol-row[data-instance-id]').filter({ hasText: 'Olympic barbell' }).first();
+    await row.click();
+    await expect(row).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('tab', { name: 'Outliner' })).toHaveAttribute('aria-selected', 'true');
+    await page.getByRole('tab', { name: 'Inspector' }).click();
     await expect(page.getByRole('tab', { name: 'Inspector' })).toHaveAttribute('aria-selected', 'true');
     await expect(handle).not.toHaveAttribute('aria-valuetext', 'Collapsed');
     await expect(page.locator('#selection-title')).toBeInViewport();

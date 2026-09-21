@@ -96,9 +96,11 @@ test('isolated reposition: double-click, pair opt-out, floor, rotation, Escape, 
     await load(rotating);
     const rotationBefore = await doc();
     const select = async (id:string) => {
-      await page.getByRole('button', {name:/Parts list \(/}).click();
-      await page.locator(`[data-instance-id="${id}"]`).click();
-      await page.getByRole('button', {name:'Close ×',exact:true}).click();
+      // Outliner (#206): ⌘-click selects without flying the camera (the zoom checks below compare camera pixels).
+      await page.keyboard.press('Escape');
+      await page.getByRole('button', {name:/Outliner \(/}).click();
+      await page.locator(`#outliner [data-instance-id="${id}"]`).first().click({modifiers:['Meta']});
+      await page.getByRole('button', {name:'Close outliner',exact:true}).click();
       await page.mouse.move(850,180);
     };
     await select(storageId);

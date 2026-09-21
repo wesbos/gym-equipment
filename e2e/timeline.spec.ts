@@ -179,7 +179,7 @@ test('3MF availability follows the applied rack, including empty historical view
     await expect(slider).toHaveAttribute('aria-valuemax', '1');
     await slider.focus(); await page.keyboard.press('Home');
     await expect(slider).toHaveAttribute('aria-valuenow', '0');
-    await expect(page.locator('#parts-toggle')).toHaveText('Parts list (0)');
+    await expect(page.locator('#parts-toggle')).toHaveText('Outliner (0)');
     await page.locator('#export').click();
     await page.getByRole('menuitemradio', { name: /3MF/ }).click();
     await expect(page.getByRole('button', { name: 'Download 3MF', exact: true })).toBeEnabled();
@@ -189,7 +189,7 @@ test('3MF availability follows the applied rack, including empty historical view
     await expect(slider).toHaveAttribute('aria-valuemax', '2');
     await slider.focus(); await page.keyboard.press('ArrowLeft');
     await expect(slider).toHaveAttribute('aria-valuenow', '1');
-    await expect(page.locator('#parts-toggle')).not.toHaveText('Parts list (0)');
+    await expect(page.locator('#parts-toggle')).not.toHaveText('Outliner (0)');
     await page.locator('#export').click();
     await page.getByRole('menuitemradio', { name: /3MF/ }).click();
     await expect(page.getByRole('button', { name: 'Download 3MF', exact: true })).toBeDisabled();
@@ -218,7 +218,7 @@ test('30 part additions deconstruct and reconstruct under a held playhead withou
     const readyAt = async (step: number) => {
       const count = initialCount + step;
       await expect(slider).toHaveAttribute('aria-valuenow', String(step));
-      await expect(page.locator('#parts-toggle')).toHaveText(`Parts list (${count})`);
+      await expect(page.locator('#parts-toggle')).toHaveText(`Outliner (${count})`);
       await expect(page.locator('#status')).toHaveText(new RegExp(`(?:^${count} parts · All connections aligned$|placement warnings? · ${count} parts$)`), { timeout: 60000 });
       const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('bos-strength-configurations-v1')!));
       expect(stored.draft).toEqual(applied);
