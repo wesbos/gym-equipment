@@ -951,7 +951,8 @@ export class BuilderStore {
     // A draft identical to its saved configuration, or an untouched starter rack, holds no work to keep.
     const same = (a: RackDoc, b: RackDoc) => JSON.stringify(cleanDocument(a)) === JSON.stringify(cleanDocument(b));
     const { draft } = this.collection, saved = this.collection.configs.find((c) => c.id === this.collection.activeId);
-    const keep = !!draft && !same(draft, saved?.doc ?? createAssembly());
+    // Nor does the same gym left unedited: reloading or reopening its permanent link (#220) keeps nothing.
+    const keep = !!draft && !same(draft, saved?.doc ?? createAssembly()) && !same(draft, doc);
     const keptName = keep ? `Unsaved draft (before ${title})` : null;
     await this.mutateStorage((current) => ({
       configs: keep && current.draft
