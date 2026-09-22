@@ -21,6 +21,11 @@
 .export-print-options p { margin: 12px 0; font-size: 13px; }
 .export-print-options label { display: grid; gap: 6px; }
 .export-print-options select { width: 100%; }
+.builder-page .export-print-options select {
+  min-height: 36px; margin: 0; padding: 7px 10px; border: 1px solid var(--c-line-strong); border-radius: var(--r-sm); background: var(--c-surface);
+  color: var(--c-text); font-size: 13px; line-height: 1.2;
+}
+.builder-page .export-print-options select:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 1px; }
 .export-print-options a { font-size: 13px; }
 .export-print-facts { font-size: 13px; margin: 12px 0; }
 .export-print-facts dt { font-weight: 600; margin-top: 8px; }

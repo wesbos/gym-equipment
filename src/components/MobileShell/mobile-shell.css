@@ -22,7 +22,8 @@
 }
 .builder-page .toolbar-menu > button, .builder-page .toolbar-menu > a,
 .builder-page .toolbar-menu .config-manager > summary, .builder-page .toolbar-menu .export-menu > button {
-  display: flex; align-items: center; width: 100%; min-height: 36px; padding: 8px 10px; margin: 0; border-radius: var(--r-sm);
+  /* A flex item drops a child span's leading space ("Load<span> JSON</span>", #215), so the gap puts it back. */
+  display: flex; align-items: center; gap: .28em; width: 100%; min-height: 36px; padding: 8px 10px; margin: 0; border-radius: var(--r-sm);
   background: transparent; color: var(--c-text); font-size: 13px; font-weight: var(--fw-medium); text-align: left; white-space: normal; cursor: pointer;
 }
 .builder-page .toolbar-menu > button:hover, .builder-page .toolbar-menu > a:hover,
