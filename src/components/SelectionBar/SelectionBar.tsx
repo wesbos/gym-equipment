@@ -86,7 +86,7 @@ export function SelectionBar({ store, scene }: { store: BuilderStore; scene: Bui
     // The selection outline for a fresh selection is drawn on the next frame; that frame places the bar.
     scene.invalidate();
     return scene.onFrame(place);
-  }, [scene, visible, docked, actions.kind, actions.count, actions.rotate, actions.swap, actions.pair, actions.duplicate, actions.move]);
+  }, [scene, visible, docked, actions.kind, actions.count, actions.rotate, actions.swap, actions.pair, actions.duplicate, actions.move, actions.lock]);
   if (!visible) return null;
   const { kind, count, id, rotate } = actions;
   const name = id && actions.part ? partMeta(actions.part, store.getSnapshot().definitions).name : `${count} parts`;
@@ -105,6 +105,9 @@ export function SelectionBar({ store, scene }: { store: BuilderStore; scene: Bui
     </span>}
     {actions.pair && <BarButton icon={actions.pair === 'unpair' ? 'unpair' : 'pair'} label={actions.pair === 'unpair' ? 'Split pair' : 'Add matching pair'}
       onClick={() => store.act(store.togglePairSelected)}>{actions.pair === 'unpair' ? 'Unpair' : 'Pair'}</BarButton>}
+    {actions.lock && <BarButton icon={actions.lock === 'unlock' ? 'lock' : 'unlock'} pressed={actions.lock === 'unlock'}
+      label={actions.lock === 'unlock' ? 'Unlock selection' : 'Lock selection'} shortcut={shortcutLabel('lock')}
+      onClick={() => store.setLocked(store.getSnapshot().selection, actions.lock === 'lock')}>{actions.lock === 'unlock' ? 'Locked' : 'Lock'}</BarButton>}
     {actions.focus && <BarButton icon="focus" label="Focus selection" shortcut={shortcutLabel('frame-selection')} onClick={() => scene?.focus(store.getSnapshot().selection)}>Focus</BarButton>}
     <span className="sb-divider" aria-hidden="true" />
     {actions.remove && <BarButton icon="delete" danger label={kind === 'multi' ? `Delete ${count} parts` : 'Delete selection'} shortcut={shortcutLabel('delete')} onClick={() => removeSelectionWithUndo(store)}>Delete</BarButton>}

@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react';
 import type { BuilderStore } from '../../state/builder-store.ts';
 import { useStoreSelector } from '../../state/use-store.ts';
+import { isLockedIn } from '../../state/selection-actions.ts';
+import { shortcutLabel } from '../../state/shortcuts.ts';
+import { Icon } from '../SelectionBar/icons.tsx';
 import { PartThumbnail } from '../PartThumbnail.tsx';
 import { partMeta } from './part-meta.ts';
 
@@ -14,7 +17,10 @@ export function InspectorHeader({ store, part, title, chip, subtitle, art, back 
   const name = title ?? meta?.name ?? '';
   const section = chip === undefined ? meta?.section : chip;
   return <header className="insp-header">
-    {back && <button id="deselect" type="button" className="insp-back" onClick={() => store.select(null)}>← Rack settings</button>}
+    {back && <div className="insp-header-bar">
+      <button id="deselect" type="button" className="insp-back" onClick={() => store.select(null)}>← Rack settings</button>
+      <LockToggle store={store} />
+    </div>}
     <div className="insp-hero">
       <span className="insp-art">{art ?? (part ? <PartThumbnail part={part} className="insp-thumb" /> : null)}</span>
       <div className="insp-titles">
@@ -26,4 +32,15 @@ export function InspectorHeader({ store, part, title, chip, subtitle, art, back 
       </div>
     </div>
   </header>;
+}
+
+/** Lock or unlock the selection (#219): a locked part stays put while you orbit and click around a busy gym. */
+function LockToggle({ store }: { store: BuilderStore }) {
+  const state = useStoreSelector(store, s => !s.selection.length || s.roomInspector ? null : s.selection.every(id => isLockedIn(s, id)) ? 'locked' : 'unlocked');
+  if (!state) return null;
+  const locked = state === 'locked';
+  return <button type="button" className="insp-lock" aria-pressed={locked} title={`${locked ? 'Unlock' : 'Lock'} (${shortcutLabel('lock')}): a locked part can't be dragged, moved or rotated`}
+    onClick={() => store.setLocked(store.getSnapshot().selection, !locked)}>
+    <Icon name={locked ? 'lock' : 'unlock'} size={14} />{locked ? 'Locked' : 'Lock'}
+  </button>;
 }

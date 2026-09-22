@@ -51,7 +51,7 @@
 .selection-bar .sb-icon { flex: none; }
 /* Desktop shows labels only on the rotate and swap/pair buttons; the rest are icons with tooltips. */
 .selection-bar .sb-label { display: none; }
-.selection-bar .sb-button:is([aria-label^="Rotate"], [aria-label="Swap variant"], [aria-label="Split pair"], [aria-label="Add matching pair"]) .sb-label { display: inline; }
+.selection-bar .sb-button:is([aria-label^="Rotate"], [aria-label="Swap variant"], [aria-label="Split pair"], [aria-label="Add matching pair"], [aria-label="Unlock selection"]) .sb-label { display: inline; }
 .selection-bar .sb-divider { width: 1px; height: 20px; margin: 0 3px; background: #ffffff24; }
 .selection-bar .sb-count {
   display: inline-grid;
