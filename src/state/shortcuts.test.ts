@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  SHORTCUTS, SHORTCUT_GROUPS, ariaKeys, comboLabel, conflicts, dispatchShortcut, historyKeyStep, isTyping, matches, overlayGroups, shortcut,
+  SHORTCUTS, SHORTCUT_GROUPS, ariaKeys, comboLabel, conflicts, dispatchShortcut, historyKeyStep, isTyping, matches, overlayGroups, shortcut, wheelRotates,
   type ShortcutDef, type ShortcutId,
 } from './shortcuts.ts';
 import { COMMANDS, builderShortcutHandlers, type EditorApi } from '../components/CommandPalette/commands.ts';
@@ -124,4 +124,11 @@ test('shortcut handlers act on the store: history keys decline while adding stru
   assert.ok(store.getSnapshot().structureChoice);
   assert.equal(dispatchShortcut(fakeEvent('ArrowLeft'), handlers), null);
   assert.ok(store.getSnapshot().structureChoice, 'arrows cycle structure candidates instead of seeking history');
+});
+
+test('a plain scroll zooms; only Alt + scroll rotates a part (#217)', () => {
+  assert.equal(wheelRotates({}), false);
+  assert.equal(wheelRotates({ altKey: false }), false);
+  assert.equal(wheelRotates({ altKey: true }), true);
+  assert.deepEqual(shortcut('scroll-rotate').display, ['Alt + Scroll']);
 });
