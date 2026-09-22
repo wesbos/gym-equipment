@@ -1,24 +1,24 @@
-.builder-page .builder-shell{grid-template-rows:70px minmax(0,1fr) var(--timeline-h,88px) 29px}
-.builder-page .history-timeline{grid-column:1/-1;grid-row:3;min-width:0;background:#eef2e8;border-top:1px solid var(--line);padding:7px 16px 0;z-index:5}
-.builder-page .status-bar{grid-row:4}
-.timeline-controls{display:flex;align-items:center;gap:6px;min-height:29px;white-space:nowrap}
-.builder-page .timeline-controls button{font-size:10px;padding:5px 9px;min-height:26px}
-.builder-page .timeline-controls .timeline-build{font-weight:600;letter-spacing:.02em}
-.builder-page .timeline-controls .timeline-build[aria-pressed=true]{background:#b77935;border-color:#945d22;color:#fff}
-.timeline-position{font-size:11px;color:#60735c;display:flex;gap:12px;align-items:center;margin:0 10px}
-.timeline-position span{font-variant-numeric:tabular-nums;color:#88917e;font-size:10px}
-.timeline-position.viewing{color:#975b18;font-weight:600}
-.timeline-privacy{display:flex;align-items:center;gap:6px;margin-left:auto;font-size:10px}
-.timeline-rail{height:43px;overflow-x:auto;overflow-y:hidden;touch-action:none;scrollbar-width:thin;outline-offset:1px;position:relative;cursor:ew-resize}
-.timeline-rail:focus-visible{outline:2px solid #8a9c73}
+/* History timeline, Studio: a floating card above the view dock (builder.css positions .history-timeline; it is
+ * collapsed by default and shown by the History panel toggle). Phones show it inside the sheet's Timeline tab. */
+.timeline-controls{display:flex;align-items:center;gap:4px;min-height:32px;white-space:nowrap}
+.builder-page .timeline-controls button{font-size:12px;padding:6px 10px;min-height:28px;background:transparent;color:var(--c-text-2)}
+.builder-page .timeline-controls button:hover:not(:disabled){background:var(--c-fill);color:var(--c-text)}
+.builder-page .timeline-controls .timeline-build{font-weight:var(--fw-semibold);color:var(--c-text);background:var(--c-fill)}
+.builder-page .timeline-controls .timeline-build[aria-pressed=true]{background:var(--c-accent);color:#fff}
+.timeline-position{font-size:12px;color:var(--c-text-2);display:flex;gap:8px;align-items:center;margin:0 10px}
+.timeline-position span{font-variant-numeric:tabular-nums;color:var(--c-text-3);font-size:12px}
+.timeline-position.viewing{color:var(--c-warn);font-weight:600}
+.timeline-privacy{display:flex;align-items:center;gap:6px;margin-left:auto;font-size:12px}
+.timeline-rail{height:40px;overflow-x:auto;overflow-y:hidden;touch-action:none;scrollbar-width:thin;outline-offset:1px;position:relative;cursor:ew-resize;border-radius:var(--r-sm)}
+.timeline-rail:focus-visible{outline:2px solid var(--c-accent)}
 .timeline-track{position:relative;height:30px;min-width:100%}
-.timeline-track:before{content:'';position:absolute;left:14px;right:14px;top:20px;height:1px;background:#bbc6b2}
+.timeline-track:before{content:'';position:absolute;left:14px;right:14px;top:20px;height:1px;background:var(--c-line-strong)}
 .timeline-marker{position:absolute;top:6px;width:28px;height:27px;display:grid;place-items:center}
-.timeline-dot{width:7px;height:7px;background:#d1d9c9;border:1px solid #b3bea9;border-radius:2px}
-.timeline-marker.visited .timeline-dot{background:#7d9669;border-color:#627d4f}
-.timeline-marker.current .timeline-dot{background:#b77935;border-color:#945d22}
-.timeline-marker-icon{display:none;font-size:13px;line-height:1;background:#eef2e8;position:absolute;inset:4px;color:#48623b;place-items:center}
+.timeline-dot{width:7px;height:7px;background:var(--c-line-strong);border-radius:50%}
+.timeline-marker.visited .timeline-dot{background:var(--c-text-3)}
+.timeline-marker.current .timeline-dot{background:var(--c-accent);box-shadow:0 0 0 3px var(--c-accent-soft)}
+.timeline-marker-icon{display:none;font-size:13px;line-height:1;background:var(--c-surface);border-radius:50%;box-shadow:var(--shadow-1);position:absolute;inset:4px;color:var(--c-text);place-items:center}
 .timeline-marker:hover .timeline-marker-icon{display:grid}
-.timeline-playhead{position:absolute;top:3px;height:29px;width:2px;background:#b77935;pointer-events:none}
-.timeline-playhead:before{content:'';position:absolute;left:-4px;top:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid #b77935}
-@media(max-width:900px){.builder-page .builder-shell{grid-template-rows:62px minmax(0,1fr) var(--timeline-h,88px) 27px}.builder-page .history-timeline{padding-inline:8px}.timeline-position{margin-inline:2px;gap:5px}.builder-page .timeline-controls button{padding-inline:6px}}
+.timeline-playhead{position:absolute;top:3px;height:29px;width:2px;background:var(--c-accent);pointer-events:none;border-radius:1px}
+.timeline-playhead:before{content:'';position:absolute;left:-4px;top:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--c-accent)}
+@media(max-width:900px){.builder-page .history-timeline{padding-inline:8px}.timeline-position{margin-inline:2px;gap:5px}.builder-page .timeline-controls button{padding-inline:6px}}

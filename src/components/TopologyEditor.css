@@ -1,8 +1,8 @@
 .topology-editor, .rack-presets { margin: 16px 0; font-size: 13px; }
 .topology-editor summary, .rack-presets summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
-.topology-editor form { display: grid; gap: 9px; padding: 12px 0; border-bottom: 1px solid #d5dece; }
-.topology-editor label { display: grid; gap: 4px; font-size: 11px; color: #58764b; }
-.topology-editor select, .topology-editor input { width: 100%; min-width: 0; padding: 8px; border: 1px solid #cddac3; border-radius: 5px; background: white; color: #214936; font: inherit; }
+.topology-editor form { display: grid; gap: 9px; padding: 12px 0; border-bottom: 1px solid var(--c-line-strong); }
+.topology-editor label { display: grid; gap: 4px; font-size: 11px; color: var(--c-text-2); }
+.topology-editor select, .topology-editor input { width: 100%; min-width: 0; padding: 8px; border: 1px solid var(--c-line-strong); border-radius: 5px; background: white; color: var(--c-text); font: inherit; }
 .topology-editor p, .rack-presets p { line-height: 1.5; }
 .rack-presets button { margin: 4px 0; width: 100%; }
 .topology-editor svg [role="button"]:focus rect { stroke: white; stroke-width: 15; }

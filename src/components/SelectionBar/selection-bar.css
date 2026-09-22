@@ -12,9 +12,9 @@
   gap: 2px;
   padding: 4px;
   border-radius: 12px;
-  background: #1f3329f0;
-  color: #eef3ea;
-  box-shadow: 0 10px 28px #0d1a1335, 0 0 0 1px #ffffff12 inset;
+  background: #2b2a27f0;
+  color: #f0efed;
+  box-shadow: 0 10px 28px #14141335, 0 0 0 1px #ffffff12 inset;
   backdrop-filter: blur(14px);
   will-change: transform;
   font-family: inherit;
@@ -44,8 +44,8 @@
 .builder-page .selection-bar .sb-button:hover,
 .selection-bar .sb-button:hover { background: #ffffff17; }
 .builder-page .selection-bar .sb-button[aria-pressed="true"],
-.selection-bar .sb-button[aria-pressed="true"] { background: #ffffff24; color: var(--accent, #bdcd78); }
-.builder-page .selection-bar .sb-button:focus-visible { outline: 2px solid var(--accent, #bdcd78); outline-offset: 1px; }
+.selection-bar .sb-button[aria-pressed="true"] { background: #ffffff24; color: var(--accent, var(--c-accent)); }
+.builder-page .selection-bar .sb-button:focus-visible { outline: 2px solid var(--accent, var(--c-accent)); outline-offset: 1px; }
 .builder-page .selection-bar .sb-danger:hover,
 .selection-bar .sb-danger:hover { background: #d98f5a2e; color: #ffc9a3; }
 .selection-bar .sb-icon { flex: none; }
@@ -61,8 +61,8 @@
   margin: 0 4px 0 2px;
   padding: 0 6px;
   border-radius: 13px;
-  background: var(--accent, #bdcd78);
-  color: #1f3329;
+  background: var(--accent, var(--c-accent));
+  color: var(--c-text);
   font-size: 12px;
   font-weight: 750;
   font-variant-numeric: tabular-nums;
@@ -81,9 +81,9 @@
   overflow: auto;
   padding: 6px;
   border-radius: 12px;
-  background: var(--paper, #f8f9f4);
-  color: var(--ink, #233b30);
-  box-shadow: 0 16px 40px #0d1a1340, 0 0 0 1px var(--line, #d6ded2);
+  background: var(--paper, #f7f7f6);
+  color: var(--ink, var(--c-text));
+  box-shadow: 0 16px 40px #14141340, 0 0 0 1px var(--line, #dbd9d5);
   scrollbar-width: thin;
 }
 .selection-bar .sb-menu[data-side="above"] { top: auto; bottom: calc(100% + 8px); }
@@ -104,12 +104,12 @@
   cursor: pointer;
 }
 .builder-page .selection-bar .sb-menu-item:hover,
-.builder-page .selection-bar .sb-menu-item:focus-visible { background: var(--sage, #e8eee6); outline: none; }
-.builder-page .selection-bar .sb-menu-item[aria-checked="true"] { background: #264d3a14; box-shadow: inset 0 0 0 1px #264d3a40; }
-.selection-bar .sb-menu-thumb { width: 40px; height: 40px; border-radius: 6px; background: #e9eee3; padding: 3px; }
+.builder-page .selection-bar .sb-menu-item:focus-visible { background: var(--sage, #ebeae9); outline: none; }
+.builder-page .selection-bar .sb-menu-item[aria-checked="true"] { background: #1f5eff14; box-shadow: inset 0 0 0 1px #1f5eff40; }
+.selection-bar .sb-menu-thumb { width: 40px; height: 40px; border-radius: 6px; background: #eae9e7; padding: 3px; }
 .selection-bar .sb-menu-item span { display: grid; gap: 2px; min-width: 0; }
 .selection-bar .sb-menu-item strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.selection-bar .sb-menu-item small { color: var(--muted, #819180); font-size: 10px; }
+.selection-bar .sb-menu-item small { color: var(--muted, var(--c-text-3)); font-size: 10px; }
 
 /* Phones (#203): docked full width along the bottom of the stage overlay, which ends above the bottom sheet. */
 .selection-bar[data-placement="docked"] {

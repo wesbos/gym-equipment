@@ -11,10 +11,11 @@ import { roomOf, wallOpenings, wallWarnings } from '../../rack-generator/wall-it
 import { facesInside, wallFrames, wallHit, wallPlaneHit, type WallId } from '../../rack-generator/walls.ts';
 import { createGymWalls } from './gym-walls.ts';
 import { RoomMaterials, createRoomScenery } from './room-scenery.ts';
-import { resolveFinishes, roomLighting } from '../../rack-generator/room-finishes.ts';
+import { FINISH_KEYS, resolveFinishes, roomLighting } from '../../rack-generator/room-finishes.ts';
 import { isHangPart } from '../../rack-generator/hang-registry.ts';
 import { freeSlots, hangWarnings, hookAnchor, type HangTarget } from '../../rack-generator/hang-items.ts';
 import { createGymFloor, fitRackShadow } from './gym-floor.ts';
+import { STUDIO_BACKGROUND } from './studio-lighting.ts';
 import { FrameFinishResources, addSteelUVs } from './frame-finishes.ts';
 import { structureCandidates, type StructureCandidate } from '../../rack-generator/structure-candidates.ts';
 import { partAttribution } from '../../rack-generator/attribution.ts';
@@ -114,8 +115,9 @@ export function createBuilderScene(
   /** Free hooks for the attachment being placed: source-space marker and outward normal. */
   let hangTargets: (HangTarget & { position: Vec3; normal: Vec3 })[] = [];
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color("#343b38");
-  const fog = new THREE.Fog("#343b38", ...fogRange(0));
+  // Studio: the scene fades into the page background (src/styles/tokens.css --c-bg), so the canvas reads as one airy space.
+  scene.background = new THREE.Color(STUDIO_BACKGROUND);
+  const fog = new THREE.Fog(STUDIO_BACKGROUND, ...fogRange(0));
   scene.fog = fog;
   // Phones and tablets draw fewer pixels and a smaller shadow map (desktop: DPR 2, 2048², MSAA as before).
   const budget = renderBudget(currentRenderEnvironment());
@@ -185,7 +187,8 @@ export function createBuilderScene(
   const updateWalls = () => {
     const room = roomOf(snapshot.doc), finish = resolveFinishes(room, room.height);
     walls.update(room, finish.showWalls || !!snapshot.doc.wallItems?.length || placingWall() || placingHang(), wallOpenings(snapshot.doc));
-    if (floor.update(room, finish.floor)) invalidate();
+    // A room with any finish defined keeps its floor (black rubber by default); the bare studio shows the light ground.
+    if (floor.update(room, FINISH_KEYS.some(k => room[k] !== undefined) ? finish.floor : null)) invalidate();
     roomScenery.update(room);
     const light = roomLighting(room), key = JSON.stringify(light);
     if (key === roomLights) return;

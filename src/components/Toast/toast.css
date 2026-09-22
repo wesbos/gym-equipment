@@ -21,9 +21,9 @@
   min-height: 44px;
   padding: 6px 6px 6px 16px;
   border-radius: 10px;
-  background: #1f3329f2;
-  color: #f3f6ef;
-  box-shadow: 0 10px 30px #0d1a1340, 0 0 0 1px #ffffff14 inset;
+  background: #2b2a27f2;
+  color: #f3f3f2;
+  box-shadow: 0 10px 30px #14141340, 0 0 0 1px #ffffff14 inset;
   font-size: 12px;
   line-height: 1.35;
   backdrop-filter: blur(12px);
@@ -45,14 +45,14 @@
 .builder-page .toast .toast-undo,
 .toast .toast-undo {
   padding: 6px 12px;
-  color: var(--accent, #bdcd78);
+  color: var(--accent, var(--c-accent));
   font-weight: 650;
   letter-spacing: .2px;
 }
 .builder-page .toast .toast-undo:hover,
 .toast .toast-undo:hover { background: #ffffff14; }
 .builder-page .toast .toast-close,
-.toast .toast-close { width: 32px; padding: 0; display: grid; place-items: center; color: #b7c4b2; }
+.toast .toast-close { width: 32px; padding: 0; display: grid; place-items: center; color: #c0bdb6; }
 .builder-page .toast .toast-close:hover,
 .toast .toast-close:hover { background: #ffffff10; color: #fff; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px) scale(.98); } }

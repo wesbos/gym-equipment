@@ -17,7 +17,7 @@
   min-width: 0;
   height: 18px;
   padding: 0;
-  accent-color: #648455;
+  accent-color: var(--c-accent);
   cursor: ew-resize;
 }
 .numeric-control small {
@@ -42,10 +42,10 @@
   z-index: 30;
   width: 300px;
   padding: 16px;
-  background: var(--paper, #f8f9f4);
-  color: var(--ink, #233b30);
-  border: 1px solid var(--line, #d6ded2);
-  box-shadow: 0 8px 24px #233b3020;
+  background: var(--paper, #f7f7f6);
+  color: var(--ink, var(--c-text));
+  border: 1px solid var(--line, var(--c-line-strong));
+  box-shadow: 0 8px 24px #31302d20;
   display: grid;
   gap: 10px;
 }
@@ -65,7 +65,7 @@
 .config-manager input,
 .config-manager select {
   padding: 8px;
-  border: 1px solid var(--line, #d6ded2);
+  border: 1px solid var(--line, var(--c-line-strong));
   border-radius: 4px;
   background: white;
   color: inherit;

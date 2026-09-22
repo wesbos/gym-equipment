@@ -28,10 +28,11 @@ export async function runVisualChecks(viewport: HTMLElement, onProgress: (stage:
   check(Number(brushDisposed) === 2, 'Brush resources must each dispose exactly once');
   const floor = createGymFloor(16);
   check(floor.mesh.geometry.parameters.width === 40000, 'Floor should extend beyond the old grid');
-  check(floor.mesh.material.map!.repeat.x === 20, 'Atlas must produce metre seams');
-  check(floor.mesh.material.map!.generateMipmaps && floor.mesh.material.map!.anisotropy === 8, 'Floor antialiasing missing');
+  check(floor.mesh.material.map === null, 'The studio ground is a plain light plane');
+  floor.update({ left: 2000, right: 2000, back: 2000, front: 2000, height: 3000 }, 'black-rubber');
+  check(floor.room.material.map!.generateMipmaps && floor.room.material.map!.anisotropy === 8, 'Floor antialiasing missing');
   let floorDisposed = 0;
-  for (const resource of [floor.mesh.geometry, floor.mesh.material, floor.mesh.material.map!]) resource.addEventListener('dispose', () => floorDisposed++);
+  for (const resource of [floor.mesh.geometry, floor.mesh.material, floor.room.material.map!]) resource.addEventListener('dispose', () => floorDisposed++);
   floor.dispose(); floor.dispose();
   check(floorDisposed === 3, 'Floor resources must each dispose exactly once');
 

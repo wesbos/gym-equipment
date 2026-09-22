@@ -14,9 +14,9 @@
 }
 .export-menu-options [role="menu"] { display: grid; gap: 6px; }
 .export-menu-options [role="menuitemradio"] { text-align: left; }
-.export-menu-options [aria-checked="true"] { border-color: var(--accent, #c54828); }
+.export-menu-options [aria-checked="true"] { border-color: var(--accent, var(--c-accent)); }
 .export-menu-options [aria-disabled="true"] { opacity: .6; cursor: wait; }
-.export-menu-options :focus-visible { outline: 2px solid var(--accent, #c54828); outline-offset: 2px; }
+.export-menu-options :focus-visible { outline: 2px solid var(--accent, var(--c-accent)); outline-offset: 2px; }
 .export-print-options { margin-top: 16px; }
 .export-print-options p { margin: 12px 0; font-size: 13px; }
 .export-print-options label { display: grid; gap: 6px; }
@@ -26,7 +26,7 @@
 .export-print-facts dt { font-weight: 600; margin-top: 8px; }
 .export-print-facts dd { margin: 0; }
 /* Pinned to the bottom of the scrolling menu, so Download stays on screen at short windows. */
-.export-menu-actions { display: flex; gap: 8px; margin-top: 16px; position: sticky; bottom: -16px; padding: 12px 0 16px; margin-bottom: -16px; background: white; border-top: 1px solid #e3e9dd; }
+.export-menu-actions { display: flex; gap: 8px; margin-top: 16px; position: sticky; bottom: -16px; padding: 12px 0 16px; margin-bottom: -16px; background: white; border-top: 1px solid var(--c-line); }
 /* Keep the consolidated trigger visible beside JSON and configurations on phones. */
 @media (max-width: 480px) {
   .builder-page .toolbar:has(.export-menu) .brand {

@@ -1,0 +1,74 @@
+/* Studio design tokens (design direction A). One place for colour, type, space, radius, shadow and glass; every
+ * builder surface reads these. Light and airy: a warm near-white scene, white frosted panels, near-black text and
+ * one accent. The builder's older names (--paper, --ink, --green, …) alias these inside .builder-page. */
+:root {
+  /* Colour */
+  --c-bg: #efeeea;              /* page and 3D scene backdrop */
+  --c-surface: #ffffff;         /* cards, inputs */
+  --c-surface-2: #f8f8f6;       /* quiet inner surfaces */
+  --c-fill: #f1f0ed;            /* control fills: segmented tracks, chips, thumbnails */
+  --c-fill-hover: #e8e7e3;
+  --c-line: #e7e6e2;            /* hairlines */
+  --c-line-strong: #d7d6d1;
+  --c-text: #141517;
+  --c-text-2: #585b61;
+  --c-text-3: #8e9196;
+  --c-accent: #1f5eff;          /* the one accent: Studio blue */
+  --c-accent-hover: #164fe3;
+  --c-accent-soft: #1f5eff12;
+  --c-accent-line: #1f5eff47;
+  --c-on-accent: #ffffff;
+  --c-danger: #d4351c;
+  --c-danger-soft: #d4351c10;
+  --c-warn: #a85a00;
+  --c-warn-soft: #fff4e0;
+  --c-ok: #10794f;
+  --c-ok-soft: #e6f4ec;
+  --c-dark: #17181b;            /* the selection bar, toasts */
+  --c-dark-2: #2b2c31;
+  --c-on-dark: #f4f4f5;
+  --c-on-dark-2: #a1a3a9;
+
+  /* Glass */
+  --glass: rgb(255 255 255 / .74);
+  --glass-strong: rgb(255 255 255 / .9);
+  --glass-dark: rgb(23 24 27 / .9);
+  --glass-blur: saturate(180%) blur(22px);
+
+  /* Type: Inter, four working sizes. */
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --fs-xs: 11px;
+  --fs-sm: 13px;
+  --fs-md: 15px;
+  --fs-lg: 20px;
+  --fs-display: clamp(34px, 5vw, 56px);
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --tracking-tight: -.011em;
+  --tracking-title: -.022em;
+
+  /* Space (4 px grid) */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+
+  /* Radius */
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --r-pill: 999px;
+
+  /* Shadow: soft and layered instead of borders. */
+  --shadow-1: 0 1px 2px rgb(16 18 24 / .06), 0 0 0 1px rgb(16 18 24 / .045);
+  --shadow-panel: 0 0 0 1px rgb(16 18 24 / .045), 0 2px 8px rgb(16 18 24 / .04), 0 18px 48px rgb(16 18 24 / .08);
+  --shadow-pop: 0 0 0 1px rgb(16 18 24 / .06), 0 8px 20px rgb(16 18 24 / .08), 0 24px 64px rgb(16 18 24 / .16);
+  --focus-ring: 0 0 0 3px var(--c-accent-line);
+
+  /* Motion */
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}

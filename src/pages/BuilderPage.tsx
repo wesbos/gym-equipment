@@ -356,7 +356,10 @@ export default function BuilderPage() {
               <span aria-hidden="true">+</span><span className="toolbar-add-label">Add<span className="toolbar-add-noun"> parts</span></span>
             </button>
             <OverflowMenu>
+              {/* Studio: every secondary action lives in this one menu at every size. */}
               <Link className="gyms-link" to="/gyms" data-menu-close>Gym gallery</Link>
+              <Link className="menu-only" to="/library" data-menu-close>Parts library ↗</Link>
+              <span className="menu-divider" role="separator" />
               <ConfigManager store={store} />
               {/* "JSON" is visually hidden on portrait-tablet toolbars (#215); the accessible names stay whole. */}
               <button id="load" data-menu-close onClick={() => importFile.current?.click()}>
@@ -370,8 +373,8 @@ export default function BuilderPage() {
                 Save<span className="toolbar-word"> JSON</span>
               </button>
               <ExportControl store={store} controller={controller} />
+              <span className="menu-divider" role="separator" />
               <button type="button" className="menu-only" data-menu-close onClick={() => store.openRoom()}>Room: walls, floor & ceiling</button>
-              <Link className="menu-only" to="/library" data-menu-close>Parts library ↗</Link>
             </OverflowMenu>
             <input
               hidden
