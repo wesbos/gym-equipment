@@ -2,15 +2,47 @@
  * data-layout on .builder-page: phone (portrait, bottom sheet), phone-land (short landscape, side sheet), tablet, desktop. */
 
 /* ---------- Every layout: shell wrappers are transparent, phone-only chrome is hidden ---------- */
-.builder-page .builder-dock, .builder-page .sheet-body, .builder-page .timeline-region,
-.builder-page .toolbar-overflow, .builder-page .toolbar-menu, .builder-page .view-menu { display: contents; }
-.builder-page[data-layout] .sheet-header, .builder-page[data-layout] .sheet-safe, .builder-page[data-layout] .overflow-trigger,
-.builder-page[data-layout] .view-menu-trigger, .builder-page[data-layout] .menu-only, .builder-page[data-layout] .toolbar-add,
-.builder-page[data-layout] .brand-symbol { display: none; }
+.builder-page .builder-dock, .builder-page .sheet-body, .builder-page .timeline-region, .builder-page .view-menu { display: contents; }
+.builder-page[data-layout] .sheet-header, .builder-page[data-layout] .sheet-safe,
+.builder-page[data-layout] .view-menu-trigger, .builder-page[data-layout] .toolbar-add { display: none; }
 .builder-page .toolbar-slot { display: flex; align-items: center; gap: 6px; }
 .builder-page .toolbar-slot:empty { display: none; }
 .builder-page .toolbar-add { align-items: center; gap: 6px; white-space: nowrap; }
 .builder-page .toolbar-add > span[aria-hidden] { font-size: 16px; line-height: 1; }
+
+/* The ⋯ menu (Studio): every secondary action at every size. The trigger is an icon button; the menu is a floating
+ * card of rows. Configurations and Export expand inline inside it. */
+.builder-page .toolbar-overflow { position: relative; display: block; }
+.builder-page .toolbar-menu { display: none; }
+.builder-page .toolbar-overflow[data-open] .toolbar-menu {
+  display: flex; flex-direction: column; align-items: stretch; gap: 2px; position: absolute; z-index: 40; top: calc(100% + 8px); right: 0;
+  width: 272px; max-height: calc(100dvh - 90px); overflow: auto; overscroll-behavior: contain; padding: 6px;
+  background: var(--glass-strong); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  border-radius: var(--r-md); box-shadow: var(--shadow-pop); text-align: left;
+}
+.builder-page .toolbar-menu > button, .builder-page .toolbar-menu > a,
+.builder-page .toolbar-menu .config-manager > summary, .builder-page .toolbar-menu .export-menu > button {
+  display: flex; align-items: center; width: 100%; min-height: 36px; padding: 8px 10px; margin: 0; border-radius: var(--r-sm);
+  background: transparent; color: var(--c-text); font-size: 13px; font-weight: var(--fw-medium); text-align: left; white-space: normal; cursor: pointer;
+}
+.builder-page .toolbar-menu > button:hover, .builder-page .toolbar-menu > a:hover,
+.builder-page .toolbar-menu .config-manager > summary:hover, .builder-page .toolbar-menu .export-menu > button:hover { background: var(--c-fill); }
+.builder-page .toolbar-menu .export-menu > button#export { background: transparent; color: var(--c-text); font-weight: var(--fw-medium); }
+.builder-page .toolbar-menu .export-menu > button#export[aria-expanded=true], .builder-page .toolbar-menu .config-manager[open] > summary { background: var(--c-fill); }
+.builder-page .toolbar-menu .config-manager { font-size: 13px; }
+.builder-page .toolbar-menu .config-manager > summary { list-style: none; }
+.builder-page .toolbar-menu .config-manager > summary::-webkit-details-marker { display: none; }
+.builder-page .toolbar-menu .config-manager fieldset { position: static; width: auto; box-shadow: none; border: 0; margin: 4px 0 6px; padding: 8px 6px 4px; background: transparent; }
+.builder-page .toolbar-menu .config-manager fieldset button { min-height: 34px; font-size: 12px; background: var(--c-fill); }
+.builder-page .toolbar-menu .config-manager input, .builder-page .toolbar-menu .config-manager select { border: 0; background: var(--c-fill); border-radius: var(--r-xs); padding: 8px 10px; }
+.builder-page .toolbar-menu .config-manager label { font-size: 12px; color: var(--c-text-2); }
+.builder-page .toolbar-menu .export-menu { display: block; }
+.builder-page .toolbar-menu .export-menu-options { position: static; width: auto; max-height: none; overflow: visible; margin: 4px 0 6px; padding: 10px 8px 6px; border: 0; border-radius: var(--r-sm); background: var(--c-surface-2); box-shadow: none; }
+.builder-page .toolbar-menu .export-menu-actions { position: static; margin: 12px 0 0; padding: 0; border: 0; background: transparent; }
+.builder-page .toolbar-menu .export-menu-options button { min-height: 34px; font-size: 12px; }
+.builder-page .toolbar-menu .menu-divider { height: 1px; margin: 4px 8px; background: var(--c-line); }
+/* Room has its own button in the view dock on tablet and desktop. */
+.builder-page:not([data-layout^=phone]) .toolbar-menu > button.menu-only { display: none; }
 
 /* Floating overlay slot over the canvas: children take pointer events, the slot does not. */
 .builder-page .stage-overlay { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
@@ -26,28 +58,18 @@
 /* Narrow stages (tablets): the rack caption steps aside while placing, so the hint and bar have the bottom centre. */
 @media (max-width: 1150px) { .builder-page .stage:has(#placement-hint) .stage-caption { visibility: hidden; } }
 
-/* ---------- Tablet and desktop: toolbar order, collapsible panels ---------- */
-.builder-page:not([data-layout^=phone]) .toolbar-actions .toolbar-add { order: 0; }
-.builder-page:not([data-layout^=phone]) .toolbar-actions .gyms-link { order: 1; }
-.builder-page:not([data-layout^=phone]) .toolbar-actions .config-manager { order: 2; }
-.builder-page:not([data-layout^=phone]) .toolbar-actions .history-actions { order: 3; }
-.builder-page:not([data-layout^=phone]) .toolbar-actions #load,
-.builder-page:not([data-layout^=phone]) .toolbar-actions #save,
-.builder-page:not([data-layout^=phone]) .toolbar-actions .export-menu { order: 4; }
-
-.builder-page:not([data-layout^=phone]) .builder-shell[data-hide-left] { --left-w: 0px; }
+/* ---------- Tablet and desktop: collapsible panels ---------- */
 .builder-page:not([data-layout^=phone]) .builder-shell[data-hide-left] .catalog-panel { display: none; }
 .builder-page:not([data-layout^=phone]) .builder-shell[data-hide-left] .toolbar-add { display: inline-flex; }
-.builder-page:not([data-layout^=phone]) .builder-shell[data-hide-right] { --right-w: 0px; }
 .builder-page:not([data-layout^=phone]) .builder-shell[data-hide-right] .inspector-panel { display: none; }
-.builder-page:not([data-layout^=phone]) .builder-shell[data-hide-timeline] { --timeline-h: 0px; }
 .builder-page:not([data-layout^=phone]) .builder-shell[data-hide-timeline] .history-timeline { display: none; }
 
-.builder-page .panel-toggles { position: absolute; z-index: 3; top: 18px; right: 20px; display: flex; gap: 3px; padding: 4px;
-  border: 1px solid #cdd8c5; background: #f6f8f0d9; border-radius: 7px; box-shadow: 0 4px 12px #3b503104; backdrop-filter: blur(10px); }
-.builder-page .panel-toggles button { display: grid; place-items: center; padding: 6px 7px; background: transparent; border-color: transparent; color: #8a9a80; border-radius: 4px; }
-.builder-page .panel-toggles button[aria-pressed=true] { background: #fff; border-color: #cbd7c4; color: #2d4b24; box-shadow: 0 1px 3px #233b3010; }
-@media (max-width: 1150px) { .builder-page .panel-toggles { top: 14px; right: 12px; } }
+/* Panel toggles: top of the uncovered stage, beside the inspector card. */
+.builder-page .panel-toggles { position: absolute; z-index: 3; top: var(--gap); right: var(--inset-r); display: flex; gap: 2px; padding: 4px; border-radius: var(--r-md); }
+.builder-page .panel-toggles button { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; background: transparent; color: var(--c-text-3); border-radius: var(--r-sm); }
+.builder-page .panel-toggles button:hover { background: var(--c-fill); color: var(--c-text); }
+.builder-page .panel-toggles button[aria-pressed=true] { color: var(--c-text); }
+.builder-page .panel-toggles button[aria-pressed=true] svg { color: var(--c-accent); }
 /* The toolbar never wraps a label onto two lines (#215): "Configurations • Unsaved" keeps one line (a dot on tablets). */
 .builder-page:not([data-layout^=phone]) .toolbar-actions .config-manager > summary { white-space: nowrap; }
 .builder-page .toolbar-actions .toolbar-add .toolbar-add-label, .builder-page .toolbar-actions .toolbar-add-noun,
@@ -62,32 +84,32 @@
 .builder-page[data-layout=tablet] .toolbar-word { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .builder-page[data-layout=tablet] .config-unsaved { font-size: 0; }
 .builder-page[data-layout=tablet] .config-unsaved::after { content: ''; display: inline-block; width: 7px; height: 7px; margin-left: 6px;
-  border-radius: 50%; background: #c77c36; vertical-align: 1px; }
+  border-radius: 50%; background: var(--c-accent); vertical-align: 1px; }
 @media (max-width: 900px) {
   .builder-page[data-layout=tablet] .toolbar { grid-template-columns: 136px minmax(0, 1fr) auto; }
   .builder-page[data-layout=tablet] .brand small { display: none; }
 }
 /* Tablets are touch-first: roomier targets for the stage controls. */
-.builder-page[data-layout=tablet] .panel-toggles button { min-width: 36px; min-height: 34px; }
-.builder-page[data-layout=tablet] .view-controls button { min-height: 34px; padding-inline: 10px; font-size: 10px; }
-.builder-page[data-layout=tablet] .stage-actions button { min-height: 36px; }
+.builder-page[data-layout=tablet] .panel-toggles button { min-width: 38px; min-height: 38px; }
+.builder-page[data-layout=tablet] .view-controls button { min-height: 38px; padding-inline: 10px; font-size: 12px; }
+.builder-page[data-layout=tablet] .stage-actions > button { min-height: 42px; }
 
 /* ---------- Phones (portrait and landscape) ---------- */
 .builder-page[data-layout^=phone] { --bar-h: 52px; position: fixed; inset: 0; height: auto; overflow: hidden; overscroll-behavior: none; -webkit-text-size-adjust: 100%; touch-action: manipulation; }
 .builder-page[data-layout=phone-land] { --bar-h: 44px; }
-.builder-page[data-layout^=phone] .builder-shell { display: block; position: relative; height: 100%; background: #1f2622; overflow: hidden; }
+.builder-page[data-layout^=phone] .builder-shell { display: block; position: relative; height: 100%; background: var(--c-bg); overflow: hidden; }
 
 /* Top bar: logo mark, undo/redo, Add parts, overflow menu. */
-.builder-page[data-layout^=phone] .toolbar { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 4px;
+.builder-page[data-layout^=phone] .toolbar { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 4px; pointer-events: auto; background: var(--c-bg);
   height: calc(var(--bar-h) + env(safe-area-inset-top)); padding: env(safe-area-inset-top) max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left)); }
-.builder-page[data-layout^=phone] .brand { flex: none; height: 40px; padding: 0 8px 0 4px; font-size: 0; letter-spacing: 0; gap: 0; }
+.builder-page[data-layout^=phone] .brand { flex: none; height: 40px; padding: 0 8px 0 6px; font-size: 0; letter-spacing: 0; gap: 0; background: transparent; box-shadow: none; }
 .builder-page[data-layout^=phone] .brand small { display: none; }
 .builder-page[data-layout^=phone] .brand-symbol { display: flex; height: 26px; }
 .builder-page[data-layout^=phone] .project-heading { display: none; }
-.builder-page[data-layout^=phone] .toolbar-actions { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; padding: 0; }
+.builder-page[data-layout^=phone] .toolbar-actions { flex: 1; min-width: 0; width: auto; display: flex; align-items: center; gap: 6px; padding: 0; }
 .builder-page[data-layout^=phone] .history-actions { order: -1; margin-right: auto; display: flex; gap: 2px; }
-.builder-page[data-layout^=phone] .toolbar-actions .history-actions button { width: 40px; height: 40px; padding: 0; font-size: 20px; border-color: transparent; background: transparent; }
-.builder-page[data-layout^=phone] .toolbar-actions .toolbar-add { display: inline-flex; height: 40px; padding: 0 16px; font-size: 14px; border-radius: 20px; }
+.builder-page[data-layout^=phone] .toolbar-actions .history-actions button { width: 40px; height: 40px; padding: 0; font-size: 20px; background: transparent; }
+.builder-page[data-layout^=phone] .toolbar-actions .toolbar-add { display: inline-flex; height: 40px; padding: 0 16px; font-size: 14px; border-radius: 20px; box-shadow: 0 6px 18px rgb(31 94 255 / .25); }
 /* The actions start after undo/redo (its auto margin pushes the rest right), so a bar that is too full runs off the end
  * instead of back over the logo (#215). The narrowest phones (320 px) shorten "Add parts" to "Add" and tighten gaps. */
 @media (max-width: 374px) {
@@ -98,38 +120,30 @@
   .builder-page[data-layout^=phone] .toolbar-add-noun { display: none; }
 }
 .builder-page[data-layout^=phone] .toolbar-overflow { display: block; }
-.builder-page[data-layout^=phone] .toolbar-actions .overflow-trigger { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border-radius: 20px; }
+.builder-page[data-layout^=phone] .toolbar-actions .overflow-trigger { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border-radius: 20px; background: var(--c-fill); color: var(--c-text); }
 .builder-page[data-layout^=phone] .overflow-trigger svg { fill: currentColor; }
 .builder-page[data-layout^=phone] .toolbar-menu { display: none; }
 /* Pinned to both viewport edges (inside the safe area) and capped at 320 px, so it can never extend past either side. */
-.builder-page[data-layout^=phone] .toolbar-overflow[data-open] .toolbar-menu { display: flex; flex-direction: column; align-items: stretch; gap: 6px;
-  position: fixed; z-index: 40; top: calc(var(--bar-h) + env(safe-area-inset-top) + 4px);
-  left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); width: auto; max-width: 320px; margin-left: auto; box-sizing: border-box; max-height: calc(100dvh - var(--bar-h) - env(safe-area-inset-top) - 16px); overflow: auto; overscroll-behavior: contain;
-  padding: 8px; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 40px #1c2f2440; }
+.builder-page[data-layout^=phone] .toolbar-overflow[data-open] .toolbar-menu { position: fixed; top: calc(var(--bar-h) + env(safe-area-inset-top) + 4px);
+  left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); width: auto; max-width: 320px; margin-left: auto;
+  max-height: calc(100dvh - var(--bar-h) - env(safe-area-inset-top) - 16px); padding: 8px; }
 .builder-page[data-layout^=phone] .toolbar-menu > button, .builder-page[data-layout^=phone] .toolbar-menu > a,
-.builder-page[data-layout^=phone] .toolbar-menu .config-manager > summary, .builder-page[data-layout^=phone] .toolbar-menu .export-menu > button {
-  display: flex; align-items: center; width: 100%; min-height: 44px; padding: 10px 14px; font-size: 14px; text-align: left; white-space: normal; }
-.builder-page[data-layout^=phone] .toolbar-menu > a.menu-only { border: 1px solid var(--line); border-radius: var(--radius); background: #f8faf5; }
-.builder-page[data-layout^=phone] .toolbar-menu .config-manager { border: 1px solid var(--line); border-radius: var(--radius); background: #f8faf5; font-size: 14px; }
-.builder-page[data-layout^=phone] .toolbar-menu .config-manager fieldset { position: static; width: auto; box-shadow: none; border: 0; border-top: 1px solid var(--line); margin: 0; padding: 12px; }
-.builder-page[data-layout^=phone] .toolbar-menu .config-manager fieldset button { min-height: 40px; font-size: 13px; }
-.builder-page[data-layout^=phone] .toolbar-menu .export-menu { display: block; }
-/* Export options open inline under the Export button, inside the menu (which scrolls); Download stays pinned. */
-.builder-page[data-layout^=phone] .toolbar-menu .export-menu-options { position: static; width: auto; max-height: none; overflow: visible;
-  margin: 6px 0 0; padding: 12px 10px; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: none; }
-.builder-page[data-layout^=phone] .toolbar-menu .export-menu-actions { bottom: -8px; margin-bottom: -12px; padding-bottom: 12px; }
-.builder-page[data-layout^=phone] .export-menu-options button { min-height: 40px; font-size: 13px; }
+.builder-page[data-layout^=phone] .toolbar-menu .config-manager > summary, .builder-page[data-layout^=phone] .toolbar-menu .export-menu > button { min-height: 44px; padding: 10px 14px; font-size: 14px; }
+.builder-page[data-layout^=phone] .toolbar-menu .config-manager fieldset button, .builder-page[data-layout^=phone] .export-menu-options button { min-height: 40px; font-size: 13px; }
 
 /* Stage: fills the viewport between the top bar and the settled sheet (the sheet sets --sheet-rest). */
 .builder-page[data-layout^=phone] .stage { position: absolute; top: calc(var(--bar-h) + env(safe-area-inset-top)); left: 0; right: 0; bottom: var(--sheet-rest, 120px); }
 .builder-page[data-layout=phone-land] .stage { bottom: 0; right: var(--sheet-rest, 80px); }
 .builder-page[data-layout^=phone] .view-menu { display: block; position: absolute; z-index: 3; top: 8px; left: max(8px, env(safe-area-inset-left)); }
-.builder-page[data-layout^=phone] .view-menu-trigger { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; font-size: 13px;
-  background: #f6f8f0e8; border-color: #cdd8c5; border-radius: 18px; backdrop-filter: blur(10px); }
-.builder-page[data-layout^=phone] .view-controls { display: none; position: absolute; top: 42px; left: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; width: 196px; padding: 4px; border-radius: 10px; background: #f8faf2f5; }
+.builder-page[data-layout^=phone] .view-menu-trigger { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; font-size: 13px; font-weight: var(--fw-medium);
+  background: var(--glass); box-shadow: var(--shadow-panel); border-radius: 18px; -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
+.builder-page[data-layout^=phone] .view-controls { display: none; position: absolute; top: 42px; left: 0; transform: none; bottom: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; width: 196px; padding: 4px; border-radius: 12px; background: var(--glass-strong); }
 .builder-page[data-layout^=phone] .view-menu[data-open] .view-controls { display: grid; }
 .builder-page[data-layout^=phone] .view-controls button { min-height: 40px; padding: 8px 12px; font-size: 13px; text-align: left; }
+.builder-page[data-layout^=phone] .view-controls button[data-view=iso] { margin-left: 0; }
+.builder-page[data-layout^=phone] .view-controls button[data-view=iso]::before { display: none; }
 .builder-page[data-layout^=phone] .stage-caption { top: 8px; bottom: auto; left: auto; right: max(8px, env(safe-area-inset-right)); height: 36px; display: flex; align-items: center; padding: 0 12px; border-radius: 18px; }
+.builder-page[data-layout^=phone] .status-bar { position: static; max-width: none; visibility: visible; }
 .builder-page[data-layout^=phone] .stage-caption .eyebrow { display: none; }
 .builder-page[data-layout^=phone] #dimensions { margin: 0; font-size: 11px; white-space: nowrap; }
 /* --stage-gap: the stage's bottom margin. Portrait stages end above the sheet; landscape ones reach the home indicator. */
@@ -140,9 +154,10 @@
 .builder-page[data-layout^=phone] .touch-placement { --touch-bar-offset: calc(var(--stage-gap) + 46px - env(safe-area-inset-bottom, 0px)); }
 .builder-page[data-layout^=phone] .stage:has(.touch-placement[data-shown]) .placement-hint { top: 52px; }
 .builder-page[data-layout^=phone] .view-menu[data-open] { z-index: 6; }
-.builder-page[data-layout^=phone] .stage-actions button { height: 36px; padding: 0 12px; font-size: 12px; border-radius: 18px; }
+.builder-page[data-layout^=phone] .stage-actions > button, .builder-page[data-layout^=phone] .stage-actions .warnings-badge > button { height: 36px; padding: 0 12px; font-size: 12px; border-radius: 18px; }
+.builder-page[data-layout^=phone] .stage-actions #shortcuts-button { width: 36px; }
 .builder-page[data-layout^=phone] .panel-toggles { display: none; }
-.builder-page[data-layout^=phone] .placement-hint { left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); bottom: calc(var(--stage-gap) + 44px); transform: none; width: auto; max-width: none;
+.builder-page[data-layout^=phone] .placement-hint { left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); bottom: calc(var(--stage-gap) + 44px); transform: none; width: auto; max-width: none; border-radius: 14px;
   flex-wrap: wrap; gap: 8px; padding: 10px 12px; font-size: 12px; white-space: normal; }
 .builder-page[data-layout^=phone] .placement-hint #placement-text { flex: 1 1 100%; }
 .builder-page[data-layout^=phone] .placement-hint button { min-height: 38px; padding: 8px 14px; font-size: 13px; }
@@ -154,15 +169,15 @@
 .builder-page[data-layout^=phone] .builder-dock { display: flex; flex-direction: column; position: absolute; z-index: 10; left: 0; right: 0; bottom: 0;
   height: var(--sheet-full, 50%); transform: translate3d(0, calc(var(--sheet-full, 0px) - var(--sheet-size, 0px)), 0);
   transition: transform .32s cubic-bezier(.2, .8, .2, 1); will-change: transform; contain: layout style;
-  background: var(--paper); border-radius: 16px 16px 0 0; box-shadow: 0 -6px 30px #0b1a1233; }
+  background: var(--c-surface); border-radius: 22px 22px 0 0; box-shadow: 0 -2px 0 rgb(16 18 24 / .04), 0 -18px 48px rgb(16 18 24 / .12); }
 .builder-page[data-layout^=phone] .builder-dock.dragging { transition: none; }
 .builder-page[data-layout^=phone] .sheet-safe { display: block; position: absolute; visibility: hidden; pointer-events: none;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 .builder-page[data-layout^=phone] .sheet-header { display: block; flex: none; touch-action: none; user-select: none; -webkit-user-select: none;
   padding: 0 max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left)); }
 .builder-page[data-layout^=phone] .sheet-handle { height: 22px; display: grid; place-items: center; cursor: grab; outline-offset: -4px; border-radius: 8px; }
-.builder-page[data-layout^=phone] .sheet-handle::before { content: ''; width: 40px; height: 5px; border-radius: 3px; background: #c3cdbd; }
-.builder-page[data-layout^=phone] .sheet-handle:focus-visible { outline: 2px solid #648455; }
+.builder-page[data-layout^=phone] .sheet-handle::before { content: ''; width: 40px; height: 5px; border-radius: 3px; background: var(--c-line-strong); }
+.builder-page[data-layout^=phone] .sheet-handle:focus-visible { outline: 2px solid var(--c-accent); }
 /* Tabs (#215): an icon over a short label, equal widths. Each tab is at least as wide as its label, so on a screen too
  * narrow for all of them the strip scrolls sideways (faded at the edges) instead of running labels together. */
 .builder-page[data-layout^=phone] .sheet-tabs { display: flex; gap: 2px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
@@ -172,11 +187,11 @@
 .builder-page[data-layout^=phone] .sheet-tabs [role=tab] { flex: 1 1 0; min-width: max-content; min-height: 46px; padding: 4px 6px;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   font-size: 11px; line-height: 1.15; font-weight: 600; white-space: nowrap;
-  border-color: transparent; background: transparent; color: #6b7f62; border-radius: 10px; }
+  background: transparent; color: var(--c-text-2); border-radius: 10px; }
 .builder-page[data-layout^=phone] .sheet-tab-icon { display: grid; place-items: center; height: 20px; }
-.builder-page[data-layout^=phone] .sheet-tabs [role=tab][aria-selected=true] { background: #e6ede0; color: var(--ink); }
+.builder-page[data-layout^=phone] .sheet-tabs [role=tab][aria-selected=true] { background: var(--c-fill); color: var(--c-text); }
 .builder-page[data-layout^=phone] .sheet-body { display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; }
-.builder-page[data-layout^=phone] .status-bar { order: -1; flex: none; height: 24px; background: transparent; border: 0; padding: 0 16px; font-size: 11px; }
+.builder-page[data-layout^=phone] .status-bar { order: -1; flex: none; height: 24px; background: transparent; border: 0; padding: 0 16px; font-size: 11px; pointer-events: auto; }
 .builder-page[data-layout^=phone] [data-sheet-panel] { display: none; }
 /* Collapsed, only the tabs and status line show: the panel under them (and under the home indicator) stays hidden
  * until the sheet opens or a drag starts. */
@@ -191,12 +206,14 @@
 .builder-page[data-layout^=phone] .sheet-body button { font-size: 12px; }
 
 /* Panels inside the sheet. */
+.builder-page[data-layout^=phone] .sheet-body > .catalog-panel, .builder-page[data-layout^=phone] .sheet-body > .inspector-panel { position: static; width: auto; border-radius: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; background: transparent; }
+.builder-page[data-layout^=phone] .inspector-panel::before { display: none; }
 .builder-page[data-layout^=phone] .sheet-body > .catalog-panel { padding-top: 4px; padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
 .builder-page[data-layout^=phone] .catalog-panel .panel-heading { display: none; }
 .builder-page[data-layout^=phone] .catalog-panel #catalog { flex: none; overflow: visible; min-height: auto; }
 .builder-page[data-layout^=phone] .catalog-panel .pair-control { font-size: 12px; padding: 10px; }
 .builder-page[data-layout^=phone] .catalog-panel .pair-control input { width: 18px; height: 18px; }
-.builder-page[data-layout^=phone] .catalog-footer { display: grid; gap: 10px; }
+.builder-page[data-layout^=phone] .catalog-footer { display: grid; gap: 10px; padding-top: 14px; }
 .builder-page[data-layout^=phone] .catalog-footer a { font-size: 13px; }
 .builder-page[data-layout^=phone] .sheet-body > .inspector-panel { padding-top: 4px; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
 .builder-page[data-layout^=phone] .inspector-topline { display: none; }
@@ -204,7 +221,7 @@
 .builder-page[data-layout^=phone] #selection-title { font-size: 22px; margin-top: 6px; }
 .builder-page[data-layout^=phone] .field, .builder-page[data-layout^=phone] .inspector-fields label { font-size: 12px; }
 .builder-page[data-layout^=phone] .inspector-fields button { min-height: 42px; }
-.builder-page[data-layout^=phone] .timeline-region .history-timeline { padding: 4px 12px 0; background: transparent; border: 0; }
+.builder-page[data-layout^=phone] .timeline-region .history-timeline { position: static; display: block; padding: 4px 12px 0; background: transparent; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
 .builder-page[data-layout^=phone] .timeline-region .timeline-controls { flex-wrap: wrap; row-gap: 6px; white-space: normal; }
 .builder-page[data-layout^=phone] .timeline-region .timeline-controls button { min-height: 38px; font-size: 12px; }
 .builder-page[data-layout^=phone] .timeline-region .timeline-privacy { margin-left: 0; }
@@ -216,7 +233,8 @@
 .builder-page[data-layout=phone-land] .brand { height: 36px; }
 .builder-page[data-layout=phone-land] .brand-symbol { height: 22px; }
 .builder-page[data-layout=phone-land] .builder-dock { top: calc(var(--bar-h) + env(safe-area-inset-top)); left: auto; height: auto; width: var(--sheet-full, 40%);
-  flex-direction: row; transform: translate3d(calc(var(--sheet-full, 0px) - var(--sheet-size, 0px)), 0, 0); border-radius: 14px 0 0 0; box-shadow: -6px 0 30px #0b1a1233; }
+  flex-direction: row; transform: translate3d(calc(var(--sheet-full, 0px) - var(--sheet-size, 0px)), 0, 0); border-radius: 18px 0 0 0; box-shadow: -18px 0 48px rgb(16 18 24 / .12); }
+
 .builder-page[data-layout=phone-land] .sheet-header { display: flex; padding: 0; }
 .builder-page[data-layout=phone-land] .sheet-handle { width: 16px; height: auto; align-self: stretch; }
 .builder-page[data-layout=phone-land] .sheet-handle::before { width: 5px; height: 40px; }

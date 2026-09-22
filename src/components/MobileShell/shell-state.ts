@@ -107,9 +107,10 @@ export const stepSnap = (snap: SheetSnap, direction: 1 | -1): SheetSnap =>
 export interface PanelPrefs { left: boolean; right: boolean; timeline: boolean }
 const PANELS = ['left', 'right', 'timeline'] as const;
 /** Tablet layout in portrait (#215): an iPad on its side edge. The canvas is narrow there, so the parts panel starts
- * collapsed ("Add parts" moves to the top bar); the inspector and timeline stay. */
+ * collapsed ("Add parts" moves to the top bar); the inspector stays. Studio: the timeline starts collapsed everywhere
+ * until asked for (the History toggle). */
 export const PORTRAIT_TABLET = '(orientation: portrait) and (min-width: 761px) and (max-width: 1200px)';
-export const defaultPanels = (portraitTablet: boolean): PanelPrefs => ({ left: !portraitTablet, right: true, timeline: true });
+export const defaultPanels = (portraitTablet: boolean): PanelPrefs => ({ left: !portraitTablet, right: true, timeline: false });
 /** Only panels the user has toggled are stored, so the defaults can follow the orientation for the rest. */
 const PANELS_KEY = 'bos-strength-panels-v2', LEGACY_PANELS_KEY = 'bos-strength-panels-v1';
 const storage = () => { try { return window.localStorage; } catch { return undefined; } };

@@ -31,7 +31,7 @@ test('steel UVs are finite, face projected and generated only once without chang
   assert.deepEqual(geometry.getAttribute('position').array, positions);
   geometry.dispose();
 });
-test('rubber floor is matte Lambert: no specular or env reflection, still shadowed, fogged and speckled', () => {
+test('studio floor is plain matte Lambert; a defined room finish (black rubber included) covers the room footprint', () => {
   const context = new Proxy({ createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }) }, { get: (t, k) => k in t ? t[k as 'createImageData'] : () => {}, set: () => true });
   const g = globalThis as { document?: unknown };
   g.document = { createElement: () => ({ getContext: () => context }) };
@@ -40,14 +40,24 @@ test('rubber floor is matte Lambert: no specular or env reflection, still shadow
     assert.ok(material instanceof THREE.MeshLambertMaterial);
     assert.ok(!('roughness' in material) && !('specular' in material) && !('sheen' in material));
     assert.equal(material.envMap, null);
+    assert.equal(material.map, null, 'the studio ground is a plain colour');
     assert.equal(material.reflectivity, 0);
     assert.equal(material.fog, true);
-    assert.equal(material.color.getHexString(), '909090');
-    assert.equal(material.map!.repeat.x, 20);
-    assert.equal(material.map!.colorSpace, THREE.SRGBColorSpace);
+    assert.equal(material.color.getHexString(), 'e6e4df');
     assert.equal(floor.mesh.receiveShadow, true);
+    assert.equal(floor.room.visible, false);
+    const size = { left: 2000, right: 2000, back: 3000, front: 1000, height: 3000 };
+    // No finish defined: the studio ground shows through the room.
+    assert.equal(floor.update(size, null), true);
+    assert.equal(floor.room.visible, false);
+    // A gym that defines finishes keeps its black rubber, over the room only, at its tuned tint.
+    assert.equal(floor.update(size, 'black-rubber'), true);
+    assert.equal(floor.room.visible, true);
+    assert.equal(floor.room.material.color.getHexString(), '909090');
+    assert.equal(floor.room.material.map!.colorSpace, THREE.SRGBColorSpace);
+    assert.equal(floor.update(size, 'black-rubber'), false, 'unchanged finish is a no-op');
     let disposed = 0;
-    for (const resource of [floor.mesh.geometry, material, material.map!]) resource.addEventListener('dispose', () => disposed++);
+    for (const resource of [floor.mesh.geometry, material, floor.room.material.map!]) resource.addEventListener('dispose', () => disposed++);
     floor.dispose(); floor.dispose();
     assert.equal(disposed, 3);
   } finally { delete g.document; }

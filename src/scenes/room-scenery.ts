@@ -71,7 +71,9 @@ export class RoomMaterials {
   /** Materials with the exact program parameters of every room surface, as [material, instanced]; `release` frees
    * the stand-ins made here (the shared materials stay). */
   standIns(): { materials: [THREE.Material, boolean][]; release(): void } {
-    const map = this.placeholder(), made = [new THREE.MeshStandardMaterial({ ...this.birchParams, map }), new THREE.MeshLambertMaterial({ map, reflectivity: 0 }), new THREE.MeshLambertMaterial({ ...this.stencilParams, map })];
+    const map = this.placeholder(), made = [new THREE.MeshStandardMaterial({ ...this.birchParams, map }), new THREE.MeshLambertMaterial({ map, reflectivity: 0 }), new THREE.MeshLambertMaterial({ ...this.stencilParams, map }),
+      // The plain studio ground (gym-floor.ts): Lambert without a map.
+      new THREE.MeshLambertMaterial({ reflectivity: 0 })];
     return {
       materials: [[this.slat, true], [this.accent, true], [this.backing, false], [this.paint.back, false], [this.ceiling, false], [this.led, false], [this.ledHousing, false], ...made.map((m): [THREE.Material, boolean] => [m, false])],
       release: () => { for (const m of made) m.dispose(); },

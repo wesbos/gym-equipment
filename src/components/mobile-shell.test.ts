@@ -77,11 +77,11 @@ test('content drags: the sheet moves below full and from a scrolled-to-top panel
   assert.equal(contentDragMode('full', 50, 0, 20), 'native');
 });
 
-test('panels: portrait tablets start with the parts panel collapsed; explicit choices win in any orientation', () => {
-  assert.deepEqual(defaultPanels(false), { left: true, right: true, timeline: true });
-  assert.deepEqual(defaultPanels(true), { left: false, right: true, timeline: true });
-  assert.deepEqual(resolvePanels({}, true), { left: false, right: true, timeline: true });
-  assert.deepEqual(resolvePanels({ left: true }, true), { left: true, right: true, timeline: true });
+test('panels: portrait tablets start with the parts panel collapsed; the timeline starts collapsed (Studio); explicit choices win', () => {
+  assert.deepEqual(defaultPanels(false), { left: true, right: true, timeline: false });
+  assert.deepEqual(defaultPanels(true), { left: false, right: true, timeline: false });
+  assert.deepEqual(resolvePanels({}, true), { left: false, right: true, timeline: false });
+  assert.deepEqual(resolvePanels({ left: true, timeline: true }, true), { left: true, right: true, timeline: true });
   assert.deepEqual(resolvePanels({ timeline: false }, false), { left: true, right: true, timeline: false });
   assert.deepEqual(resolvePanels({ timeline: false }, true), { left: false, right: true, timeline: false });
 });

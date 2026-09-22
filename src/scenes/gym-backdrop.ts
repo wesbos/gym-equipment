@@ -1,17 +1,18 @@
 import * as THREE from 'three';
 
-/** A distant circular acoustic wall: four static draw calls, never part of the CAD/export root. */
+/** A distant circular slat wall: four static draw calls, never part of the CAD/export root. Studio finish: pale warm
+ * slats a shade off the sky with soft oak accents, so the horizon reads as a faint texture, not a dark band. */
 export function createGymBackdrop() {
   const radius = 12000, height = 9000, count = Math.round(2 * Math.PI * radius / 75);
   const group = new THREE.Group();
-  group.name = 'Black acoustic slats and birch accents (scenery only)';
-  const rim = new THREE.DirectionalLight('#dce7e2', .75);
+  group.name = 'Pale studio slats and oak accents (scenery only)';
+  const rim = new THREE.DirectionalLight('#f3f1ec', .45);
   rim.position.set(3000, 4000, -3000);
   rim.target.position.set(0, 1400, 0);
   group.add(rim, rim.target);
-  const black = new THREE.MeshStandardMaterial({ color: '#222524', roughness: .94, metalness: 0, envMapIntensity: .3 });
-  const birch = new THREE.MeshStandardMaterial({ color: '#b4a080', roughness: .86, metalness: 0, envMapIntensity: .3 });
-  const backing = new THREE.MeshStandardMaterial({ color: '#101413', roughness: 1, side: THREE.BackSide });
+  const black = new THREE.MeshStandardMaterial({ color: '#e6e4de', roughness: .94, metalness: 0, envMapIntensity: .3 });
+  const birch = new THREE.MeshStandardMaterial({ color: '#d3c8b7', roughness: .86, metalness: 0, envMapIntensity: .3 });
+  const backing = new THREE.MeshStandardMaterial({ color: '#ecebe6', roughness: 1, side: THREE.BackSide });
   const slat = new THREE.BoxGeometry(52, height, 28);
   const accentCount = Math.floor((count - 1) / 19) + 1;
   const darkSlats = new THREE.InstancedMesh(slat, black, count - accentCount);

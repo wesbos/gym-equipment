@@ -7,5 +7,5 @@
 .builder-page .stage-actions .warnings-popover .warning-item { height: auto; min-height: 0; border-radius: 6px; padding: 9px 10px; font-size: 11px; line-height: 1.3; backdrop-filter: none; background: #faf1dc; color: #866028; border-color: #e0c995; justify-content: flex-start; }
 .warnings-badge #warnings-button { background: #faf1dcee; color: #866028; border-color: #e0c995; font-weight: 650; }
 .warnings-popover { position: absolute; bottom: calc(100% + 8px); right: 0; width: min(340px, calc(100vw - 32px)); max-height: 50vh; overflow-y: auto; overscroll-behavior: contain;
-  padding: 6px 8px; background: #fafbf6f7; border: 1px solid #e0c995; border-radius: 9px; box-shadow: 0 8px 30px #35502a24; z-index: 8; }
+  padding: 6px 8px; background: #f9f9f8f7; border: 1px solid #e0c995; border-radius: 9px; box-shadow: 0 8px 30px #403e3a24; z-index: 8; }
 @media (max-width: 760px) { .warnings-badge .wb-label { display: none; } .warning-list li > .warning-item { font-size: 12px; padding: 10px; } }

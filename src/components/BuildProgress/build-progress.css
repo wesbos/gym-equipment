@@ -7,7 +7,7 @@
   pointer-events: none;
   animation: build-progress-in .2s ease-out;
 }
-.build-progress[data-scrim] { background: #e9efe6b3; backdrop-filter: blur(3px) saturate(.7); }
+.build-progress[data-scrim] { background: rgb(239 238 234 / .7); backdrop-filter: blur(4px) saturate(.8); -webkit-backdrop-filter: blur(4px) saturate(.8); }
 .build-progress-card {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -15,20 +15,23 @@
   gap: 10px 12px;
   min-width: 220px;
   max-width: calc(100% - 32px);
-  padding: 14px 18px;
-  border-radius: 10px;
-  background: #1f3329f0;
-  color: #f3f6ef;
-  box-shadow: 0 10px 30px #0d1a1340;
-  font-size: 12px;
+  padding: var(--s-4) var(--s-5);
+  border-radius: var(--r-md);
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  color: var(--c-text);
+  box-shadow: var(--shadow-pop);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
   font-variant-numeric: tabular-nums;
 }
 .build-progress-spinner {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  border: 2px solid #ffffff38;
-  border-top-color: #e2a248;
+  border: 2px solid var(--c-line-strong);
+  border-top-color: var(--c-accent);
   animation: build-progress-spin .8s linear infinite;
 }
 .build-progress-card progress {
@@ -38,12 +41,12 @@
   appearance: none;
   border: 0;
   border-radius: 2px;
-  background: #ffffff26;
+  background: var(--c-fill);
   overflow: hidden;
 }
-.build-progress-card progress::-webkit-progress-bar { background: #ffffff26; }
-.build-progress-card progress::-webkit-progress-value { background: #e2a248; transition: width .2s; }
-.build-progress-card progress::-moz-progress-bar { background: #e2a248; }
+.build-progress-card progress::-webkit-progress-bar { background: var(--c-fill); }
+.build-progress-card progress::-webkit-progress-value { background: var(--c-accent); transition: width .2s; }
+.build-progress-card progress::-moz-progress-bar { background: var(--c-accent); }
 @keyframes build-progress-spin { to { transform: rotate(360deg); } }
 @keyframes build-progress-in { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {

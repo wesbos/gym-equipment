@@ -1,1 +1,4 @@
-*{box-sizing:border-box}html,body,#root{margin:0;width:100%;min-height:100%;}body{font-family:system-ui,sans-serif}button,input,select{font:inherit}[hidden]{display:none!important}
+@import './styles/tokens.css';
+*{box-sizing:border-box}html,body,#root{margin:0;width:100%;min-height:100%;}
+body{font-family:var(--font);background:var(--c-bg);color:var(--c-text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-feature-settings:'cv11','ss03'}
+button,input,select{font:inherit}[hidden]{display:none!important}

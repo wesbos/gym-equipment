@@ -86,13 +86,14 @@ test('every room surface uses a prewarmed program variant, and finish changes re
   scenery.update(lit({ turf: [{ position: [0, 1000], size: [1800, 4000], lines: true, text: 'PLAE' }] }));
   assert.deepEqual([...lanes.children, ...ceiling.children], before);
   assert.equal(ceiling.children.filter(o => o.name.startsWith('Linear LED')).length, 6, 'a housing and a lens per row');
-  // Floor: black rubber is the ground itself; other finishes cover just the room.
+  // Floor (Studio): the plain light ground is the studio; every finish, black rubber included, covers just the room.
   floor.update(ROOM_DEFAULTS, 'grey-fleck');
   const box = new THREE.Box3().setFromObject(floor.room);
   assert.equal(floor.room.visible, true);
   assert.deepEqual([box.min.x, box.max.x, box.min.z, box.max.z], [-ROOM_DEFAULTS.left, ROOM_DEFAULTS.right, -ROOM_DEFAULTS.back, ROOM_DEFAULTS.front]);
   assert.equal(floor.update(ROOM_DEFAULTS, 'grey-fleck'), false, 'no change, no work');
-  floor.update(ROOM_DEFAULTS, 'black-rubber'); assert.equal(floor.room.visible, false);
+  floor.update(ROOM_DEFAULTS, 'black-rubber'); assert.equal(floor.room.visible, true);
+  floor.update(ROOM_DEFAULTS, null); assert.equal(floor.room.visible, false, 'no finish: the studio ground shows through');
   standIns.release(); walls.dispose(); scenery.dispose(); floor.dispose(); materials.dispose();
 }));
 
