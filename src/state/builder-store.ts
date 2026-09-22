@@ -76,6 +76,9 @@ export interface BuilderSnapshot {
   status: string;
   error: boolean;
   loading: boolean;
+  /** Models still being generated for the current rebuild (#218): `done` of `total` uncached models, out of `parts`
+   * instances in the design. Null when the rebuild needs no new geometry (or nothing is building). */
+  buildProgress: BuildProgress | null;
   /** The document the scene last finished building (successfully or not); `builtDoc === doc` means settled.
    * Set by the scene once per completed rebuild, including cached rebuilds that never set `loading`. */
   builtDoc: RackDoc | null;
@@ -91,6 +94,7 @@ export interface BuilderSnapshot {
   hidden: readonly string[];
   locked: readonly string[];
 }
+export interface BuildProgress { done: number; total: number; parts: number }
 /** Everything `restoreCheckpoint` needs to put the working design back. */
 export interface WorkingCheckpoint { doc: RackDoc; timeline: TimelineData; activeId: string | null }
 /** Trailing delay before the recovery draft is written (then at the next idle moment). Lifecycle events flush it. */
@@ -155,6 +159,7 @@ export class BuilderStore {
       status,
       error,
       loading: true,
+      buildProgress: null,
       builtDoc: null,
       dimensions: "",
       placementText: "",

@@ -340,6 +340,27 @@ export function createBuilderScene(
   let rebuilding = false;
   /** Every model of the batch is already built: the rebuild settles within microtasks, before the next paint. */
   const cached = (entries: readonly ResolvedInstance[]) => entries.every(entry => cache.isReady(geometryKey(entry)));
+  /** Build progress for the loading overlay (#218): published at most once a frame, only for the latest batch. */
+  let progress: { serial: number; done: number; total: number; parts: number } | null = null, progressFrame = 0;
+  function publishProgress() {
+    if (progressFrame) return;
+    progressFrame = requestAnimationFrame(() => {
+      progressFrame = 0;
+      if (!disposed && progress?.serial === generation && snapshot.loading)
+        store.patch({ buildProgress: { done: progress.done, total: progress.total, parts: progress.parts } });
+    });
+  }
+  /** Count each missing model once as it arrives (instances share geometry: a pair of uprights is one model). */
+  function trackProgress(serial: number, entries: readonly ResolvedInstance[]) {
+    const missing = new Map<string, ResolvedInstance>();
+    for (const entry of entries) { const key = geometryKey(entry); if (!cache.isReady(key) && !missing.has(key)) missing.set(key, entry); }
+    const current = progress = { serial, done: 0, total: missing.size, parts: entries.length };
+    store.patch({ buildProgress: { done: 0, total: current.total, parts: current.parts } });
+    for (const entry of missing.values()) {
+      const settle = () => { if (progress === current) { current.done++; publishProgress(); } };
+      geometryFor(entry).then(settle, settle);
+    }
+  }
   function requestRebuild() {
     ++generation;
     // Moves and other edits of already-built parts skip the transient loading patches (one store update, not three).
@@ -352,12 +373,15 @@ export function createBuilderScene(
       entries = snapshot.resolved,
       builtDoc = snapshot.doc;
     let releaseBatch = cache.pin(entries.map(geometryKey));
-    if (!cached(entries)) store.patch({
-      loading: true,
-      status: "Building your rack…",
-      error: false,
-      dimensions: dimensions(),
-    });
+    if (!cached(entries)) {
+      store.patch({
+        loading: true,
+        status: "Building your rack…",
+        error: false,
+        dimensions: dimensions(),
+      });
+      trackProgress(serial, entries);
+    }
     try {
       // Wait for the whole batch, including errors, before starting the latest one.
       const results = await Promise.allSettled(entries.map(geometryFor));
@@ -381,9 +405,11 @@ export function createBuilderScene(
       const warnings = [...detectCollisions(entries), ...floorWarnings(snapshot.doc), ...wallWarnings(snapshot.doc), ...hangWarnings(snapshot.doc)];
       // Before the patch: listeners that see `builtDoc` settle may export immediately.
       renderedGeneration = serial;
+      progress = null;
       store.patch({
         builtDoc,
         loading: false,
+        buildProgress: null,
         dimensions: dimensions(true),
         status: warnings.length
           ? `${warnings.length} placement warning${warnings.length === 1 ? "" : "s"} · ${entries.length} parts`
@@ -396,7 +422,7 @@ export function createBuilderScene(
       }
     } catch (error) {
       if (!disposed && serial === generation)
-        store.patch({ builtDoc, loading: false, status: message(error), error: true });
+        { progress = null; store.patch({ builtDoc, loading: false, buildProgress: null, status: message(error), error: true }); }
     } finally {
       releaseBatch();
       if (!disposed) trimCache();
@@ -1537,6 +1563,7 @@ export function createBuilderScene(
       if (disposed) return;
       stopBuild();
       disposed = true;
+      cancelAnimationFrame(progressFrame);
       frameListeners.clear();
       generation++;
       previewSerial++;

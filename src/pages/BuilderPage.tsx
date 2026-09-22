@@ -34,6 +34,7 @@ import { createBuilderScene, type BuilderScene } from "../scenes/builder-scene.t
 import { InspectorPanel } from "../components/Inspector/InspectorPanel.tsx";
 import { SelectionBar } from "../components/SelectionBar/SelectionBar.tsx";
 import { Toaster } from "../components/Toast/Toaster.tsx";
+import { BuildProgress } from "../components/BuildProgress/BuildProgress.tsx";
 import { clearHistoryWithUndo, resetRackWithUndo } from "../components/Toast/undo-actions.ts";
 import {
   getPartPlacementInfo,
@@ -423,6 +424,7 @@ export default function BuilderPage() {
            * ignores pointer events and its children receive them; on phones it ends above the sheet. */}
           <div className="stage-overlay" data-slot="stage-overlay">
             <SelectionBar store={store} scene={scene} />
+            <BuildProgress store={store} />
           </div>
           {outliner && !phoneLayout && <Outliner api={api} />}
         </main>
