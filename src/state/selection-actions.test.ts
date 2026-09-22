@@ -152,3 +152,50 @@ test('pure helpers refuse what the bar hides', () => {
   assert.deepEqual(variantOptions(doc, resolved, 'front-left'), []);
   assert.equal(applyVariant(doc, resolved, 'jhooks-front', 'j-hook-standard'), doc);
 });
+
+test('locked parts (#219): still selectable, but no move, rotate or pickup until unlocked; a locked side locks its pair', () => {
+  const { store, floor } = gym();
+  store.select(floor);
+  assert.equal(actions(store).lock, 'lock');
+  assert.equal(actions(store).move, true);
+  store.setLocked([floor], true);
+  const a = actions(store);
+  assert.equal(a.lock, 'unlock');
+  assert.equal(a.move, false);
+  assert.equal(a.rotate, 0);
+  assert.equal(a.remove, true, 'deleting is still an explicit, undoable action');
+  assert.equal(store.rotationSubject(), null);
+  const before = store.getSnapshot().doc;
+  assert.equal(store.rotateSelection(1), false);
+  assert.equal(store.repositionSelected(), false);
+  store.pickup(floor);
+  assert.equal(store.getSnapshot().placing, null);
+  assert.deepEqual(store.getSnapshot().selection, [floor], 'a pickup on a locked part just selects it');
+  assert.match(store.getSnapshot().status, /locked/);
+  store.startPlacement('rep-nighthawk', floor);
+  assert.equal(store.getSnapshot().placing, null);
+  assert.equal(store.getSnapshot().doc, before, 'nothing moved');
+  store.setLocked([floor], false);
+  assert.equal(actions(store).move, true);
+  assert.equal(store.rotationSubject(), 'floor');
+
+  // One side of a mounted pair locks both: moving either side would move the pair.
+  const [left, right] = store.getSnapshot().resolved.filter(r => r.ownerId === 'jhooks-front');
+  store.setLocked([left.id], true);
+  store.select(right.id);
+  assert.equal(store.isLocked(right.id), true);
+  assert.equal(actions(store).move, false);
+  store.pickup(right.id);
+  assert.equal(store.getSnapshot().placing, null);
+});
+
+test('lock all locks every part; the bar offers unlock for a fully locked multi-selection', () => {
+  const { store, floor, wall } = gym();
+  store.lockAll();
+  assert.equal(store.getSnapshot().locked.length, store.getSnapshot().resolved.length);
+  store.selectMany([floor, wall]);
+  assert.equal(actions(store).lock, 'unlock');
+  store.setLocked([floor], false);
+  store.selectMany([floor, wall]);
+  assert.equal(actions(store).lock, 'lock', 'mixed selections lock');
+});

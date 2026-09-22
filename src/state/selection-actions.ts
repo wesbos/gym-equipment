@@ -24,15 +24,26 @@ export interface SelectionActions {
   /** Other variants the single selection can be swapped to. */ swap: boolean;
   pair: 'pair' | 'unpair' | null;
   focus: boolean;
+  /** Lock toggle (#219): 'unlock' when every selected piece is locked (it then cannot move or rotate). */
+  lock: 'lock' | 'unlock' | null;
 }
 /** The snapshot fields the action logic reads (a structural subset of BuilderSnapshot). */
 export interface SelectionState {
   doc: RackDoc; resolved: ResolvedInstance[]; selection: readonly PhysicalInstanceId[]; selected: string | null;
   roomInspector?: boolean;
+  locked?: readonly string[];
 }
-const NONE: SelectionActions = { kind: 'none', count: 0, id: null, part: null, move: false, rotate: 0, duplicate: false, remove: false, swap: false, pair: null, focus: false };
+const NONE: SelectionActions = { kind: 'none', count: 0, id: null, part: null, move: false, rotate: 0, duplicate: false, remove: false, swap: false, pair: null, focus: false, lock: null };
 const physicalOf = (state: Pick<SelectionState, 'resolved'>, id: string | null) =>
   id ? state.resolved.find(r => r.id === id) ?? state.resolved.find(r => r.ownerId === id) : undefined;
+
+/** A locked physical piece or owner (#219). Locking either side of a pair locks the owner: moving one moves both. */
+export function isLockedIn(state: Pick<SelectionState, 'resolved' | 'locked'>, id: string | null | undefined) {
+  const locked = state.locked;
+  if (!id || !locked?.length) return false;
+  const owner = state.resolved.find(r => r.id === id)?.ownerId || id;
+  return locked.some(l => l === id || l === owner || state.resolved.some(r => r.id === l && r.ownerId === owner));
+}
 
 /** Which kind of thing the selection is: drives the bar's buttons and the inspector route. */
 export function selectionKind(state: SelectionState): SelectionKind {
@@ -168,9 +179,12 @@ export function selectionActions(state: SelectionState): SelectionActions {
   if (kind === 'none' || kind === 'room') return kind === 'none' ? NONE : { ...NONE, kind };
   const { doc, resolved, selection } = state;
   const duplicate = canDuplicate(doc, resolved, selection);
-  if (kind === 'multi') return { ...NONE, kind, count: selection.length, duplicate, remove: true, focus: true };
+  const locked = selection.every(id => isLockedIn(state, id)), lock = locked ? 'unlock' as const : 'lock' as const;
+  if (kind === 'multi') return { ...NONE, kind, count: selection.length, duplicate, remove: true, focus: true, lock };
   const physical = physicalOf(state, state.selected)!;
-  const base = { ...NONE, kind, count: 1, id: physical.id, part: physical.part, duplicate, remove: true, focus: true };
+  const base = { ...NONE, kind, count: 1, id: physical.id, part: physical.part, duplicate, remove: true, focus: true, lock };
+  // A locked part keeps its other actions, but it cannot be moved or rotated until it is unlocked.
+  if (locked) return base;
   switch (kind) {
     case 'system': return base;
     case 'floor': return { ...base, move: true, rotate: doc.floorItems?.find(i => i.id === physical.id)?.cradle ? 0 : 15 };

@@ -696,11 +696,13 @@ export function createBuilderScene(
     return best;
   }
   const shown = (o: THREE.Object3D | null): boolean => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
-  /** Hidden and locked parts (outliner, #206) are click-through: hidden ones are invisible, locked ones are skipped. */
+  /** Hidden parts (outliner, #206) are click-through. Locked parts (#219) can still be clicked and selected, but
+   * never dragged, picked up or rotated (`frozen`): a drag that starts on one orbits the camera. */
   let unpickable = new Set<string>();
+  const frozen = (id: string | null | undefined) => !!id && (unpickable.has(id) || store.isLocked(id));
   function applyVisibility() {
     const hidden = new Set(snapshot.hidden);
-    unpickable = new Set([...snapshot.hidden, ...snapshot.locked]);
+    unpickable = hidden;
     for (const g of instances.values()) g.visible = !hidden.has(g.userData.id as string);
     invalidate();
   }
@@ -890,7 +892,7 @@ export function createBuilderScene(
     const mounted = rotationTarget();
     if (mounted && store.rotateMounted(mounted, back ? -1 : 1)) { event.preventDefault(); return; }
     const id=floorDrag?.id ?? (snapshot.selection.length===1?snapshot.selected:null);
-    const item=store.getAppliedDoc().floorItems?.find(i=>i.id===id && !i.cradle && !unpickable.has(i.id));
+    const item=store.getAppliedDoc().floorItems?.find(i=>i.id===id && !i.cradle && !frozen(i.id));
     if(item) {event.preventDefault();if(floorDrag)floorDrag.moved=true;store.updateFloor(item.id,{rotation:item.rotation+delta});}
   };
   document.addEventListener('keydown',floorKey);
@@ -904,13 +906,13 @@ export function createBuilderScene(
     if (snapshot.systemChoice) return null;
     if (snapshot.placing) return snapshot.placing.movingId && rotationMode(snapshot.doc, snapshot.placing.movingId).supported ? snapshot.placing.movingId : null;
     const candidates = [hoveredId, snapshot.selection.length === 1 ? snapshot.selected : null];
-    return candidates.find(id => id && !unpickable.has(id) && rotationMode(snapshot.doc, store.ownerOf(id)!).supported) ?? null;
+    return candidates.find(id => id && !frozen(id) && rotationMode(snapshot.doc, store.ownerOf(id)!).supported) ?? null;
   }
   /** Alt/⌥ + scroll rotates (#217); a plain scroll falls through to OrbitControls and zooms, even over a part. */
   const onWheel = (event: WheelEvent) => {
     if (snapshot.systemChoice || !wheelRotates(event)) return;
     const floorId = floorDrag?.id ?? hoveredId ?? (snapshot.selection.length === 1 ? snapshot.selected : null);
-    const floorItem = store.getAppliedDoc().floorItems?.find(i => i.id === floorId && !i.cradle && !unpickable.has(i.id));
+    const floorItem = store.getAppliedDoc().floorItems?.find(i => i.id === floorId && !i.cradle && !frozen(i.id));
     const mounted = rotationTarget();
     if (!isFloorPart(snapshot.placing?.part) && !floorItem && !mounted) return;
     event.preventDefault(); event.stopImmediatePropagation();
@@ -932,7 +934,9 @@ export function createBuilderScene(
   const onDown = (event: PointerEvent) => {
     pointerGesture.begin(event);
     if(event.button===0 && !snapshot.systemChoice && !snapshot.placing && !snapshot.structureChoice && !snapshot.selectionTool && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
-      const hit=pickOwner(event),applied=store.getAppliedDoc(),item=applied.floorItems?.find(i=>i.id===hit?.id && !i.cradle),point=floorPoint(event,false);
+      // A locked part never starts a drag (#219): the press falls through to OrbitControls, and a click still selects it.
+      const pick=pickOwner(event),hit=pick && !store.isLocked(pick.id) ? pick : null;
+      const applied=store.getAppliedDoc(),item=applied.floorItems?.find(i=>i.id===hit?.id && !i.cradle),point=floorPoint(event,false);
       const wallItem=applied.wallItems?.find(i=>i.id===hit?.id),wallPoint=wallItem && wallRay(event,wallItem.wall),hung=applied.hangItems?.find(i=>i.id===hit?.id);
       if(hung && snapshot.selection.length<=1) {
         if (snapshot.timeline.viewing) { store.latestHistory(); pointerGesture.begin(event); }
@@ -987,7 +991,7 @@ export function createBuilderScene(
       const top = Math.min(pointerGesture.start[1], event.clientY), bottom = Math.max(pointerGesture.start[1], event.clientY);
       const ids: string[] = [];
       for (const g of instances.values()) {
-        if (unpickable.has(g.userData.id as string)) continue;
+        if (frozen(g.userData.id as string)) continue; // Like select-all: the marquee skips hidden and locked parts.
         const center = new THREE.Box3().setFromObject(g).getCenter(new THREE.Vector3()).project(camera);
         const x = rect.left + (center.x + 1) * rect.width / 2, y = rect.top + (1 - center.y) * rect.height / 2;
         if (center.z >= -1 && center.z <= 1 && x >= left && x <= right && y >= top && y <= bottom) ids.push(g.userData.id as string);
@@ -1131,7 +1135,7 @@ export function createBuilderScene(
     // Nothing selected: pick lazily on tap or long-press, so an orbit never pays for it.
     if (snapshot.selection.length !== 1) return;
     const hit = downHit = pickOwner(event);
-    if (!hit || !snapshot.selection.includes(hit.id)) return;
+    if (!hit || !snapshot.selection.includes(hit.id) || store.isLocked(hit.id)) return;
     const applied = store.getAppliedDoc();
     if (!applied.floorItems?.some(i => i.id === hit.id && !i.cradle) && !applied.wallItems?.some(i => i.id === hit.id) && !applied.hangItems?.some(i => i.id === hit.id)) return;
     onDown(event);

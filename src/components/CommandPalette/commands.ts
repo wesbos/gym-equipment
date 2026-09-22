@@ -67,6 +67,7 @@ export const COMMANDS: readonly Command[] = [
   { id: 'hide', label: 'Hide the selection', group: 'Selection', keywords: 'visibility', shortcut: 'hide', available: hasSelection, run: ({ store }) => store.setHidden(store.getSnapshot().selection, true) },
   { id: 'show-all', label: 'Show all hidden parts', group: 'Selection', keywords: 'unhide visibility reveal', shortcut: 'show-all', available: s => s.hidden.length > 0, run: ({ store }) => store.showAll() },
   { id: 'lock', label: 'Lock or unlock the selection', group: 'Selection', keywords: 'freeze pin', shortcut: 'lock', available: hasSelection, run: ({ store }) => store.setLocked(store.getSnapshot().selection) },
+  { id: 'lock-all', label: 'Lock all parts', group: 'Selection', keywords: 'freeze pin protect busy gym', available: s => s.resolved.some(r => !s.locked.includes(r.id)), run: ({ store }) => store.lockAll() },
   { id: 'unlock-all', label: 'Unlock all parts', group: 'Selection', keywords: 'unfreeze', available: s => s.locked.length > 0, run: ({ store }) => store.setLocked(store.getSnapshot().locked, false) },
   { id: 'select-tool', label: 'Toggle the box-select tool', group: 'Selection', keywords: 'marquee lasso', run: ({ store }) => store.patch({ selectionTool: !store.getSnapshot().selectionTool }) },
   { id: 'frame-selection', label: 'Frame the selection', group: 'View', keywords: 'focus zoom camera', shortcut: 'frame-selection', run: frameSelection },

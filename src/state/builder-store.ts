@@ -15,7 +15,7 @@ import type { FrameFinish } from '../../rack-generator/appearance.ts';
 import { addsStructure } from '../../rack-generator/structure-candidates.ts';
 import { resetPart } from '../../rack-generator/reset.ts';
 import { removeSelection, selectionOwners, sharedFields, type PhysicalInstanceId, type SelectionGesture } from './selection.ts';
-import { applyVariant, duplicateSelection, togglePair } from './selection-actions.ts';
+import { applyVariant, duplicateSelection, isLockedIn, togglePair } from './selection-actions.ts';
 import { structureProposalAt, proposalAt, proposalCollision, suggestPlacement, type PlacementProposal } from '../../rack-generator/placement-proposals.ts';
 import {
   LocalConfigStorage,
@@ -90,7 +90,8 @@ export interface BuilderSnapshot {
   /** The room inspector (#200) is open: walls, floor, turf and ceiling finishes. Any selection or placement closes it. */
   roomInspector: boolean;
   /** Session-only outliner state (#206), keyed by physical instance id; never saved in the document. Hidden parts are
-   * not drawn and cannot be picked; locked parts stay visible but the scene will not select or drag them. */
+   * not drawn and cannot be picked. Locked parts (#219) can be selected and inspected, but not dragged, picked up or
+   * rotated: a drag that starts on one orbits the camera instead. */
   hidden: readonly string[];
   locked: readonly string[];
 }
@@ -563,11 +564,21 @@ export class BuilderStore {
     const gone = new Set(next);
     this.patch({ hidden: next, ...(this.state.selection.some(id => gone.has(id)) ? { selection: this.state.selection.filter(id => !gone.has(id)) } : {}) });
   };
-  /** Lock or unlock parts (session only): the scene will not pick, select or drag a locked part. */
+  /** Lock or unlock parts (session only, #219): a locked part stays selectable but cannot be moved or rotated. */
   setLocked = (ids: readonly string[], locked?: boolean) => {
     const next = toggled(this.state.locked, ids, locked);
     if (next !== this.state.locked) this.patch({ locked: next });
   };
+  /** Lock every part in the design (a busy gym: nothing moves while you orbit around it). */
+  lockAll = () => this.setLocked(this.state.resolved.map(r => r.id), true);
+  /** Whether a physical piece (or owner id) is locked. Locking either side of a pair locks the whole owner, since
+   * moving or rotating one side moves both. */
+  isLocked = (id: string | null | undefined) => isLockedIn(this.state, id);
+  private refuseLocked(id: string) {
+    const part = this.state.resolved.find(r => r.id === id || r.ownerId === id)?.part;
+    const name = (part && this.state.definitions.find(d => d.id === part)?.name.replace(/^BOS STRENGTH\s*/, '')) || 'This part';
+    this.status(`${name} is locked · unlock it (L) to move it`);
+  }
   showAll = () => { if (this.state.hidden.length) this.patch({ hidden: [] }); };
   /** Every visible, unlocked part (what a scene marquee over everything would pick). */
   selectAll = () => {
@@ -692,6 +703,7 @@ export class BuilderStore {
   };
   rotateMounted = (id: string, direction = 1) => {
     const ownerId = this.ownerOf(id)!;
+    if (!this.state.placing && this.isLocked(id)) return false;
     if (!rotationMode(this.state.doc, ownerId).supported) return false;
     if (!this.state.placing) {
       this.pickup(id);
@@ -722,7 +734,7 @@ export class BuilderStore {
       return s.placing.movingId && rotationMode(s.doc, s.placing.movingId).supported ? 'mounted' : null;
     }
     const id = s.selection.length === 1 ? s.selected : null;
-    if (!id) return null;
+    if (!id || this.isLocked(id)) return null;
     if (this.appliedDoc.floorItems?.some(i => i.id === id && !i.cradle)) return 'floor';
     const owner = this.ownerOf(id);
     return owner && rotationMode(s.doc, owner).supported ? 'mounted' : null;
@@ -750,6 +762,7 @@ export class BuilderStore {
   pickup = (physicalId: string) => {
     const item = this.state.resolved.find(r => r.id === physicalId);
     if (!item) return;
+    if (this.isLocked(item.id)) { this.select(item.id); this.refuseLocked(item.id); return; }
     if (item.kind === 'structure') {
       this.select(item.id);
       this.patch({ structureMoveId: item.ownerId });
@@ -779,6 +792,7 @@ export class BuilderStore {
       this.patch({ selected: null, placing: null, structureChoice: part, structureMode: 'add', proposal: null, selectionTool: false });
       return;
     }
+    if (movingId && this.isLocked(movingId)) { this.refuseLocked(movingId); return; }
     if (!movingId && (this.state.placing?.part === part || this.state.structureChoice === part) && this.state.proposal) {
       this.acceptProposal();
       return;

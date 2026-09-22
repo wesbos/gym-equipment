@@ -108,7 +108,7 @@ test('hide/lock: session-only UI state; hiding deselects; select-all skips hidde
   store.setLocked([ids[1], ids[2]], true);
   store.selectAll();
   assert.deepEqual([...store.getSnapshot().selection].sort(), ids.slice(3).sort());
-  // Locked parts can still be selected from the outliner (store.select), just not in the scene.
+  // Locked parts can still be selected (#219); they just cannot be moved or rotated.
   store.select(ids[1]);
   assert.deepEqual(store.getSnapshot().selection, [ids[1]]);
   assert.equal(store.getSnapshot().canUndo, false, 'hiding and locking are not edits');

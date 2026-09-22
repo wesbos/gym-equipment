@@ -20,6 +20,13 @@
   font-size: 11px; font-weight: 600; color: #6f8763;
 }
 .builder-page .insp .insp-back:hover { background: none; color: var(--green); }
+.builder-page .insp-header-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.builder-page .insp .insp-lock {
+  display: inline-flex; align-items: center; gap: 5px; margin: 0; width: auto; padding: 4px 9px; border-radius: 999px;
+  border: 1px solid #cbd7c3; background: transparent; font-size: 11px; font-weight: 600; color: #6f8763;
+}
+.builder-page .insp .insp-lock:hover { background: #264d3a0d; color: var(--green); }
+.builder-page .insp .insp-lock[aria-pressed="true"] { background: #264d3a; border-color: #264d3a; color: #f3f6ef; }
 .builder-page .insp-hero { display: grid; grid-template-columns: 60px minmax(0, 1fr); gap: 12px; align-items: center; }
 .builder-page .insp-art {
   display: grid; place-items: center; width: 60px; height: 60px; border-radius: 12px; overflow: hidden;

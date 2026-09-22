@@ -13,6 +13,8 @@ const paths = {
   close: 'M5 5l10 10M15 5 5 15',
   reset: 'M4.5 8A6 6 0 1 1 4 11.5M4.5 8V4M4.5 8h4',
   chevron: 'M6 8l4 4 4-4',
+  lock: 'M5 9h10v8H5zM7 9V6.5a3 3 0 0 1 6 0V9M10 12v2',
+  unlock: 'M5 9h10v8H5zM7 9V6.5a3 3 0 0 1 5.8-1.1M10 12v2',
 } as const;
 export type IconName = keyof typeof paths;
 export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
