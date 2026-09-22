@@ -1,0 +1,52 @@
+/* Loading indicator (#218): centred over the stage (above the phone sheet), never in the way of orbiting. */
+.builder-page .stage-overlay > .build-progress {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  animation: build-progress-in .2s ease-out;
+}
+.build-progress[data-scrim] { background: #e9efe6b3; backdrop-filter: blur(3px) saturate(.7); }
+.build-progress-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px 12px;
+  min-width: 220px;
+  max-width: calc(100% - 32px);
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: #1f3329f0;
+  color: #f3f6ef;
+  box-shadow: 0 10px 30px #0d1a1340;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.build-progress-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #ffffff38;
+  border-top-color: #e2a248;
+  animation: build-progress-spin .8s linear infinite;
+}
+.build-progress-card progress {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 4px;
+  appearance: none;
+  border: 0;
+  border-radius: 2px;
+  background: #ffffff26;
+  overflow: hidden;
+}
+.build-progress-card progress::-webkit-progress-bar { background: #ffffff26; }
+.build-progress-card progress::-webkit-progress-value { background: #e2a248; transition: width .2s; }
+.build-progress-card progress::-moz-progress-bar { background: #e2a248; }
+@keyframes build-progress-spin { to { transform: rotate(360deg); } }
+@keyframes build-progress-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .build-progress-spinner { animation-duration: 2.4s; }
+  .builder-page .stage-overlay > .build-progress { animation: none; }
+}
