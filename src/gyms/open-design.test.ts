@@ -63,3 +63,18 @@ test('opening a gym with no unsaved work saves nothing extra', async () => {
   assert.deepEqual(stored(storage).configs.map(c => c.name), ['Mine']);
   assert.equal(store.getSnapshot().doc.rack.width, 725);
 });
+
+test('reopening the same unedited gym (a reload of its link, #220) keeps nothing extra', async () => {
+  const storage = new MemoryStorage(), store = new BuilderStore(storage);
+  await store.save('Mine');
+  assert.equal(await store.openDesign(gymDoc(), 'Cable Compound'), null);
+  await store.flushStorage();
+  // A reload: a fresh page opens the same gym over its own untouched draft.
+  const reloaded = new BuilderStore(storage);
+  assert.equal(await reloaded.openDesign(gymDoc(), 'Cable Compound'), null);
+  await reloaded.flushStorage();
+  assert.deepEqual(stored(storage).configs.map(c => c.name), ['Mine']);
+  // Once edited, the draft is the user's work again and a later open keeps it.
+  reloaded.commit(resizeAssembly(reloaded.getSnapshot().doc, { width: 425 }));
+  assert.equal(await reloaded.openDesign(gymDoc(), 'Cable Compound'), 'Unsaved draft (before Cable Compound)');
+});

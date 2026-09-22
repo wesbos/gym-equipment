@@ -192,7 +192,7 @@ export function GymDetailPage() {
               See the real gym ↗
             </a>
           </div>
-          <p className="gym-note">Opens as a new unsaved design. Anything unsaved in the builder is kept as a saved configuration.</p>
+          <p className="gym-note">Opens as a new unsaved design. Anything unsaved in the builder is kept as a saved configuration. The builder's address stays a shareable link to this gym until you change something.</p>
         </div>
         <section className="gym-equipment" aria-labelledby="equipment-heading">
           <h2 id="equipment-heading">Equipment</h2>

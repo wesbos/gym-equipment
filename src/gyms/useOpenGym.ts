@@ -24,9 +24,10 @@ function announceAfterBuild(store: BuilderStore, message: string) {
 export const GYM_PARAM = "gym";
 
 /**
- * Opens `/?gym=<slug>` as a new unsaved design (the user's draft is kept, see `BuilderStore.openDesign`)
- * and then drops the param, so a reload doesn't reopen the gym over later edits. `beforeOpen` lets the
- * scene reframe the camera on the gym.
+ * Opens `/?gym=<slug>` as a new unsaved design (the user's draft is kept, see `BuilderStore.openDesign`). The param
+ * stays in the address bar while the gym is shown as published, so the URL is a permanent link to share (#220);
+ * reloading it reopens the same gym without keeping a copy. The first edit (or opening anything else) drops the
+ * param, so a reload never reopens the gym over the user's changes. `beforeOpen` lets the scene reframe the camera.
  */
 export function useOpenGym(store: BuilderStore, beforeOpen?: () => void) {
   const search = useSearch({ strict: false }) as Record<string, unknown>;
@@ -34,29 +35,40 @@ export function useOpenGym(store: BuilderStore, beforeOpen?: () => void) {
   const slug = typeof search[GYM_PARAM] === "string" ? (search[GYM_PARAM] as string) : null;
   useEffect(() => {
     if (!slug) return;
-    let cancelled = false;
+    let cancelled = false, stopWatching = () => {};
+    const dropParam = () => {
+      stopWatching();
+      if (cancelled) return;
+      const { [GYM_PARAM]: _opened, ...rest } = search;
+      void navigate({ to: "/", search: rest as never, replace: true });
+    };
     void (async () => {
       try {
         const gym = await loadGym(slug);
         if (cancelled) return;
-        if (!gym) store.status(`No gym called “${slug}” in the gallery.`, true);
-        else {
-          beforeOpen?.();
-          let kept: string | null = null;
-          // Undo toast (#205): opening replaces the design and its history, so Undo restores a checkpoint.
-          await openDesignWithUndo(store, async () => { kept = await store.openDesign(gym.doc, gym.title); }, gym.title);
-          if (kept) announceAfterBuild(store, `Opened ${gym.title}. Your unsaved design is kept under Configurations as “${kept}”.`);
+        if (!gym) {
+          store.status(`No gym called “${slug}” in the gallery.`, true);
+          dropParam();
+          return;
         }
+        beforeOpen?.();
+        let kept: string | null = null;
+        // Undo toast (#205): opening replaces the design and its history, so Undo restores a checkpoint.
+        await openDesignWithUndo(store, async () => { kept = await store.openDesign(gym.doc, gym.title); }, gym.title);
+        if (kept) announceAfterBuild(store, `Opened ${gym.title}. Your unsaved design is kept under Configurations as “${kept}”.`);
+        if (cancelled) return;
+        // The link stands for the published gym: once the working document is anything else, it no longer applies.
+        const opened = store.getSnapshot().doc;
+        const unsubscribe = store.subscribe(() => { if (store.getSnapshot().doc !== opened) dropParam(); });
+        stopWatching = unsubscribe;
       } catch (error) {
         store.status(`Could not open gym: ${error instanceof Error ? error.message : String(error)}`, true);
-      }
-      if (!cancelled) {
-        const { [GYM_PARAM]: _opened, ...rest } = search;
-        void navigate({ to: "/", search: rest as never, replace: true });
+        dropParam();
       }
     })();
     return () => {
       cancelled = true;
+      stopWatching();
     };
     // Only a new slug opens a gym; the rest of the search is carried along when clearing it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
