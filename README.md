@@ -82,7 +82,7 @@ The outliner (<kbd>O</kbd>) lists every piece grouped by rack, floor and wall. H
 
 ![The keyboard shortcuts overlay](docs/readme/shortcuts.jpg)
 
-Undo/redo with a scrubbable history timeline, named configurations saved in the browser, JSON import/export, and a
+Undo/redo with a scrubbable history timeline (the panel toggles at the top of the canvas show it), named configurations saved in the browser, JSON import/export, and a
 "Play build" animation that assembles the gym piece by piece.
 
 ## Export
