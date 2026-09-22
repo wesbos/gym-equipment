@@ -1199,8 +1199,9 @@ export function createBuilderScene(
   const barButton = (label: string, text: string, primary = false) => {
     const button = document.createElement("button");
     button.type = "button"; button.textContent = text; button.setAttribute("aria-label", label);
-    button.style.cssText = "display:grid;place-items:center;min-height:52px;min-width:52px;padding:0 24px;border-radius:26px;font-family:inherit;font-size:16px;font-weight:600;line-height:1;touch-action:manipulation;box-shadow:0 6px 20px #0003;" +
-      (primary ? "background:#264d3a;color:#fff;border:1px solid #264d3a" : "background:#f8faf2;color:#264d3a;border:1px solid #cbd7c3");
+    // Colours come from the host's design tokens (src/styles/tokens.css) when present; a bare viewport gets the fallbacks.
+    button.style.cssText = "display:grid;place-items:center;min-height:52px;min-width:52px;padding:0 24px;border-radius:26px;font-family:inherit;font-size:16px;font-weight:600;line-height:1;touch-action:manipulation;border:0;box-shadow:var(--shadow-pop,0 6px 20px #0003);" +
+      (primary ? "background:var(--c-accent,#1f5eff);color:var(--c-on-accent,#fff)" : "background:var(--glass-strong,#fff);color:var(--c-text,#141517);-webkit-backdrop-filter:var(--glass-blur,none);backdrop-filter:var(--glass-blur,none)");
     touchBar.append(button);
     return button;
   };

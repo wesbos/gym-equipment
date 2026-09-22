@@ -21,6 +21,7 @@ import { placementCopy } from "../state/placement-copy.ts";
 import {
   memo,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
@@ -206,6 +207,29 @@ function useViewportFitCover() {
     return () => { meta.content = original; };
   }, []);
 }
+/** Studio: the parts panel and inspector float over a full-bleed canvas. Tell the scene how much of each side they
+ * cover, so the model centres (and Fit view frames) in the open canvas between them. Phones use the bottom sheet. */
+function useFloatingPanelInsets(shell: RefObject<HTMLDivElement | null>, viewport: RefObject<HTMLDivElement | null>, scene: BuilderScene | null, phone: boolean) {
+  useLayoutEffect(() => {
+    const root = shell.current, canvas = viewport.current;
+    if (!scene || !root || !canvas) return;
+    const measure = () => {
+      if (phone) { scene.setViewInsets({ left: 0, right: 0 }); return; }
+      const area = canvas.getBoundingClientRect();
+      const cover = (selector: string, side: 'left' | 'right') => {
+        const panel = root.querySelector<HTMLElement>(selector)?.getBoundingClientRect();
+        if (!panel?.width) return 0;
+        return Math.max(0, side === 'left' ? panel.right - area.left : area.right - panel.left);
+      };
+      scene.setViewInsets({ left: cover('.catalog-panel', 'left'), right: cover('.inspector-panel', 'right') });
+    };
+    measure();
+    const resize = new ResizeObserver(measure), toggles = new MutationObserver(measure);
+    resize.observe(root); resize.observe(canvas);
+    toggles.observe(root, { attributes: true, attributeFilter: ['data-hide-left', 'data-hide-right'] });
+    return () => { resize.disconnect(); toggles.disconnect(); };
+  }, [shell, viewport, scene, phone]);
+}
 /** Phone sheet tabs (see components/MobileShell). */
 const SHEET_TABS: readonly SheetTab[] = [
   { id: "parts", label: "Parts", icon: TAB_ICONS.parts },
@@ -295,6 +319,7 @@ export default function BuilderPage() {
     importFile = useRef<HTMLInputElement>(null);
   const [scene, setScene] = useState<BuilderScene | null>(null);
   useOpenGym(store, () => controller.current?.refitOnNextBuild());
+  useFloatingPanelInsets(shell, viewport, scene, phoneLayout);
   const outliner = useOutlinerOpen(),
     [view, setView] = useState<BuilderView>("iso");
   const navigate = useNavigate(), navigateRef = useRef(navigate);

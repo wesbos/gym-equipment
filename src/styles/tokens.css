@@ -28,6 +28,7 @@
   --c-dark-2: #2b2c31;
   --c-on-dark: #f4f4f5;
   --c-on-dark-2: #a1a3a9;
+  --c-accent-on-dark: #9bb8ff; /* the accent on the dark selection bar and toasts */
 
   /* Glass */
   --glass: rgb(255 255 255 / .74);

@@ -44,7 +44,7 @@
 .builder-page .selection-bar .sb-button:hover,
 .selection-bar .sb-button:hover { background: #ffffff17; }
 .builder-page .selection-bar .sb-button[aria-pressed="true"],
-.selection-bar .sb-button[aria-pressed="true"] { background: #ffffff24; color: var(--accent, var(--c-accent)); }
+.selection-bar .sb-button[aria-pressed="true"] { background: #ffffff24; color: var(--c-accent-on-dark, #9bb8ff); }
 .builder-page .selection-bar .sb-button:focus-visible { outline: 2px solid var(--accent, var(--c-accent)); outline-offset: 1px; }
 .builder-page .selection-bar .sb-danger:hover,
 .selection-bar .sb-danger:hover { background: #d98f5a2e; color: #ffc9a3; }

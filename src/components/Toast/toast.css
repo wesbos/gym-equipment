@@ -45,7 +45,7 @@
 .builder-page .toast .toast-undo,
 .toast .toast-undo {
   padding: 6px 12px;
-  color: var(--accent, var(--c-accent));
+  color: var(--c-accent-on-dark, #9bb8ff);
   font-weight: 650;
   letter-spacing: .2px;
 }
