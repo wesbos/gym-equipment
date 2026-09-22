@@ -35,6 +35,8 @@ test('isolated reposition: double-click, pair opt-out, floor, rotation, Escape, 
       await expect(page.getByRole('button', { name: 'Download GLB', exact: true })).toBeEnabled({ timeout: 30000 });
       await page.keyboard.press('Escape');
     };
+    /** Alt/⌥ + scroll rotates (#217); a plain scroll zooms. */
+    const altWheel = async (deltaY: number) => { await page.keyboard.down('Alt'); await page.mouse.wheel(0, deltaY); await page.keyboard.up('Alt'); };
     await load(createAssembly());
     await page.getByRole('button', { name: 'Front', exact: true }).click();
     const original = await doc();
@@ -78,7 +80,7 @@ test('isolated reposition: double-click, pair opt-out, floor, rotation, Escape, 
     const floorBefore = await doc();
     await page.mouse.dblclick(748,306);
     await expect(page.locator('#placement-hint')).toBeVisible();
-    await page.mouse.move(840,360); await page.keyboard.press('r'); await page.mouse.wheel(0,80);
+    await page.mouse.move(840,360); await page.keyboard.press('r'); await altWheel(80);
     expect(await doc()).toEqual(floorBefore);
     await page.keyboard.press('Escape'); expect(await doc()).toEqual(floorBefore);
     await page.mouse.dblclick(748,306); await page.mouse.move(840,360); await page.mouse.click(840,360); await ready();
@@ -108,7 +110,7 @@ test('isolated reposition: double-click, pair opt-out, floor, rotation, Escape, 
     // Compare the rendered rack only: the selection action bar (#205) comes and goes with the selection.
     const canvasOnly = ".selection-bar{visibility:hidden!important}";
     const cameraBefore = await page.screenshot({clip:zoomRegion,style:canvasOnly});
-    await page.keyboard.press('r'); await page.mouse.wheel(0,80);
+    await page.keyboard.press('r'); await altWheel(80);
     await expect(page.getByRole('button',{name:'Apply rotation',exact:true})).toBeVisible();
     expect(await doc()).toEqual(rotationBefore);
     await page.keyboard.press('Escape'); expect(await doc()).toEqual(rotationBefore);
@@ -126,15 +128,18 @@ test('isolated reposition: double-click, pair opt-out, floor, rotation, Escape, 
       for(let i=0;i<a.length;i+=4) if(Math.max(Math.abs(a[i]-b[i]),Math.abs(a[i+1]-b[i+1]),Math.abs(a[i+2]-b[i+2]))>20) changed++;
       return changed/(a.length/4);
     }, [a.toString('base64'), b.toString('base64')]);
-    expect(await pixelDifference(cameraBefore,cameraAfter), 'rotation wheel must not zoom the rack').toBeLessThan(.005);
-    await page.mouse.wheel(0,240); // No selected/hovered attachment: ordinary zoom remains available.
+    expect(await pixelDifference(cameraBefore,cameraAfter), 'Alt + wheel rotation must not zoom the rack').toBeLessThan(.005);
+    // #217: a plain scroll zooms even with an attachment selected; only Alt + scroll rotates it.
+    await select(storageId); await page.mouse.wheel(0,240);
+    await expect(page.getByRole('button',{name:'Apply rotation',exact:true})).toHaveCount(0);
+    expect(await doc()).toEqual(rotationBefore);
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     expect(await pixelDifference(cameraAfter,await page.screenshot({clip:zoomRegion,style:canvasOnly}))).toBeGreaterThan(.01);
-    await select(storageId); await page.mouse.wheel(0,80); await page.keyboard.press('r');
+    await select(storageId); await altWheel(80); await page.keyboard.press('r');
     await page.mouse.click(850,180); await ready();
     expect((await doc()).accessories.find((a:{id:string})=>a.id===storageId).rotation).toBeCloseTo(Math.PI/6);
     await page.getByRole('button',{name:'Undo',exact:true}).click(); await ready(); expect(await doc()).toEqual(rotationBefore);
-    await select(darkoId); await page.mouse.wheel(0,80);
+    await select(darkoId); await altWheel(80);
     expect(await doc()).toEqual(rotationBefore);
     await page.screenshot({path:'/tmp/gym-wave4/reposition-darko-rotation.png'});
     await page.mouse.move(220,180); // Leaving the viewport commits a rotation-only preview.

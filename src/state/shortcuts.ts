@@ -63,7 +63,8 @@ export const SHORTCUTS = [
   { id: 'click-select', label: 'Select a part · Shift or ⌘/Ctrl adds to the selection', group: 'Mouse & touch', scope: 'scene', combos: [], display: ['Click', 'Tap'] },
   { id: 'double-click-move', label: 'Pick a part up to move it', group: 'Mouse & touch', scope: 'scene', combos: [], display: ['Double-click'] },
   { id: 'drag-floor', label: 'Drag floor and wall items to move them', group: 'Mouse & touch', scope: 'scene', combos: [], display: ['Drag'] },
-  { id: 'scroll-rotate', label: 'Rotate the hovered part', group: 'Mouse & touch', scope: 'scene', combos: [], display: ['Scroll'] },
+  { id: 'scroll-zoom', label: 'Zoom the camera', group: 'Mouse & touch', scope: 'scene', combos: [], display: ['Scroll', 'Pinch'] },
+  { id: 'scroll-rotate', label: 'Rotate the hovered, selected or placing part', group: 'Mouse & touch', scope: 'scene', combos: [], display: ['Alt + Scroll'] },
   { id: 'marquee', label: 'Box-select with the Select tool', group: 'Mouse & touch', scope: 'scene', combos: [], display: ['Drag'] },
   // Parts gallery dialog
   { id: 'gallery-search', label: 'Focus the search', group: 'Parts gallery', scope: 'gallery', combos: [plain('/', { shift: 'any', mod: 'any', alt: 'any' })] },
@@ -89,6 +90,8 @@ export function comboMatches(combo: KeyCombo, event: KeyLike) {
 export const matches = (id: ShortcutId, event: KeyLike) => shortcut(id).combos.some(combo => comboMatches(combo, event));
 /** Held-modifier shortcuts: Alt turns snapping off. */
 export const snapOff = (event: { altKey?: boolean }) => !!event.altKey;
+/** Alt/⌥ + scroll rotates a part (#217); a plain scroll always zooms the camera. */
+export const wheelRotates = (event: { altKey?: boolean }) => !!event.altKey;
 
 /** Focus is in a text field: plain-key shortcuts must not fire. */
 export function isTyping(target: EventTarget | null) {

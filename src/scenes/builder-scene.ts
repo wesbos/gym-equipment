@@ -25,7 +25,7 @@ import { cloneInstanceMaterials } from './instance-materials.ts';
 import { BuildAnimation, planBuild } from './build-animation.ts';
 import { InstanceSync, placeInstance } from './instance-sync.ts';
 import { isBuilt, whenBuilt } from '../state/build-status.ts';
-import { matches, snapOff, isTyping } from '../state/shortcuts.ts';
+import { matches, snapOff, isTyping, wheelRotates } from '../state/shortcuts.ts';
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
@@ -880,15 +880,18 @@ export function createBuilderScene(
     const candidates = [hoveredId, snapshot.selection.length === 1 ? snapshot.selected : null];
     return candidates.find(id => id && !unpickable.has(id) && rotationMode(snapshot.doc, store.ownerOf(id)!).supported) ?? null;
   }
+  /** Alt/⌥ + scroll rotates (#217); a plain scroll falls through to OrbitControls and zooms, even over a part. */
   const onWheel = (event: WheelEvent) => {
-    if (snapshot.systemChoice) return;
+    if (snapshot.systemChoice || !wheelRotates(event)) return;
     const floorId = floorDrag?.id ?? hoveredId ?? (snapshot.selection.length === 1 ? snapshot.selected : null);
     const floorItem = store.getAppliedDoc().floorItems?.find(i => i.id === floorId && !i.cradle && !unpickable.has(i.id));
     const mounted = rotationTarget();
     if (!isFloorPart(snapshot.placing?.part) && !floorItem && !mounted) return;
     event.preventDefault(); event.stopImmediatePropagation();
-    if (!event.deltaY) return;
-    const direction = Math.sign(event.deltaY) * (event.shiftKey ? -1 : 1);
+    // Some platforms turn a modified scroll sideways (Shift on macOS), so either axis counts.
+    const delta = event.deltaY || event.deltaX;
+    if (!delta) return;
+    const direction = Math.sign(delta) * (event.shiftKey ? -1 : 1);
     if (isFloorPart(snapshot.placing?.part)) store.previewFloor(undefined, direction * Math.PI / 12);
     else if (mounted) store.rotateMounted(mounted, direction);
     else if (floorItem) { if (floorDrag) floorDrag.moved = true; store.updateFloor(floorItem.id, { rotation: floorItem.rotation + direction * Math.PI / 12 }); }

@@ -212,7 +212,7 @@ export function RackInspector({ store, onResetRack }: { store: BuilderStore; onR
           {entry.paired && <button type="button" onClick={() => store.act(() => store.commit(unpairAccessory(doc, entry.id)))}>Edit sides independently</button>}
           {rotation && <div className="rotation-controls">
             <p className="note">{rotation.reason}</p>
-            {rotation.supported && <button type="button" onClick={() => store.rotateMounted(selected ?? entry.id)}>{rotation.label} · R / scroll</button>}
+            {rotation.supported && <button type="button" onClick={() => store.rotateMounted(selected ?? entry.id)}>{rotation.label} · R / Alt+scroll</button>}
           </div>}
         </Section>}
         <Section id="options" title="Options">
