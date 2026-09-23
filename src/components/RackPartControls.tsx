@@ -22,7 +22,7 @@ export function RackPartControls({ store, entry }: { store: BuilderStore; entry:
   // Saved params stay sparse: only values that differ from the entry defaults are stored.
   const setParams = (values: Record<string, number>) => commit(a => { const full = coerceRackParams(part, values); a.params = Object.fromEntries(Object.entries(full).filter(([k, v]) => v !== part.defaults[k])); });
   const kind = targetKind(entry.target);
-  const mounts = isRailTarget(entry.target) ? rackRailMounts(doc, entry.part).filter(m => m.kind === kind) : [];
+  const mounts = isRailTarget(entry.target) ? (many ? candidates : rackRailMounts(doc, entry.part)).filter(m => m.kind === kind) : [];
   const key = (t: CrossmemberTopTarget) => `${t.connectionId}:${t.station}:${t.side}`;
   const setTarget = (value: string, pair = false) => commit(a => {
     const t = mounts.find(m => isRailTarget(m) && key(m) === value);
@@ -30,8 +30,11 @@ export function RackPartControls({ store, entry }: { store: BuilderStore; entry:
     const target: CrossmemberTopTarget = { kind: t.kind, connectionId: t.connectionId, station: t.station, side: t.side, uprightId: t.uprightId, face: t.face, hole: 0 };
     if (pair) a.pairTarget = target; else { a.target = target; delete a.pairTarget; }
   });
-  const stations = (value: string, onChange: (value: string) => void, label: string) => <label className="field"><span>{label}</span><select aria-label={label} value={value} onChange={e => onChange(e.target.value)}>
-    {mounts.map(m => isRailTarget(m) && <option key={key(m)} value={key(m)}>{m.connectorId} · hole {m.station + 1} · side {m.side}</option>)}</select></label>;
+  const stations = (value: string, onChange: (value: string) => void, label: string, pair = false) => <label className="field"><span>{label}</span><select aria-label={label} value={value} onChange={e => onChange(e.target.value)}>
+    {mounts.filter(m => !pair || !part.pair?.railSpacing || (isRailTarget(m) && isRailTarget(entry.target)
+      && m.connectionId === entry.target.connectionId && m.side === entry.target.side
+      && Math.abs(m.station - entry.target.station) * doc.rack.pitch >= part.pair.railSpacing.min))
+      .map(m => isRailTarget(m) && <option key={key(m)} value={key(m)}>{m.connectorId} · hole {m.station + 1} · side {m.side}</option>)}</select></label>;
   const kinds = rackTargets(part).filter(k => k === kind || candidates.some(m => (m.kind ?? 'upright') === k));
   const hostKey = (t: HostedTarget) => `${t.host}:${t.unit}:${t.frame}:${t.station}`;
   const hosted = candidates.filter((m): m is Mount & HostedTarget => isHostedTarget(m) && m.kind === kind);
@@ -47,8 +50,8 @@ export function RackPartControls({ store, entry }: { store: BuilderStore; entry:
       </select></label>}
     {isRailTarget(entry.target) && <>
       {stations(key(entry.target), value => setTarget(value), entry.target.kind === 'crossmember-under' ? 'Crossmember underside / side bolt station' : 'Crossmember top / side bolt station')}
-      {part.pair && <label className="field"><span>Matching crossmember pair</span><input type="checkbox" checked={entry.paired} onChange={e => commit(a => { a.paired = e.target.checked; })} /></label>}
-      {entry.paired && entry.pairTarget && stations(key(entry.pairTarget), value => setTarget(value, true), 'Second unit target')}
+      {part.pair && <label className="field"><span>{part.pair.railSpacing ? 'Matching handle on this crossmember' : 'Matching crossmember pair'}</span><input type="checkbox" checked={entry.paired} onChange={e => commit(a => { a.paired = e.target.checked; })} /></label>}
+      {entry.paired && entry.pairTarget && stations(key(entry.pairTarget), value => setTarget(value, true), 'Second unit target', true)}
     </>}
     {part.params.map(param => {
       const { key: name, label, format = String } = param;

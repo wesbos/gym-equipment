@@ -3,7 +3,7 @@
  * (vendor-mounts.ts); crossmember-top and crossmember-under targets reuse the Darko Anchor rail stations
  * (darko-mounts.ts). Hosted targets (spotter arms, pull-up bars, #178) live in rack-hosts.ts. */
 import { pairSuffix } from './physical-identity.ts';
-import { darkoTopMount, darkoTopMounts } from './darko-mounts.ts';
+import { darkoTopMount, darkoTopMounts, matchingDarkoTarget } from './darko-mounts.ts';
 import { resolveBy, validateFloorParams } from './floor-part.ts';
 import { rackPart, rackHoles, rackTargets, rackFamily, rackPlacementFor, type RackPart, type RackTargetKind } from './rack-registry.ts';
 import { RAIL_KINDS, basisEuler, cross, isHostedTarget, isRailTarget, isUprightTarget, targetKind } from './rack-targets.ts';
@@ -107,7 +107,15 @@ export function validateRackMount(doc: MountDoc, accessory: Accessory) {
   const pin = resolveBy(p.mount.pin, params);
   if (pin > rack.holeDiameter) throw Error(`${name} mounting pin ${pin} mm exceeds the rack bore ${rack.holeDiameter} mm.`);
   p.mount.validate?.(rack, params);
-  if (isRailTarget(t)) { darkoTopMount(doc, t); return; }
+  if (isRailTarget(t)) {
+    darkoTopMount(doc, t);
+    if (p.mount.railEndClearance !== undefined) {
+      const edge = doc.connections.find(e => e.id === t.connectionId)!, a = doc.uprights[edge.from], b = doc.uprights[edge.to];
+      const span = Math.hypot(b.x - a.x, b.y - a.y) - rack.tube, along = 62.5 + t.station * rack.pitch;
+      if (Math.min(along, span - along) < p.mount.railEndClearance) throw Error(`${name} bracket needs clearance from the crossmember end bolts.`);
+    }
+    return;
+  }
   const faces = p.mount.faces ?? FACES;
   for (const face of accessory.paired ? [t.face, pairFace(t.face)] : [t.face]) if (!faces.includes(face)) throw Error(`${name} does not mount on the ${face} face.`);
   const holes = rackHoles(p, params);
@@ -131,6 +139,21 @@ export const rackRailMounts = (doc: MountDoc, part: string): Mount[] => !rackPar
   .flatMap(kind => darkoTopMounts(doc).map(m => kind === 'crossmember-top' ? m : railMount(doc, { ...(m as CrossmemberTopTarget), kind })));
 /** Crossmember-top stations an entry can use (Darko Anchor rail stations), before full document validation. */
 export const rackTopMounts = (doc: MountDoc, part: string): Mount[] => acceptsCrossmemberTop(part) ? darkoTopMounts(doc) : [];
+/** Independent handles can pair along one rail; spanning cradles still pair across parallel rails. */
+export function matchingRackRailTarget(doc: MountDoc, accessory: Accessory): CrossmemberTopTarget | undefined {
+  const t = accessory.target;
+  if (!isRailTarget(t)) return;
+  const spacing = rackPart(accessory.part)?.pair?.railSpacing;
+  if (spacing === undefined) return matchingDarkoTarget(doc, t);
+  const candidates = darkoTopMounts(doc).filter(m => {
+    if (!isRailTarget(m) || m.connectionId !== t.connectionId || m.side !== t.side || Math.abs(m.station - t.station) * doc.rack.pitch < spacing.min) return false;
+    try { validateRackMount(doc, { ...accessory, target: m, paired: false }); return true; } catch { return false; }
+  });
+  candidates.sort((a, b) => Math.abs(Math.abs((a as CrossmemberTopTarget).station - t.station) * doc.rack.pitch - spacing.preferred)
+    - Math.abs(Math.abs((b as CrossmemberTopTarget).station - t.station) * doc.rack.pitch - spacing.preferred));
+  const m = candidates[0];
+  if (isRailTarget(m)) return { kind: t.kind, connectionId: t.connectionId, station: m.station, side: t.side, uprightId: t.uprightId, face: t.face, hole: 0 };
+}
 /** One instance per target (two for a pair). Upright: origin on the post centreline at the target hole, local +Y out of
  * the face. Crossmember top: origin on the rail bolt axis, local +Y out of the chosen rail side. Crossmember under:
  * origin on the rail bolt axis, local +Y down out of the underside, local X along the bolt (the chosen side), local Z
@@ -148,7 +171,10 @@ export function resolveRack(doc: RackDoc, accessory: Accessory, targets: Target[
         const X = m.pinAxis!, Y: Vec3 = [0, 0, -1], Z = cross(X, Y);
         return { ...base, position: m.center, rotation: basisEuler(X, Y, Z), localOutward: [0, 1, 0], mount: m, mounts: [m], connectedTo: [edge.id, edge.from, edge.to] };
       }
-      return { ...base, position: m.center, rotation: [0, 0, Math.atan2(b.y - a.y, b.x - a.x) + (t.side === -1 ? Math.PI : 0)], mount: m, mounts: [m], connectedTo: [edge.id, edge.from, edge.to] };
+      const yaw = Math.atan2(b.y - a.y, b.x - a.x) + (t.side === -1 ? Math.PI : 0);
+      const roll = resolveBy(p.mount.railRoll ?? 0, params), c = Math.cos(roll), s = Math.sin(roll), cy = Math.cos(yaw), sy = Math.sin(yaw);
+      const rotation: Vec3 = roll === 0 ? [0, 0, yaw] : basisEuler([cy * c, sy * c, -s], [-sy, cy, 0], [cy * s, sy * s, c]);
+      return { ...base, position: m.center, rotation, mount: m, mounts: [m], connectedTo: [edge.id, edge.from, edge.to] };
     }
     const post = doc.uprights[t.uprightId], z = r.firstHole + t.hole * r.pitch, angle = ROTATIONS[t.face], normal = NORMALS[t.face];
     const across: Vec3 = [Math.cos(angle), Math.sin(angle), 0];

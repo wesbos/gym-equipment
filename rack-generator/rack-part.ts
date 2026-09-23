@@ -57,6 +57,11 @@ export interface RackHost {
   width: number; height: number; top: number; hole: number;
 }
 export interface RackMount {
+  /** Rotation about the source +Y pin axis on a crossmember-top target (radians).
+   * A quarter turn lays an upright U bracket along the rail; may depend on handedness. */
+  railRoll?: ByParams<number>;
+  /** Distance from the target hole to either end of the clear rail, including bracket/hardware clearance. */
+  railEndClearance?: number;
   /** Accepted target kinds (default ['upright']). 'crossmember-top' uses the Darko Anchor rail stations: an active
    * upper, straight perforated crossmember; the part bolts through the rail's side hole at `station`. */
   targets?: readonly RackTargetKind[];
@@ -104,7 +109,8 @@ export interface RackPartSpec<Id extends string = string> {
   /** Local collision bodies of the working parts (pads, arms, cups), excluding the pin/collar that sits in the hole. */
   bodies: ByParams<LocalBox[]>;
   /** Pairable across the rack (left/right uprights, mirrored side faces); `default` is the initial "Add matching pair" state. */
-  pair?: { default: boolean };
+  pair?: { default: boolean; /** Two independent grips on the SAME rail; preferred/minimum hole separation in mm. */ railSpacing?: { preferred: number; min: number };
+    /** Binary user param to flip when separating a mirrored pair into individual handles. */ mirrorParam?: string };
   /** The second unit of a pair is the mirror image (receives `mirror: 1`). */
   handed?: boolean;
   cradles?: RackCradles;

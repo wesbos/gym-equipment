@@ -37,8 +37,8 @@ const size = (b: Box, i: number) => b.max[i] - b.min[i];
 const near = (actual: number, expected: number, tolerance: number, label: string) => assert.ok(Math.abs(actual - expected) <= tolerance, `${label}: ${actual.toFixed(2)} vs ${expected.toFixed(2)} ±${tolerance}`);
 const get = (m: ReturnType<typeof measure>, name: string) => { const b = m.boxes.get(name); assert.ok(b, `missing solid ${name}`); return b!; };
 
-test('family registers 13 products, each builds its defaults within budget, and params validate', () => {
-  assert.equal(PARTS.length, 13);
+test('family registers 14 products, each builds its defaults within budget, and params validate', () => {
+  assert.equal(PARTS.length, 14);
   for (const part of PARTS) {
     const m = measure(part);
     assert.ok(m.ms < BUILD_BUDGET_MS, `${part.id}: ${m.ms.toFixed(0)} ms`);

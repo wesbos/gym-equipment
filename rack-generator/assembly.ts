@@ -9,12 +9,12 @@ import { validateHangItems, resolveHangItems } from './hang-items.ts';
 import { validateRoom } from './walls.ts';
 import { validateLogo, logoSite } from './logos/types.ts';
 import { pairSuffix } from './physical-identity.ts';
-import { darkoTopMounts, darkoTopMount, matchingDarkoTarget } from './darko-mounts.ts';
+import { darkoTopMounts, darkoTopMount } from './darko-mounts.ts';
 import { isVendorPart, vendorDefaults, vendorPlacement, vendorLimits, validateVendorParams, validateVendorMount, resolveVendor } from './vendor-mounts.ts';
 import { VOLTRA_IDS, DARKO_IDS, isDarkoTop } from './vendor-metadata.ts';
 import { validateMountShaft } from './mount-shafts.ts';
 import { RACK_PART_IDS, isRackPart, rackPart, rackTargets } from './rack-registry.ts';
-import { acceptsRail, acceptsTarget, rackPlacementFace, rackDefaults, rackDefaultHole, rackLimits, rackPlacement, rackRailMounts, railMount, resolveRack, validateRackMount, validateRackPartParams } from './rack-mounts.ts';
+import { acceptsRail, acceptsTarget, rackPlacementFace, rackDefaults, rackDefaultHole, rackLimits, rackPlacement, rackRailMounts, railMount, matchingRackRailTarget, resolveRack, validateRackMount, validateRackPartParams } from './rack-mounts.ts';
 import { hostedCandidates, hostedOn, hostedPairTarget, resolveHosted, validateHostedMount } from './rack-hosts.ts';
 import { TARGET_KINDS, isHostedTarget, isRailTarget, isUprightTarget } from './rack-targets.ts';
 import { gridProfile, type GridProfile } from './profiles.ts';
@@ -354,13 +354,18 @@ export function validateAssembly(input: unknown): RackDoc {
     if (isRackPart(clean.part)) validateRackMount({ rack, ...graph, removed, structure }, clean);
     if (isRailTarget(clean.target)) {
       if (!railMounted(clean.part, clean.target.kind)) fail('This part requires an upright target.');
-      if (clean.paired && !clean.pairTarget) clean.pairTarget = matchingDarkoTarget({rack,...graph,removed,structure},clean.target);
-      if (clean.paired && !clean.pairTarget) fail('Choose a parallel crossmember for the matching pair.');
+      const sameRail = rackPart(clean.part)?.pair?.railSpacing;
+      if (clean.paired && !clean.pairTarget) clean.pairTarget = matchingRackRailTarget({rack,...graph,removed,structure},clean);
+      if (clean.paired && !clean.pairTarget) fail(sameRail ? 'Choose a longer crossmember for the matching handles.' : 'Choose a parallel crossmember for the matching pair.');
       if (clean.pairTarget) {
-        if (clean.pairTarget.kind !== clean.target.kind || clean.pairTarget.connectionId === clean.target.connectionId) fail('Choose a distinct matching crossmember.');
+        if (sameRail) {
+          if (clean.pairTarget.kind !== clean.target.kind || clean.pairTarget.connectionId !== clean.target.connectionId || clean.pairTarget.side !== clean.target.side
+            || Math.abs(clean.pairTarget.station - clean.target.station) * rack.pitch < sameRail.min) fail(`Matching handles need separate holes at least ${sameRail.min} mm apart on the same crossmember side.`);
+          validateRackMount({ rack, ...graph, removed, structure }, { ...clean, target: clean.pairTarget, paired: false });
+        } else if (clean.pairTarget.kind !== clean.target.kind || clean.pairTarget.connectionId === clean.target.connectionId) fail('Choose a distinct matching crossmember.');
         const m = railMount({rack,...graph,removed,structure},clean.target), n = railMount({rack,...graph,removed,structure},clean.pairTarget);
         const v = n.center.map((x,i) => x-m.center[i]);
-        if (Math.abs(v[2])>.01 || Math.hypot(v[0],v[1])<rack.tube || Math.abs(v[0]*m.pinAxis![1]-v[1]*m.pinAxis![0])>.01 || Math.abs(m.pinAxis![0]*n.pinAxis![1]-m.pinAxis![1]*n.pinAxis![0])>.01) fail('Paired Darko cradles must align across parallel rails at equal heights.');
+        if (!sameRail && (Math.abs(v[2])>.01 || Math.hypot(v[0],v[1])<rack.tube || Math.abs(v[0]*m.pinAxis![1]-v[1]*m.pinAxis![0])>.01 || Math.abs(m.pinAxis![0]*n.pinAxis![1]-m.pinAxis![1]*n.pinAxis![0])>.01)) fail('Paired Darko cradles must align across parallel rails at equal heights.');
       }
     } else if (clean.pairTarget) fail('Crossmember pair target requires a crossmember-mounted part.');
     if (isUprightTarget(clean.target) && clean.paired && !clean.pairTo && UPRIGHT_IDS.includes(clean.target.uprightId)) clean.pairTo = otherSide(clean.target.uprightId);
@@ -516,6 +521,8 @@ export function unpairAccessory(input: RackDoc, id: string): RackDoc {
   }
   a.paired = false;
   const second = { ...a, id: secondId, target: { ...other }, ...(a.pairedSpanTo ? { spanTo: a.pairedSpanTo } : {}), params: { ...a.params } };
+  const pairPart = rackPart(a.part), mirrorParam = pairPart?.pair?.mirrorParam;
+  if (mirrorParam) second.params[mirrorParam] = 1 - (a.params[mirrorParam] ?? pairPart!.defaults[mirrorParam]);
   delete second.pairTarget; delete a.pairTarget; delete second.pairHost; delete a.pairHost; delete second.pairTo; delete second.pairedSpanTo; delete a.pairTo; delete a.pairedSpanTo;
   doc.accessories.push(second);
   // Parts mounted on the second unit (#178) move with it to the new accessory.
