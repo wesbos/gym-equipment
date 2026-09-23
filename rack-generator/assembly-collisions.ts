@@ -21,7 +21,7 @@ const HOOK_SIZES: Record<string, Vec3> = {
   'j-hook-roller': [79.412, 181.761, 200],
   'j-hook-sandwich': [77.495, 186.987, 200],
 };
-const FRAME_BODIES = new Set(['crossmember-425', 'crossmember-725', 'crossmember-1075',
+const FRAME_BODIES = new Set(['crossmember-425', 'crossmember-725', 'crossmember-1075', 'crossmember-flush',
   'angled-crossmember', 'offset-crossmember', 'branded-crossmember', 'branded-crossmember-lite']);
 // Outer skin profiles measured from the existing Manifold foot sketches (Y,Z).
 const FOOT_PROFILES: Record<string, Vec2[]> = {
@@ -54,6 +54,7 @@ const NAMES: Record<string, string> = {
   'crossmember-425': '425 mm crossmember',
   'crossmember-725': '725 mm crossmember',
   'crossmember-1075': '1075 mm crossmember',
+  'crossmember-flush': 'Flush crossmember',
   'angled-crossmember': 'Angled crossmember',
   'offset-crossmember': 'Offset crossmember',
 };
@@ -133,7 +134,8 @@ function localBodies(instance: CollisionInstance): LocalBox[] {
       box([-length / 2 + 20, -2.5262, 50 * panelHeight / 300], [length / 2 - 20, 2.5262, 225 * panelHeight / 300]),
     ];
     const height = part.startsWith('branded-') ? panelHeight : number(p.plateHeight, 150);
-    return [box([-length / 2 + 20, -width / 2, height / 2 - width / 2], [length / 2 - 20, width / 2, height / 2 + width / 2])];
+    const center = number(p.beamCenter, part === 'crossmember-flush' ? height - width / 2 : height / 2);
+    return [box([-length / 2 + 20, -width / 2, center - width / 2], [length / 2 - 20, width / 2, center + width / 2])];
   }
   if (part.startsWith('pullup-')) {
     const half = length / 2 - 20, diameter = number(p.diameter, 32);

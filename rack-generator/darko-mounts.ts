@@ -1,23 +1,22 @@
 import { pairSuffix } from './physical-identity.ts';
+import { crossmemberLayout } from './crossmember-layout.ts';
 import type { Accessory, CrossmemberTopTarget, Mount, RackDoc, ResolvedInstance, Target, Vec3 } from './types.ts';
 import { darkoDefaults, darkoTopCollisionBoxes } from './parts/darko.ts';
-type MountDoc = Pick<RackDoc,'rack'|'uprights'|'connections'|'removed'|'structure'>;
+type MountDoc = Pick<RackDoc,'rack'|'uprights'|'connections'|'removed'|'structure'|'profileId'>;
 export function darkoTopMount(doc:MountDoc,target:CrossmemberTopTarget): Mount {
  const edge=doc.connections.find(e=>e.id===target.connectionId),r=doc.rack;
  if(!edge || edge.level!=='upper' || doc.removed.includes(edge.id) || [edge.from,edge.to].some(id=>doc.removed.includes(id)))throw Error('Choose an active upper crossmember.');
  if(doc.structure[edge.id] && !doc.structure[edge.id].part.startsWith('crossmember-'))throw Error('Darko top mounts require a straight perforated crossmember.');
  if(!Number.isInteger(target.station)||target.station<0||![1,-1].includes(target.side))throw Error('Invalid crossmember hole station or side.');
  if(target.uprightId!==edge.from || target.hole!==0)throw Error('Crossmember target must identify its current start upright and use the rail station.');
- const a=doc.uprights[edge.from],b=doc.uprights[edge.to],distance=Math.hypot(b.x-a.x,b.y-a.y),span=distance-r.tube;
+ const a=doc.uprights[edge.from],b=doc.uprights[edge.to],distance=Math.hypot(b.x-a.x,b.y-a.y),alongTube=a.x===b.x?(r.tubeDepth??r.tube):r.tube,span=distance-alongTube;
  // Match the actual bores cut by structure.ts beamSolid. These are hole-grid
  // endpoints, not accessory padding; a free offset would put a bolt in steel.
  const along=62.5+target.station*r.pitch;
  if(along>span-50)throw Error('Crossmember station is outside the perforated rail.');
  const angle=Math.atan2(b.y-a.y,b.x-a.x),normal:Vec3=[-Math.sin(angle)*target.side,Math.cos(angle)*target.side,0];
- const flangeHeight=r.pitch===50.8?50+2*r.pitch:150;
- const upper=Math.floor((r.height-25-r.firstHole)/r.pitch)-Math.round((flangeHeight-50)/r.pitch);
- const z=r.firstHole+upper*r.pitch-25+flangeHeight/2;
- const center:Vec3=[a.x+Math.cos(angle)*(r.tube/2+along),a.y+Math.sin(angle)*(r.tube/2+along),z];
+ const z=crossmemberLayout(doc,edge,doc.structure[edge.id]?.part??'crossmember-725').beamCenter;
+ const center:Vec3=[a.x+Math.cos(angle)*(alongTube/2+along),a.y+Math.sin(angle)*(alongTube/2+along),z];
  return {...target,face:Math.abs(normal[0])>.5?(normal[0]>0?'right':'left'):(normal[1]>0?'back':'front'),center,position:[center[0]+normal[0]*r.tube/2,center[1]+normal[1]*r.tube/2,z],localAnchor:[0,0,0],pinAxis:normal,connectorId:edge.id,label:`${edge.id} · top bearing / side hole ${target.station+1}`};
 }
 export function darkoTopMounts(doc:MountDoc):Mount[]{
