@@ -5,6 +5,7 @@ import { RACK_PRESETS, applyPreset } from './presets.ts';
 import { GRID_PROFILES, gridProfile } from './profiles.ts';
 import { addAccessory, createAssembly, getMounts, replaceStructurePart, resizeAssembly, resolveAssembly, validateAssembly } from './assembly.ts';
 import { definitions } from './parts/structure.ts';
+import { darkoTopMount } from './darko-mounts.ts';
 import type { ResolvedInstance } from './types.ts';
 
 const api = await Module(); api.setup();
@@ -73,7 +74,7 @@ test('every curated starter matches its profile, validates, round-trips and name
     assert.equal(d.appearance?.frameColor, profile.color);
     assert.deepEqual(validateAssembly(JSON.parse(JSON.stringify(d))), d);
     assert.equal(d.accessories.filter(a => a.part === 'pullup-straight').length, p.pullups?.length ?? 0, p.id);
-    if (profile.nameplate && d.connections.some(e => e.id === 'rear-crossmember') && !d.removed.includes('rear-crossmember')) assert.equal(d.structure['rear-crossmember']?.part, 'profile-nameplate');
+    if (profile.nameplate && d.connections.some(e => e.id === 'rear-crossmember') && !d.removed.includes('rear-crossmember')) assert.equal(d.structure['rear-crossmember']?.part, profile.defaultUpperCrossmember === 'crossmember-flush' ? 'profile-nameplate-flush' : 'profile-nameplate');
     if (profile.lowerCrossmembers === false) assert.ok(!d.connections.some(e => e.level === 'lower' && !d.removed.includes(e.id)), `${p.id} has no lower crossmembers`);
     assert.ok(resolveAssembly(d).every(r => r.position.every(Number.isFinite)));
   }
@@ -84,6 +85,55 @@ test('published inside width and depth come straight from the upright centres', 
     const d = doc(p.id), u = d.uprights, t = d.rack.tube, td = d.rack.tubeDepth ?? t;
     assert.ok(Math.abs(u['front-right'].x - u['front-left'].x - t - d.rack.width) < 1e-6, p.id);
     assert.ok(Math.abs(u['rear-left'].y - u['front-left'].y - td - d.rack.depth) < 1e-6, p.id);
+  }
+});
+
+test('Rogue Monster starters use flush parts while bolts, nameplates and rail mounts stay aligned', () => {
+  const racks = STARTERS.filter(p => p.profileId === 'rogue-rm-monster-2').map(p => doc(p.id));
+  const monster = doc('rogue-rm-monster-2-four-2295.525-1092.2');
+  for (const height of gridProfile(monster.profileId).heights!) racks.push(resizeAssembly(monster, { height }));
+  const checked = new Set<string>();
+  for (const d of racks) for (const rail of resolveAssembly(d).filter(r => r.kind === 'structure' && r.part !== 'upright')) {
+    const edge = d.connections.find(e => e.id === rail.id)!;
+    if (edge.level === 'lower') {
+      assert.equal(rail.params.beamCenter, undefined, 'lower rails retain their centered brackets');
+      assert.equal(rail.params.flangeTop, undefined);
+      continue;
+    }
+    const top = Math.min(d.rack.height, ...[edge.from, edge.to].map(id => d.uprights[id].height ?? d.rack.height));
+    const key = JSON.stringify([rail.part, rail.params]);
+    if (!checked.has(key)) {
+      checked.add(key);
+      const parts = build(rail);
+      try {
+        const beam = parts[0].solid;
+        assert.ok(close(rail.position[2] + beam.boundingBox().max[2], top, .01), `${d.profileId} beam top`);
+        for (const flange of parts.filter(p => p.name.endsWith('mounting flange'))) {
+          const bounds = flange.solid.boundingBox();
+          assert.ok(close(rail.position[2] + bounds.max[2], top, .01), `${d.profileId} bracket top`);
+          for (const z of [25, rail.params.plateHeight - 25]) {
+            assert.equal(flange.solid.rayCast([bounds.min[0] - 1, 0, z], [bounds.max[0] + 1, 0, z]).length, 0, 'flange bolt bore stays on its upright station');
+            const station = (rail.position[2] + z - d.rack.firstHole) / d.rack.pitch;
+            assert.ok(close(station, Math.round(station)), 'bolt is on the upright hole grid');
+          }
+        }
+        const panel = parts.find(p => p.name === 'Manufacturer nameplate plate');
+        if (panel) assert.ok(close(rail.position[2] + panel.solid.boundingBox().max[2], top - d.rack.tube, .01), 'nameplate hangs directly under the rail');
+        const x = -rail.params.length / 2 + 62.5;
+        assert.equal(beam.rayCast([x, -100, rail.params.beamCenter], [x, 100, rail.params.beamCenter]).length, 0, 'side holes follow the raised beam');
+      } finally { parts.forEach(p => p.solid.delete()); }
+    }
+    if (rail.part.startsWith('crossmember-')) {
+      const mount = darkoTopMount(d, { kind: 'crossmember-top', connectionId: edge.id, station: 0, side: 1, uprightId: edge.from, face: 'front', hole: 0 });
+      assert.ok(close(mount.center[2], top - d.rack.tube / 2), 'rail attachments follow the actual beam centre');
+    }
+  }
+  const otherRacks = STARTERS.filter(p => p.profileId !== 'rogue-rm-monster-2').map(p => doc(p.id));
+  for (const d of [createAssembly(), doc('rep-pr-4000-four-2362.2-762'), ...otherRacks]) {
+    for (const rail of resolveAssembly(d).filter(r => r.kind === 'structure' && r.part !== 'upright')) {
+      assert.equal(rail.params.beamCenter, undefined, `${d.profileId} retains centered crossmembers`);
+      assert.equal(rail.params.flangeTop, undefined, `${d.profileId} retains its original brackets`);
+    }
   }
 });
 

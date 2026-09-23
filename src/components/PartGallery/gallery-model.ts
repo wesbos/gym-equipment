@@ -23,8 +23,8 @@ export const CATALOG_SECTIONS: readonly (readonly [string, readonly PartId[]])[]
   // Brand rack attachments group under their rack-registry `section`; the built-in VOLTRA mounts lead "Digital & cable".
   ...sectionGroups<PartId>([...VOLTRA_IDS.map(id => ({ id, section: 'Digital & cable' })), ...RACK_PARTS], RACK_SECTIONS, DEFAULT_RACK_SECTION),
   ['Darko Lifting', DARKO_IDS],
-  ['Frame', ['upright', 'crossmember-425', 'crossmember-725', 'crossmember-1075', 'angled-crossmember', 'offset-crossmember']],
-  ['Bracing & nameplates', ['branded-crossmember', 'branded-crossmember-lite', 'nameplate', 'foot-400', 'foot-800']],
+  ['Frame', ['upright', 'crossmember-425', 'crossmember-725', 'crossmember-1075', 'crossmember-flush', 'angled-crossmember', 'offset-crossmember']],
+  ['Bracing & nameplates', ['branded-crossmember', 'branded-crossmember-lite', 'nameplate', 'profile-nameplate', 'profile-nameplate-flush', 'foot-400', 'foot-800']],
   ['Pull-up bars', ['pullup-straight', 'pullup-multigrip', 'pullup-sphere']],
   ['J-hooks & monolifts', ['j-hook-standard', 'j-hook-roller', 'j-hook-sandwich', 'monolift']],
   ['Safeties', ['safety-box', 'safety-pin-pipe', 'safety-webbing', 'spotter-arm']],
