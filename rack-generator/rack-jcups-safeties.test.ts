@@ -13,13 +13,13 @@ import { addAccessory, createAssembly, resolveAssembly, validateAssembly } from 
 import { suggestPlacement } from './placement-proposals.ts';
 import { barCradles, suggestCradle, parkedPose } from './barbell-cradles.ts';
 import { applyPreset } from './presets.ts';
-import { rackBuildParams, rackPart, validateRackParams, coerceRackParams } from './rack-registry.ts';
+import { rackBuildParams, rackPart, validateRackParams, coerceRackParams, resolveBy } from './rack-registry.ts';
 import { rackSpan } from './rack-mounts.ts';
 import { PARTS } from './rack-parts/rack-jcups-safeties.ts';
 import { GHOST, GHOST_ROLLER_J_CUP, REP_FLAT_SANDWICH_J_CUPS, ROGUE_MONSTER_LITE_J_CUPS, ROGUE_MONSTER_SANDWICH_J_CUP, TITAN_ROLLER_J_HOOKS, IRWIN_RETURN_ROLLER_J_CUPS, BOS_ROLLER_J_CUPS } from './rack-parts/rack-jcups-safeties-cups.ts';
 import { ROGUE_SAML_24_SPOTTER_ARMS, ROGUE_MONSTER_SPOTTER_ARMS_2, REP_SPOTTER_ARMS, SURPLUS_STEALTH_SPOTTERS, OAK_CLUB_ALPHA_SPOTTER_ARMS } from './rack-parts/rack-jcups-safeties-spotters.ts';
 import { REP_STRAP_SAFETIES, ROGUE_MONSTER_STRAP_SAFETY_2, REP_FLIP_DOWN_SAFETIES, REP_PULL_UP_BAR, REP_MULTI_GRIP_PULL_UP_BAR, ROGUE_FAT_SKINNY_PULL_UP_BAR, BOS_SAFETY_STRAPS } from './rack-parts/rack-jcups-safeties-spans.ts';
-import { ROGUE_AM_2_MONOLIFT, MUTANT_METALS_SNAP_BACK_MONOLIFT } from './rack-parts/rack-jcups-safeties-monolifts.ts';
+import { ROGUE_AM_2_MONOLIFT, MUTANT_METALS_SNAP_BACK_MONOLIFT, SNAP_BACK, snapBarRest } from './rack-parts/rack-jcups-safeties-monolifts.ts';
 import type { NumericParams, PartId, RackDoc, SolidPart } from './types.ts';
 const api = await Module(); api.setup();
 const inch = (v: number) => v * 25.4;
@@ -104,8 +104,47 @@ test('monolifts: AM-2 16.75 in from the face, 14 / 17 in tall; Snap-Back roller 
     near(m.get('Red counterweight handle').max[2] - m.get('Red 1.25 in jaw').min[2], inch(h), inch(1), 'AM-2 height');
     near(size(m.get('Red 1.25 in jaw'), 0), inch(1.25), .3, 'jaw width');
   }
-  const s = measure(MUTANT_METALS_SNAP_BACK_MONOLIFT), roller = s.get('Nylon roller');
-  near(size(roller, 1), inch(2.25), 1, 'roller usable space');
+});
+test('Snap-Back: open MM windows, hollow curved arm, inclined 2.25 in roller and tangent bar support', () => {
+  const parts = definitions.find(d => d.id === MUTANT_METALS_SNAP_BACK_MONOLIFT.id)!.build(api, rackBuildParams(MUTANT_METALS_SNAP_BACK_MONOLIFT));
+  const get = (name: string) => { const part = parts.find(p => p.name === name); assert.ok(part, name); return part.solid; };
+  const probe = (solid: SolidPart['solid'], at: [number, number, number]) => {
+    const box = api.Manifold.cube([.4, .4, .4], true), moved = box.translate(at), hit = solid.intersect(moved);
+    try { return hit.volume(); } finally { box.delete(); moved.delete(); hit.delete(); }
+  };
+  try {
+    const params = rackBuildParams(MUTANT_METALS_SNAP_BACK_MONOLIFT), extent = resolveBy(MUTANT_METALS_SNAP_BACK_MONOLIFT.mount.extent, params);
+    const bounds = parts.map(p => p.solid.boundingBox());
+    const min = [0, 1, 2].map(i => Math.min(...bounds.map(b => b.min[i]))), max = [0, 1, 2].map(i => Math.max(...bounds.map(b => b.max[i])));
+    assert.ok(min[2] >= -extent.below && max[2] <= extent.above, 'mount limits enclose the angled lip');
+    for (const box of resolveBy(MUTANT_METALS_SNAP_BACK_MONOLIFT.bodies, params)) {
+      assert.ok(box.min.every((v, i) => v >= min[i] - 2) && box.max.every((v, i) => v <= max[i] + 2), 'collision bounds stay within the built model');
+    }
+    const body = get('3/8 in steel side plates with MM windows'), arm = get('Curved swing arm channel');
+    for (const side of [-1, 1]) {
+      const x = side * (SNAP_BACK.gap / 2 + SNAP_BACK.plate / 2);
+      near(probe(body, [x, F + 61, -15]), 0, 1e-8, 'upper MM window is cut through steel');
+      near(probe(body, [x, F + 30, -65]), 0, 1e-8, 'lower MM window is cut through steel');
+      assert.ok(probe(body, [x, F + 140, 0]) > .05, 'beam remains steel outside the windows');
+    }
+    near(probe(arm, [0, F + 120, -100]), 0, 1e-8, 'arm channel is hollow across its centre');
+    assert.ok(probe(arm, [26, F + 120, -100]) > .05, 'curved steel cheek borders the channel');
+    const roller = get('Nylon roller'), shifted = roller.translate([0, -F - SNAP_BACK.catchY, -SNAP_BACK.catchZ]), level = shifted.rotate([-SNAP_BACK.catchTilt, 0, 0]);
+    try { near(size(level.boundingBox(), 1), inch(2.25), .01, 'usable roller length along its inclined axis'); } finally { shifted.delete(); level.delete(); }
+    const joined = arm.intersect(get('Inclined roller catch cradle'));
+    try { assert.ok(joined.volume() > 1, 'arm actually joins its roller tray'); } finally { joined.delete(); }
+    const [y, z] = snapBarRest(), angle = SNAP_BACK.catchTilt * Math.PI / 180;
+    const shaft = api.Manifold.cylinder(120, 14.25, 14.25, 96, true), alongX = shaft.rotate([0, 90, 0]);
+    const bar = alongX.translate([0, F + y, z]), contact = alongX.translate([0, F + y + .25 * Math.sin(angle), z - .25 * Math.cos(angle)]);
+    try {
+      for (const part of parts) {
+        const hit = bar.intersect(part.solid);
+        try { near(hit.volume(), 0, .02, `parked bar clears ${part.name}`); } finally { hit.delete(); }
+      }
+      const touch = contact.intersect(roller);
+      try { assert.ok(touch.volume() > .1, 'bar rests on the nylon instead of floating above it'); } finally { touch.delete(); }
+    } finally { shaft.delete(); alongX.delete(); bar.delete(); contact.delete(); }
+  } finally { parts.forEach(p => p.solid.delete()); }
 });
 test('strap safeties and flip-downs span to the rear post: the far bracket sits on it and the strap is 3 in wide', () => {
   const doc = createAssembly({ emptyAccessories: true });

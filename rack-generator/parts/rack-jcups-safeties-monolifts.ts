@@ -41,30 +41,73 @@ export function buildSnapBack(api: ManifoldAPI, params: NumericParams): SolidPar
   const p = { ...MUTANT_METALS_SNAP_BACK_MONOLIFT.defaults, ...params }, body = SNAP_COLORS[p.color], arm = SNAP_COLORS[p.arm];
   if (!body || !arm || ![0, 1].includes(p.pin)) throw Error('Unsupported Snap-Back Roller option.');
   const f = faceOf(p), wu = widthOf(p) / 2, s = SNAP_BACK, t = s.plate, g = s.gap / 2, pinR = p.pin ? 12.4 : 7.9;
-  const tone = (c: readonly [string, string]): Finish => c[0] === 'Clear Grind' ? { color: c[1], metalness: .85, roughness: .35 } : c[0].startsWith('Flat') ? { color: c[1], metalness: .1, roughness: .8 } : { color: c[1], metalness: .45, roughness: .3 };
+  const tone = (c: readonly [string, string]): Finish => c[0] === 'Clear Grind' ? { color: c[1], metalness: .85, roughness: .35 } : c[0].startsWith('Flat') ? { color: c[1], metalness: .1, roughness: .8 } : { color: c[1], metalness: .35, roughness: .32 };
   return buildWith(api, k => {
-    const prof = shiftY(s.body, f), steel: Manifold[] = [k.prism(prof, g, g + t, 'x'), k.prism(prof, -g - t, -g, 'x')];
-    // Members sit 0.3 mm off each other's faces (coplanar seams leave zero-area triangles in the print export).
-    const e = .3;
-    steel.push(k.box([-g - t + e, f + e, s.top - t], [g + t - e, f + s.reach - e, s.top - e]), k.box([-g - t + e, f + e, s.bottom + e], [g + t - e, f + t, s.top - e]));
-    // J-cup style clasp box around the upright under the top pin.
-    const cx = wu + .6;
-    for (const side of [1, -1]) steel.push(k.rbox([side > 0 ? cx : -cx - t, f - 60, -120], [side > 0 ? cx + t : -cx, f + t - e, -40], 6, 'x'), k.box([side > 0 ? g + e : -cx - t + e, f + e, -120 + e], [side > 0 ? cx + t - e : -g - e, f + t - 2 * e, -40 - e]));
-    k.put('3/8 in steel side plates and clasp', k.union(steel), tone(body));
-    k.put('MM logo cut-out', k.union([1, -1].map(side => k.box([side > 0 ? g + t : -g - t - .3, f + 170, -30], [side > 0 ? g + t + .3 : -g - t, f + 250, 20]))), { color: '#0c0c0d', metalness: 0, roughness: .9 });
-    // Swing arm: a curved band from the ball-bearing pivot down along the arc to the roller catch.
-    const [py, pz] = s.pivot, cy = s.catchY, cz = s.catchZ, pts: Vec2[] = [], inner: Vec2[] = [];
-    for (let i = 0; i <= 16; i++) {
-      const u = i / 16, y = py + (cy - py) * u - 40 * Math.sin(Math.PI * u), z = pz + (cz + 10 - pz) * u;
-      pts.push([f + y + 16, z]); inner.push([f + y - 16, z]);
+    const [py, pz] = s.pivot, e = .3;
+    // These are windows through both plates, not a dark badge applied to the forward beam.
+    const windows = s.logo.map(points => k.prism(shiftY(points, f), -g - t - 1, g + t + 1, 'x'));
+    const pivotBore = k.rod([-g - t - 1, f + py, pz], [g + t + 1, f + py, pz], 10, 48);
+    const steel: Manifold[] = [1, -1].map(side => k.minus(k.prism(shiftY(s.body, f), side > 0 ? g : -g - t, side > 0 ? g + t : -g, 'x', 1.5), ...windows, pivotBore));
+    // Narrow welded top/rear bridges, leaving the curved opening clear.
+    steel.push(k.box([-g - e, f + e, s.top - t], [g + e, f + s.reach - e, s.top - e]), k.box([-g - e, f + e, s.bottom + e], [g + e, f + t, s.top - e]));
+    k.put('3/8 in steel side plates with MM windows', k.union(steel), tone(body));
+
+    // Low U-wrap: straight side straps, a rear return, and thin upright protection pads.
+    const cx = Math.max(wu + 2.5, g + t), back = f - 2 * faceOf(p) - 4;
+    const clasp = [k.box([-cx - t, back - t, -190], [cx + t, back + e, -136])];
+    for (const side of [1, -1]) {
+      const x0 = side > 0 ? cx : -cx - t, x1 = side > 0 ? cx + t : -cx;
+      const strap = k.rbox([x0, back, -190], [x1, f + 25, -136], 3, 'x');
+      const screws = [-16, 24].map(y => k.rod([x0 - 1, f - y, -163], [x1 + 1, f - y, -163], 2.2, 16));
+      clasp.push(k.minus(strap, ...screws));
+      clasp.push(k.box([side > 0 ? g - e : -cx - e, f + e, -189], [side > 0 ? cx + e : -g + e, f + t - e, -137]));
     }
-    k.put('Swing arm', k.prism([...pts, ...inner.reverse()], -g + 1, g - 1, 'x', 2), tone(arm), 'handle');
-    // Roller catch: floor, back and front lips; nylon roller along +Y with 2-1/4 in usable length; printed lip covers.
-    const L = s.rollerL, y0 = f + cy - L / 2 - 8, y1 = f + cy + L / 2 + 8, zf = cz - s.rollerR - 6;
-    k.put('Roller catch cradle', k.union([k.box([-g + 1, y0, zf - 6], [g - 1, y1, zf]), k.box([-g + 1, y0, zf - 6], [g - 1, y0 + 8, cz + 22]), k.box([-g + 1, y1 - 8, zf - 6], [g - 1, y1, cz + 30])]), tone(arm));
-    k.put('Nylon roller', k.revolve([[0, 0], [s.rollerR - 2, 0], [s.rollerR, 2], [s.rollerR, L - 2], [s.rollerR - 2, L], [0, L]], [0, f + cy - L / 2, cz], 'y', 36), { color: '#121213', metalness: 0, roughness: .45 }, 'handle');
-    k.put('3D printed front lip cover', k.box([-g + 1, y1, zf - 6], [g - 1, y1 + 5, cz + 30]), { color: '#1a1a1c', metalness: 0, roughness: .7 }, 'liner');
-    k.put('Ball-bearing pivot bolt', k.union([k.rod([-g - t - 4, f + py, pz], [g + t + 4, f + py, pz], 8, 24), k.hexHead([g + t, f + py, pz], 'x', 22, 8), k.hexHead([-g - t, f + py, pz], '-x', 22, 8)]), FINISH.stainless, 'fastener');
-    k.put('Printed rear pin with magnets', k.revolve([[0, 0], [pinR - 1.5, 0], [pinR, 1.5], [pinR, 70], [0, 70]], [0, f - 70, 0], 'y', 28), { color: '#202123', metalness: 0, roughness: .6 }, 'rod');
+    k.put('Lower wraparound rack clasp', k.union(clasp), tone(body));
+    k.put('Upright protection pads', k.union([k.box([-wu, f - 2, -228], [wu, f - .3, -80]), k.box([-wu, back + .4, -187], [wu, back + 2.2, -139])]), FINISH.uhmw, 'liner');
+
+    // Formed arm: two curved cheeks and the thin curved front web. The rear is open;
+    // extruding the whole profile would turn the channel into a heavy solid block.
+    const outer = shiftY(s.armOuter, f), inner = shiftY(s.armInner, f);
+    const band = [...outer, ...[...inner].reverse()];
+    const armW = g - 2, wall = 6.35;
+    const frontWeb = [...inner, ...inner.map(([y, z]) => [y - wall, z] as Vec2).reverse()];
+    k.put('Curved swing arm channel', k.union([
+      k.prism(band, -armW, -armW + wall, 'x'), k.prism(band, armW - wall, armW, 'x'),
+      k.prism(frontWeb, -armW + e, armW - e, 'x'),
+      k.rod([-armW, f + py, pz], [armW, f + py, pz], 17, 48),
+    ]), tone(arm), 'handle');
+
+    // Inclined tray and roller share one transform, so the lip, axle and bar rest stay aligned.
+    const catchTransform = (solid: Manifold) => k.k(k.k(solid.rotate([s.catchTilt, 0, 0])).translate([0, f + s.catchY, s.catchZ]));
+    const L = s.rollerL, y0 = -L / 2 - 7, y1 = L / 2 + 7, zf = -s.rollerR - 3;
+    const tray = k.union([
+      k.box([-armW, y0, zf - wall], [armW, y1, zf]),
+      k.box([-armW, y0, zf - wall], [armW, y0 + wall, 26]),
+      k.box([-armW, y1 - wall, zf - wall], [armW, y1, 22]),
+    ]);
+    k.put('Inclined roller catch cradle', catchTransform(tray), tone(arm));
+    k.put('Nylon roller', catchTransform(k.revolve([[0, 0], [s.rollerR - 2, 0], [s.rollerR, 2], [s.rollerR, L - 2], [s.rollerR - 2, L], [0, L]], [0, -L / 2, 0], 'y', 64)), { color: '#161719', metalness: 0, roughness: .42 }, 'handle');
+    k.put('Roller axle', catchTransform(k.rod([0, y0 - 1, 0], [0, y1 + 1, 0], 5, 28)), FINISH.stainless, 'fastener');
+    const cover = k.rbox([-armW - 1.5, y1, zf - wall - 1], [armW + 1.5, y1 + 5, 25], 2, 'y');
+    k.put('3D printed front lip cover', catchTransform(cover), { color: '#202123', metalness: 0, roughness: .75 }, 'liner');
+    // Narrow black edge strips leave the coloured curved web and its weld seams exposed.
+    const strip = [...inner.slice(0, -4).map(([y, z]) => [y + 2.5, z] as Vec2), ...inner.slice(0, -4).reverse()];
+    k.put('Curved arm edge protection', k.union([k.prism(strip, -armW - .8, -armW + 6, 'x'), k.prism(strip, armW - 6, armW + .8, 'x')]), FINISH.uhmw, 'liner');
+    k.put('Curved web weld seams', k.union([13, 26].map(i => {
+      const [y, z] = inner[i];
+      return k.rod([-armW + 6, y, z], [armW - 6, y, z], 1.3, 12);
+    })), tone(arm));
+
+    const hardware: Manifold[] = [k.rod([-g - t, f + py, pz], [g + t, f + py, pz], 9.8, 48)];
+    for (const side of [1, -1]) {
+      // Round, low-profile machined bearing caps, with two smaller stop/retaining screws.
+      const cap = k.revolve([[0, 0], [12.5, 0], [13.5, 1], [13.5, 3.8], [12, 5], [0, 5]], [0, 0, 0], 'x', 64);
+      hardware.push(k.k(k.k(cap.rotate([0, side > 0 ? 0 : 180, 0])).translate([side * (g + t), f + py, pz])));
+      for (const [y, z, r] of [[py + 7, pz - 23, 3.2], [py - 42, s.top - 10, 5.2]]) {
+        hardware.push(k.rod([side * (g + t), f + y, z], [side * (g + t + 2.2), f + y, z], r, 24));
+      }
+    }
+    k.put('Round pivot bearing caps and retaining screws', k.union(hardware), FINISH.stainless, 'fastener');
+    k.put(p.pin ? '1 in stainless mounting pin' : '5/8 in stainless mounting pin', k.revolve([[0, 0], [pinR - 1.5, 0], [pinR, 1.5], [pinR, 2 * faceOf(p) + 30], [0, 2 * faceOf(p) + 30]], [0, -faceOf(p) - 30, 0], 'y', 48), FINISH.stainless, 'rod');
   });
 }

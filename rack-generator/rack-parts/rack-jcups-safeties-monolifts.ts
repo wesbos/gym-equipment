@@ -49,13 +49,31 @@ export const ROGUE_AM_2_MONOLIFT = defineRackPart({
 
 /** Published: under 23.5 lb per side, torsion springs, 0–5.5 in+ bar clearance, nylon rollers with 2-1/4 in usable
  * space, 2-3/16 in max bar, 3/8 in steel, dual ball-bearing pivot, fits 3x3 and 2x3 with 5/8–1 in holes. */
+/** Photo-derived curves, in the mounting-face plane. Keep the continuous tangent at the beam and rear leg. */
+const bezier = (a: Pt, b: Pt, c: Pt, d: Pt, segments = 40): Pt[] => Array.from({ length: segments + 1 }, (_, i) => {
+  const u = i / segments, v = 1 - u;
+  return [v ** 3 * a[0] + 3 * v * v * u * b[0] + 3 * v * u * u * c[0] + u ** 3 * d[0], v ** 3 * a[1] + 3 * v * v * u * b[1] + 3 * v * u * u * c[1] + u ** 3 * d[1]];
+});
 export const SNAP_BACK = {
-  plate: inch(3 / 8), gap: 62, reach: 300, top: 40, bottom: -250,
-  /** Side plates: top edge out from the face, concave arc down to the upright. */
-  body: [[0, 40], [300, 40], [300, 10], [250, -5], [200, -35], [160, -80], [128, -140], [106, -200], [96, -250], [0, -250]] as Pt[],
-  pivot: [270, 10] as Pt, armR: 20, catchY: 140, catchZ: -255, rollerR: 18, rollerL: inch(2.25),
+  plate: inch(3 / 8), gap: 62, reach: 330, top: 45, bottom: -235,
+  /** Deep top beam and narrow rear leg, with the MM windows at the upright end. */
+  body: [[0, 45], [330, 45], [330, -25], ...bezier([245, -25], [125, -25], [60, -108], [60, -235]), [0, -235]] as Pt[],
+  logo: [
+    [[88, 27], [61, -1], [19, 27], [7, 27], [61, -23], [78, -3], [78, -32], [88, -21]],
+    [[88, -36], [78, -25], [61, -45], [24, -11], [24, -77], [35, -86], [35, -39], [61, -60], [78, -41], [88, -52]],
+  ] as Pt[][],
+  pivot: [245, 10] as Pt,
+  /** The broad curved channel hangs behind the nylon roller, ending in an inclined catch. */
+  armOuter: bezier([245, 10], [120, -15], [58, -115], [69, -205]),
+  armInner: bezier([219, -12], [166, -53], [107, -131], [99, -186]),
+  catchY: 115, catchZ: -199, catchTilt: -32, rollerR: 21, rollerL: inch(2.25),
 } as const;
-export const SNAP_COLORS = [['Gloss Black', '#141517'], ['Flat White', '#e4e4e2'], ['Blue', '#2273d0'], ['Red', '#b3161c'], ['Neon Green', '#54d62c'], ['Clear Grind', '#9ea3a8']] as const;
+/** A bar lies across the roller axis. Its working station is halfway along the tilted nylon roller. */
+export const snapBarRest = (): Pt => {
+  const a = SNAP_BACK.catchTilt * Math.PI / 180, r = SNAP_BACK.rollerR + BAR_R;
+  return [SNAP_BACK.catchY - Math.sin(a) * r, SNAP_BACK.catchZ + Math.cos(a) * r];
+};
+export const SNAP_COLORS = [['Gloss Black', '#141517'], ['Flat White', '#e4e4e2'], ['Blue', '#0085c8'], ['Red', '#b3161c'], ['Neon Green', '#54d62c'], ['Clear Grind', '#9ea3a8']] as const;
 export const MUTANT_METALS_SNAP_BACK_MONOLIFT = defineRackPart({
   id: 'mutant-metals-snap-back-monolift', name: 'Snap-Back Roller', title: 'Mutant Metals Snap-Back Rollers', noun: 'monolift', section: 'J-cups & safeties',
   description: 'Torsion-spring monolift catches: the swing arm carries a nylon roller catch in front of the upright and snaps back to clear the bar path; 3/8 in steel side plates with a dual ball-bearing pivot and 3D-printed lip covers · fits 3x3 and 2x3 racks with 5/8 to 1 in holes. Independent reconstruction; Mutant Metals trademarks belong to Mutant Metals.',
@@ -67,15 +85,15 @@ export const MUTANT_METALS_SNAP_BACK_MONOLIFT = defineRackPart({
   vendor: {
     vendor: 'Mutant Metals', url: 'https://mutantmetals.com/products/p/mutant-metals-snap-roller-monos',
     credit: 'Mutant Metals — Snap-Back Rollers V1.1', trademark: 'Mutant Metals and Snap-Back Rollers are trademarks of Mutant Metals.',
-    reconstruction: 'Published torsion-spring snap-back, 0–5.5 in clearance, 2-1/4 in roller space, 2-3/16 in max bar, 3/8 in steel, dual ball-bearing pivot and rack fits. Body outline, arm curve, pivot and roller positions estimated from Mutant Metals owner photos; shown in the catch position; physical fit unverified.',
+    reconstruction: 'Published torsion-spring snap-back, 0–5.5 in clearance, 2-1/4 in roller space, 2-3/16 in max bar, 3/8 in steel, dual ball-bearing pivot and rack fits. The 330 × 280 mm frame outline, MM windows, formed arm, 32° inclined catch, lower clasp and round bearing caps are estimated from four owner reference photos; shown in the catch position; physical fit unverified.',
   },
-  mount: { pin: p => p.pin ? PIN_1IN : PIN_5_8IN, extent: { below: 287, above: 41 }, faces: ['front', 'back'], validate: fits3in('Snap-Back Roller') },
+  mount: { pin: p => p.pin ? PIN_1IN : PIN_5_8IN, extent: { below: 250, above: 46 }, faces: ['front', 'back'], validate: fits3in('Snap-Back Roller') },
   bodies: p => {
     const f = face(p), w = SNAP_BACK.gap / 2 + SNAP_BACK.plate;
-    return [{ min: [-w, f + 1, -250], max: [w, f + SNAP_BACK.reach, 40] }];
+    return [{ min: [-w, f + 1, SNAP_BACK.bottom], max: [w, f + SNAP_BACK.reach, SNAP_BACK.top] }, { min: [-31, f + 68, -247.1], max: [31, f + 163, -158] }];
   },
   pair: { default: true },
-  cradles: { kind: 'working', label: 'Snap-Back Rollers', slots: p => [{ point: [0, face(p) + SNAP_BACK.catchY, SNAP_BACK.catchZ + SNAP_BACK.rollerR + BAR_R] as Vec3, axis: [1, 0, 0] as Vec3 }] },
+  cradles: { kind: 'working', label: 'Snap-Back Rollers', slots: p => [{ point: [0, face(p) + snapBarRest()[0], snapBarRest()[1]] as Vec3, axis: [1, 0, 0] as Vec3 }] },
   placement: { height: 1415, face: 'front' },
   autoFit: rack => ({ pin: rack.holeDiameter >= PIN_1IN ? 1 : 0 }),
   family: 'monolift',
