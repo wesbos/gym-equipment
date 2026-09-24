@@ -7,6 +7,20 @@ import { AM2, amJaw, SNAP_BACK, SNAP_COLORS, ROGUE_AM_2_MONOLIFT, MUTANT_METALS_
 const TEX_RED: Finish = { color: '#b3191f', metalness: .15, roughness: .78 };
 const shiftY = (pts: readonly (readonly [number, number])[], dy: number): Vec2[] => pts.map(([y, z]) => [y + dy, z]);
 
+/** Parallel straight edges meeting on the bisector at a tube's mitered weld. */
+const miterEdge = (path: Vec2[], offset: number): Vec2[] => {
+  const normals = path.slice(1).map(([y, z], i) => {
+    const dy = y - path[i][0], dz = z - path[i][1], length = Math.hypot(dy, dz);
+    return [-dz / length, dy / length] as Vec2;
+  });
+  return path.map(([y, z], i) => {
+    const a = normals[Math.max(0, i - 1)], b = normals[Math.min(i, normals.length - 1)];
+    const scale = offset / (1 + a[0] * b[0] + a[1] * b[1]);
+    return [y + (a[0] + b[0]) * scale, z + (a[1] + b[1]) * scale];
+  });
+};
+const tubeProfile = (path: Vec2[], halfWidth: number): Vec2[] => [...miterEdge(path, halfWidth), ...miterEdge(path, -halfWidth).reverse()];
+
 export function buildAm2(api: ManifoldAPI, params: NumericParams): SolidPart[] {
   const p = { ...ROGUE_AM_2_MONOLIFT.defaults, ...params }; if (![0, 1].includes(p.line)) throw Error('Unsupported AM-2 monolift version.');
   const f = faceOf(p), wu = widthOf(p) / 2, a = AM2, t = a.plate, bt = a.bracketT, W = a.width / 2, J = a.jaw / 2, pinR = p.line ? 7.9 : 12.4;
@@ -44,59 +58,98 @@ export function buildSnapBack(api: ManifoldAPI, params: NumericParams): SolidPar
   const tone = (c: readonly [string, string]): Finish => c[0] === 'Clear Grind' ? { color: c[1], metalness: .85, roughness: .35 } : c[0].startsWith('Flat') ? { color: c[1], metalness: .1, roughness: .8 } : { color: c[1], metalness: .35, roughness: .32 };
   return buildWith(api, k => {
     const [py, pz] = s.pivot, e = .3;
-    // These are windows through both plates, not a dark badge applied to the forward beam.
-    const windows = s.logo.map(points => k.prism(shiftY(points, f), -g - t - 1, g + t + 1, 'x'));
+    // Each plate gets its own through-cuts, oriented to read correctly from that plate's outside face.
+    const logoY = s.logo.flatMap(points => points.map(([y]) => y));
+    const logoMirrorY = Math.min(...logoY) + Math.max(...logoY);
     const pivotBore = k.rod([-g - t - 1, f + py, pz], [g + t + 1, f + py, pz], 10, 48);
-    const steel: Manifold[] = [1, -1].map(side => k.minus(k.prism(shiftY(s.body, f), side > 0 ? g : -g - t, side > 0 ? g + t : -g, 'x', 1.5), ...windows, pivotBore));
-    // Narrow welded top/rear bridges, leaving the curved opening clear.
-    steel.push(k.box([-g - e, f + e, s.top - t], [g + e, f + s.reach - e, s.top - e]), k.box([-g - e, f + e, s.bottom + e], [g + e, f + t, s.top - e]));
+    const steel: Manifold[] = [1, -1].map(side => {
+      const x0 = side > 0 ? g : -g - t, x1 = side > 0 ? g + t : -g;
+      const windows = s.logo.map(points => k.prism(
+        points.map(([y, z]) => [f + (side > 0 ? y : logoMirrorY - y), z]), x0 - 1, x1 + 1, 'x',
+      ));
+      return k.minus(k.prism(shiftY(s.body, f), x0, x1, 'x', 1.5), ...windows, pivotBore);
+    });
+    // Welded bridges and a full steel nose plate close the front of the housing.
+    steel.push(
+      k.box([-g - e, f + e, s.top - t], [g + e, f + s.reach - e, s.top - e]),
+      k.box([-g - e, f + e, s.bottom + e], [g + e, f + t, s.top - e]),
+      k.box([-g - e, f + s.reach - t, -25], [g + e, f + s.reach, s.top]),
+    );
     k.put('3/8 in steel side plates with MM windows', k.union(steel), tone(body));
 
-    // Low U-wrap: straight side straps, a rear return, and thin upright protection pads.
+    // One side strap and a rear return form an L; the opposite side stays open for mounting.
+    // The clasp sits just below the logo, well above the foot of the rear leg.
     const cx = Math.max(wu + 2.5, g + t), back = f - 2 * faceOf(p) - 4;
-    const clasp = [k.box([-cx - t, back - t, -190], [cx + t, back + e, -136])];
-    for (const side of [1, -1]) {
-      const x0 = side > 0 ? cx : -cx - t, x1 = side > 0 ? cx + t : -cx;
-      const strap = k.rbox([x0, back, -190], [x1, f + 25, -136], 3, 'x');
-      const screws = [-16, 24].map(y => k.rod([x0 - 1, f - y, -163], [x1 + 1, f - y, -163], 2.2, 16));
-      clasp.push(k.minus(strap, ...screws));
-      clasp.push(k.box([side > 0 ? g - e : -cx - e, f + e, -189], [side > 0 ? cx + e : -g + e, f + t - e, -137]));
-    }
-    k.put('Lower wraparound rack clasp', k.union(clasp), tone(body));
-    k.put('Upright protection pads', k.union([k.box([-wu, f - 2, -228], [wu, f - .3, -80]), k.box([-wu, back + .4, -187], [wu, back + 2.2, -139])]), FINISH.uhmw, 'liner');
+    const { bottom: z0, top: z1 } = s.clasp, zm = (z0 + z1) / 2;
+    const strap = k.rbox([cx, back, z0], [cx + t, f + 25, z1], 3, 'x');
+    const screws = [-16, 24].map(y => k.rod([cx - 1, f - y, zm], [cx + t + 1, f - y, zm], 2.2, 16));
+    const clasp = k.union([
+      k.box([-cx, back - t, z0], [cx + t, back + e, z1]),
+      k.minus(strap, ...screws),
+      k.box([g - e, f + e, z0 + 1], [cx + e, f + t - e, z1 - 1]),
+    ]);
+    // Hand only the clasp: reflecting the logo-bearing body would reverse its MM cut-outs.
+    k.put('L-shaped rack clasp', p.mirror === 1 ? k.k(clasp.mirror([1, 0, 0])) : clasp, tone(body));
+    k.put('Upright protection pads', k.union([k.box([-wu, f - 2, -228], [wu, f - .3, -80]), k.box([-wu, back + .4, z0 + 3], [wu, back + 2.2, z1 - 3])]), FINISH.uhmw, 'liner');
 
-    // Formed arm: two curved cheeks and the thin curved front web. The rear is open;
-    // extruding the whole profile would turn the channel into a heavy solid block.
-    const outer = shiftY(s.armOuter, f), inner = shiftY(s.armInner, f);
-    const band = [...outer, ...[...inner].reverse()];
-    const armW = g - 2, wall = 6.35;
-    const frontWeb = [...inner, ...inner.map(([y, z]) => [y - wall, z] as Vec2).reverse()];
-    k.put('Curved swing arm channel', k.union([
-      k.prism(band, -armW, -armW + wall, 'x'), k.prism(band, armW - wall, armW, 'x'),
-      k.prism(frontWeb, -armW + e, armW - e, 'x'),
-      k.rod([-armW, f + py, pz], [armW, f + py, pz], 17, 48),
-    ]), tone(arm), 'handle');
+    // Four walls around a hollow square bore, with two planar sections and a single miter.
+    const path = shiftY(s.armPath, f), tubeHalf = s.armTube / 2, armW = g - 2, wall = s.catchPlate;
+    const tube = k.minus(k.prism(tubeProfile(path, tubeHalf), -tubeHalf, tubeHalf, 'x'),
+      k.prism(tubeProfile(path, tubeHalf - s.armWall), -tubeHalf + s.armWall, tubeHalf - s.armWall, 'x'));
+    k.put('Welded square-tube swing arm', k.minus(k.union([
+      tube, k.rod([-armW, f + py, pz], [armW, f + py, pz], 17, 48),
+    ]), pivotBore), tone(arm), 'handle');
 
     // Inclined tray and roller share one transform, so the lip, axle and bar rest stay aligned.
     const catchTransform = (solid: Manifold) => k.k(k.k(solid.rotate([s.catchTilt, 0, 0])).translate([0, f + s.catchY, s.catchZ]));
-    const L = s.rollerL, y0 = -L / 2 - 7, y1 = L / 2 + 7, zf = -s.rollerR - 3;
-    const tray = k.union([
-      k.box([-armW, y0, zf - wall], [armW, y1, zf]),
-      k.box([-armW, y0, zf - wall], [armW, y0 + wall, 26]),
-      k.box([-armW, y1 - wall, zf - wall], [armW, y1, 22]),
-    ]);
+    const L = s.rollerL, tubeY = -tubeHalf - L / 2 - s.rollerGap;
+    const y0 = tubeY - tubeHalf, lipInner = L / 2 + s.rollerGap, y1 = lipInner + wall, zf = -s.rollerR - s.rollerFloorGap;
+    // A solid flat foot beneath the roller, welded to the tube end with a rounded upturned lip.
+    // There is no rear wall or raised flange alongside the arm.
+    const bendR = 5, bendY = lipInner - bendR, bendZ = zf + bendR;
+    const bend = (r: number, reverse = false): Vec2[] => Array.from({ length: 13 }, (_, i) => {
+      const a = (-90 + (reverse ? 12 - i : i) * 7.5) * Math.PI / 180;
+      return [bendY + Math.cos(a) * r, bendZ + Math.sin(a) * r];
+    });
+    const foot: Vec2[] = [[y0, zf - wall], ...bend(bendR + wall), [y1, 22], [lipInner, 22], ...bend(bendR, true), [y0, zf]];
+    const lipBore = k.rod([0, lipInner - 4, 0], [0, y1 + 5, 0], 6, 32);
+    const footWeld = [
+      ...[-tubeHalf, tubeHalf].map(x => k.rod([x, y0, zf], [x, tubeY + tubeHalf, zf], .8, 12)),
+      ...[y0, tubeY + tubeHalf].map(y => k.rod([-tubeHalf, y, zf], [tubeHalf, y, zf], .8, 12)),
+    ];
+    // A small weld overlap at the tube footprint avoids coplanar slivers when print export partitions the solids.
+    const weldLand = k.box([-tubeHalf, y0, zf - wall], [tubeHalf, tubeY + tubeHalf, zf + .05]);
+    const tray = k.union([k.minus(k.prism(foot, -tubeHalf, tubeHalf, 'x'), lipBore), weldLand, ...footWeld]);
     k.put('Inclined roller catch cradle', catchTransform(tray), tone(arm));
     k.put('Nylon roller', catchTransform(k.revolve([[0, 0], [s.rollerR - 2, 0], [s.rollerR, 2], [s.rollerR, L - 2], [s.rollerR - 2, L], [0, L]], [0, -L / 2, 0], 'y', 64)), { color: '#161719', metalness: 0, roughness: .42 }, 'handle');
-    k.put('Roller axle', catchTransform(k.rod([0, y0 - 1, 0], [0, y1 + 1, 0], 5, 28)), FINISH.stainless, 'fastener');
-    const cover = k.rbox([-armW - 1.5, y1, zf - wall - 1], [armW + 1.5, y1 + 5, 25], 2, 'y');
-    k.put('3D printed front lip cover', catchTransform(cover), { color: '#202123', metalness: 0, roughness: .75 }, 'liner');
-    // Narrow black edge strips leave the coloured curved web and its weld seams exposed.
-    const strip = [...inner.slice(0, -4).map(([y, z]) => [y + 2.5, z] as Vec2), ...inner.slice(0, -4).reverse()];
-    k.put('Curved arm edge protection', k.union([k.prism(strip, -armW - .8, -armW + 6, 'x'), k.prism(strip, armW - 6, armW + .8, 'x')]), FINISH.uhmw, 'liner');
-    k.put('Curved web weld seams', k.union([13, 26].map(i => {
-      const [y, z] = inner[i];
-      return k.rod([-armW + 6, y, z], [armW - 6, y, z], 1.3, 12);
-    })), tone(arm));
+    k.put('Roller axle', catchTransform(k.rod([0, -L / 2 - 8, 0], [0, y1 + 3.5, 0], 5, 28)), FINISH.stainless, 'fastener');
+    // A cap over the lip: inner and outer pads, top bridge and returns around both side edges.
+    const cover = k.minus(
+      k.rbox([-tubeHalf - 3, lipInner - 3, -12], [tubeHalf + 3, y1 + 4, 25], 1.5, 'z'),
+      k.box([-tubeHalf, lipInner - .2, -13], [tubeHalf, y1 + .2, 22]), lipBore,
+    );
+    k.put('Wraparound front lip cover', catchTransform(cover), FINISH.uhmw, 'liner');
+    // UHMW covers the front faces of the two tube sections; both sides stay painted steel.
+    const along = (segment: number, fraction: number): Vec2 => path[segment].map((v, i) => v + (path[segment + 1][i] - v) * fraction) as Vec2;
+    const padPath = [along(0, .35), path[1], along(1, .82)];
+    const pad = [...miterEdge(padPath, tubeHalf), ...miterEdge(padPath, tubeHalf + 3).reverse()];
+    const padScrews: Manifold[] = [], holes: Manifold[] = [];
+    for (const [segment, fraction] of [[0, .5], [0, .85], [1, .3], [1, .65]]) {
+      const [y, z] = along(segment, fraction);
+      const dy = path[segment + 1][0] - path[segment][0], dz = path[segment + 1][1] - path[segment][1], length = Math.hypot(dy, dz);
+      const ny = -dz / length, nz = dy / length;
+      const at = (offset: number): [number, number, number] => [0, y + ny * (tubeHalf + offset), z + nz * (tubeHalf + offset)];
+      holes.push(k.rod(at(-1), at(4), 4, 24));
+      padScrews.push(k.rod(at(-.3), at(2.6), 3.8, 24));
+    }
+    k.put('Swing arm front protection', k.minus(k.prism(pad, -tubeHalf + 1, tubeHalf - 1, 'x'), ...holes), FINISH.uhmw, 'liner');
+    k.put('Recessed arm protection screws', k.union(padScrews), FINISH.blackZinc, 'fastener');
+    const [fy, fz] = miterEdge(path, tubeHalf)[1], [by, bz] = miterEdge(path, -tubeHalf)[1];
+    k.put('Square-tube miter weld', k.union([
+      k.rod([-tubeHalf, fy, fz], [tubeHalf, fy, fz], 1.1, 12),
+      k.rod([-tubeHalf, by, bz], [tubeHalf, by, bz], 1.1, 12),
+      ...[-tubeHalf, tubeHalf].map(x => k.rod([x, by, bz], [x, fy, fz], 1.1, 12)),
+    ]), tone(arm));
 
     const hardware: Manifold[] = [k.rod([-g - t, f + py, pz], [g + t, f + py, pz], 9.8, 48)];
     for (const side of [1, -1]) {

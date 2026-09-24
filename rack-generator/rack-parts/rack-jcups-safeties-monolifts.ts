@@ -54,19 +54,38 @@ const bezier = (a: Pt, b: Pt, c: Pt, d: Pt, segments = 40): Pt[] => Array.from({
   const u = i / segments, v = 1 - u;
   return [v ** 3 * a[0] + 3 * v * v * u * b[0] + 3 * v * u * u * c[0] + u ** 3 * d[0], v ** 3 * a[1] + 3 * v * v * u * b[1] + 3 * v * u * u * c[1] + u ** 3 * d[1]];
 });
+// A 12 mm stroke measured perpendicular to each edge: vertical legs and 45° diagonals.
+// Share the diagonal offset between both marks so neither the strokes nor their gap taper.
+const snapLogoStroke = 12, snapLogoDiagonal = snapLogoStroke * Math.SQRT2;
+// The upper tube leans farther out than the lower tube, producing the visible ~18° welded elbow.
+// Keep this arm silhouette independent of the catch; derive the flush foot from the finished tube end below.
+const snapArmPath: Pt[] = [[245, 14], [138, -65], [56, -178]], snapArmTube = inch(2);
+const snapRollerR = 21, snapRollerL = inch(2.25), snapRollerGap = 4, snapFloorGap = 3;
+const snapArmEnd = snapArmPath[2], snapArmJoint = snapArmPath[1];
+// Seat the catch flat on the lower tube's square-cut end. Its roller axis is perpendicular to the tube.
+const snapCatchAngle = -Math.atan2(snapArmJoint[0] - snapArmEnd[0], snapArmJoint[1] - snapArmEnd[1]);
+const snapCatchOffset = snapArmTube / 2 + snapRollerL / 2 + snapRollerGap;
 export const SNAP_BACK = {
   plate: inch(3 / 8), gap: 62, reach: 330, top: 45, bottom: -235,
   /** Deep top beam and narrow rear leg, with the MM windows at the upright end. */
   body: [[0, 45], [330, 45], [330, -25], ...bezier([245, -25], [125, -25], [60, -108], [60, -235]), [0, -235]] as Pt[],
   logo: [
-    [[88, 27], [61, -1], [19, 27], [7, 27], [61, -23], [78, -3], [78, -32], [88, -21]],
-    [[88, -36], [78, -25], [61, -45], [24, -11], [24, -77], [35, -86], [35, -39], [61, -60], [78, -41], [88, -52]],
+    // Staggered MM strokes: the upper M has the long left leg, the lower M the long right leg.
+    [[12, 28], [44, -4], [76, 28], [76 + snapLogoDiagonal, 28],
+      [44, -4 - snapLogoDiagonal], [12 + snapLogoStroke, 16 - snapLogoDiagonal],
+      [12 + snapLogoStroke, -48], [12, -48 + snapLogoStroke]],
+    [[34, -27], [44, -37], [75, -6], [75, -71], [75 - snapLogoStroke, -71 - snapLogoStroke],
+      [75 - snapLogoStroke, -6 - snapLogoStroke - snapLogoDiagonal],
+      [44, -37 - snapLogoDiagonal], [34, -27 - snapLogoDiagonal]],
   ] as Pt[][],
   pivot: [245, 10] as Pt,
-  /** The broad curved channel hangs behind the nylon roller, ending in an inclined catch. */
-  armOuter: bezier([245, 10], [120, -15], [58, -115], [69, -205]),
-  armInner: bezier([219, -12], [166, -53], [107, -131], [99, -186]),
-  catchY: 115, catchZ: -199, catchTilt: -32, rollerR: 21, rollerL: inch(2.25),
+  clasp: { bottom: -146, top: -92 },
+  /** Two straight square tubes meeting at a distinct mitered elbow. Photo-estimated section and angle. */
+  armPath: snapArmPath, armTube: snapArmTube, armWall: inch(1 / 8),
+  catchY: snapArmEnd[0] + Math.cos(snapCatchAngle) * snapCatchOffset - Math.sin(snapCatchAngle) * (snapRollerR + snapFloorGap),
+  catchZ: snapArmEnd[1] + Math.sin(snapCatchAngle) * snapCatchOffset + Math.cos(snapCatchAngle) * (snapRollerR + snapFloorGap),
+  catchTilt: snapCatchAngle * 180 / Math.PI, catchPlate: inch(1 / 4),
+  rollerR: snapRollerR, rollerL: snapRollerL, rollerGap: snapRollerGap, rollerFloorGap: snapFloorGap,
 } as const;
 /** A bar lies across the roller axis. Its working station is halfway along the tilted nylon roller. */
 export const snapBarRest = (): Pt => {
@@ -85,14 +104,14 @@ export const MUTANT_METALS_SNAP_BACK_MONOLIFT = defineRackPart({
   vendor: {
     vendor: 'Mutant Metals', url: 'https://mutantmetals.com/products/p/mutant-metals-snap-roller-monos',
     credit: 'Mutant Metals — Snap-Back Rollers V1.1', trademark: 'Mutant Metals and Snap-Back Rollers are trademarks of Mutant Metals.',
-    reconstruction: 'Published torsion-spring snap-back, 0–5.5 in clearance, 2-1/4 in roller space, 2-3/16 in max bar, 3/8 in steel, dual ball-bearing pivot and rack fits. The 330 × 280 mm frame outline, MM windows, formed arm, 32° inclined catch, lower clasp and round bearing caps are estimated from four owner reference photos; shown in the catch position; physical fit unverified.',
+    reconstruction: 'Published torsion-spring snap-back, 0–5.5 in clearance, 2-1/4 in roller space, 2-3/16 in max bar, 3/8 in steel, dual ball-bearing pivot and rack fits. The 330 × 280 mm frame, closed front, MM windows, welded square-tube arm, flush-welded roller bracket, wraparound lip cover, open L-shaped rack clasp and bearing caps are estimated from owner reference photos; shown in the catch position; physical fit unverified.',
   },
   mount: { pin: p => p.pin ? PIN_1IN : PIN_5_8IN, extent: { below: 250, above: 46 }, faces: ['front', 'back'], validate: fits3in('Snap-Back Roller') },
   bodies: p => {
     const f = face(p), w = SNAP_BACK.gap / 2 + SNAP_BACK.plate;
-    return [{ min: [-w, f + 1, SNAP_BACK.bottom], max: [w, f + SNAP_BACK.reach, SNAP_BACK.top] }, { min: [-31, f + 68, -247.1], max: [31, f + 163, -158] }];
+    return [{ min: [-w, f + 1, SNAP_BACK.bottom], max: [w, f + SNAP_BACK.reach, SNAP_BACK.top] }, { min: [-29, f + 31, -236], max: [29, f + 167, -158] }];
   },
-  pair: { default: true },
+  pair: { default: true }, handed: true,
   cradles: { kind: 'working', label: 'Snap-Back Rollers', slots: p => [{ point: [0, face(p) + snapBarRest()[0], snapBarRest()[1]] as Vec3, axis: [1, 0, 0] as Vec3 }] },
   placement: { height: 1415, face: 'front' },
   autoFit: rack => ({ pin: rack.holeDiameter >= PIN_1IN ? 1 : 0 }),

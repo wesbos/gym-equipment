@@ -148,7 +148,7 @@ Monster 5 and Monster Lite 4 plus Gym Radar, BoS 16 (hero, every colour and leng
 | Product | Published | Estimated |
 |---|---|---|
 | Rogue AM-2 / AML-2 Adjustable Monolift 2.0 (`rogue-am-2-monolift`, 30) — [AM-2](https://www.roguefitness.com/rogue-am-2-adjustable-monolift-2-0-monster), [AML-2](https://www.roguefitness.com/rogue-aml-2-adjustable-monolift-2-0-monster-lite) | 16.75 in from the face, 3.25 in jaw, 4 in / 1.25 in widths, 14 in (AM-2) / 17 in (AML-2), 18 in loaded, 0.25 and 0.375 in steel, 8 in re-rack space, MG black / texture red / texture black | frame plates with the window and logo cut-out, handle, J jaw with recessed UHMW, hook and backstop bolts, detent pin with D-ring; shown unloaded |
-| Mutant Metals Snap-Back Rollers V1.1 (`mutant-metals-snap-back-monolift`, 26) — [Mutant Metals](https://mutantmetals.com/products/p/mutant-metals-snap-roller-monos) | < 23.5 lb per side, torsion springs, 0–5.5 in clearance, 2-1/4 in roller space, 2-3/16 in max bar, 3/8 in steel, dual ball-bearing pivot, fits 3x3 / 2x3 with 5/8–1 in holes | 330 × 280 mm side plates with a smooth concave opening and real MM windows at the upright end; pivot 245 mm from the face; hollow curved arm, 32° inclined roller axis at (115, −199) mm, low wraparound clasp and round bearing caps; shown in the catch position |
+| Mutant Metals Snap-Back Rollers V1.1 (`mutant-metals-snap-back-monolift`, 26) — [Mutant Metals](https://mutantmetals.com/products/p/mutant-metals-snap-roller-monos) | < 23.5 lb per side, torsion springs, 0–5.5 in clearance, 2-1/4 in roller space, 2-3/16 in max bar, 3/8 in steel, dual ball-bearing pivot, fits 3x3 / 2x3 with 5/8–1 in holes | 330 × 280 mm side plates with a smooth concave opening and real MM windows at the upright end; closed steel nose; pivot 245 mm from the face; two straight square tubes with a visible welded elbow, flat-welded foot and wraparound lip cap, roller axis perpendicular to the lower tube at approximately (117, −193) mm, open L-shaped mounting clasp directly below the logo and round bearing caps; shown in the catch position |
 
 Photos: AM-2 16 (installs, jaw, bracket, detent pin, handle close-ups), Mutant Metals 13 (owner photos in several
 colourways, studio shots of the body and arm).
@@ -173,15 +173,23 @@ Monster Lite sleeve, Snap-Back body arc, lighter UHMW tone. Every solid also pas
 
 ## Snap-Back photo revision (September 2026)
 
-Rebuilt against [four user-supplied owner photographs](../../docs/evidence/mutant-metals-snap-back/README.md).
-The previous profile had a shallow top beam, oversized rear leg, forward rectangular logo badge,
-hex pivot heads, high clasp and an arm curving away from the frame into a low horizontal cup.
-The revised profile uses a deep beam, smooth concave opening, narrow rear leg, two through-cut MM
-windows, a formed curved channel with exposed coloured web and black edge protection, and an
-inclined catch tucked under the frame. Three geometry/render passes refined arm clearance and
-web construction; four colour/side views plus front and side views were checked.
+Rebuilt against [user-supplied owner photographs](../../docs/evidence/mutant-metals-snap-back/README.md),
+including the additional close-ups in the September 24 follow-ups. The frame has a deep beam,
+smooth concave opening, narrow rear leg, closed steel nose and two staggered MM through-cuts.
+The cuts are oriented independently on each plate so the mark reads correctly from both outside faces.
+The hanging arm consists of two straight, hollow square-tube sections with a single approximately
+17.6° miter weld, matching the distinct change of direction in the blue arm close-up; the frame
+opening is curved, but the arm is not. The additional black/red mounted
+reference confirms that UHMW and its four recessed screws belong on the arm's front face, with
+both sides entirely painted steel. The L-shaped clasp has one side strap and a rear return, leaving the opposite side open for mounting. It moves up 44 mm to sit
+directly below the logo. Pairing supplies opposite-handed clasps while preserving the independently oriented logo cuts on both units. Front, side and opposite three-quarter renders check the revised geometry.
+
+The bottom bracket is welded flat to the square-cut tube end, with no raised rear wall. Its rounded
+front bend follows the white and blue catch close-ups; the user's correction confirms a continuous steel plate beneath the roller. The lip cap covers
+both faces and returns over the top and both side edges. Catch position and inclination are derived
+from the tube end so that the base stays flush; the bar cradle follows the resulting roller normal.
 
 The published 3/8 in plate and 2-1/4 in usable roller length are retained. Frame size, curve,
-42 mm roller diameter, 32° catch inclination, hardware and clasp dimensions remain photo estimates,
+2 in square tube with 1/8 in walls, 1/4 in catch bracket, 42 mm roller diameter, approximately 36° catch inclination, hardware and clasp dimensions remain photo estimates,
 not manufacturer CAD measurements. The bar support follows the tilted roller normal; a geometry
 test checks contact without clipping the tray/arm. All colour/pin options still export closed meshes.
