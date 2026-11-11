@@ -77,6 +77,8 @@ export interface BuilderScene {
   selectionScreenBounds(): SelectionScreenBounds | null;
   /** Runs after every rendered frame (orbit, damping, drags, rebuilds). Never requests frames: idle stays idle. */
   onFrame(listener: () => void): () => void;
+  /** Render now and return the viewport as an image data URL (JPEG), scaled to at most `maxWidth` px wide. */
+  capture(maxWidth?: number): string;
   dispose(): void;
 }
 export interface SelectionScreenBounds { left: number; top: number; right: number; bottom: number; viewport: { left: number; top: number; right: number; bottom: number } }
@@ -1545,6 +1547,15 @@ export function createBuilderScene(
     focus,
     selectionScreenBounds,
     onFrame(listener) { frameListeners.add(listener); return () => { frameListeners.delete(listener); }; },
+    capture(maxWidth = 1024) {
+      // The drawing buffer is not preserved: render and read it back in the same task.
+      renderer.render(scene, camera);
+      const source = renderer.domElement, scale = Math.min(1, maxWidth / source.width);
+      const out = document.createElement("canvas");
+      out.width = Math.round(source.width * scale); out.height = Math.round(source.height * scale);
+      out.getContext("2d")!.drawImage(source, 0, 0, out.width, out.height);
+      return out.toDataURL("image/jpeg", 0.85);
+    },
     async exportGLB() {
       if (disposed) throw Error("Scene has been disposed.");
       stopBuild();

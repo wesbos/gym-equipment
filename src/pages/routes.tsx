@@ -6,9 +6,11 @@ import {
   lazyRouteComponent,
   redirect,
 } from "@tanstack/react-router";
+import { WebMcpRoot } from "../webmcp/WebMcpRoot.tsx";
 /** Pages load lazily so the route table stays importable (and testable) without their CSS or workers. */
 const rootRoute = createRootRoute({
-  component: () => <Outlet />,
+  // WebMCP: app-wide agent tools (navigation, generic UI controls); the builder registers its own on top.
+  component: () => <><WebMcpRoot /><Outlet /></>,
   notFoundComponent: () => (
     <main>
       <h1>Page not found</h1>
