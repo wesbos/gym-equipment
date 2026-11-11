@@ -17,6 +17,8 @@ import { ConfigManager } from "../components/ConfigManager.tsx";
 import { PartGallery, GalleryLauncher, CompactCatalog, BrowseCategories, openGallery } from "../components/PartGallery/index.ts";
 import { BuilderSheet, OverflowMenu, PanelToggles, isPhoneLayout, useLayoutMode, type SheetTab } from "../components/MobileShell/index.ts";
 import { TAB_ICONS } from "../components/MobileShell/tab-icons.tsx";
+import { registerTools } from "../webmcp/model-context.ts";
+import { builderTools } from "../webmcp/builder-tools.ts";
 import { placementCopy } from "../state/placement-copy.ts";
 import {
   memo,
@@ -351,6 +353,21 @@ export default function BuilderPage() {
       setScene(null);
     };
   }, [store, api]);
+  // WebMCP (src/webmcp, docs/webmcp.md): every builder action as an agent tool. Registered for the page's life; the view is read live.
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  useEffect(() => registerTools(builderTools(api, {
+    currentView: () => viewRef.current,
+    capture: maxWidth => controller.current?.capture(maxWidth) ?? null,
+    navigate: to => { void navigateRef.current({ href: to }); },
+    buildAnimation: play => {
+      const button = document.querySelector<HTMLButtonElement>("[data-build-toggle]");
+      if (!button || (button.getAttribute("aria-pressed") === "true") === play) return !!button;
+      if (button.disabled) return false;
+      button.click();
+      return true;
+    },
+  })), [api]);
   const fit = (mode = view) => {
     setView(mode);
     controller.current?.fit(mode);
