@@ -308,6 +308,51 @@ export function builderTools(api: EditorApi, hooks: BuilderToolHooks): WebMcpToo
       inputSchema: obj({ ids: ids() }),
       execute({ ids: list }) { if (list?.length) { list.forEach(instance); api.scene()?.focus(list); } else api.scene()?.fit(); return 'Camera moved.'; },
     }),
+    tool<{ id: string; duration_ms?: number }>({
+      name: 'pan_camera',
+      description: 'Glide from the current camera pose to one part, preserving the viewing direction and selection. Mouse or touch input can interrupt the shot. Reduced motion frames the part immediately.',
+      inputSchema: obj({ id: str('Physical part id from list_design_parts.'), duration_ms: num('Shot duration in milliseconds.', { default: 2200, minimum: 0 }) }, ['id']),
+      execute({ id, duration_ms = 2200 }) {
+        const part = instance(id);
+        if (!Number.isFinite(duration_ms) || duration_ms < 0) throw Error('duration_ms must be a finite, non-negative number.');
+        const motion = api.scene()?.panCamera(part.id, duration_ms);
+        if (!motion) throw Error(`Cannot frame "${part.id}" until its geometry is ready.`);
+        const message = motion === 'animating' ? 'Camera pan started.' : motion === 'reduced-motion'
+          ? 'Framed immediately because the browser requests reduced motion.' : 'Framed immediately.';
+        return result(message, { id: part.id, motion, duration_ms: motion === 'animating' ? duration_ms : 0 });
+      },
+    }),
+    tool<{ target: [number, number, number]; heading: number; elevation: number; span_mm: number; duration_ms?: number }>({
+      name: 'frame_location',
+      description: 'Move the camera to frame a spot in the room, including empty space before equipment is placed. Eases position, look-at and camera angle together.',
+      inputSchema: obj({
+        target: { type: 'array', items: { type: 'number' }, minItems: 3, maxItems: 3, description: '[x, y, height] in mm, x right, y toward back, height above floor.' },
+        heading: num('Camera heading around the target, in degrees: 0 looks from the front, 90 from the right.'),
+        elevation: num('Camera angle above horizontal in degrees.', { minimum: 0, maximum: 89 }),
+        span_mm: num('Scene width or height across the shorter visible viewport dimension at the target.', { exclusiveMinimum: 0 }),
+        duration_ms: num('Travel time in milliseconds.', { minimum: 0, default: 2600 }),
+      }, ['target', 'heading', 'elevation', 'span_mm']),
+      execute({ target, heading, elevation, span_mm, duration_ms = 2600 }) {
+        if (!Array.isArray(target) || target.length !== 3 || !target.every(Number.isFinite)) throw Error('Use three finite target coordinates.');
+        if (![heading, elevation, span_mm, duration_ms].every(Number.isFinite) || elevation < 0 || elevation > 89 || span_mm <= 0 || duration_ms < 0)
+          throw Error('Use a finite heading, elevation between 0 and 89, positive span, and non-negative duration.');
+        const motion = api.scene()?.frameLocation(target, heading, elevation, span_mm, duration_ms);
+        if (!motion) throw Error('The scene is not ready.');
+        return { motion, duration_ms: motion === 'animating' ? duration_ms : 0 };
+      },
+    }),
+    tool<{ degrees: number; elevation?: number; duration_ms?: number }>({
+      name: 'orbit_room',
+      description: 'Sweep around the gym from the current camera pose and finish on a wide room view. Positive and negative degrees travel in opposite directions. Respects reduced motion and can be interrupted.',
+      inputSchema: obj({ degrees: num('Signed horizontal sweep in degrees.'), elevation: num('Final angle above the floor.', { minimum: 5, maximum: 85, default: 24 }), duration_ms: num('Shot length in milliseconds.', { minimum: 0, default: 3200 }) }, ['degrees']),
+      execute({ degrees, elevation = 24, duration_ms = 3200 }) {
+        if (!Number.isFinite(degrees) || !Number.isFinite(elevation) || elevation < 5 || elevation > 85 || !Number.isFinite(duration_ms) || duration_ms < 0)
+          throw Error('Use a finite sweep, an elevation between 5 and 85 degrees, and a non-negative duration.');
+        const motion = api.scene()?.orbitRoom(degrees, elevation, duration_ms);
+        if (!motion) throw Error('The room is not ready to frame.');
+        return { motion, duration_ms: motion === 'animating' ? duration_ms : 0 };
+      },
+    }),
     tool<{ view: BuilderView }>({
       name: 'set_camera_view',
       description: 'Switch the camera to the 3D (isometric), front, side or top view and fit the gym.',
