@@ -2,6 +2,7 @@ import { rotationMode } from '../../rack-generator/assembly.ts';
 import { pickupAppearance, cloneAppliedAssembly } from './pickup-materials.ts';
 import { GeometryCache, geometryKey } from '../geometry/geometry-cache.ts';
 import { createGymBackdrop } from './gym-backdrop.ts';
+import { PlacementEntrances } from './placement-entrances.ts';
 import { PointerGesture } from './pointer-gesture.ts';
 import { floorWarnings } from '../../rack-generator/floor-items.ts';
 import { isFloorPart } from '../../rack-generator/floor-registry.ts';
@@ -50,6 +51,8 @@ import type {
 } from "../../rack-generator/worker-types.ts";
 import type { BuilderStore } from "../state/builder-store.ts";
 export type BuilderView = "iso" | "front" | "side" | "top";
+type CameraMotion = 'animating' | 'reduced-motion' | 'instant';
+type CameraAngle = { degrees: number; elevation: number; span?: number };
 /** Canvas edges covered by UI (CSS px): a phone's bottom sheet, a top bar. The view centres in what is left. */
 export interface ViewInsets { top: number; right: number; bottom: number; left: number }
 export interface BuilderScene {
@@ -72,6 +75,10 @@ export interface BuilderScene {
   screenPoint(id: string): { x: number; y: number; visible: boolean } | null;
   /** Frame these physical instances (the outliner, warnings, F), keeping the current view direction. */
   focus(ids: readonly string[]): void;
+  /** Glide from the current pose to one rendered part. Null when its bounds are unavailable. */
+  panCamera(id: string, durationMs: number): 'animating' | 'reduced-motion' | 'instant' | null;
+  orbitRoom(degrees: number, elevation: number, durationMs: number): 'animating' | 'reduced-motion' | 'instant' | null;
+  frameLocation(target: Vec3, heading: number, elevation: number, span: number, durationMs: number): CameraMotion | null;
   /** Selection action bar anchor (#205): client-pixel box around the selection outlines plus the canvas rect, or
    * null when nothing selected is drawn. Cheap (projects the outline boxes); call it from `onFrame`. */
   selectionScreenBounds(): SelectionScreenBounds | null;
@@ -132,6 +139,9 @@ export function createBuilderScene(
   renderer.shadowMap.autoUpdate = false;
   // Allocate the (empty) map up front so frames before the first build don't sample a missing shadow texture.
   lighting.key.shadow.needsUpdate = true;
+  const entrances = new URLSearchParams(location.search).get('entrances') === '1' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ? new PlacementEntrances((kind, side) => window.dispatchEvent(new CustomEvent('placement-impact', { detail: { kind, side } })))
+    : null;
   const finishes = new FrameFinishResources(renderer.capabilities.getMaxAnisotropy());
   viewport.append(renderer.domElement);
   renderer.domElement.setAttribute(
@@ -191,7 +201,9 @@ export function createBuilderScene(
     walls.update(room, finish.showWalls || !!snapshot.doc.wallItems?.length || placingWall() || placingHang(), wallOpenings(snapshot.doc));
     // A room with any finish defined keeps its floor (black rubber by default); the bare studio shows the light ground.
     if (floor.update(room, FINISH_KEYS.some(k => room[k] !== undefined) ? finish.floor : null)) invalidate();
+    const hadTurf = roomScenery.turf.children.length > 0;
     roomScenery.update(room);
+    if (entrances && hasFit && !hadTurf && roomScenery.turf.children.length) entrances.turf(roomScenery.turf);
     const light = roomLighting(room), key = JSON.stringify(light);
     if (key === roomLights) return;
     roomLights = key;
@@ -396,7 +408,9 @@ export function createBuilderScene(
         return result.value;
       });
       // Allocate per-instance materials only after rejecting stale/failed batches; unchanged instances only move.
+      const previous = entrances && hasFit ? new Map(instances) : null;
       assembly.sync(entries, models, snapshot.doc.appearance, partAttribution);
+      if (previous) entrances?.parts(previous, instances);
       if (snapshot.hidden.length) applyVisibility();
       invalidate(); // Kept instances only move: no child is added or removed to wake the renderer.
       releaseAssembly();
@@ -915,6 +929,7 @@ export function createBuilderScene(
   }
   /** Alt/⌥ + scroll rotates (#217); a plain scroll falls through to OrbitControls and zooms, even over a part. */
   const onWheel = (event: WheelEvent) => {
+    if (flight?.pan) flight = null;
     if (snapshot.systemChoice || !wheelRotates(event)) return;
     const floorId = floorDrag?.id ?? hoveredId ?? (snapshot.selection.length === 1 ? snapshot.selected : null);
     const floorItem = store.getAppliedDoc().floorItems?.find(i => i.id === floorId && !i.cradle && !frozen(i.id));
@@ -1185,6 +1200,7 @@ export function createBuilderScene(
     placementDrag = false; ghostOffset = null; sceneTouch = false; swallowTouch = false; longPressed = false;
   };
   const onPointerDown = (event: PointerEvent) => {
+    if (flight?.pan) flight = null;
     if (event.pointerType === "touch") { touchDown(event); return; }
     if (touchInput) { touchInput = false; updateTouchBar(); }
     onDown(event);
@@ -1279,6 +1295,7 @@ export function createBuilderScene(
     }
     scene.updateMatrixWorld(true);
     const center = new THREE.Box3().setFromObject(assemblyRoot).getCenter(new THREE.Vector3());
+    if (flight?.pan) flight = null;
     build = { animation: new BuildAnimation(planBuild(snapshot.resolved), instances, camera, controls.target, center), start: performance.now(), onEnd };
     controls.enabled = false;
     for (const box of selectionBoxes) box.visible = false;
@@ -1357,31 +1374,81 @@ export function createBuilderScene(
     else camera.clearViewOffset();
   }
   /** Camera move in flight (focus): eased in renderFrame, cancelled by any orbit input. */
-  let flight: { from: THREE.Vector3; to: THREE.Vector3; fromTarget: THREE.Vector3; toTarget: THREE.Vector3; start: number } | null = null;
+  type Orbit = { from: THREE.Spherical; to: THREE.Spherical };
+  const orbitSample = new THREE.Spherical();
+  let flight: { from: THREE.Vector3; to: THREE.Vector3; fromTarget: THREE.Vector3; toTarget: THREE.Vector3; start: number; duration: number; pan: boolean; orbit?: Orbit } | null = null;
   controls.addEventListener("start", () => { flight = null; });
-  function focus(ids: readonly string[]) {
+  function focus(ids: readonly string[], panDuration?: number) {
+    return frameBounds(() => {
+      const box = new THREE.Box3(), wanted = new Set(ids);
+      for (const g of instances.values()) if (wanted.has(g.userData.id as string)) box.expandByObject(g);
+      return box;
+    }, panDuration);
+  }
+  function frameBounds(bounds: () => THREE.Box3, panDuration?: number, angle?: CameraAngle): CameraMotion | null {
+    const pan = panDuration !== undefined;
+    const from = camera.position.clone();
+    const fromTarget = (build ? build.animation.focus : controls.target).clone();
     stopBuild();
-    const box = new THREE.Box3(), wanted = new Set(ids);
-    for (const g of instances.values()) if (wanted.has(g.userData.id as string)) box.expandByObject(g);
-    if (box.isEmpty()) return;
+    const box = bounds();
+    if (box.isEmpty()) return null;
+    if (pan) {
+      // Drain pending orbit inertia before restoring the exact starting pose, all before the next draw.
+      controls.enableDamping = false;
+      controls.update();
+      controls.enableDamping = true;
+      camera.position.copy(from);
+      controls.target.copy(fromTarget);
+      controls.update();
+    } else {
+      from.copy(camera.position);
+      fromTarget.copy(controls.target);
+    }
     const center = box.getCenter(new THREE.Vector3()), radius = Math.max(150, box.getSize(new THREE.Vector3()).length() / 2);
     const direction = camera.position.clone().sub(controls.target).normalize();
     // Like fit: frame the canvas area not covered by overlaid UI (the phone sheet, the top bar).
     const [shownX, shownY] = shownFraction();
-    const tangent = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * Math.min(camera.aspect * shownX, shownY);
-    const to = center.clone().addScaledVector(direction, (radius / tangent) * 1.25);
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      flight = null; camera.position.copy(to); controls.target.copy(center); controls.update(); invalidate(); return;
+    const halfFov = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    let distance = radius * 1.25 / (halfFov * Math.min(camera.aspect * shownX, shownY));
+    let orbit: Orbit | undefined;
+    if (angle) {
+      const start = new THREE.Spherical().setFromVector3(from.clone().sub(fromTarget));
+      const radians = THREE.MathUtils.degToRad(angle.degrees);
+      // A room orbit has a signed sweep. A location shot travels the shortest arc to an absolute heading.
+      const turn = angle.span === undefined ? radians : Math.atan2(Math.sin(radians - start.theta), Math.cos(radians - start.theta));
+      const end = new THREE.Spherical(1, THREE.MathUtils.degToRad(90 - angle.elevation), start.theta + turn);
+      direction.setFromSpherical(end);
+      if (angle.span === undefined) {
+        const frame = fitFrame(box, direction, halfFov * camera.aspect * shownX, halfFov * shownY);
+        center.copy(frame.target);
+        distance = frame.distance;
+      } else {
+        distance = angle.span / (2 * halfFov * Math.min(camera.aspect * shownX, shownY));
+      }
+      end.radius = distance;
+      orbit = { from: start, to: end };
     }
-    flight = { from: camera.position.clone(), to, fromTarget: controls.target.clone(), toTarget: center, start: performance.now() };
+    const to = center.clone().addScaledVector(direction, distance);
+    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (panDuration === 0 || reducedMotion) {
+      flight = null; camera.position.copy(to); controls.target.copy(center); controls.update(); invalidate();
+      return reducedMotion ? 'reduced-motion' : 'instant';
+    }
+    flight = { from, to, fromTarget, toTarget: center, start: performance.now(), duration: panDuration ?? 420, pan, orbit };
     invalidate();
+    return 'animating' as const;
   }
   /** Advances a focus flight; true while it needs another frame. */
   function fly() {
     if (!flight) return false;
-    const t = Math.min(1, (performance.now() - flight.start) / 420), ease = 1 - Math.pow(1 - t, 3);
-    camera.position.lerpVectors(flight.from, flight.to, ease);
+    const t = Math.min(1, (performance.now() - flight.start) / flight.duration);
+    const ease = flight.pan ? THREE.MathUtils.smootherstep(t, 0, 1) : 1 - Math.pow(1 - t, 3);
     controls.target.lerpVectors(flight.fromTarget, flight.toTarget, ease);
+    if (flight.orbit) {
+      const { from, to } = flight.orbit;
+      orbitSample.set(THREE.MathUtils.lerp(from.radius, to.radius, ease), THREE.MathUtils.lerp(from.phi, to.phi, ease), THREE.MathUtils.lerp(from.theta, to.theta, ease));
+      camera.position.setFromSpherical(orbitSample).add(controls.target);
+    } else camera.position.lerpVectors(flight.from, flight.to, ease);
     if (t >= 1) flight = null;
     return !!flight;
   }
@@ -1463,7 +1530,13 @@ export function createBuilderScene(
     camera.updateProjectionMatrix();
     positionHandles();
     if (lighting.key.shadow.needsUpdate) renderer.shadowMap.needsUpdate = true;
-    renderer.render(scene, camera);
+    if (entrances) {
+      for (const box of selectionBoxes) box.visible = false;
+      if (entrances.draw(() => renderer.render(scene, camera), () => {
+        lighting.key.shadow.needsUpdate = true;
+        renderer.shadowMap.needsUpdate = true;
+      })) again = true;
+    } else renderer.render(scene, camera);
     for (const listener of frameListeners) listener();
     pinPrograms(renderer, pinned);
     if (!prewarmed && instances.size) {
@@ -1545,6 +1618,12 @@ export function createBuilderScene(
       invalidate();
     },
     focus,
+    panCamera: (id, durationMs) => focus([id], durationMs),
+    orbitRoom: (degrees, elevation, durationMs) => frameBounds(contentBox, durationMs, { degrees, elevation }),
+    frameLocation([x, y, height], degrees, elevation, span, durationMs) {
+      const center = new THREE.Vector3(x, height, -y);
+      return frameBounds(() => new THREE.Box3(center, center), durationMs, { degrees, elevation, span });
+    },
     selectionScreenBounds,
     onFrame(listener) { frameListeners.add(listener); return () => { frameListeners.delete(listener); }; },
     capture(maxWidth = 1024) {

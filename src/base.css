@@ -2,3 +2,30 @@
 *{box-sizing:border-box}html,body,#root{margin:0;width:100%;min-height:100%;}
 body{font-family:var(--font);background:var(--c-bg);color:var(--c-text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-feature-settings:'cv11','ss03'}
 button,input,select{font:inherit}[hidden]{display:none!important}
+
+.webmcp-calls {
+  position: fixed;
+  z-index: 1000;
+  inset: calc(env(safe-area-inset-top, 0px) + 64px) 12px auto;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  pointer-events: none;
+}
+.webmcp-call {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  max-width: 100%;
+  padding: 9px 13px;
+  border-radius: var(--r-sm);
+  background: var(--c-dark);
+  color: var(--c-on-dark);
+  box-shadow: var(--shadow-pop);
+}
+.webmcp-call span { color: var(--c-accent-on-dark); font-size: 12px; font-weight: 650; }
+.webmcp-call code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+@media (prefers-reduced-motion: no-preference) {
+  .webmcp-call { animation: webmcp-call-in 140ms ease-out; }
+  @keyframes webmcp-call-in { from { opacity: 0; transform: translateY(-4px); } }
+}

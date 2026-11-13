@@ -14,6 +14,8 @@ export interface WebMcpTool<Args = Record<string, unknown>> {
   execute(args: Args, options?: { signal?: AbortSignal }): Promise<ToolResult> | ToolResult;
 }
 type Registration = { unregister?: () => void } | void | undefined;
+export const TOOL_CALL_EVENT = 'webmcp:tool-call';
+export interface ToolCall { name: string; args: Record<string, unknown> }
 interface ModelContextLike {
   registerTool(tool: WebMcpTool, options?: { signal?: AbortSignal }): Promise<Registration> | Registration;
   unregisterTool?(name: string): void;
@@ -55,10 +57,19 @@ export function registerTools(tools: readonly WebMcpTool[]): () => void {
   const handles: Registration[] = [];
   for (const t of tools) {
     try {
-      const result = context.registerTool(t, { signal: controller.signal });
+      const result = context.registerTool({
+        ...t,
+        execute(args, options) {
+          window.dispatchEvent(new CustomEvent<ToolCall>(TOOL_CALL_EVENT, { detail: { name: t.name, args } }));
+          return t.execute(args, options);
+        },
+      }, { signal: controller.signal });
       if (result && typeof (result as Promise<Registration>).then === 'function') {
         (result as Promise<Registration>).then(handle => { if (controller.signal.aborted) handle?.unregister?.(); else handles.push(handle); },
-          error => console.warn(`WebMCP: could not register ${t.name}`, error));
+          error => {
+            if (!controller.signal.aborted || error !== controller.signal.reason)
+              console.warn(`WebMCP: could not register ${t.name}`, error);
+          });
       } else handles.push(result as Registration);
     } catch (error) {
       console.warn(`WebMCP: could not register ${t.name}`, error);

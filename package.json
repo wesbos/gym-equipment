@@ -18,6 +18,7 @@
   "type": "module",
   "dependencies": {
     "@tanstack/react-router": "^1.170.38",
+    "@w3c/webmcp-polyfill": "^0.1.0",
     "@xmldom/xmldom": "^0.9.12",
     "fflate": "^0.8.3",
     "manifold-3d": "^3.5.3",

@@ -199,7 +199,7 @@ export function createRoomScenery(materials: RoomMaterials) {
   }
   let disposed = false;
   return {
-    group,
+    group, turf,
     /** Rebuild only the parts whose finishes changed. */
     update(room: Room) {
       const f = resolveFinishes(room, room.height);

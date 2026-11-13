@@ -1,6 +1,6 @@
 # WebMCP
 
-The app exposes its actions as [WebMCP](https://github.com/webmachinelearning/webmcp) tools, so an agent running in the browser can drive the builder. Tools register through `document.modelContext.registerTool` (the current draft) or `navigator.modelContext` (the earlier draft and polyfills such as MCP-B). In a browser with neither, nothing is registered.
+The app exposes its actions as [WebMCP](https://github.com/webmachinelearning/webmcp) tools, so an agent running in the browser can drive the builder. It uses the browser's `document.modelContext` or an existing `navigator.modelContext` integration. On HTTPS or localhost, browsers missing both get `document.modelContext` from the bundled W3C polyfill before the app registers its tools.
 
 Code lives in `src/webmcp/`:
 
