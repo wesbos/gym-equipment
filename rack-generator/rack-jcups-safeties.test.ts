@@ -13,13 +13,13 @@ import { addAccessory, createAssembly, resolveAssembly, validateAssembly } from 
 import { suggestPlacement } from './placement-proposals.ts';
 import { barCradles, suggestCradle, parkedPose } from './barbell-cradles.ts';
 import { applyPreset } from './presets.ts';
-import { rackBuildParams, rackPart, validateRackParams, coerceRackParams } from './rack-registry.ts';
+import { rackBuildParams, rackPart, validateRackParams, coerceRackParams, resolveBy } from './rack-registry.ts';
 import { rackSpan } from './rack-mounts.ts';
 import { PARTS } from './rack-parts/rack-jcups-safeties.ts';
 import { GHOST, GHOST_ROLLER_J_CUP, REP_FLAT_SANDWICH_J_CUPS, ROGUE_MONSTER_LITE_J_CUPS, ROGUE_MONSTER_SANDWICH_J_CUP, TITAN_ROLLER_J_HOOKS, IRWIN_RETURN_ROLLER_J_CUPS, BOS_ROLLER_J_CUPS } from './rack-parts/rack-jcups-safeties-cups.ts';
 import { ROGUE_SAML_24_SPOTTER_ARMS, ROGUE_MONSTER_SPOTTER_ARMS_2, REP_SPOTTER_ARMS, SURPLUS_STEALTH_SPOTTERS, OAK_CLUB_ALPHA_SPOTTER_ARMS } from './rack-parts/rack-jcups-safeties-spotters.ts';
 import { REP_STRAP_SAFETIES, ROGUE_MONSTER_STRAP_SAFETY_2, REP_FLIP_DOWN_SAFETIES, REP_PULL_UP_BAR, REP_MULTI_GRIP_PULL_UP_BAR, ROGUE_FAT_SKINNY_PULL_UP_BAR, BOS_SAFETY_STRAPS } from './rack-parts/rack-jcups-safeties-spans.ts';
-import { ROGUE_AM_2_MONOLIFT, MUTANT_METALS_SNAP_BACK_MONOLIFT } from './rack-parts/rack-jcups-safeties-monolifts.ts';
+import { ROGUE_AM_2_MONOLIFT, MUTANT_METALS_SNAP_BACK_MONOLIFT, SNAP_BACK, snapBarRest } from './rack-parts/rack-jcups-safeties-monolifts.ts';
 import type { NumericParams, PartId, RackDoc, SolidPart } from './types.ts';
 const api = await Module(); api.setup();
 const inch = (v: number) => v * 25.4;
@@ -104,8 +104,159 @@ test('monolifts: AM-2 16.75 in from the face, 14 / 17 in tall; Snap-Back roller 
     near(m.get('Red counterweight handle').max[2] - m.get('Red 1.25 in jaw').min[2], inch(h), inch(1), 'AM-2 height');
     near(size(m.get('Red 1.25 in jaw'), 0), inch(1.25), .3, 'jaw width');
   }
-  const s = measure(MUTANT_METALS_SNAP_BACK_MONOLIFT), roller = s.get('Nylon roller');
-  near(size(roller, 1), inch(2.25), 1, 'roller usable space');
+});
+test('Snap-Back: MM windows, closed nose, open L-shaped clasp, square-tube arm and tangent roller support', () => {
+  const parts = definitions.find(d => d.id === MUTANT_METALS_SNAP_BACK_MONOLIFT.id)!.build(api, rackBuildParams(MUTANT_METALS_SNAP_BACK_MONOLIFT));
+  const get = (name: string) => { const part = parts.find(p => p.name === name); assert.ok(part, name); return part.solid; };
+  const probe = (solid: SolidPart['solid'], at: [number, number, number]) => {
+    const box = api.Manifold.cube([.4, .4, .4], true), moved = box.translate(at), hit = solid.intersect(moved);
+    try { return hit.volume(); } finally { box.delete(); moved.delete(); hit.delete(); }
+  };
+  try {
+    const params = rackBuildParams(MUTANT_METALS_SNAP_BACK_MONOLIFT), extent = resolveBy(MUTANT_METALS_SNAP_BACK_MONOLIFT.mount.extent, params);
+    const bounds = parts.map(p => p.solid.boundingBox());
+    const min = [0, 1, 2].map(i => Math.min(...bounds.map(b => b.min[i]))), max = [0, 1, 2].map(i => Math.max(...bounds.map(b => b.max[i])));
+    assert.ok(min[2] >= -extent.below && max[2] <= extent.above, 'mount limits enclose the angled lip');
+    for (const box of resolveBy(MUTANT_METALS_SNAP_BACK_MONOLIFT.bodies, params)) {
+      assert.ok(box.min.every((v, i) => v >= min[i] - 2) && box.max.every((v, i) => v <= max[i] + 2), 'collision bounds stay within the built model');
+    }
+    const body = get('3/8 in steel side plates with MM windows'), arm = get('Welded square-tube swing arm');
+    const [upper, lower] = SNAP_BACK.logo;
+    const diagonal = (a: number[], b: number[]) => Math.atan2(b[1] - a[1], b[0] - a[0]);
+    for (const mark of [upper, lower]) {
+      near(diagonal(mark[0], mark[1]), -Math.PI / 4, 1e-10, 'both descending logo strokes share one angle');
+      near(diagonal(mark[1], mark[2]), Math.PI / 4, 1e-10, 'both ascending logo strokes share one angle');
+    }
+    for (const [a, b, c, d] of [
+      [upper[0], upper[1], upper[5], upper[4]], [upper[1], upper[2], upper[4], upper[3]],
+      [lower[0], lower[1], lower[7], lower[6]], [lower[1], lower[2], lower[6], lower[5]],
+    ]) {
+      near(diagonal(a, b), diagonal(c, d), 1e-10, 'opposite logo edges are parallel');
+      const dx = b[0] - a[0], dz = b[1] - a[1];
+      near(Math.abs(dx * (c[1] - a[1]) - dz * (c[0] - a[0])) / Math.hypot(dx, dz), 12, 1e-10, 'diagonal strokes keep the same width as the vertical legs');
+    }
+    const logoY = SNAP_BACK.logo.flatMap(points => points.map(([y]) => y));
+    const logoMirrorY = Math.min(...logoY) + Math.max(...logoY);
+    for (const side of [-1, 1]) {
+      const x = side * (SNAP_BACK.gap / 2 + SNAP_BACK.plate / 2);
+      const outsideY = (y: number) => F + (side > 0 ? y : logoMirrorY - y);
+      for (const [y, z] of [[18, -30], [44, -20], [69, -64], [44, -52]]) {
+        near(probe(body, [x, outsideY(y), z]), 0, 1e-8, 'MM reads correctly from each outside face: upper left leg and lower right leg');
+      }
+      for (const [y, z] of [[85, -30], [30, -65]]) {
+        assert.ok(probe(body, [x, outsideY(y), z]) > .05, 'the opposite plate cutter cannot add backwards MM legs');
+      }
+      assert.ok(probe(body, [x, outsideY(44), -31.5]) > .05, 'steel separates the two MM strokes');
+      assert.ok(probe(body, [x, F + 140, 0]) > .05, 'beam remains steel outside the windows');
+    }
+    for (const x of [-25, 0, 25]) for (const z of [-20, 10, 40]) {
+      assert.ok(probe(body, [x, F + 326, z]) > .05, 'the entire nose is closed metal');
+    }
+    const clasp = get('L-shaped rack clasp'), claspBounds = clasp.boundingBox();
+    near(claspBounds.min[2], -146, .01, 'mounting bracket raised above the rear foot');
+    near(claspBounds.max[2], -92, .01, 'mounting bracket sits below the logo');
+    assert.ok(probe(clasp, [45, 0, -119]) > .05, 'one side strap joins the body to the rear return');
+    assert.ok(probe(clasp, [0, -46, -119]) > .05, 'rear return retains the L-shaped hook');
+    // An upright-sized section can pass through the open side at clasp height.
+    const entryBox = api.Manifold.cube([250, 75, 54]), entry = entryBox.translate([-212.5, -F, -146]);
+    const blocked = clasp.intersect(entry);
+    try { near(blocked.volume(), 0, 1e-8, 'no opposite strap or bridge closes the mounting opening'); }
+    finally { entryBox.delete(); entry.delete(); blocked.delete(); }
+    const protection = get('Swing arm front protection');
+    for (const solid of [protection, get('Recessed arm protection screws')]) {
+      const bounds = solid.boundingBox();
+      assert.ok(bounds.min[0] > -SNAP_BACK.armTube / 2 && bounds.max[0] < SNAP_BACK.armTube / 2, 'protection and its screws do not cover either steel side');
+    }
+    const [top, elbow, foot] = SNAP_BACK.armPath;
+    const upperAngle = Math.atan2(top[0] - elbow[0], top[1] - elbow[1]);
+    const lowerAngle = Math.atan2(elbow[0] - foot[0], elbow[1] - foot[1]);
+    const bendAngle = (upperAngle - lowerAngle) * 180 / Math.PI;
+    assert.ok(bendAngle >= 15 && bendAngle <= 20, 'the two straight tubes retain the visible photo-estimated miter angle');
+    // Check all four walls, the empty bore and constant square section along both straight lengths.
+    for (const [i, start] of SNAP_BACK.armPath.slice(0, -1).entries()) {
+      const end = SNAP_BACK.armPath[i + 1], dy = end[0] - start[0], dz = end[1] - start[1], length = Math.hypot(dy, dz);
+      const half = SNAP_BACK.armTube / 2, wallCentre = half - SNAP_BACK.armWall / 2;
+      for (const fraction of [.5, .7]) {
+        const y = F + start[0] + dy * fraction, z = start[1] + dz * fraction;
+        near(probe(arm, [0, y, z]), 0, 1e-8, 'square-tube bore is hollow');
+        assert.ok(probe(protection, [10, y - dz / length * (half + 1.5), z + dy / length * (half + 1.5)]) > .05, 'UHMW lies on the front face of each straight tube');
+        for (const side of [-1, 1]) {
+          assert.ok(probe(arm, [side * wallCentre, y, z]) > .05, 'square-tube side wall');
+          assert.ok(probe(arm, [0, y - side * dz / length * wallCentre, z + side * dy / length * wallCentre]) > .05, 'square tube has front and rear walls');
+          near(probe(arm, [0, y - side * dz / length * (half + 1), z + side * dy / length * (half + 1)]), 0, 1e-8, 'tube face remains straight');
+        }
+      }
+    }
+    const roller = get('Nylon roller'), shifted = roller.translate([0, -F - SNAP_BACK.catchY, -SNAP_BACK.catchZ]), level = shifted.rotate([-SNAP_BACK.catchTilt, 0, 0]);
+    try { near(size(level.boundingBox(), 1), inch(2.25), .01, 'usable roller length along its inclined axis'); } finally { shifted.delete(); level.delete(); }
+    const tray = get('Inclined roller catch cradle'), cover = get('Wraparound front lip cover');
+    const local = (solid: SolidPart['solid']) => {
+      const moved = solid.translate([0, -F - SNAP_BACK.catchY, -SNAP_BACK.catchZ]);
+      try { return moved.rotate([-SNAP_BACK.catchTilt, 0, 0]); } finally { moved.delete(); }
+    };
+    const flatTray = local(tray), flatArm = local(arm), flatCover = local(cover);
+    try {
+      const h = SNAP_BACK.armTube / 2, tubeY = -h - SNAP_BACK.rollerL / 2 - SNAP_BACK.rollerGap;
+      const zf = -SNAP_BACK.rollerR - SNAP_BACK.rollerFloorGap;
+      assert.ok(probe(flatTray, [0, tubeY, zf - SNAP_BACK.catchPlate / 2]) > .05, 'flat base plate closes the tube end');
+      for (const x of [-h + SNAP_BACK.armWall / 2, h - SNAP_BACK.armWall / 2]) {
+        assert.ok(probe(flatArm, [x, tubeY, zf + 1]) > .05, 'square-cut tube ends flush against the bracket base');
+        near(probe(flatArm, [x, tubeY, zf - 1]), 0, 1e-8, 'tube does not protrude through the bracket');
+        near(probe(flatTray, [x, tubeY, zf + 3]), 0, 1e-8, 'no rear bracket wall rises alongside the tube');
+      }
+      for (const x of [-20, 0, 20]) for (const y of [-20, 0, 20]) {
+        assert.ok(probe(flatTray, [x, y, zf - 2]) > .05, 'continuous steel plate beneath the roller');
+      }
+      const lipInner = SNAP_BACK.rollerL / 2 + SNAP_BACK.rollerGap, lipOuter = lipInner + SNAP_BACK.catchPlate;
+      for (const at of [[10, lipInner - 1.5, 0], [10, lipOuter + 2, 0],
+        [-h - 1.5, (lipInner + lipOuter) / 2, 0], [h + 1.5, (lipInner + lipOuter) / 2, 0],
+        [10, (lipInner + lipOuter) / 2, 23.5]] as [number, number, number][]) {
+        assert.ok(probe(flatCover, at) > .05, 'lip cap covers both faces and wraps around the top and both side edges');
+      }
+    } finally { flatTray.delete(); flatArm.delete(); flatCover.delete(); }
+    for (const solid of [arm, protection, tray, cover]) {
+      const hit = roller.intersect(solid);
+      try { near(hit.volume(), 0, .02, 'nylon roller clears the tube, bracket and protection'); } finally { hit.delete(); }
+    }
+    const joined = arm.intersect(tray);
+    try { assert.ok(joined.volume() > 1, 'arm actually joins its roller tray'); } finally { joined.delete(); }
+    const [y, z] = snapBarRest(), angle = SNAP_BACK.catchTilt * Math.PI / 180;
+    const shaft = api.Manifold.cylinder(120, 14.25, 14.25, 96, true), alongX = shaft.rotate([0, 90, 0]);
+    const bar = alongX.translate([0, F + y, z]), contact = alongX.translate([0, F + y + .25 * Math.sin(angle), z - .25 * Math.cos(angle)]);
+    try {
+      for (const part of parts) {
+        const hit = bar.intersect(part.solid);
+        try { near(hit.volume(), 0, .02, `parked bar clears ${part.name}`); } finally { hit.delete(); }
+      }
+      const touch = contact.intersect(roller);
+      try { assert.ok(touch.volume() > .1, 'bar rests on the nylon instead of floating above it'); } finally { touch.delete(); }
+    } finally { shaft.delete(); alongX.delete(); bar.delete(); contact.delete(); }
+  } finally { parts.forEach(p => p.solid.delete()); }
+});
+test('Snap-Back pairs use opposite mounting clasps while both units retain correctly oriented logos', () => {
+  const part = MUTANT_METALS_SNAP_BACK_MONOLIFT, def = definitions.find(d => d.id === part.id)!;
+  const rack = applyPreset('rep-pr-5000-four-2032-762');
+  for (const face of ['front', 'back'] as const) for (const side of ['left', 'right']) {
+    const doc = addAccessory(rack, part.id as PartId, { uprightId: `front-${side}`, face, hole: 20 }, true);
+    const units = resolveAssembly(doc).filter(u => u.ownerId === doc.accessories.at(-1)!.id);
+    assert.equal(units.length, 2);
+    assert.deepEqual(units.map(u => u.params.mirror), [undefined, 1], 'pairing requests both hands from either starting upright');
+    const builds = units.map(u => def.build(api, u.params));
+    try {
+      const get = (i: number, name: string) => builds[i].find(p => p.name === name)!.solid;
+      for (const name of ['L-shaped rack clasp', '3/8 in steel side plates with MM windows']) {
+        const first = get(0, name), second = get(1, name);
+        const expected = name === 'L-shaped rack clasp' ? first.mirror([1, 0, 0]) : first;
+        const extra = second.subtract(expected), missing = expected.subtract(second);
+        try {
+          near(extra.volume() + missing.volume(), 0, .001, `${name}: clasp reflects, logo plates keep their orientation`);
+        } finally { extra.delete(); missing.delete(); if (expected !== first) expected.delete(); }
+      }
+      const [first, second] = builds.map((_, i) => get(i, 'L-shaped rack clasp').boundingBox());
+      assert.ok(first.max[0] > -first.min[0] && -second.min[0] > second.max[0], 'straps sit on opposite sides of the two uprights');
+      for (const solid of builds[1]) printableMesh(solid.solid, `mirrored Snap-Back: ${solid.name}`);
+    } finally { builds.flat().forEach(p => p.solid.delete()); }
+  }
 });
 test('strap safeties and flip-downs span to the rear post: the far bracket sits on it and the strap is 3 in wide', () => {
   const doc = createAssembly({ emptyAccessories: true });
