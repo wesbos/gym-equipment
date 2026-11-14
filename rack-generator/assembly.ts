@@ -18,6 +18,7 @@ import { acceptsRail, acceptsTarget, rackPlacementFace, rackDefaults, rackDefaul
 import { hostedCandidates, hostedOn, hostedPairTarget, resolveHosted, validateHostedMount } from './rack-hosts.ts';
 import { TARGET_KINDS, isHostedTarget, isRailTarget, isUprightTarget } from './rack-targets.ts';
 import { gridProfile, type GridProfile } from './profiles.ts';
+import { crossmemberLayout } from './crossmember-layout.ts';
 import { legacyGraph, validateGraph, structureSlots } from './topology.ts';
 import { snapDimensions } from './grid.ts';
 import { validateAppearance } from './appearance.ts';
@@ -67,11 +68,13 @@ const FRAME_PARTS: Record<string, { slots: string[]; label: string; defaults: Nu
   'crossmember-425': { slots: BEAM_SLOTS, label: '425 mm crossmember', defaults: {} },
   'crossmember-725': { slots: BEAM_SLOTS, label: '725 mm crossmember', defaults: {} },
   'crossmember-1075': { slots: BEAM_SLOTS, label: '1075 mm crossmember', defaults: {} },
+  'crossmember-flush': { slots: BEAM_SLOTS, label: 'Flush crossmember', defaults: {} },
   'angled-crossmember': { slots: DEPTH_SLOTS, label: 'Angled crossmember', defaults: { rise: 200 } },
   'offset-crossmember': { slots: ['rear-crossmember'], label: 'Offset crossmember', defaults: { offset: 193.5 } },
   'branded-crossmember': { slots: ['rear-crossmember'], label: 'BOS STRENGTH nameplate crossmember', defaults: {} },
   'branded-crossmember-lite': { slots: ['rear-crossmember'], label: 'BOS STRENGTH nameplate crossmember lite', defaults: {} },
   'profile-nameplate': { slots: ['rear-crossmember'], label: 'Manufacturer nameplate crossmember', defaults: {} },
+  'profile-nameplate-flush': { slots: ['rear-crossmember'], label: 'Flush manufacturer nameplate crossmember', defaults: {} },
   nameplate: { slots: ['rear-crossmember'], label: 'Nameplate panel and supporting rail', defaults: {} },
 };
 /** Detached defaults for editors; keep geometry and UI on one source of truth. */
@@ -304,7 +307,7 @@ export function validateAssembly(input: unknown): RackDoc {
     const effective = { ...defaults, ...cleanParams };
     if (variant.part === 'angled-crossmember' && (effective.rise % r.pitch !== 0 || effective.rise + 190 > r.height)) fail('Angled crossmember rise must align with upright hole stations and fit the height.');
     if (variant.part === 'branded-crossmember' && 250 % r.pitch !== 0) fail('The full nameplate flange requires 50 mm upright stations.');
-    if (variant.part === 'profile-nameplate' && !profile.nameplate) fail('This rack profile has no manufacturer nameplate.');
+    if ((variant.part === 'profile-nameplate' || variant.part === 'profile-nameplate-flush') && !profile.nameplate) fail('This rack profile has no manufacturer nameplate.');
     validateMountShaft(variant.part, cleanParams, rack.holeDiameter);
     structure[id] = { ...copy(variant), part: variant.part as PartId, params: cleanParams };
   }
@@ -671,27 +674,22 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
     const settings = { ...FRAME_PARTS[framePart].defaults, ...variant.params };
     const edge = doc.connections.find(e => e.id === slot.id)!;
     const a = postCenter(r, edge.from), b = postCenter(r, edge.to);
-    const rear = a[1] === b[1], high = edge.level === 'upper';
+    const rear = a[1] === b[1];
     const angle = Math.atan2(b[1] - a[1], b[0] - a[0]);
     const span = Math.hypot(b[0] - a[0], b[1] - a[1]) - tubeAlong(r, b[0] - a[0], b[1] - a[1]);
-    // Flange bolts sit on real stations: 150 mm on the 50 mm source grid, 50.8 mm × 2 or 76.2 mm × 1 on vendor lattices.
-    // Left-right beams bolt into side faces, which may only be drilled every `sideStride` stations.
-    const stride = rear ? profile.sideStride ?? 1 : 1;
-    const flangeHeight = framePart === 'branded-crossmember' ? 300 : 50 + Math.max(stride, Math.round(100 / r.pitch), 1) * r.pitch;
-    const edgeHeight = Math.min(uprightHeight(r, doc.uprights[edge.from]), uprightHeight(r, doc.uprights[edge.to]));
     const rise = framePart === 'angled-crossmember' ? settings.rise : 0;
-    const upper = Math.floor((edgeHeight - 25 - r.firstHole) / r.pitch) - Math.round((flangeHeight - 50 + rise) / r.pitch);
-    const hole = high ? Math.floor(upper / stride) * stride : systemLowerCrossmemberStation(doc,edge.from,edge.to);
+    const layout = crossmemberLayout(doc, edge, framePart, { rise, lowerHole: systemLowerCrossmemberStation(doc, edge.from, edge.to) });
+    const hole = layout.hole, flangeHeight = layout.params.plateHeight;
     const side = slot.id.startsWith('right') ? 'right' : 'left';
     const x = (a[0] + b[0]) / 2, y = (a[1] + b[1]) / 2;
-    const params: NumericParams = { length: span, width: r.tube, wall: 3, holeDiameter: r.holeDiameter, spacing: r.pitch, plateThickness: 6, plateHeight: flangeHeight };
+    const params: NumericParams = { length: span, width: r.tube, wall: 3, holeDiameter: r.holeDiameter, spacing: r.pitch, plateThickness: 6, ...layout.params };
     if (r.pitch !== 50) params.boltDiameter = r.holeDiameter - 0.8;
-    if (framePart === 'profile-nameplate') Object.assign(params, nameplateParams(profile));
+    if (framePart === 'profile-nameplate' || framePart === 'profile-nameplate-flush') Object.assign(params, nameplateParams(profile));
     if (rise) params.rise = rise;
     if (framePart.startsWith('branded-')) params.panelHeight = flangeHeight;
     if (framePart === 'offset-crossmember') { params.length = 1225 * (span + r.tube) / 1150; params.offset = settings.offset; }
     const mounts = slot.connectedTo.map((id, i) => mount(r, id, hole + (rise && !i ? Math.round(rise / r.pitch) : 0), framePart === 'offset-crossmember' ? 'front' : rear ? (b[0] > a[0] ? (i ? 'left' : 'right') : (i ? 'right' : 'left')) : (b[1] > a[1] ? (i ? 'front' : 'back') : (i ? 'back' : 'front')), [i ? params.length / 2 : -params.length / 2, 0, 25 + (rise && !i ? rise : 0)]));
-    const position: Vec3 = [x, y, holeZ(r, hole) - 25];
+    const position: Vec3 = [x, y, layout.z];
     if (framePart === 'offset-crossmember') {
       const flangeY = 61.484 * (settings.offset / 193.5) + 6;
       position[1] -= r.tube / 2 + flangeY;
@@ -700,7 +698,7 @@ export function resolveAssembly(input: RackDoc): ResolvedInstance[] {
     if (framePart === 'nameplate') {
       append(`${slot.id}:beam`, slot.part, params, position, 0, mounts, 'structure', slot.id, false, slot.connectedTo);
       const panelParams = { length: span, height: 175, thickness: 5.0524, holeDiameter: r.holeDiameter };
-      append(slot.id, 'nameplate', panelParams, [x, y, position[2] + 37.5 - 225], 0, mounts, 'structure', slot.id, false, slot.connectedTo);
+      append(slot.id, 'nameplate', panelParams, [x, y, position[2] + 37.5 - 225 + (params.beamCenter === undefined ? 0 : params.beamCenter - flangeHeight / 2)], 0, mounts, 'structure', slot.id, false, slot.connectedTo);
       result[result.length - 1].collisionEnabled = true;
     } else {
       append(slot.id, framePart, params, position, angle, mounts, 'structure', slot.id, false, slot.connectedTo);

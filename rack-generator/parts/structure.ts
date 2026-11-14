@@ -82,7 +82,9 @@ function fastener(g: Geometry,axis: string,at: number[],direction=1,reversed=fal
 function endFlanges(g: Geometry,p: NumericParams,rise=0) {
   const out=[];
   for(const s of [-1,1]) {
-    const loops=mapProfiles(mountingBores(measuredProfiles.flange,p.holeDiameter),([a,b])=>[a*p.width/75,b<75?b:b+p.plateHeight-150]);
+    const loops=mountingBores(measuredProfiles.flange,p.holeDiameter).map((loop,index)=>loop.map(([a,b]):Vec2=>[
+      a*p.width/75,b<75?b:b+(index===0?(p.flangeTop??p.plateHeight):p.plateHeight)-150,
+    ]));
     const plate=g.profile(loops,p.plateThickness,'x',[s===1?p.length/2-p.plateThickness:-p.length/2,0,s===1?rise:0]);
     // Above x-profile uses local [y,z].
     out.push(part(`${s<0?'Left':'Right'} rounded mounting flange`,plate));
@@ -91,20 +93,25 @@ function endFlanges(g: Geometry,p: NumericParams,rise=0) {
   return out;
 }
 function beamSolid(g: Geometry,p: NumericParams,lite=false) {
-  const len=p.length-2*p.plateThickness;
-  let s=g.move(g.rotate(g.tube(len,p.width,p.wall),[0,90,0]),[-len/2,0,p.plateHeight/2]);
+  const len=p.length-2*p.plateThickness, center=p.beamCenter??p.plateHeight/2;
+  let s=g.move(g.rotate(g.tube(len,p.width,p.wall),[0,90,0]),[-len/2,0,center]);
   const cuts=[];
   for(let x=-(p.length/2-62.5);x<=p.length/2-50;x+=p.spacing) {
-    cuts.push(g.hole(p.width+4,p.holeDiameter,'z',[x,0,p.plateHeight/2]));
-    if(!lite||Math.abs(x)>100)cuts.push(g.hole(p.width+4,p.holeDiameter,'y',[x,0,p.plateHeight/2]));
+    cuts.push(g.hole(p.width+4,p.holeDiameter,'z',[x,0,center]));
+    if(!lite||Math.abs(x)>100)cuts.push(g.hole(p.width+4,p.holeDiameter,'y',[x,0,center]));
   }
-  if(lite)cuts.push(brandCutter(g,180,p.plateHeight/2,p.width+2));
+  if(lite)cuts.push(brandCutter(g,180,center,p.width+2));
   return g.difference(s,cuts);
 }
 function crossmember(api: ManifoldAPI,p: NumericParams) {return construct(api,p,(g,p)=>{
   if(p.length<150||p.spacing<=p.holeDiameter)throw Error('Check length and hole spacing.');
   return [part('Rounded hollow crossmember with four-face holes',beamSolid(g,p)),...endFlanges(g,p)];
 });}
+/** Flush parts put the tube against the top of the mounting flange in both the library and assembly. */
+function flushBeamParams(p: NumericParams): NumericParams {
+  const flangeTop=p.flangeTop??p.plateHeight;
+  return {...p,flangeTop,beamCenter:flangeTop-p.width/2};
+}
 // Worker params must be positive and at most 4000, so colours travel as channel+1 triplets (e.g. panelR/G/B).
 const channel=(v: number|undefined,fallback: number)=>Math.max(0,Math.min(255,Math.round((v??fallback+1)-1)));
 const rgb=(p: NumericParams,prefix: string,fallback: number)=>'#'+[16,8,0].map(shift=>channel(p[prefix+'RGB'[[16,8,0].indexOf(shift)]],(fallback>>shift)&255).toString(16).padStart(2,'0')).join('');
@@ -210,11 +217,11 @@ function profileNameplate(api: ManifoldAPI,p: NumericParams) {return construct(a
   if(p.length<150||p.spacing<=p.holeDiameter)throw Error('Check length and hole spacing.');
   const out=[part('Rounded hollow crossmember with four-face holes',beamSolid(g,p)),...endFlanges(g,p)];
   const style=Math.round(p.panelStyle??2), color=rgb(p,'panel',0xb3141f);
-  const top=p.plateHeight/2-p.width/2, span=p.length-2*p.plateThickness-6, t=6.35;
+  const center=p.beamCenter??p.plateHeight/2, top=center-p.width/2, span=p.length-2*p.plateThickness-6, t=6.35;
   if(style===1) {
     const x=p.badgeCenter?0:-p.length/2+p.plateThickness+100, bw=Math.min(p.badgeWidth??150,p.length/3), bh=Math.min(34,p.width-10);
-    out.push(part('Manufacturer badge',g.box([bw,1.2,bh],[x,-p.width/2-.6,p.plateHeight/2]),color,'source'));
-    if(hasColor(p,'accent'))out.push(part('Badge accent',g.box([bh,1.6,bh],[x+bw/2-bh/2,-p.width/2-.8,p.plateHeight/2]),rgb(p,'accent',0xd21f26),'source'));
+    out.push(part('Manufacturer badge',g.box([bw,1.2,bh],[x,-p.width/2-.6,center]),color,'source'));
+    if(hasColor(p,'accent'))out.push(part('Badge accent',g.box([bh,1.6,bh],[x+bw/2-bh/2,-p.width/2-.8,center]),rgb(p,'accent',0xd21f26),'source'));
     return out;
   }
   const h=Math.min(p.panelHeight,600), loop: Vec2[]=[[-span/2,top],[span/2,top]];
@@ -317,15 +324,18 @@ function foot(api: ManifoldAPI,p: NumericParams) {return construct(api,p,(g,p)=>
   return [part('Perforated bent stabilizer with toe plate',solid),... [65,165].map(z=>part('M16 bolt, nut and washers',fastener(g,'y',[0,flangeY,z],-1,true),zinc,'fastener'))];
 });}
 const beamDefaults = { length: 1075, width: 75, wall: 3, holeDiameter: 25, spacing: 50, plateThickness: 6, plateHeight: 150 };
+const profileNameplateDefaults = { ...beamDefaults, length: 1092.2, width: 76.2, holeDiameter: 17.4625, spacing: 50.8, plateHeight: 151.6, boltDiameter: 16.6625, panelStyle: 2, panelHeight: 200, panelR: 201, panelG: 17, panelB: 32 };
 export const definitions: PartDefinition[] = [
   { id: 'upright', printOrientation: 'standing', standardOptions: { height: UPRIGHT_HEIGHT_OPTIONS }, name: 'BOS STRENGTH 75 upright', category: 'Structure', defaults: { height: 2032, width: 75, wall: 3, cornerRadius: 3, holeDiameter: 25, spacing: 50, firstHole: 65, benchStart: 440, benchEnd: 4000, benchSpacing: 50, baseWidth: 105, baseDepth: 135, baseThickness: 8 }, build: upright },
   ...[425, 725, 1075].map(length => ({ id: `crossmember-${length}`, standardOptions: { length: GENERIC_SPAN_OPTIONS }, name: `${length} mm crossmember`, category: 'Structure', defaults: { ...beamDefaults, length }, build: crossmember })),
+  { id: 'crossmember-flush', name: 'Flush crossmember', description: 'Straight perforated rail with its tube flush to the top of its mounting brackets. Upper members align with the upright tops; length follows the selected rack span.', category: 'Structure', standardOptions: { length: GENERIC_SPAN_OPTIONS }, defaults: { ...beamDefaults }, build: (api, p) => crossmember(api, flushBeamParams(p)) },
   { id: 'angled-crossmember', name: 'Angled crossmember', category: 'Structure', defaults: { ...beamDefaults, length: 425, rise: 199 }, build: (api, p) => shapedCrossmember(api, p, true) },
   { id: 'offset-crossmember', name: 'Offset crossmember', category: 'Structure', defaults: { ...beamDefaults, length: 1225, offset: 193.5 }, build: (api, p) => shapedCrossmember(api, p, false) },
   { id: 'nameplate', name: 'Nameplate panel', category: 'Structure', defaults: { length: 1075, height: 175, thickness: 5.0524, holeDiameter: 25 }, build: nameplate },
   { id: 'branded-crossmember', name: 'BOS STRENGTH nameplate crossmember', category: 'Structure', defaults: { ...beamDefaults, panelHeight: 300 }, build: branded },
   { id: 'branded-crossmember-lite', name: 'BOS STRENGTH nameplate crossmember lite', category: 'Structure', defaults: { ...beamDefaults, panelHeight: 150 }, build: branded },
-  { id: 'profile-nameplate', name: 'Manufacturer nameplate crossmember', category: 'Structure', defaults: { ...beamDefaults, length: 1092.2, width: 76.2, holeDiameter: 17.4625, spacing: 50.8, plateHeight: 151.6, boltDiameter: 16.6625, panelStyle: 2, panelHeight: 200, panelR: 201, panelG: 17, panelB: 32 }, build: profileNameplate },
+  { id: 'profile-nameplate', name: 'Manufacturer nameplate crossmember', category: 'Structure', defaults: { ...profileNameplateDefaults }, build: profileNameplate },
+  { id: 'profile-nameplate-flush', name: 'Flush manufacturer nameplate crossmember', description: 'A flush crossmember with the rack manufacturer’s nameplate. Available on racks with a manufacturer nameplate.', category: 'Structure', defaults: { ...profileNameplateDefaults }, build: (api, p) => profileNameplate(api, flushBeamParams(p)) },
   ...[400, 800].map(length => ({ id: `foot-${length}`, name: `${length === 400 ? 'Short' : 'Long'} stabilizer foot`, category: 'Structure', defaults: { length, width: 75, wall: 3, baseThickness: 8, padWidth: 95, padDepth: 215, plateThickness: 6, holeDiameter: 25 }, build: foot })),
 ];
 

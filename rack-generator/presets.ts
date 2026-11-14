@@ -72,13 +72,16 @@ export function applyPreset(id: string): RackDoc {
   }
   if (preset.rearHeight) for (const post of ['rear-left', 'rear-right']) doc.uprights[post] = { ...doc.uprights[post], height: preset.rearHeight };
   const ids = new Set(doc.connections.map(e => e.id));
+  if (profile.defaultUpperCrossmember) for (const edge of doc.connections.filter(e => e.level === 'upper')) {
+    doc.structure[edge.id] = { part: profile.defaultUpperCrossmember, params: {} };
+  }
   if (profile.lowerCrossmembers === false) doc.removed = [...doc.removed, ...['left-lower-crossmember', 'right-lower-crossmember'].filter(e => ids.has(e) && !doc.removed.includes(e))];
   if (preset.rearLower) {
     doc.removed = [...doc.removed, ...['left-lower-crossmember', 'right-lower-crossmember'].filter(e => ids.has(e) && !doc.removed.includes(e))];
     doc.connections = [...doc.connections, { id: 'rear-lower-crossmember', from: 'rear-left', to: 'rear-right', level: 'lower' }];
   }
   if (preset.rearCrossmember === false && ids.has('rear-crossmember')) doc.removed = [...doc.removed, 'rear-crossmember'];
-  else if (profile.nameplate && ids.has('rear-crossmember')) doc.structure = { ...doc.structure, 'rear-crossmember': { part: 'profile-nameplate', params: {} } };
+  else if (profile.nameplate && ids.has('rear-crossmember')) doc.structure = { ...doc.structure, 'rear-crossmember': { part: profile.defaultUpperCrossmember === 'crossmember-flush' ? 'profile-nameplate-flush' : 'profile-nameplate', params: {} } };
   if (profile.color) doc.appearance = { ...doc.appearance, frameColor: profile.color };
   doc = validateAssembly(doc);
   for (const [index, diameter] of (preset.pullups ?? []).entries()) {
